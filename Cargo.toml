@@ -1,0 +1,18 @@
+[package]
+name = "sec-fetcher"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+chrono = "0.4.40"
+email_address = "0.2.9"
+keyring = { version = "3.6.2", features = ["apple-native", "windows-native", "sync-secret-service"] }
+polars = { version = "0.46.0", features = ["json", "lazy", "pivot"] }
+rand = "0.9.0"
+reqwest = { version = "0.12.12", features = ["json"] }
+serde_json = "1.0.140"
+tokio = { version = "1.43.0", features = ["full"] }
+
+[dev-dependencies]
+mockito = "1.7.0"
