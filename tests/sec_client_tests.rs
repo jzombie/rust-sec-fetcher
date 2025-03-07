@@ -8,7 +8,10 @@ fn test_user_agent() {
 
     assert_eq!(
         client.get_user_agent(),
-        "sec-fetcher/0.1.0 (+test@example.com)"
+        format!(
+            "sec-fetcher/{} (+test@example.com)",
+            env!("CARGO_PKG_VERSION")
+        )
     );
 }
 
