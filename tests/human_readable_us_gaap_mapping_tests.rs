@@ -752,3 +752,95 @@ fn test_other_comprehensive_income_loss() {
         Some(vec!["OtherComprehensiveIncomeLoss"])
     );
 }
+
+#[test]
+fn test_other_operating_income_expenses() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OtherOperatingIncome"),
+        Some(vec!["OtherOperatingIncomeExpenses"])
+    );
+}
+
+#[test]
+fn test_preferred_stock_dividends_and_other_adjustments() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("PreferredStockDividendsAndOtherAdjustments"),
+        Some(vec!["PreferredStockDividendsAndOtherAdjustments"])
+    );
+}
+
+#[test]
+fn test_provision_for_loan_lease_and_other_losses() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ProvisionForLoanLeaseAndOtherLosses"),
+        Some(vec!["ProvisionForLoanLeaseAndOtherLosses"])
+    );
+}
+
+#[test]
+fn test_redeemable_noncontrolling_interest() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RedeemableNoncontrollingInterestEquityCarryingAmount"),
+        Some(vec!["RedeemableNoncontrollingInterest"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "RedeemableNoncontrollingInterestEquityCommonCarryingAmount"
+        ),
+        Some(vec!["RedeemableNoncontrollingInterest"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "RedeemableNoncontrollingInterestEquityPreferredCarryingAmount"
+        ),
+        Some(vec!["RedeemableNoncontrollingInterest"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "RedeemableNoncontrollingInterestEquityOtherCarryingAmount"
+        ),
+        Some(vec!["RedeemableNoncontrollingInterest"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RedeemableNoncontrollingInterestEquityFairValue"),
+        Some(vec!["RedeemableNoncontrollingInterest"])
+    );
+}
+
+#[test]
+fn test_research_and_development() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ResearchAndDevelopmentExpense"),
+        Some(vec!["ResearchAndDevelopment"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "ResearchAndDevelopmentExpenseExcludingAcquiredInProcessCost"
+        ),
+        Some(vec!["ResearchAndDevelopment"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "ResearchAndDevelopmentExpenseSoftwareExcludingAcquiredInProcessCost"
+        ),
+        Some(vec!["ResearchAndDevelopment"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ResearchAndDevelopmentInProcess"),
+        Some(vec!["ResearchAndDevelopment"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "ResearchAndDevelopmentAssetAcquiredOtherThanThroughBusinessCombinationWrittenOff"
+        ),
+        Some(vec!["ResearchAndDevelopment"])
+    );
+}
