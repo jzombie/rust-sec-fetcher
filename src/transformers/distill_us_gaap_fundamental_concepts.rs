@@ -451,7 +451,7 @@ static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<Fundamen
 ///
 /// # Example
 /// ```
-/// use sec_fetcher::accessors::distill_us_gaap_fundamental_concepts;
+/// use sec_fetcher::transformers::distill_us_gaap_fundamental_concepts;
 /// use sec_fetcher::enums::FundamentalConcept;
 ///
 /// fn main() {
