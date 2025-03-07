@@ -1,14 +1,14 @@
 use crate::utils::invert_multivalue_map;
+use indexmap::IndexMap;
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
 
 pub type FundamentalConceptName = &'static str;
 pub type TaxonomyConceptName = &'static str;
 
 // Human-readable mapping: http://www.xbrlsite.com/2014/Reference/Mapping.pdf
-static US_GAAP_MAPPING: Lazy<HashMap<FundamentalConceptName, Vec<TaxonomyConceptName>>> = Lazy::new(
-    || {
-        let mut map = HashMap::new();
+static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConceptName>>> =
+    Lazy::new(|| {
+        let mut map = IndexMap::new();
 
         // Entries are arranged by `Try Order` ascending
 
@@ -333,10 +333,9 @@ static US_GAAP_MAPPING: Lazy<HashMap<FundamentalConceptName, Vec<TaxonomyConcept
         );
 
         map
-    },
-);
+    });
 
-static US_GAAP_MAPPING_INVERTED: Lazy<HashMap<TaxonomyConceptName, Vec<FundamentalConceptName>>> =
+static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<FundamentalConceptName>>> =
     Lazy::new(|| {
         let map_inverted = invert_multivalue_map(&US_GAAP_MAPPING);
 
