@@ -133,3 +133,12 @@ fn test_costs_and_expenses() {
         Some(HashSet::from(["CostsAndExpenses", "BenefitsCostsExpenses"]))
     );
 }
+
+#[test]
+fn test_current_assets() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("AssetsCurrent")
+            .map(|v| v.into_iter().collect::<HashSet<_>>()),
+        Some(HashSet::from(["CurrentAssets", "Assets"]))
+    );
+}
