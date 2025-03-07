@@ -480,17 +480,19 @@ pub fn distill_us_gaap_fundamental_concepts(us_gaap_key: &str) -> Option<Vec<Fun
                     .unwrap_or(usize::MAX) // If never found, push to the end
             };
 
-            // Debugging: Print Correct Try Order
-            for concept in &values {
-                let try_order = get_try_order(concept);
+            {
+                // Debugging: Print Correct Try Order
+                for concept in &values {
+                    let try_order = get_try_order(concept);
+                    // TODO: Debug log
+                    println!(
+                        "Concept: {:?}, Try Order: {}, US-GAAP: {}",
+                        concept, try_order, us_gaap_key
+                    );
+                }
                 // TODO: Debug log
-                println!(
-                    "Concept: {:?}, Try Order: {}, US-GAAP: {}",
-                    concept, try_order, us_gaap_key
-                );
+                println!("----");
             }
-            // TODO: Debug log
-            println!("----");
 
             // Sort by Correct Try Order
             values.sort_by_key(|concept| get_try_order(concept));
