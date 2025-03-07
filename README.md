@@ -239,6 +239,7 @@ Since primary documents for 10-Ks are .htm files, you need to:
 
 ### Related
 
+- https://sec-edgar-api.readthedocs.io/en/latest/
 - https://github.com/janlukasschroeder/sec-api-python
 
 -----
