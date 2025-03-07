@@ -99,16 +99,52 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
             "GainLossOnSalePropertiesNetTax",
             vec!["GainLossOnSaleOfPropertiesNetOfApplicableIncomeTaxes"],
         );
-        map.insert("GrossProfit", vec![""]);
-        map.insert("IncomeLossBeforeEquityMethodInvestments", vec![""]);
-        map.insert("IncomeLossFromContinuingOperationsAfterTax", vec![""]);
-        map.insert("IncomeLossFromContinuingOperationsBeforeTax", vec![""]);
-        map.insert("IncomeLossFromDiscontinuedOperationsNetOfTax", vec![""]);
-        map.insert("IncomeLossFromEquityMethodInvestments", vec![""]);
-        map.insert("IncomeStatementStartPeriodYearToDate", vec![""]);
-        map.insert("IncomeTaxExpenseBenefit", vec![""]);
-        map.insert("InterestAndDebtExpense", vec![""]);
-        map.insert("InterestAndDividendIncomeOperating", vec![""]);
+        map.insert("GrossProfit", vec!["GrossProfit"]);
+        map.insert("IncomeLossBeforeEquityMethodInvestments", vec!["IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"]);
+        map.insert("IncomeLossFromContinuingOperationsAfterTax", vec![
+            "IncomeLossFromContinuingOperationsIncludingPortionAttributableToNoncontrollingInterest",
+            "IncomeLossBeforeExtraordinaryItemsAndCumulativeEffectOfChangeInAccountingPrinciple",
+            "IncomeLossFromContinuingOperations"
+        ]);
+        map.insert("IncomeLossFromContinuingOperationsBeforeTax", vec![
+            "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+            "IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"
+        ]);
+        map.insert(
+            "IncomeLossFromDiscontinuedOperationsNetOfTax",
+            vec![
+                "IncomeLossFromDiscontinuedOperationsNetOfTax",
+                "DiscontinuedOperationGainLossOnDisposalOfDiscontinuedOperationNetOfTax",
+                "IncomeLossFromDiscontinuedOperationsNetOfTaxAttributableToReportingEntity",
+            ],
+        );
+        map.insert(
+            "IncomeLossFromEquityMethodInvestments",
+            vec!["IncomeLossFromEquityMethodInvestments"],
+        );
+        map.insert(
+            "IncomeStatementStartPeriodYearToDate",
+            vec![
+                "IncomeTaxExpenseBenefit",
+                "IncomeTaxExpenseBenefitContinuingOperations",
+                "FederalHomeLoanBankAssessments",
+                "CurrentIncomeTaxExpenseBenefit",
+            ],
+        );
+        map.insert(
+            "IncomeTaxExpenseBenefit",
+            vec![
+                "IncomeTaxExpenseBenefit",
+                "IncomeTaxExpenseBenefitContinuingOperations",
+                "FederalHomeLoanBankAssessments",
+                "CurrentIncomeTaxExpenseBenefit",
+            ],
+        );
+        map.insert("InterestAndDebtExpense", vec!["InterestAndDebtExpense"]);
+        map.insert(
+            "InterestAndDividendIncomeOperating",
+            vec!["InterestAndDividendIncomeOperating"],
+        );
         map.insert(
             "InterestAndDividendIncomeOperating",
             vec!["InterestAndDividendIncomeOperating"],

@@ -263,3 +263,27 @@ fn test_exchange_gains_losses() {
         Some(vec!["ExchangeGainsLosses"])
     );
 }
+
+#[test]
+fn test_extraordinary_items_of_income_expense_net_of_tax() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ExtraordinaryItemNetOfTax"),
+        Some(vec!["ExtraordinaryItemsOfIncomeExpenseNetOfTax"])
+    );
+}
+
+#[test]
+fn test_gain_loss_on_sale_properties_net_tax() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("GainLossOnSaleOfPropertiesNetOfApplicableIncomeTaxes"),
+        Some(vec!["GainLossOnSalePropertiesNetTax"])
+    );
+}
+
+#[test]
+fn test_gross_profit() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("GrossProfit"),
+        Some(vec!["GrossProfit"])
+    );
+}
