@@ -18,12 +18,16 @@ pub struct SecClient {
 
 pub trait SecClientDataExt {
     fn get_user_agent(&self) -> String;
+
+    #[allow(async_fn_in_trait)]
     async fn raw_request_without_retry(
         &self,
         method: reqwest::Method,
         url: &str,
         headers: Option<Vec<(&str, &str)>>,
     ) -> Result<reqwest::Response, Box<dyn Error>>;
+
+    #[allow(async_fn_in_trait)]
     async fn raw_request_with_retry(
         &self,
         method: reqwest::Method,
@@ -31,7 +35,10 @@ pub trait SecClientDataExt {
         headers: Option<Vec<(&str, &str)>>,
     ) -> Result<reqwest::Response, Box<dyn Error>>;
 
+    #[allow(async_fn_in_trait)]
     async fn fetch_json_without_retry(&self, url: &str) -> Result<Value, Box<dyn Error>>;
+
+    #[allow(async_fn_in_trait)]
     async fn fetch_json_with_retry(&self, url: &str) -> Result<Value, Box<dyn Error>>;
 }
 
