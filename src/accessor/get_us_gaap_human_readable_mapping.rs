@@ -1,4 +1,4 @@
-use crate::utils::invert_multivalue_map;
+use crate::utils::invert_multivalue_indexmap;
 use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 
@@ -337,7 +337,7 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
 
 static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<FundamentalConceptName>>> =
     Lazy::new(|| {
-        let map_inverted = invert_multivalue_map(&US_GAAP_MAPPING);
+        let map_inverted = invert_multivalue_indexmap(&US_GAAP_MAPPING);
 
         map_inverted
     });

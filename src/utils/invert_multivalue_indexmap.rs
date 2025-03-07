@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 use std::hash::Hash;
 
-pub fn invert_multivalue_map<K, V>(map: &IndexMap<K, Vec<V>>) -> IndexMap<V, Vec<K>>
+pub fn invert_multivalue_indexmap<K, V>(map: &IndexMap<K, Vec<V>>) -> IndexMap<V, Vec<K>>
 where
     K: Eq + Hash + Clone,
     V: Eq + Hash + Clone,
