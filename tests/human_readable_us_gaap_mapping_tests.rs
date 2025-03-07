@@ -287,3 +287,34 @@ fn test_gross_profit() {
         Some(vec!["GrossProfit"])
     );
 }
+
+#[test]
+fn test_income_loss_before_equity_method_investments() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"),
+        Some(vec!["IncomeLossBeforeEquityMethodInvestments", "IncomeLossFromContinuingOperationsBeforeTax"])
+    );
+}
+
+#[test]
+fn test_income_loss_from_continuing_operations_after_tax() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsIncludingPortionAttributableToNoncontrollingInterest"),
+        Some(vec!["IncomeLossFromContinuingOperationsAfterTax", "NetIncomeLoss"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "IncomeLossBeforeExtraordinaryItemsAndCumulativeEffectOfChangeInAccountingPrinciple"
+        ),
+        Some(vec!["IncomeLossFromContinuingOperationsAfterTax"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperations"),
+        Some(vec![
+            "IncomeLossFromContinuingOperationsAfterTax",
+            "NetIncomeLoss"
+        ])
+    );
+}
