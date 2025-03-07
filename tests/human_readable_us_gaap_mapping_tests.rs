@@ -16,118 +16,127 @@ fn test_assets() {
     );
 }
 
-// #[test]
-// fn test_benefits_costs_expenses() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("BenefitsLossesAndExpenses"),
-//         Some(vec!["BenefitsCostsExpenses", "CostsAndExpenses"])
-//     );
-// }
+#[test]
+fn test_benefits_costs_expenses() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("BenefitsLossesAndExpenses"),
+        Some(vec![
+            FundamentalConcept::BenefitsCostsExpenses,
+            FundamentalConcept::CostsAndExpenses
+        ])
+    );
+}
 
-// #[test]
-// fn test_commitments_and_contingencies() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("CommitmentsAndContingencies"),
-//         Some(vec!["CommitmentsAndContingencies"])
-//     );
-// }
+#[test]
+fn test_commitments_and_contingencies() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CommitmentsAndContingencies"),
+        Some(vec![FundamentalConcept::CommitmentsAndContingencies])
+    );
+}
 
-// #[test]
-// fn test_comprehensive_income_loss() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "ComprehensiveIncomeNetOfTaxIncludingPortionAttributableToNoncontrollingInterest"
-//         ),
-//         Some(vec!["ComprehensiveIncomeLoss"])
-//     );
+#[test]
+fn test_comprehensive_income_loss() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "ComprehensiveIncomeNetOfTaxIncludingPortionAttributableToNoncontrollingInterest"
+        ),
+        Some(vec![FundamentalConcept::ComprehensiveIncomeLoss])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("ComprehensiveIncomeNetOfTax"),
-//         Some(vec![
-//             "ComprehensiveIncomeLossAttributableToParent",
-//             "ComprehensiveIncomeLoss",
-//         ])
-//     );
-// }
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ComprehensiveIncomeNetOfTax"),
+        Some(vec![
+            FundamentalConcept::ComprehensiveIncomeLossAttributableToParent,
+            FundamentalConcept::ComprehensiveIncomeLoss,
+        ])
+    );
+}
 
-// #[test]
-// fn test_comprehensive_income_loss_attributable_to_noncontrolling_interest() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "ComprehensiveIncomeNetOfTaxAttributableToNoncontrollingInterest"
-//         ),
-//         Some(vec![
-//             "ComprehensiveIncomeLossAttributableToNoncontrollingInterest"
-//         ])
-//     );
-// }
+#[test]
+fn test_comprehensive_income_loss_attributable_to_noncontrolling_interest() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "ComprehensiveIncomeNetOfTaxAttributableToNoncontrollingInterest"
+        ),
+        Some(vec![
+            FundamentalConcept::ComprehensiveIncomeLossAttributableToNoncontrollingInterest
+        ])
+    );
+}
 
-// #[test]
-// fn test_comprehensive_income_loss_attributable_to_parent() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("ComprehensiveIncomeNetOfTax"),
-//         Some(vec![
-//             "ComprehensiveIncomeLossAttributableToParent",
-//             "ComprehensiveIncomeLoss",
-//         ])
-//     );
-// }
+#[test]
+fn test_comprehensive_income_loss_attributable_to_parent() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ComprehensiveIncomeNetOfTax"),
+        Some(vec![
+            FundamentalConcept::ComprehensiveIncomeLossAttributableToParent,
+            FundamentalConcept::ComprehensiveIncomeLoss,
+        ])
+    );
+}
 
-// #[test]
-// fn test_cost_of_revenue() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("CostOfRevenue"),
-//         Some(vec!["CostOfRevenue"])
-//     );
+#[test]
+fn test_cost_of_revenue() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CostOfRevenue"),
+        Some(vec![FundamentalConcept::CostOfRevenue])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("CostOfGoodsAndServicesSold"),
-//         Some(vec!["CostOfRevenue"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CostOfGoodsAndServicesSold"),
+        Some(vec![FundamentalConcept::CostOfRevenue])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("CostOfServices"),
-//         Some(vec!["CostOfRevenue"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CostOfServices"),
+        Some(vec![FundamentalConcept::CostOfRevenue])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("CostOfGoodsSold"),
-//         Some(vec!["CostOfRevenue"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CostOfGoodsSold"),
+        Some(vec![FundamentalConcept::CostOfRevenue])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "CostOfGoodsSoldExcludingDepreciationDepletionAndAmortization"
-//         ),
-//         Some(vec!["CostOfRevenue"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "CostOfGoodsSoldExcludingDepreciationDepletionAndAmortization"
+        ),
+        Some(vec![FundamentalConcept::CostOfRevenue])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("CostOfGoodsSoldElectric"),
-//         Some(vec!["CostOfRevenue"])
-//     );
-// }
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CostOfGoodsSoldElectric"),
+        Some(vec![FundamentalConcept::CostOfRevenue])
+    );
+}
 
-// #[test]
-// fn test_costs_and_expenses() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("CostsAndExpenses"),
-//         Some(vec!["CostsAndExpenses"])
-//     );
+#[test]
+fn test_costs_and_expenses() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CostsAndExpenses"),
+        Some(vec![FundamentalConcept::CostsAndExpenses])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("BenefitsLossesAndExpenses"),
-//         Some(vec!["BenefitsCostsExpenses", "CostsAndExpenses"])
-//     );
-// }
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("BenefitsLossesAndExpenses"),
+        Some(vec![
+            FundamentalConcept::BenefitsCostsExpenses,
+            FundamentalConcept::CostsAndExpenses
+        ])
+    );
+}
 
-// #[test]
-// fn test_current_assets() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("AssetsCurrent"),
-//         Some(vec!["CurrentAssets", "Assets"])
-//     );
-// }
+#[test]
+fn test_current_assets() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("AssetsCurrent"),
+        Some(vec![
+            FundamentalConcept::CurrentAssets,
+            FundamentalConcept::Assets
+        ])
+    );
+}
 
 // #[test]
 // fn test_current_liabilities() {
