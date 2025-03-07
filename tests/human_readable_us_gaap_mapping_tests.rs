@@ -844,3 +844,228 @@ fn test_research_and_development() {
         Some(vec!["ResearchAndDevelopment"])
     );
 }
+
+#[test]
+fn test_revenues() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("Revenues"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("SalesRevenueNet"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("SalesRevenueServicesNet"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("SalesRevenueGoodsNet"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenuesNetOfInterestExpense"),
+        Some(vec!["RevenuesNetInterestExpense", "Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("HealthCareOrganizationRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("InterestAndDividendIncomeOperating"),
+        Some(vec!["InterestAndDividendIncomeOperating", "Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RealEstateRevenueNet"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenueMineralSales"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OilAndGasRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("FinancialServicesRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RegulatedAndUnregulatedOperatingRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ShippingAndHandlingRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("SalesRevenueFromEnergyCommoditiesAndServices"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("PhaseInPlanAmountOfCapitalizedCostsRecovered"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("SecondaryProcessingRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenueSteamProductsAndServices"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenueFromLeasedAndOwnedHotels"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("FranchisorRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("SubscriptionRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("AdvertisingRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("AdmissionsRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "RevenueFromEnrollmentAndRegistrationFeesExcludingHospitalityEnterprises"
+        ),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("MembershipDuesRevenueOnGoing"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("LicensesRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RoyaltyRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("SalesOfOilAndGasProspects"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ClearingFeesRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ReimbursementRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenueFromGrants"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenueOtherManufacturedProducts"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ConstructionMaterialsRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("TimberRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RecyclingRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OtherSalesRevenueNet"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("SaleOfTrustAssetsToPayExpenses"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("PassengerRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("VehicleTollRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CargoAndFreightRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetInvestmentIncome"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenuesExcludingInterestAndDividends"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("InvestmentBankingRevenue"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("UnderwritingIncomeLoss"),
+        Some(vec!["Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ElectricUtilityRevenue"),
+        Some(vec!["Revenues"])
+    );
+}
