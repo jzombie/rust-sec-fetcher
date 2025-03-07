@@ -218,3 +218,48 @@ fn test_equity_attributable_to_noncontrolling_interest() {
         Some(vec!["EquityAttributableToNoncontrollingInterest"])
     );
 }
+
+#[test]
+fn test_equity_attributable_to_parent() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("StockholdersEquity"),
+        Some(vec!["Equity", "EquityAttributableToParent"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("PartnersCapital"),
+        Some(vec!["Equity", "EquityAttributableToParent"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("MembersEquity"),
+        Some(vec!["Equity", "EquityAttributableToParent"])
+    );
+}
+
+#[test]
+fn test_exchange_gains_losses() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("EffectOfExchangeRateOnCashAndCashEquivalents"),
+        Some(vec!["ExchangeGainsLosses"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "EffectOfExchangeRateOnCashAndCashEquivalentsContinuingOperations"
+        ),
+        Some(vec!["ExchangeGainsLosses"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("EffectOfExchangeRateOnCashContinuingOperations"),
+        Some(vec!["ExchangeGainsLosses"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "EffectOfExchangeRateOnCashAndCashEquivalentsDiscontinuedOperations"
+        ),
+        Some(vec!["ExchangeGainsLosses"])
+    );
+}
