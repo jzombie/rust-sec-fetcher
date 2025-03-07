@@ -946,300 +946,323 @@ fn test_research_and_development() {
     );
 }
 
-// #[test]
-// fn test_revenues() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("Revenues"),
-//         Some(vec!["Revenues"])
-//     );
+#[test]
+fn test_revenues() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("Revenues"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("SalesRevenueNet"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("SalesRevenueNet"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("SalesRevenueServicesNet"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("SalesRevenueServicesNet"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("SalesRevenueGoodsNet"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("SalesRevenueGoodsNet"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("RevenuesNetOfInterestExpense"),
-//         Some(vec!["RevenuesNetInterestExpense", "Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenuesNetOfInterestExpense"),
+        Some(vec![
+            FundamentalConcept::RevenuesNetInterestExpense,
+            FundamentalConcept::Revenues
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("HealthCareOrganizationRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("HealthCareOrganizationRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("InterestAndDividendIncomeOperating"),
-//         Some(vec!["InterestAndDividendIncomeOperating", "Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("InterestAndDividendIncomeOperating"),
+        Some(vec![
+            FundamentalConcept::InterestAndDividendIncomeOperating,
+            FundamentalConcept::Revenues
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("RealEstateRevenueNet"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RealEstateRevenueNet"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("RevenueMineralSales"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenueMineralSales"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("OilAndGasRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OilAndGasRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("FinancialServicesRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("FinancialServicesRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("RegulatedAndUnregulatedOperatingRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RegulatedAndUnregulatedOperatingRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("ShippingAndHandlingRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ShippingAndHandlingRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("SalesRevenueFromEnergyCommoditiesAndServices"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("SalesRevenueFromEnergyCommoditiesAndServices"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("PhaseInPlanAmountOfCapitalizedCostsRecovered"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("PhaseInPlanAmountOfCapitalizedCostsRecovered"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("SecondaryProcessingRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("SecondaryProcessingRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("RevenueSteamProductsAndServices"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenueSteamProductsAndServices"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("RevenueFromLeasedAndOwnedHotels"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenueFromLeasedAndOwnedHotels"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("FranchisorRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("FranchisorRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("SubscriptionRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("SubscriptionRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("AdvertisingRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("AdvertisingRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("AdmissionsRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("AdmissionsRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "RevenueFromEnrollmentAndRegistrationFeesExcludingHospitalityEnterprises"
-//         ),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "RevenueFromEnrollmentAndRegistrationFeesExcludingHospitalityEnterprises"
+        ),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("MembershipDuesRevenueOnGoing"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("MembershipDuesRevenueOnGoing"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("LicensesRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("LicensesRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("RoyaltyRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RoyaltyRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("SalesOfOilAndGasProspects"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("SalesOfOilAndGasProspects"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("ClearingFeesRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ClearingFeesRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("ReimbursementRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ReimbursementRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("RevenueFromGrants"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenueFromGrants"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("RevenueOtherManufacturedProducts"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenueOtherManufacturedProducts"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("ConstructionMaterialsRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ConstructionMaterialsRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("TimberRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("TimberRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("RecyclingRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RecyclingRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("OtherSalesRevenueNet"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OtherSalesRevenueNet"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("SaleOfTrustAssetsToPayExpenses"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("SaleOfTrustAssetsToPayExpenses"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("PassengerRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("PassengerRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("VehicleTollRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("VehicleTollRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("CargoAndFreightRevenue"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CargoAndFreightRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NetInvestmentIncome"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetInvestmentIncome"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("RevenuesExcludingInterestAndDividends"),
-//         Some(vec!["RevenuesExcludingInterestAndDividends", "Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenuesExcludingInterestAndDividends"),
+        Some(vec![
+            FundamentalConcept::RevenuesExcludingInterestAndDividends,
+            FundamentalConcept::Revenues
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("InvestmentBankingRevenue"),
-//         Some(vec!["RevenuesExcludingInterestAndDividends", "Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("InvestmentBankingRevenue"),
+        Some(vec![
+            FundamentalConcept::RevenuesExcludingInterestAndDividends,
+            FundamentalConcept::Revenues
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("UnderwritingIncomeLoss"),
-//         Some(vec!["Revenues"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("UnderwritingIncomeLoss"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("ElectricUtilityRevenue"),
-//         Some(vec!["Revenues"])
-//     );
-// }
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ElectricUtilityRevenue"),
+        Some(vec![FundamentalConcept::Revenues])
+    );
+}
 
-// #[test]
-// fn test_revenues_excluding_interest_and_dividends() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("RevenuesExcludingInterestAndDividends"),
-//         Some(vec!["RevenuesExcludingInterestAndDividends", "Revenues"])
-//     );
+#[test]
+fn test_revenues_excluding_interest_and_dividends() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenuesExcludingInterestAndDividends"),
+        Some(vec![
+            FundamentalConcept::RevenuesExcludingInterestAndDividends,
+            FundamentalConcept::Revenues
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("BrokerageCommissionsRevenue"),
-//         Some(vec!["RevenuesExcludingInterestAndDividends"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("BrokerageCommissionsRevenue"),
+        Some(vec![
+            FundamentalConcept::RevenuesExcludingInterestAndDividends
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("InvestmentBankingRevenue"),
-//         Some(vec!["RevenuesExcludingInterestAndDividends", "Revenues"])
-//     );
-// }
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("InvestmentBankingRevenue"),
+        Some(vec![
+            FundamentalConcept::RevenuesExcludingInterestAndDividends,
+            FundamentalConcept::Revenues
+        ])
+    );
+}
 
-// #[test]
-// fn test_revenues_net_interest_expense() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("RevenuesNetOfInterestExpense"),
-//         Some(vec!["RevenuesNetInterestExpense", "Revenues"])
-//     );
-// }
+#[test]
+fn test_revenues_net_interest_expense() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenuesNetOfInterestExpense"),
+        Some(vec![
+            FundamentalConcept::RevenuesNetInterestExpense,
+            FundamentalConcept::Revenues
+        ])
+    );
+}
 
-// #[test]
-// fn test_temporary_equity() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "TemporaryEquityCarryingAmountIncludingPortionAttributableToNoncontrollingInterests"
-//         ),
-//         Some(vec!["TemporaryEquity"])
-//     );
+#[test]
+fn test_temporary_equity() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "TemporaryEquityCarryingAmountIncludingPortionAttributableToNoncontrollingInterests"
+        ),
+        Some(vec![FundamentalConcept::TemporaryEquity])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("TemporaryEquityRedemptionValue"),
-//         Some(vec!["TemporaryEquity"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("TemporaryEquityRedemptionValue"),
+        Some(vec![FundamentalConcept::TemporaryEquity])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("RedeemablePreferredStockCarryingAmount"),
-//         Some(vec!["TemporaryEquity"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RedeemablePreferredStockCarryingAmount"),
+        Some(vec![FundamentalConcept::TemporaryEquity])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("TemporaryEquityCarryingAmount"),
-//         Some(vec!["TemporaryEquity"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("TemporaryEquityCarryingAmount"),
+        Some(vec![FundamentalConcept::TemporaryEquity])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("TemporaryEquityValueExcludingAdditionalPaidInCapital"),
-//         Some(vec!["TemporaryEquity"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("TemporaryEquityValueExcludingAdditionalPaidInCapital"),
+        Some(vec![FundamentalConcept::TemporaryEquity])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("TemporaryEquityCarryingAmountAttributableToParent"),
-//         Some(vec!["TemporaryEquity"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("TemporaryEquityCarryingAmountAttributableToParent"),
+        Some(vec![FundamentalConcept::TemporaryEquity])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "TemporaryEquityCarryingAmountAttributableToNoncontrollingInterest"
-//         ),
-//         Some(vec!["TemporaryEquity"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "TemporaryEquityCarryingAmountAttributableToNoncontrollingInterest"
+        ),
+        Some(vec![FundamentalConcept::TemporaryEquity])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("TemporaryEquityLiquidationPreference"),
-//         Some(vec!["TemporaryEquity"])
-//     );
-// }
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("TemporaryEquityLiquidationPreference"),
+        Some(vec![FundamentalConcept::TemporaryEquity])
+    );
+}
