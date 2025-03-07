@@ -172,3 +172,8 @@ Since primary documents for 10-Ks are .htm files, you need to:
 ## Logos
 
 - https://www.logo.dev/pricing
+
+
+-----
+
+This project is not affiliated with or endorsed by the U.S. Securities and Exchange Commission.
