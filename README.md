@@ -165,14 +165,17 @@ Since primary documents for 10-Ks are .htm files, you need to:
 
 ## Other Third-Party
 
-## Prices
+### Prices
 
 - https://docs.alpaca.markets/docs/about-market-data-api
 
-## Logos
+### Logos
 
 - https://www.logo.dev/pricing
 
+### Related
+
+- https://github.com/janlukasschroeder/sec-api-python
 
 -----
 
