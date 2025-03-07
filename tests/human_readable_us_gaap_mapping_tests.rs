@@ -318,3 +318,20 @@ fn test_income_loss_from_continuing_operations_after_tax() {
         ])
     );
 }
+
+#[test]
+fn test_income_loss_from_continuing_operations_before_tax() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"),
+        Some(vec![
+            "IncomeLossFromContinuingOperationsBeforeTax",
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"),
+        Some(vec![
+            "IncomeLossBeforeEquityMethodInvestments", "IncomeLossFromContinuingOperationsBeforeTax",
+        ])
+    );
+}
