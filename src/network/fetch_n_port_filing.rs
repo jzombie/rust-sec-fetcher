@@ -6,10 +6,10 @@ use std::error::Error;
 #[derive(Debug)]
 pub struct Investment {
     pub name: String,
-    pub lei: String,
+    pub lei: String, // Legal Entity Identifier
     pub title: String,
-    pub cusip: String,
-    pub isin: String,
+    pub cusip: String, // Committee on Uniform Securities Identification Procedures
+    pub isin: String,  // International Securities Identification Number
     pub balance: String,
     pub cur_cd: String,
     pub val_usd: String,
