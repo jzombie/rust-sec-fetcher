@@ -611,7 +611,10 @@ fn test_net_income_loss() {
 
     assert_eq!(
         get_us_gaap_human_readable_mapping("NetIncomeLossAvailableToCommonStockholdersBasic"),
-        Some(vec!["NetIncomeLoss"])
+        Some(vec![
+            "NetIncomeLossAvailableToCommonStockholdersBasic",
+            "NetIncomeLoss"
+        ])
     );
 
     assert_eq!(
