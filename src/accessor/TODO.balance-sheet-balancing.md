@@ -1,4 +1,4 @@
-The provided **US GAAP mapping** and `get_us_gaap_human_readable_mapping` function contain enough information to determine the **fields necessary for balancing a balance sheet**. 
+The provided **US GAAP mapping** and `distill_us_gaap_fundamental_concepts` function contain enough information to determine the **fields necessary for balancing a balance sheet**. 
 
 ### **Key Balance Sheet Components**
 A balance sheet follows the fundamental accounting equation:
@@ -52,4 +52,4 @@ From the mapping, the key **balance sheet fields** needed to ensure balance are:
   \]
 
 ### **Conclusion**
-The necessary fields **are present in the mapping** and can be used to verify the balance sheet equation. The function `get_us_gaap_human_readable_mapping` can retrieve alternative representations of these concepts from the taxonomy, ensuring consistency across financial reports.
+The necessary fields **are present in the mapping** and can be used to verify the balance sheet equation. The function `distill_us_gaap_fundamental_concepts` can retrieve alternative representations of these concepts from the taxonomy, ensuring consistency across financial reports.

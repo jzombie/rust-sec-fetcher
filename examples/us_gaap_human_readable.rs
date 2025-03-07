@@ -1,8 +1,8 @@
-use sec_fetcher::accessor::get_us_gaap_human_readable_mapping;
+use sec_fetcher::accessor::distill_us_gaap_fundamental_concepts;
 
 pub fn main() {
     println!(
         "{:?}",
-        get_us_gaap_human_readable_mapping("LiabilitiesAndPartnersCapital")
+        distill_us_gaap_fundamental_concepts("LiabilitiesAndPartnersCapital")
     );
 }

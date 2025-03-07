@@ -1,5 +1,5 @@
 mod get_cik_by_ticker_symbol;
 pub use get_cik_by_ticker_symbol::get_cik_by_ticker_symbol;
 
-mod get_us_gaap_human_readable_mapping;
-pub use get_us_gaap_human_readable_mapping::get_us_gaap_human_readable_mapping;
+mod distill_us_gaap_fundamental_concepts;
+pub use distill_us_gaap_fundamental_concepts::distill_us_gaap_fundamental_concepts;

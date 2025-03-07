@@ -450,11 +450,11 @@ static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<Fundamen
 ///
 /// # Example
 /// ```
-/// use sec_fetcher::accessor::get_us_gaap_human_readable_mapping;
+/// use sec_fetcher::accessor::distill_us_gaap_fundamental_concepts;
 /// use sec_fetcher::enums::FundamentalConcept;
 ///
 /// fn main() {
-///     let result = get_us_gaap_human_readable_mapping("AssetsCurrent");
+///     let result = distill_us_gaap_fundamental_concepts("AssetsCurrent");
 ///
 ///     assert_eq!(
 ///         result,
@@ -465,7 +465,7 @@ static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<Fundamen
 ///     );
 /// }
 /// ```
-pub fn get_us_gaap_human_readable_mapping(us_gaap_key: &str) -> Option<Vec<FundamentalConcept>> {
+pub fn distill_us_gaap_fundamental_concepts(us_gaap_key: &str) -> Option<Vec<FundamentalConcept>> {
     let map_inverted = &US_GAAP_MAPPING_INVERTED;
     let map_order = &US_GAAP_MAPPING; // Preserve Try Order from US_GAAP_MAPPING
 

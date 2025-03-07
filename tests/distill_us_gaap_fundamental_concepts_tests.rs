@@ -1,14 +1,14 @@
-use sec_fetcher::{accessor::get_us_gaap_human_readable_mapping, enums::FundamentalConcept};
+use sec_fetcher::{accessor::distill_us_gaap_fundamental_concepts, enums::FundamentalConcept};
 
 #[test]
 fn test_assets() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("Assets"),
+        distill_us_gaap_fundamental_concepts("Assets"),
         Some(vec![FundamentalConcept::Assets])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("AssetsCurrent"),
+        distill_us_gaap_fundamental_concepts("AssetsCurrent"),
         Some(vec![
             FundamentalConcept::CurrentAssets,
             FundamentalConcept::Assets
@@ -19,7 +19,7 @@ fn test_assets() {
 #[test]
 fn test_benefits_costs_expenses() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("BenefitsLossesAndExpenses"),
+        distill_us_gaap_fundamental_concepts("BenefitsLossesAndExpenses"),
         Some(vec![
             FundamentalConcept::BenefitsCostsExpenses,
             FundamentalConcept::CostsAndExpenses
@@ -30,7 +30,7 @@ fn test_benefits_costs_expenses() {
 #[test]
 fn test_commitments_and_contingencies() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("CommitmentsAndContingencies"),
+        distill_us_gaap_fundamental_concepts("CommitmentsAndContingencies"),
         Some(vec![FundamentalConcept::CommitmentsAndContingencies])
     );
 }
@@ -38,14 +38,14 @@ fn test_commitments_and_contingencies() {
 #[test]
 fn test_comprehensive_income_loss() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "ComprehensiveIncomeNetOfTaxIncludingPortionAttributableToNoncontrollingInterest"
         ),
         Some(vec![FundamentalConcept::ComprehensiveIncomeLoss])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("ComprehensiveIncomeNetOfTax"),
+        distill_us_gaap_fundamental_concepts("ComprehensiveIncomeNetOfTax"),
         Some(vec![
             FundamentalConcept::ComprehensiveIncomeLossAttributableToParent,
             FundamentalConcept::ComprehensiveIncomeLoss,
@@ -56,7 +56,7 @@ fn test_comprehensive_income_loss() {
 #[test]
 fn test_comprehensive_income_loss_attributable_to_noncontrolling_interest() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "ComprehensiveIncomeNetOfTaxAttributableToNoncontrollingInterest"
         ),
         Some(vec![
@@ -68,7 +68,7 @@ fn test_comprehensive_income_loss_attributable_to_noncontrolling_interest() {
 #[test]
 fn test_comprehensive_income_loss_attributable_to_parent() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("ComprehensiveIncomeNetOfTax"),
+        distill_us_gaap_fundamental_concepts("ComprehensiveIncomeNetOfTax"),
         Some(vec![
             FundamentalConcept::ComprehensiveIncomeLossAttributableToParent,
             FundamentalConcept::ComprehensiveIncomeLoss,
@@ -79,34 +79,34 @@ fn test_comprehensive_income_loss_attributable_to_parent() {
 #[test]
 fn test_cost_of_revenue() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("CostOfRevenue"),
+        distill_us_gaap_fundamental_concepts("CostOfRevenue"),
         Some(vec![FundamentalConcept::CostOfRevenue])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("CostOfGoodsAndServicesSold"),
+        distill_us_gaap_fundamental_concepts("CostOfGoodsAndServicesSold"),
         Some(vec![FundamentalConcept::CostOfRevenue])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("CostOfServices"),
+        distill_us_gaap_fundamental_concepts("CostOfServices"),
         Some(vec![FundamentalConcept::CostOfRevenue])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("CostOfGoodsSold"),
+        distill_us_gaap_fundamental_concepts("CostOfGoodsSold"),
         Some(vec![FundamentalConcept::CostOfRevenue])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "CostOfGoodsSoldExcludingDepreciationDepletionAndAmortization"
         ),
         Some(vec![FundamentalConcept::CostOfRevenue])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("CostOfGoodsSoldElectric"),
+        distill_us_gaap_fundamental_concepts("CostOfGoodsSoldElectric"),
         Some(vec![FundamentalConcept::CostOfRevenue])
     );
 }
@@ -114,12 +114,12 @@ fn test_cost_of_revenue() {
 #[test]
 fn test_costs_and_expenses() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("CostsAndExpenses"),
+        distill_us_gaap_fundamental_concepts("CostsAndExpenses"),
         Some(vec![FundamentalConcept::CostsAndExpenses])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("BenefitsLossesAndExpenses"),
+        distill_us_gaap_fundamental_concepts("BenefitsLossesAndExpenses"),
         Some(vec![
             FundamentalConcept::BenefitsCostsExpenses,
             FundamentalConcept::CostsAndExpenses
@@ -130,7 +130,7 @@ fn test_costs_and_expenses() {
 #[test]
 fn test_current_assets() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("AssetsCurrent"),
+        distill_us_gaap_fundamental_concepts("AssetsCurrent"),
         Some(vec![
             FundamentalConcept::CurrentAssets,
             FundamentalConcept::Assets
@@ -141,7 +141,7 @@ fn test_current_assets() {
 #[test]
 fn test_current_liabilities() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("LiabilitiesCurrent"),
+        distill_us_gaap_fundamental_concepts("LiabilitiesCurrent"),
         Some(vec![FundamentalConcept::CurrentLiabilities])
     );
 }
@@ -149,14 +149,14 @@ fn test_current_liabilities() {
 #[test]
 fn test_equity() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"
         ),
         Some(vec![FundamentalConcept::Equity])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("StockholdersEquity"),
+        distill_us_gaap_fundamental_concepts("StockholdersEquity"),
         Some(vec![
             FundamentalConcept::EquityAttributableToParent,
             FundamentalConcept::Equity
@@ -164,14 +164,14 @@ fn test_equity() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "PartnersCapitalIncludingPortionAttributableToNoncontrollingInterest"
         ),
         Some(vec![FundamentalConcept::Equity])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("PartnersCapital"),
+        distill_us_gaap_fundamental_concepts("PartnersCapital"),
         Some(vec![
             FundamentalConcept::EquityAttributableToParent,
             FundamentalConcept::Equity
@@ -179,12 +179,12 @@ fn test_equity() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("CommonStockholdersEquity"),
+        distill_us_gaap_fundamental_concepts("CommonStockholdersEquity"),
         Some(vec![FundamentalConcept::Equity])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("MembersEquity"),
+        distill_us_gaap_fundamental_concepts("MembersEquity"),
         Some(vec![
             FundamentalConcept::EquityAttributableToParent,
             FundamentalConcept::Equity
@@ -195,63 +195,63 @@ fn test_equity() {
 #[test]
 fn test_equity_attributable_to_noncontrolling_interest() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("MinorityInterest"),
+        distill_us_gaap_fundamental_concepts("MinorityInterest"),
         Some(vec![
             FundamentalConcept::EquityAttributableToNoncontrollingInterest
         ])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("PartnersCapitalAttributableToNoncontrollingInterest"),
+        distill_us_gaap_fundamental_concepts("PartnersCapitalAttributableToNoncontrollingInterest"),
         Some(vec![
             FundamentalConcept::EquityAttributableToNoncontrollingInterest
         ])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("MinorityInterestInLimitedPartnerships"),
+        distill_us_gaap_fundamental_concepts("MinorityInterestInLimitedPartnerships"),
         Some(vec![
             FundamentalConcept::EquityAttributableToNoncontrollingInterest
         ])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("MinorityInterestInOperatingPartnerships"),
+        distill_us_gaap_fundamental_concepts("MinorityInterestInOperatingPartnerships"),
         Some(vec![
             FundamentalConcept::EquityAttributableToNoncontrollingInterest
         ])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("MinorityInterestInPreferredUnitHolders"),
+        distill_us_gaap_fundamental_concepts("MinorityInterestInPreferredUnitHolders"),
         Some(vec![
             FundamentalConcept::EquityAttributableToNoncontrollingInterest
         ])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("MinorityInterestInJointVentures"),
+        distill_us_gaap_fundamental_concepts("MinorityInterestInJointVentures"),
         Some(vec![
             FundamentalConcept::EquityAttributableToNoncontrollingInterest
         ])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("OtherMinorityInterests"),
+        distill_us_gaap_fundamental_concepts("OtherMinorityInterests"),
         Some(vec![
             FundamentalConcept::EquityAttributableToNoncontrollingInterest
         ])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NonredeemableNoncontrollingInterest"),
+        distill_us_gaap_fundamental_concepts("NonredeemableNoncontrollingInterest"),
         Some(vec![
             FundamentalConcept::EquityAttributableToNoncontrollingInterest
         ])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NoncontrollingInterestInVariableInterestEntity"),
+        distill_us_gaap_fundamental_concepts("NoncontrollingInterestInVariableInterestEntity"),
         Some(vec![
             FundamentalConcept::EquityAttributableToNoncontrollingInterest
         ])
@@ -261,7 +261,7 @@ fn test_equity_attributable_to_noncontrolling_interest() {
 #[test]
 fn test_equity_attributable_to_parent() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("StockholdersEquity"),
+        distill_us_gaap_fundamental_concepts("StockholdersEquity"),
         Some(vec![
             FundamentalConcept::EquityAttributableToParent,
             FundamentalConcept::Equity
@@ -269,7 +269,7 @@ fn test_equity_attributable_to_parent() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("PartnersCapital"),
+        distill_us_gaap_fundamental_concepts("PartnersCapital"),
         Some(vec![
             FundamentalConcept::EquityAttributableToParent,
             FundamentalConcept::Equity
@@ -277,7 +277,7 @@ fn test_equity_attributable_to_parent() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("MembersEquity"),
+        distill_us_gaap_fundamental_concepts("MembersEquity"),
         Some(vec![
             FundamentalConcept::EquityAttributableToParent,
             FundamentalConcept::Equity
@@ -288,24 +288,24 @@ fn test_equity_attributable_to_parent() {
 #[test]
 fn test_exchange_gains_losses() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("EffectOfExchangeRateOnCashAndCashEquivalents"),
+        distill_us_gaap_fundamental_concepts("EffectOfExchangeRateOnCashAndCashEquivalents"),
         Some(vec![FundamentalConcept::ExchangeGainsLosses])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "EffectOfExchangeRateOnCashAndCashEquivalentsContinuingOperations"
         ),
         Some(vec![FundamentalConcept::ExchangeGainsLosses])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("EffectOfExchangeRateOnCashContinuingOperations"),
+        distill_us_gaap_fundamental_concepts("EffectOfExchangeRateOnCashContinuingOperations"),
         Some(vec![FundamentalConcept::ExchangeGainsLosses])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "EffectOfExchangeRateOnCashAndCashEquivalentsDiscontinuedOperations"
         ),
         Some(vec![FundamentalConcept::ExchangeGainsLosses])
@@ -315,7 +315,7 @@ fn test_exchange_gains_losses() {
 #[test]
 fn test_extraordinary_items_of_income_expense_net_of_tax() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("ExtraordinaryItemNetOfTax"),
+        distill_us_gaap_fundamental_concepts("ExtraordinaryItemNetOfTax"),
         Some(vec![
             FundamentalConcept::ExtraordinaryItemsOfIncomeExpenseNetOfTax
         ])
@@ -325,7 +325,9 @@ fn test_extraordinary_items_of_income_expense_net_of_tax() {
 #[test]
 fn test_gain_loss_on_sale_properties_net_tax() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("GainLossOnSaleOfPropertiesNetOfApplicableIncomeTaxes"),
+        distill_us_gaap_fundamental_concepts(
+            "GainLossOnSaleOfPropertiesNetOfApplicableIncomeTaxes"
+        ),
         Some(vec![FundamentalConcept::GainLossOnSalePropertiesNetTax])
     );
 }
@@ -333,7 +335,7 @@ fn test_gain_loss_on_sale_properties_net_tax() {
 #[test]
 fn test_gross_profit() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("GrossProfit"),
+        distill_us_gaap_fundamental_concepts("GrossProfit"),
         Some(vec![FundamentalConcept::GrossProfit])
     );
 }
@@ -341,7 +343,7 @@ fn test_gross_profit() {
 #[test]
 fn test_income_loss_before_equity_method_investments() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"),
+        distill_us_gaap_fundamental_concepts("IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"),
         Some(vec![FundamentalConcept::IncomeLossBeforeEquityMethodInvestments, FundamentalConcept::IncomeLossFromContinuingOperationsBeforeTax])
     );
 }
@@ -349,12 +351,12 @@ fn test_income_loss_before_equity_method_investments() {
 #[test]
 fn test_income_loss_from_continuing_operations_after_tax() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsIncludingPortionAttributableToNoncontrollingInterest"),
+        distill_us_gaap_fundamental_concepts("IncomeLossFromContinuingOperationsIncludingPortionAttributableToNoncontrollingInterest"),
         Some(vec![FundamentalConcept::IncomeLossFromContinuingOperationsAfterTax, FundamentalConcept::NetIncomeLoss])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "IncomeLossBeforeExtraordinaryItemsAndCumulativeEffectOfChangeInAccountingPrinciple"
         ),
         Some(vec![
@@ -363,7 +365,7 @@ fn test_income_loss_from_continuing_operations_after_tax() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperations"),
+        distill_us_gaap_fundamental_concepts("IncomeLossFromContinuingOperations"),
         Some(vec![
             FundamentalConcept::IncomeLossFromContinuingOperationsAfterTax,
             FundamentalConcept::NetIncomeLoss
@@ -374,14 +376,14 @@ fn test_income_loss_from_continuing_operations_after_tax() {
 #[test]
 fn test_income_loss_from_continuing_operations_before_tax() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"),
+        distill_us_gaap_fundamental_concepts("IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"),
         Some(vec![
             FundamentalConcept::IncomeLossFromContinuingOperationsBeforeTax,
         ])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"),
+        distill_us_gaap_fundamental_concepts("IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"),
         Some(vec![
             FundamentalConcept::IncomeLossBeforeEquityMethodInvestments, FundamentalConcept::IncomeLossFromContinuingOperationsBeforeTax,
         ])
@@ -391,14 +393,14 @@ fn test_income_loss_from_continuing_operations_before_tax() {
 #[test]
 fn test_income_loss_from_discontinued_operations_net_of_tax() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("IncomeLossFromDiscontinuedOperationsNetOfTax"),
+        distill_us_gaap_fundamental_concepts("IncomeLossFromDiscontinuedOperationsNetOfTax"),
         Some(vec![
             FundamentalConcept::IncomeLossFromDiscontinuedOperationsNetOfTax
         ])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "DiscontinuedOperationGainLossOnDisposalOfDiscontinuedOperationNetOfTax"
         ),
         Some(vec![
@@ -407,7 +409,7 @@ fn test_income_loss_from_discontinued_operations_net_of_tax() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "IncomeLossFromDiscontinuedOperationsNetOfTaxAttributableToReportingEntity"
         ),
         Some(vec![
@@ -419,7 +421,7 @@ fn test_income_loss_from_discontinued_operations_net_of_tax() {
 #[test]
 fn test_income_loss_from_equity_method_investments() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("IncomeLossFromEquityMethodInvestments"),
+        distill_us_gaap_fundamental_concepts("IncomeLossFromEquityMethodInvestments"),
         Some(vec![
             FundamentalConcept::IncomeLossFromEquityMethodInvestments
         ])
@@ -429,7 +431,7 @@ fn test_income_loss_from_equity_method_investments() {
 #[test]
 fn test_income_tax_expense_benefit() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("IncomeTaxExpenseBenefit"),
+        distill_us_gaap_fundamental_concepts("IncomeTaxExpenseBenefit"),
         Some(vec![
             FundamentalConcept::IncomeStatementStartPeriodYearToDate,
             FundamentalConcept::IncomeTaxExpenseBenefit
@@ -437,7 +439,7 @@ fn test_income_tax_expense_benefit() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("IncomeTaxExpenseBenefitContinuingOperations"),
+        distill_us_gaap_fundamental_concepts("IncomeTaxExpenseBenefitContinuingOperations"),
         Some(vec![
             FundamentalConcept::IncomeStatementStartPeriodYearToDate,
             FundamentalConcept::IncomeTaxExpenseBenefit
@@ -445,7 +447,7 @@ fn test_income_tax_expense_benefit() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("FederalHomeLoanBankAssessments"),
+        distill_us_gaap_fundamental_concepts("FederalHomeLoanBankAssessments"),
         Some(vec![
             FundamentalConcept::IncomeStatementStartPeriodYearToDate,
             FundamentalConcept::IncomeTaxExpenseBenefit
@@ -453,7 +455,7 @@ fn test_income_tax_expense_benefit() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("CurrentIncomeTaxExpenseBenefit"),
+        distill_us_gaap_fundamental_concepts("CurrentIncomeTaxExpenseBenefit"),
         Some(vec![
             FundamentalConcept::IncomeStatementStartPeriodYearToDate,
             FundamentalConcept::IncomeTaxExpenseBenefit
@@ -464,7 +466,7 @@ fn test_income_tax_expense_benefit() {
 #[test]
 fn test_interest_and_debt_expense() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("InterestAndDebtExpense"),
+        distill_us_gaap_fundamental_concepts("InterestAndDebtExpense"),
         Some(vec![FundamentalConcept::InterestAndDebtExpense])
     );
 }
@@ -472,7 +474,7 @@ fn test_interest_and_debt_expense() {
 #[test]
 fn test_interest_and_divident_income_operating() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("InterestAndDividendIncomeOperating"),
+        distill_us_gaap_fundamental_concepts("InterestAndDividendIncomeOperating"),
         Some(vec![
             FundamentalConcept::InterestAndDividendIncomeOperating,
             FundamentalConcept::Revenues
@@ -483,7 +485,7 @@ fn test_interest_and_divident_income_operating() {
 #[test]
 fn test_interest_income_expense_after_provision_for_losses() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("InterestIncomeExpenseAfterProvisionForLoanLoss"),
+        distill_us_gaap_fundamental_concepts("InterestIncomeExpenseAfterProvisionForLoanLoss"),
         Some(vec![
             FundamentalConcept::InterestIncomeExpenseAfterProvisionForLosses
         ])
@@ -493,7 +495,7 @@ fn test_interest_income_expense_after_provision_for_losses() {
 #[test]
 fn test_interest_income_expense_operating_net() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("InterestIncomeExpenseNet"),
+        distill_us_gaap_fundamental_concepts("InterestIncomeExpenseNet"),
         Some(vec![FundamentalConcept::InterestIncomeExpenseOperatingNet])
     );
 }
@@ -501,7 +503,7 @@ fn test_interest_income_expense_operating_net() {
 #[test]
 fn test_liabilities() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("Liabilities"),
+        distill_us_gaap_fundamental_concepts("Liabilities"),
         Some(vec![FundamentalConcept::Liabilities])
     );
 }
@@ -509,12 +511,12 @@ fn test_liabilities() {
 #[test]
 fn test_liabilities_and_equity() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("LiabilitiesAndStockholdersEquity"),
+        distill_us_gaap_fundamental_concepts("LiabilitiesAndStockholdersEquity"),
         Some(vec![FundamentalConcept::LiabilitiesAndEquity])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("LiabilitiesAndPartnersCapital"),
+        distill_us_gaap_fundamental_concepts("LiabilitiesAndPartnersCapital"),
         Some(vec![FundamentalConcept::LiabilitiesAndEquity])
     );
 }
@@ -522,24 +524,24 @@ fn test_liabilities_and_equity() {
 #[test]
 fn test_nature_of_operations() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NatureOfOperations"),
+        distill_us_gaap_fundamental_concepts("NatureOfOperations"),
         Some(vec![FundamentalConcept::NatureOfOperations])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("BusinessDescriptionAndBasisOfPresentationTextBlock"),
+        distill_us_gaap_fundamental_concepts("BusinessDescriptionAndBasisOfPresentationTextBlock"),
         Some(vec![FundamentalConcept::NatureOfOperations])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "OrganizationConsolidationAndPresentationOfFinancialStatementsDisclosureTextBlock"
         ),
         Some(vec![FundamentalConcept::NatureOfOperations])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("OrganizationConsolidationBasisOfPresentationBusinessDescriptionAndAccountingPoliciesTextBlock"),
+        distill_us_gaap_fundamental_concepts("OrganizationConsolidationBasisOfPresentationBusinessDescriptionAndAccountingPoliciesTextBlock"),
         Some(vec![FundamentalConcept::NatureOfOperations])
     );
 }
@@ -547,17 +549,17 @@ fn test_nature_of_operations() {
 #[test]
 fn test_net_cash_flow() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("CashAndCashEquivalentsPeriodIncreaseDecrease"),
+        distill_us_gaap_fundamental_concepts("CashAndCashEquivalentsPeriodIncreaseDecrease"),
         Some(vec![FundamentalConcept::NetCashFlow])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("CashPeriodIncreaseDecrease"),
+        distill_us_gaap_fundamental_concepts("CashPeriodIncreaseDecrease"),
         Some(vec![FundamentalConcept::NetCashFlow])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInContinuingOperations"),
+        distill_us_gaap_fundamental_concepts("NetCashProvidedByUsedInContinuingOperations"),
         Some(vec![
             FundamentalConcept::NetCashFlowContinuing,
             FundamentalConcept::NetCashFlow
@@ -568,7 +570,7 @@ fn test_net_cash_flow() {
 #[test]
 fn test_net_cash_flow_continuing() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInContinuingOperations"),
+        distill_us_gaap_fundamental_concepts("NetCashProvidedByUsedInContinuingOperations"),
         Some(vec![
             FundamentalConcept::NetCashFlowContinuing,
             FundamentalConcept::NetCashFlow
@@ -579,7 +581,7 @@ fn test_net_cash_flow_continuing() {
 #[test]
 fn test_net_cash_flow_discontinued() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInDiscontinuedOperations"),
+        distill_us_gaap_fundamental_concepts("NetCashProvidedByUsedInDiscontinuedOperations"),
         Some(vec![FundamentalConcept::NetCashFlowDiscontinued])
     );
 }
@@ -587,7 +589,7 @@ fn test_net_cash_flow_discontinued() {
 #[test]
 fn test_net_cash_flow_from_financing_activities() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInFinancingActivities"),
+        distill_us_gaap_fundamental_concepts("NetCashProvidedByUsedInFinancingActivities"),
         Some(vec![FundamentalConcept::NetCashFlowFromFinancingActivities])
     );
 }
@@ -595,7 +597,7 @@ fn test_net_cash_flow_from_financing_activities() {
 #[test]
 fn test_net_cash_flow_from_financing_activities_continuing() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "NetCashProvidedByUsedInFinancingActivitiesContinuingOperations"
         ),
         Some(vec![
@@ -607,7 +609,7 @@ fn test_net_cash_flow_from_financing_activities_continuing() {
 #[test]
 fn test_net_cash_flow_from_financing_and_activities_discontinued() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "CashProvidedByUsedInFinancingActivitiesDiscontinuedOperations"
         ),
         Some(vec![
@@ -619,7 +621,7 @@ fn test_net_cash_flow_from_financing_and_activities_discontinued() {
 #[test]
 fn test_net_cash_flow_from_investing_activities() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInInvestingActivities"),
+        distill_us_gaap_fundamental_concepts("NetCashProvidedByUsedInInvestingActivities"),
         Some(vec![FundamentalConcept::NetCashFlowFromInvestingActivities])
     );
 }
@@ -627,7 +629,7 @@ fn test_net_cash_flow_from_investing_activities() {
 #[test]
 fn test_net_cash_flow_from_investing_activities_continuing() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "NetCashProvidedByUsedInInvestingActivitiesContinuingOperations"
         ),
         Some(vec![
@@ -639,7 +641,7 @@ fn test_net_cash_flow_from_investing_activities_continuing() {
 #[test]
 fn test_net_cash_flow_from_investing_activities_discontinued() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "CashProvidedByUsedInInvestingActivitiesDiscontinuedOperations"
         ),
         Some(vec![
@@ -651,7 +653,7 @@ fn test_net_cash_flow_from_investing_activities_discontinued() {
 #[test]
 fn test_net_cash_flow_from_operating_activities() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInOperatingActivities"),
+        distill_us_gaap_fundamental_concepts("NetCashProvidedByUsedInOperatingActivities"),
         Some(vec![FundamentalConcept::NetCashFlowFromOperatingActivities])
     );
 }
@@ -659,7 +661,7 @@ fn test_net_cash_flow_from_operating_activities() {
 #[test]
 fn test_net_cash_flow_from_operating_activities_continuing() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations"
         ),
         Some(vec![
@@ -671,7 +673,7 @@ fn test_net_cash_flow_from_operating_activities_continuing() {
 #[test]
 fn test_net_cash_flow_from_operating_activities_discontinued() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "CashProvidedByUsedInOperatingActivitiesDiscontinuedOperations"
         ),
         Some(vec![
@@ -683,12 +685,12 @@ fn test_net_cash_flow_from_operating_activities_discontinued() {
 #[test]
 fn test_net_income_loss() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("ProfitLoss"),
+        distill_us_gaap_fundamental_concepts("ProfitLoss"),
         Some(vec![FundamentalConcept::NetIncomeLoss])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NetIncomeLoss"),
+        distill_us_gaap_fundamental_concepts("NetIncomeLoss"),
         Some(vec![
             FundamentalConcept::NetIncomeLossAttributableToParent,
             FundamentalConcept::NetIncomeLoss
@@ -696,7 +698,7 @@ fn test_net_income_loss() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NetIncomeLossAvailableToCommonStockholdersBasic"),
+        distill_us_gaap_fundamental_concepts("NetIncomeLossAvailableToCommonStockholdersBasic"),
         Some(vec![
             FundamentalConcept::NetIncomeLossAvailableToCommonStockholdersBasic,
             FundamentalConcept::NetIncomeLoss
@@ -704,7 +706,7 @@ fn test_net_income_loss() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperations"),
+        distill_us_gaap_fundamental_concepts("IncomeLossFromContinuingOperations"),
         Some(vec![
             FundamentalConcept::IncomeLossFromContinuingOperationsAfterTax,
             FundamentalConcept::NetIncomeLoss
@@ -712,12 +714,12 @@ fn test_net_income_loss() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("IncomeLossAttributableToParent"),
+        distill_us_gaap_fundamental_concepts("IncomeLossAttributableToParent"),
         Some(vec![FundamentalConcept::NetIncomeLoss])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsIncludingPortionAttributableToNoncontrollingInterest"),
+        distill_us_gaap_fundamental_concepts("IncomeLossFromContinuingOperationsIncludingPortionAttributableToNoncontrollingInterest"),
         Some(vec![FundamentalConcept::IncomeLossFromContinuingOperationsAfterTax, FundamentalConcept::NetIncomeLoss])
     );
 }
@@ -725,14 +727,14 @@ fn test_net_income_loss() {
 #[test]
 fn test_net_income_loss_attributable_to_noncontrolling_interest() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NetIncomeLossAttributableToNoncontrollingInterest"),
+        distill_us_gaap_fundamental_concepts("NetIncomeLossAttributableToNoncontrollingInterest"),
         Some(vec![
             FundamentalConcept::NetIncomeLossAttributableToNoncontrollingInterest
         ])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "NetIncomeLossAttributableToNonredeemableNoncontrollingInterest"
         ),
         Some(vec![
@@ -741,7 +743,7 @@ fn test_net_income_loss_attributable_to_noncontrolling_interest() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "NetIncomeLossAttributableToRedeemableNoncontrollingInterest"
         ),
         Some(vec![
@@ -750,7 +752,7 @@ fn test_net_income_loss_attributable_to_noncontrolling_interest() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "IncomeLossFromContinuingOperationsAttributableToNoncontrollingEntity"
         ),
         Some(vec![
@@ -762,7 +764,7 @@ fn test_net_income_loss_attributable_to_noncontrolling_interest() {
 #[test]
 fn test_net_income_loss_attributable_to_parent() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NetIncomeLoss"),
+        distill_us_gaap_fundamental_concepts("NetIncomeLoss"),
         Some(vec![
             FundamentalConcept::NetIncomeLossAttributableToParent,
             FundamentalConcept::NetIncomeLoss
@@ -773,7 +775,7 @@ fn test_net_income_loss_attributable_to_parent() {
 #[test]
 fn test_net_income_loss_available_to_common_stockholders_basic() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NetIncomeLossAvailableToCommonStockholdersBasic"),
+        distill_us_gaap_fundamental_concepts("NetIncomeLossAvailableToCommonStockholdersBasic"),
         Some(vec![
             FundamentalConcept::NetIncomeLossAvailableToCommonStockholdersBasic,
             FundamentalConcept::NetIncomeLoss
@@ -784,7 +786,7 @@ fn test_net_income_loss_available_to_common_stockholders_basic() {
 #[test]
 fn test_assets_non_current() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("AssetsNoncurrent"),
+        distill_us_gaap_fundamental_concepts("AssetsNoncurrent"),
         Some(vec![FundamentalConcept::NoncurrentAssets])
     );
 }
@@ -792,7 +794,7 @@ fn test_assets_non_current() {
 #[test]
 fn test_noncurrent_liabilities() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("LiabilitiesNoncurrent"),
+        distill_us_gaap_fundamental_concepts("LiabilitiesNoncurrent"),
         Some(vec![FundamentalConcept::NoncurrentLiabilities])
     );
 }
@@ -800,7 +802,7 @@ fn test_noncurrent_liabilities() {
 #[test]
 fn test_non_interest_expense() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NoninterestExpense"),
+        distill_us_gaap_fundamental_concepts("NoninterestExpense"),
         Some(vec![FundamentalConcept::NoninterestExpense])
     );
 }
@@ -808,7 +810,7 @@ fn test_non_interest_expense() {
 #[test]
 fn test_non_interest_income() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NoninterestIncome"),
+        distill_us_gaap_fundamental_concepts("NoninterestIncome"),
         Some(vec![FundamentalConcept::NoninterestIncome])
     );
 }
@@ -816,7 +818,7 @@ fn test_non_interest_income() {
 #[test]
 fn test_non_operating_income_loss() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NonoperatingIncomeExpense"),
+        distill_us_gaap_fundamental_concepts("NonoperatingIncomeExpense"),
         Some(vec![FundamentalConcept::NonoperatingIncomeLoss])
     );
 }
@@ -824,12 +826,12 @@ fn test_non_operating_income_loss() {
 #[test]
 fn test_operating_expenses() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("OperatingExpenses"),
+        distill_us_gaap_fundamental_concepts("OperatingExpenses"),
         Some(vec![FundamentalConcept::OperatingExpenses])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("OperatingCostsAndExpenses"),
+        distill_us_gaap_fundamental_concepts("OperatingCostsAndExpenses"),
         Some(vec![FundamentalConcept::OperatingExpenses])
     );
 }
@@ -837,7 +839,7 @@ fn test_operating_expenses() {
 #[test]
 fn test_operating_income_loss() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("OperatingIncomeLoss"),
+        distill_us_gaap_fundamental_concepts("OperatingIncomeLoss"),
         Some(vec![FundamentalConcept::OperatingIncomeLoss])
     );
 }
@@ -845,7 +847,7 @@ fn test_operating_income_loss() {
 #[test]
 fn test_other_comprehensive_income_loss() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("OtherComprehensiveIncomeLossNetOfTax"),
+        distill_us_gaap_fundamental_concepts("OtherComprehensiveIncomeLossNetOfTax"),
         Some(vec![FundamentalConcept::OtherComprehensiveIncomeLoss])
     );
 }
@@ -853,7 +855,7 @@ fn test_other_comprehensive_income_loss() {
 #[test]
 fn test_other_operating_income_expenses() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("OtherOperatingIncome"),
+        distill_us_gaap_fundamental_concepts("OtherOperatingIncome"),
         Some(vec![FundamentalConcept::OtherOperatingIncomeExpenses])
     );
 }
@@ -861,7 +863,7 @@ fn test_other_operating_income_expenses() {
 #[test]
 fn test_preferred_stock_dividends_and_other_adjustments() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("PreferredStockDividendsAndOtherAdjustments"),
+        distill_us_gaap_fundamental_concepts("PreferredStockDividendsAndOtherAdjustments"),
         Some(vec![
             FundamentalConcept::PreferredStockDividendsAndOtherAdjustments
         ])
@@ -871,7 +873,7 @@ fn test_preferred_stock_dividends_and_other_adjustments() {
 #[test]
 fn test_provision_for_loan_lease_and_other_losses() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("ProvisionForLoanLeaseAndOtherLosses"),
+        distill_us_gaap_fundamental_concepts("ProvisionForLoanLeaseAndOtherLosses"),
         Some(vec![
             FundamentalConcept::ProvisionForLoanLeaseAndOtherLosses
         ])
@@ -881,33 +883,35 @@ fn test_provision_for_loan_lease_and_other_losses() {
 #[test]
 fn test_redeemable_noncontrolling_interest() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("RedeemableNoncontrollingInterestEquityCarryingAmount"),
+        distill_us_gaap_fundamental_concepts(
+            "RedeemableNoncontrollingInterestEquityCarryingAmount"
+        ),
         Some(vec![FundamentalConcept::RedeemableNoncontrollingInterest])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "RedeemableNoncontrollingInterestEquityCommonCarryingAmount"
         ),
         Some(vec![FundamentalConcept::RedeemableNoncontrollingInterest])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "RedeemableNoncontrollingInterestEquityPreferredCarryingAmount"
         ),
         Some(vec![FundamentalConcept::RedeemableNoncontrollingInterest])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "RedeemableNoncontrollingInterestEquityOtherCarryingAmount"
         ),
         Some(vec![FundamentalConcept::RedeemableNoncontrollingInterest])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("RedeemableNoncontrollingInterestEquityFairValue"),
+        distill_us_gaap_fundamental_concepts("RedeemableNoncontrollingInterestEquityFairValue"),
         Some(vec![FundamentalConcept::RedeemableNoncontrollingInterest])
     );
 }
@@ -915,31 +919,31 @@ fn test_redeemable_noncontrolling_interest() {
 #[test]
 fn test_research_and_development() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("ResearchAndDevelopmentExpense"),
+        distill_us_gaap_fundamental_concepts("ResearchAndDevelopmentExpense"),
         Some(vec![FundamentalConcept::ResearchAndDevelopment])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "ResearchAndDevelopmentExpenseExcludingAcquiredInProcessCost"
         ),
         Some(vec![FundamentalConcept::ResearchAndDevelopment])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "ResearchAndDevelopmentExpenseSoftwareExcludingAcquiredInProcessCost"
         ),
         Some(vec![FundamentalConcept::ResearchAndDevelopment])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("ResearchAndDevelopmentInProcess"),
+        distill_us_gaap_fundamental_concepts("ResearchAndDevelopmentInProcess"),
         Some(vec![FundamentalConcept::ResearchAndDevelopment])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "ResearchAndDevelopmentAssetAcquiredOtherThanThroughBusinessCombinationWrittenOff"
         ),
         Some(vec![FundamentalConcept::ResearchAndDevelopment])
@@ -949,27 +953,27 @@ fn test_research_and_development() {
 #[test]
 fn test_revenues() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("Revenues"),
+        distill_us_gaap_fundamental_concepts("Revenues"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("SalesRevenueNet"),
+        distill_us_gaap_fundamental_concepts("SalesRevenueNet"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("SalesRevenueServicesNet"),
+        distill_us_gaap_fundamental_concepts("SalesRevenueServicesNet"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("SalesRevenueGoodsNet"),
+        distill_us_gaap_fundamental_concepts("SalesRevenueGoodsNet"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("RevenuesNetOfInterestExpense"),
+        distill_us_gaap_fundamental_concepts("RevenuesNetOfInterestExpense"),
         Some(vec![
             FundamentalConcept::RevenuesNetInterestExpense,
             FundamentalConcept::Revenues
@@ -977,12 +981,12 @@ fn test_revenues() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("HealthCareOrganizationRevenue"),
+        distill_us_gaap_fundamental_concepts("HealthCareOrganizationRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("InterestAndDividendIncomeOperating"),
+        distill_us_gaap_fundamental_concepts("InterestAndDividendIncomeOperating"),
         Some(vec![
             FundamentalConcept::InterestAndDividendIncomeOperating,
             FundamentalConcept::Revenues
@@ -990,174 +994,174 @@ fn test_revenues() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("RealEstateRevenueNet"),
+        distill_us_gaap_fundamental_concepts("RealEstateRevenueNet"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("RevenueMineralSales"),
+        distill_us_gaap_fundamental_concepts("RevenueMineralSales"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("OilAndGasRevenue"),
+        distill_us_gaap_fundamental_concepts("OilAndGasRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("FinancialServicesRevenue"),
+        distill_us_gaap_fundamental_concepts("FinancialServicesRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("RegulatedAndUnregulatedOperatingRevenue"),
+        distill_us_gaap_fundamental_concepts("RegulatedAndUnregulatedOperatingRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("ShippingAndHandlingRevenue"),
+        distill_us_gaap_fundamental_concepts("ShippingAndHandlingRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("SalesRevenueFromEnergyCommoditiesAndServices"),
+        distill_us_gaap_fundamental_concepts("SalesRevenueFromEnergyCommoditiesAndServices"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("PhaseInPlanAmountOfCapitalizedCostsRecovered"),
+        distill_us_gaap_fundamental_concepts("PhaseInPlanAmountOfCapitalizedCostsRecovered"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("SecondaryProcessingRevenue"),
+        distill_us_gaap_fundamental_concepts("SecondaryProcessingRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("RevenueSteamProductsAndServices"),
+        distill_us_gaap_fundamental_concepts("RevenueSteamProductsAndServices"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("RevenueFromLeasedAndOwnedHotels"),
+        distill_us_gaap_fundamental_concepts("RevenueFromLeasedAndOwnedHotels"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("FranchisorRevenue"),
+        distill_us_gaap_fundamental_concepts("FranchisorRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("SubscriptionRevenue"),
+        distill_us_gaap_fundamental_concepts("SubscriptionRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("AdvertisingRevenue"),
+        distill_us_gaap_fundamental_concepts("AdvertisingRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("AdmissionsRevenue"),
+        distill_us_gaap_fundamental_concepts("AdmissionsRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "RevenueFromEnrollmentAndRegistrationFeesExcludingHospitalityEnterprises"
         ),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("MembershipDuesRevenueOnGoing"),
+        distill_us_gaap_fundamental_concepts("MembershipDuesRevenueOnGoing"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("LicensesRevenue"),
+        distill_us_gaap_fundamental_concepts("LicensesRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("RoyaltyRevenue"),
+        distill_us_gaap_fundamental_concepts("RoyaltyRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("SalesOfOilAndGasProspects"),
+        distill_us_gaap_fundamental_concepts("SalesOfOilAndGasProspects"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("ClearingFeesRevenue"),
+        distill_us_gaap_fundamental_concepts("ClearingFeesRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("ReimbursementRevenue"),
+        distill_us_gaap_fundamental_concepts("ReimbursementRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("RevenueFromGrants"),
+        distill_us_gaap_fundamental_concepts("RevenueFromGrants"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("RevenueOtherManufacturedProducts"),
+        distill_us_gaap_fundamental_concepts("RevenueOtherManufacturedProducts"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("ConstructionMaterialsRevenue"),
+        distill_us_gaap_fundamental_concepts("ConstructionMaterialsRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("TimberRevenue"),
+        distill_us_gaap_fundamental_concepts("TimberRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("RecyclingRevenue"),
+        distill_us_gaap_fundamental_concepts("RecyclingRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("OtherSalesRevenueNet"),
+        distill_us_gaap_fundamental_concepts("OtherSalesRevenueNet"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("SaleOfTrustAssetsToPayExpenses"),
+        distill_us_gaap_fundamental_concepts("SaleOfTrustAssetsToPayExpenses"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("PassengerRevenue"),
+        distill_us_gaap_fundamental_concepts("PassengerRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("VehicleTollRevenue"),
+        distill_us_gaap_fundamental_concepts("VehicleTollRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("CargoAndFreightRevenue"),
+        distill_us_gaap_fundamental_concepts("CargoAndFreightRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("NetInvestmentIncome"),
+        distill_us_gaap_fundamental_concepts("NetInvestmentIncome"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("RevenuesExcludingInterestAndDividends"),
+        distill_us_gaap_fundamental_concepts("RevenuesExcludingInterestAndDividends"),
         Some(vec![
             FundamentalConcept::RevenuesExcludingInterestAndDividends,
             FundamentalConcept::Revenues
@@ -1165,7 +1169,7 @@ fn test_revenues() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("InvestmentBankingRevenue"),
+        distill_us_gaap_fundamental_concepts("InvestmentBankingRevenue"),
         Some(vec![
             FundamentalConcept::RevenuesExcludingInterestAndDividends,
             FundamentalConcept::Revenues
@@ -1173,12 +1177,12 @@ fn test_revenues() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("UnderwritingIncomeLoss"),
+        distill_us_gaap_fundamental_concepts("UnderwritingIncomeLoss"),
         Some(vec![FundamentalConcept::Revenues])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("ElectricUtilityRevenue"),
+        distill_us_gaap_fundamental_concepts("ElectricUtilityRevenue"),
         Some(vec![FundamentalConcept::Revenues])
     );
 }
@@ -1186,7 +1190,7 @@ fn test_revenues() {
 #[test]
 fn test_revenues_excluding_interest_and_dividends() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("RevenuesExcludingInterestAndDividends"),
+        distill_us_gaap_fundamental_concepts("RevenuesExcludingInterestAndDividends"),
         Some(vec![
             FundamentalConcept::RevenuesExcludingInterestAndDividends,
             FundamentalConcept::Revenues
@@ -1194,14 +1198,14 @@ fn test_revenues_excluding_interest_and_dividends() {
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("BrokerageCommissionsRevenue"),
+        distill_us_gaap_fundamental_concepts("BrokerageCommissionsRevenue"),
         Some(vec![
             FundamentalConcept::RevenuesExcludingInterestAndDividends
         ])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("InvestmentBankingRevenue"),
+        distill_us_gaap_fundamental_concepts("InvestmentBankingRevenue"),
         Some(vec![
             FundamentalConcept::RevenuesExcludingInterestAndDividends,
             FundamentalConcept::Revenues
@@ -1212,7 +1216,7 @@ fn test_revenues_excluding_interest_and_dividends() {
 #[test]
 fn test_revenues_net_interest_expense() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping("RevenuesNetOfInterestExpense"),
+        distill_us_gaap_fundamental_concepts("RevenuesNetOfInterestExpense"),
         Some(vec![
             FundamentalConcept::RevenuesNetInterestExpense,
             FundamentalConcept::Revenues
@@ -1223,46 +1227,48 @@ fn test_revenues_net_interest_expense() {
 #[test]
 fn test_temporary_equity() {
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "TemporaryEquityCarryingAmountIncludingPortionAttributableToNoncontrollingInterests"
         ),
         Some(vec![FundamentalConcept::TemporaryEquity])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("TemporaryEquityRedemptionValue"),
+        distill_us_gaap_fundamental_concepts("TemporaryEquityRedemptionValue"),
         Some(vec![FundamentalConcept::TemporaryEquity])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("RedeemablePreferredStockCarryingAmount"),
+        distill_us_gaap_fundamental_concepts("RedeemablePreferredStockCarryingAmount"),
         Some(vec![FundamentalConcept::TemporaryEquity])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("TemporaryEquityCarryingAmount"),
+        distill_us_gaap_fundamental_concepts("TemporaryEquityCarryingAmount"),
         Some(vec![FundamentalConcept::TemporaryEquity])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("TemporaryEquityValueExcludingAdditionalPaidInCapital"),
+        distill_us_gaap_fundamental_concepts(
+            "TemporaryEquityValueExcludingAdditionalPaidInCapital"
+        ),
         Some(vec![FundamentalConcept::TemporaryEquity])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("TemporaryEquityCarryingAmountAttributableToParent"),
+        distill_us_gaap_fundamental_concepts("TemporaryEquityCarryingAmountAttributableToParent"),
         Some(vec![FundamentalConcept::TemporaryEquity])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping(
+        distill_us_gaap_fundamental_concepts(
             "TemporaryEquityCarryingAmountAttributableToNoncontrollingInterest"
         ),
         Some(vec![FundamentalConcept::TemporaryEquity])
     );
 
     assert_eq!(
-        get_us_gaap_human_readable_mapping("TemporaryEquityLiquidationPreference"),
+        distill_us_gaap_fundamental_concepts("TemporaryEquityLiquidationPreference"),
         Some(vec![FundamentalConcept::TemporaryEquity])
     );
 }
