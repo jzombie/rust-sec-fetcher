@@ -1,43 +1,45 @@
-use crate::utils::invert_multivalue_indexmap;
+use crate::{enums::FundamentalConcept, utils::invert_multivalue_indexmap};
 use indexmap::IndexMap;
 use once_cell::sync::Lazy;
 
-pub type FundamentalConceptName = &'static str;
 pub type TaxonomyConceptName = &'static str;
 
 // Human-readable mapping: http://www.xbrlsite.com/2014/Reference/Mapping.pdf
-static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConceptName>>> =
-    Lazy::new(|| {
+static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConcept, Vec<TaxonomyConceptName>>> = Lazy::new(
+    || {
         let mut map = IndexMap::new();
 
         // Entries are arranged by `Try Order` ascending
 
-        map.insert("Assets", vec!["Assets", "AssetsCurrent"]);
-        map.insert("BenefitsCostsExpenses", vec!["BenefitsLossesAndExpenses"]);
+        map.insert(FundamentalConcept::Assets, vec!["Assets", "AssetsCurrent"]);
         map.insert(
-            "CommitmentsAndContingencies",
+            FundamentalConcept::BenefitsCostsExpenses,
+            vec!["BenefitsLossesAndExpenses"],
+        );
+        map.insert(
+            FundamentalConcept::CommitmentsAndContingencies,
             vec!["CommitmentsAndContingencies"],
         );
         map.insert(
-            "ComprehensiveIncomeLoss",
+            FundamentalConcept::ComprehensiveIncomeLoss,
             vec![
                 "ComprehensiveIncomeNetOfTaxIncludingPortionAttributableToNoncontrollingInterest",
                 "ComprehensiveIncomeNetOfTax",
             ],
         );
         map.insert(
-            "ComprehensiveIncomeLossAttributableToNoncontrollingInterest",
+            FundamentalConcept::ComprehensiveIncomeLossAttributableToNoncontrollingInterest,
             vec![
                 "ComprehensiveIncomeNetOfTaxAttributableToNoncontrollingInterest",
                 "ComprehensiveIncome",
             ],
         );
         map.insert(
-            "ComprehensiveIncomeLossAttributableToParent",
+            FundamentalConcept::ComprehensiveIncomeLossAttributableToParent,
             vec!["ComprehensiveIncomeNetOfTax"],
         );
         map.insert(
-            "CostOfRevenue",
+            FundamentalConcept::CostOfRevenue,
             vec![
                 "CostOfRevenue",
                 "CostOfGoodsAndServicesSold",
@@ -48,13 +50,16 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
             ],
         );
         map.insert(
-            "CostsAndExpenses",
+            FundamentalConcept::CostsAndExpenses,
             vec!["CostsAndExpenses", "BenefitsLossesAndExpenses"],
         );
-        map.insert("CurrentAssets", vec!["AssetsCurrent"]);
-        map.insert("CurrentLiabilities", vec!["LiabilitiesCurrent"]);
+        map.insert(FundamentalConcept::CurrentAssets, vec!["AssetsCurrent"]);
         map.insert(
-            "Equity",
+            FundamentalConcept::CurrentLiabilities,
+            vec!["LiabilitiesCurrent"],
+        );
+        map.insert(
+            FundamentalConcept::Equity,
             vec![
                 "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
                 "StockholdersEquity",
@@ -65,7 +70,7 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
             ],
         );
         map.insert(
-            "EquityAttributableToNoncontrollingInterest",
+            FundamentalConcept::EquityAttributableToNoncontrollingInterest,
             vec![
                 "MinorityInterest",
                 "PartnersCapitalAttributableToNoncontrollingInterest",
@@ -79,11 +84,11 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
             ],
         );
         map.insert(
-            "EquityAttributableToParent",
+            FundamentalConcept::EquityAttributableToParent,
             vec!["StockholdersEquity", "PartnersCapital", "MembersEquity"],
         );
         map.insert(
-            "ExchangeGainsLosses",
+            FundamentalConcept::ExchangeGainsLosses,
             vec![
                 "EffectOfExchangeRateOnCashAndCashEquivalents",
                 "EffectOfExchangeRateOnCashAndCashEquivalentsContinuingOperations",
@@ -92,26 +97,26 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
             ],
         );
         map.insert(
-            "ExtraordinaryItemsOfIncomeExpenseNetOfTax",
+            FundamentalConcept::ExtraordinaryItemsOfIncomeExpenseNetOfTax,
             vec!["ExtraordinaryItemNetOfTax"],
         );
         map.insert(
-            "GainLossOnSalePropertiesNetTax",
+            FundamentalConcept::GainLossOnSalePropertiesNetTax,
             vec!["GainLossOnSaleOfPropertiesNetOfApplicableIncomeTaxes"],
         );
-        map.insert("GrossProfit", vec!["GrossProfit"]);
-        map.insert("IncomeLossBeforeEquityMethodInvestments", vec!["IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"]);
-        map.insert("IncomeLossFromContinuingOperationsAfterTax", vec![
+        map.insert(FundamentalConcept::GrossProfit, vec!["GrossProfit"]);
+        map.insert(FundamentalConcept::IncomeLossBeforeEquityMethodInvestments, vec!["IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"]);
+        map.insert(FundamentalConcept::IncomeLossFromContinuingOperationsAfterTax, vec![
             "IncomeLossFromContinuingOperationsIncludingPortionAttributableToNoncontrollingInterest",
             "IncomeLossBeforeExtraordinaryItemsAndCumulativeEffectOfChangeInAccountingPrinciple",
             "IncomeLossFromContinuingOperations"
         ]);
-        map.insert("IncomeLossFromContinuingOperationsBeforeTax", vec![
+        map.insert(FundamentalConcept::IncomeLossFromContinuingOperationsBeforeTax, vec![
             "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
             "IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"
         ]);
         map.insert(
-            "IncomeLossFromDiscontinuedOperationsNetOfTax",
+            FundamentalConcept::IncomeLossFromDiscontinuedOperationsNetOfTax,
             vec![
                 "IncomeLossFromDiscontinuedOperationsNetOfTax",
                 "DiscontinuedOperationGainLossOnDisposalOfDiscontinuedOperationNetOfTax",
@@ -119,11 +124,11 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
             ],
         );
         map.insert(
-            "IncomeLossFromEquityMethodInvestments",
+            FundamentalConcept::IncomeLossFromEquityMethodInvestments,
             vec!["IncomeLossFromEquityMethodInvestments"],
         );
         map.insert(
-            "IncomeStatementStartPeriodYearToDate",
+            FundamentalConcept::IncomeStatementStartPeriodYearToDate,
             vec![
                 "IncomeTaxExpenseBenefit",
                 "IncomeTaxExpenseBenefitContinuingOperations",
@@ -132,7 +137,7 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
             ],
         );
         map.insert(
-            "IncomeTaxExpenseBenefit",
+            FundamentalConcept::IncomeTaxExpenseBenefit,
             vec![
                 "IncomeTaxExpenseBenefit",
                 "IncomeTaxExpenseBenefitContinuingOperations",
@@ -140,34 +145,40 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
                 "CurrentIncomeTaxExpenseBenefit",
             ],
         );
-        map.insert("InterestAndDebtExpense", vec!["InterestAndDebtExpense"]);
         map.insert(
-            "InterestAndDividendIncomeOperating",
+            FundamentalConcept::InterestAndDebtExpense,
+            vec!["InterestAndDebtExpense"],
+        );
+        map.insert(
+            FundamentalConcept::InterestAndDividendIncomeOperating,
             vec!["InterestAndDividendIncomeOperating"],
         );
         map.insert(
-            "InterestAndDividendIncomeOperating",
+            FundamentalConcept::InterestAndDividendIncomeOperating,
             vec!["InterestAndDividendIncomeOperating"],
         );
-        map.insert("InterestExpenseOperating", vec!["InterestExpense"]);
         map.insert(
-            "InterestIncomeExpenseAfterProvisionForLosses",
+            FundamentalConcept::InterestExpenseOperating,
+            vec!["InterestExpense"],
+        );
+        map.insert(
+            FundamentalConcept::InterestIncomeExpenseAfterProvisionForLosses,
             vec!["InterestIncomeExpenseAfterProvisionForLoanLoss"],
         );
         map.insert(
-            "InterestIncomeExpenseOperatingNet",
+            FundamentalConcept::InterestIncomeExpenseOperatingNet,
             vec!["InterestIncomeExpenseNet"],
         );
-        map.insert("Liabilities", vec!["Liabilities"]);
+        map.insert(FundamentalConcept::Liabilities, vec!["Liabilities"]);
         map.insert(
-            "LiabilitiesAndEquity",
+            FundamentalConcept::LiabilitiesAndEquity,
             vec![
                 "LiabilitiesAndStockholdersEquity",
                 "LiabilitiesAndPartnersCapital",
             ],
         );
         map.insert(
-        "NatureOfOperations",
+        FundamentalConcept::NatureOfOperations,
         vec![
             "NatureOfOperations",
             "BusinessDescriptionAndBasisOfPresentationTextBlock",
@@ -176,7 +187,7 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
         ],
     );
         map.insert(
-            "NetCashFlow",
+            FundamentalConcept::NetCashFlow,
             vec![
                 "CashAndCashEquivalentsPeriodIncreaseDecrease",
                 "CashPeriodIncreaseDecrease",
@@ -184,51 +195,51 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
             ],
         );
         map.insert(
-            "NetCashFlowContinuing",
+            FundamentalConcept::NetCashFlowContinuing,
             vec!["NetCashProvidedByUsedInContinuingOperations"],
         );
         map.insert(
-            "NetCashFlowDiscontinued",
+            FundamentalConcept::NetCashFlowDiscontinued,
             vec!["NetCashProvidedByUsedInDiscontinuedOperations"],
         );
         map.insert(
-            "NetCashFlowFromFinancingActivities",
+            FundamentalConcept::NetCashFlowFromFinancingActivities,
             vec!["NetCashProvidedByUsedInFinancingActivities"],
         );
         map.insert(
-            "NetCashFlowFromFinancingActivitiesContinuing",
+            FundamentalConcept::NetCashFlowFromFinancingActivitiesContinuing,
             vec!["NetCashProvidedByUsedInFinancingActivitiesContinuingOperations"],
         );
         map.insert(
-            "NetCashFlowFromFinancingActivitiesDiscontinued",
+            FundamentalConcept::NetCashFlowFromFinancingActivitiesDiscontinued,
             vec!["CashProvidedByUsedInFinancingActivitiesDiscontinuedOperations"],
         );
         map.insert(
-            "NetCashFlowFromInvestingActivities",
+            FundamentalConcept::NetCashFlowFromInvestingActivities,
             vec!["NetCashProvidedByUsedInInvestingActivities"],
         );
         map.insert(
-            "NetCashFlowFromInvestingActivitiesContinuing",
+            FundamentalConcept::NetCashFlowFromInvestingActivitiesContinuing,
             vec!["NetCashProvidedByUsedInInvestingActivitiesContinuingOperations"],
         );
         map.insert(
-            "NetCashFlowFromInvestingActivitiesDiscontinued",
+            FundamentalConcept::NetCashFlowFromInvestingActivitiesDiscontinued,
             vec!["CashProvidedByUsedInInvestingActivitiesDiscontinuedOperations"],
         );
         map.insert(
-            "NetCashFlowFromOperatingActivities",
+            FundamentalConcept::NetCashFlowFromOperatingActivities,
             vec!["NetCashProvidedByUsedInOperatingActivities"],
         );
         map.insert(
-            "NetCashFlowFromOperatingActivitiesContinuing",
+            FundamentalConcept::NetCashFlowFromOperatingActivitiesContinuing,
             vec!["NetCashProvidedByUsedInOperatingActivitiesContinuingOperations"],
         );
         map.insert(
-            "NetCashFlowFromOperatingActivitiesDiscontinued",
+            FundamentalConcept::NetCashFlowFromOperatingActivitiesDiscontinued,
             vec!["CashProvidedByUsedInOperatingActivitiesDiscontinuedOperations"],
         );
         map.insert(
-            "NetIncomeLoss",
+            FundamentalConcept::NetIncomeLoss,
             vec![
             "ProfitLoss",
             "NetIncomeLoss",
@@ -239,11 +250,11 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
         ],
         );
         map.insert(
-            "NetIncomeLossAvailableToCommonStockholdersBasic",
+            FundamentalConcept::NetIncomeLossAvailableToCommonStockholdersBasic,
             vec!["NetIncomeLossAvailableToCommonStockholdersBasic"],
         );
         map.insert(
-            "NetIncomeLossAttributableToNoncontrollingInterest",
+            FundamentalConcept::NetIncomeLossAttributableToNoncontrollingInterest,
             vec![
                 "NetIncomeLossAttributableToNoncontrollingInterest",
                 "NetIncomeLossAttributableToNonredeemableNoncontrollingInterest",
@@ -251,32 +262,56 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
                 "IncomeLossFromContinuingOperationsAttributableToNoncontrollingEntity",
             ],
         );
-        map.insert("NetIncomeLossAttributableToParent", vec!["NetIncomeLoss"]);
-        map.insert("NoncurrentAssets", vec!["AssetsNoncurrent"]);
-        map.insert("NoncurrentLiabilities", vec!["LiabilitiesNoncurrent"]);
-        map.insert("NoninterestExpense", vec!["NoninterestExpense"]);
-        map.insert("NoninterestIncome", vec!["NoninterestIncome"]);
-        map.insert("NonoperatingIncomeLoss", vec!["NonoperatingIncomeExpense"]);
         map.insert(
-            "OperatingExpenses",
+            FundamentalConcept::NetIncomeLossAttributableToParent,
+            vec!["NetIncomeLoss"],
+        );
+        map.insert(
+            FundamentalConcept::NoncurrentAssets,
+            vec!["AssetsNoncurrent"],
+        );
+        map.insert(
+            FundamentalConcept::NoncurrentLiabilities,
+            vec!["LiabilitiesNoncurrent"],
+        );
+        map.insert(
+            FundamentalConcept::NoninterestExpense,
+            vec!["NoninterestExpense"],
+        );
+        map.insert(
+            FundamentalConcept::NoninterestIncome,
+            vec!["NoninterestIncome"],
+        );
+        map.insert(
+            FundamentalConcept::NonoperatingIncomeLoss,
+            vec!["NonoperatingIncomeExpense"],
+        );
+        map.insert(
+            FundamentalConcept::OperatingExpenses,
             vec!["OperatingExpenses", "OperatingCostsAndExpenses"],
         );
-        map.insert("OperatingIncomeLoss", vec!["OperatingIncomeLoss"]);
         map.insert(
-            "OtherComprehensiveIncomeLoss",
+            FundamentalConcept::OperatingIncomeLoss,
+            vec!["OperatingIncomeLoss"],
+        );
+        map.insert(
+            FundamentalConcept::OtherComprehensiveIncomeLoss,
             vec!["OtherComprehensiveIncomeLossNetOfTax"],
         );
-        map.insert("OtherOperatingIncomeExpenses", vec!["OtherOperatingIncome"]);
         map.insert(
-            "PreferredStockDividendsAndOtherAdjustments",
+            FundamentalConcept::OtherOperatingIncomeExpenses,
+            vec!["OtherOperatingIncome"],
+        );
+        map.insert(
+            FundamentalConcept::PreferredStockDividendsAndOtherAdjustments,
             vec!["PreferredStockDividendsAndOtherAdjustments"],
         );
         map.insert(
-            "ProvisionForLoanLeaseAndOtherLosses",
+            FundamentalConcept::ProvisionForLoanLeaseAndOtherLosses,
             vec!["ProvisionForLoanLeaseAndOtherLosses"],
         );
         map.insert(
-            "RedeemableNoncontrollingInterest",
+            FundamentalConcept::RedeemableNoncontrollingInterest,
             vec![
                 "RedeemableNoncontrollingInterestEquityCarryingAmount",
                 "RedeemableNoncontrollingInterestEquityCommonCarryingAmount",
@@ -286,7 +321,7 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
             ],
         );
         map.insert(
-            "ResearchAndDevelopment",
+            FundamentalConcept::ResearchAndDevelopment,
             vec![
                 "ResearchAndDevelopmentExpense",
                 "ResearchAndDevelopmentExpenseExcludingAcquiredInProcessCost",
@@ -296,7 +331,7 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
             ],
         );
         map.insert(
-            "Revenues",
+            FundamentalConcept::Revenues,
             vec![
                 "Revenues",
                 "SalesRevenueNet",
@@ -350,7 +385,7 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
             ],
         );
         map.insert(
-            "RevenuesExcludingInterestAndDividends",
+            FundamentalConcept::RevenuesExcludingInterestAndDividends,
             vec![
                 "RevenuesExcludingInterestAndDividends",
                 "BrokerageCommissionsRevenue",
@@ -358,11 +393,11 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
             ],
         );
         map.insert(
-            "RevenuesNetInterestExpense",
+            FundamentalConcept::RevenuesNetInterestExpense,
             vec!["RevenuesNetOfInterestExpense"],
         );
         map.insert(
-            "TemporaryEquity",
+            FundamentalConcept::TemporaryEquity,
             vec![
             "TemporaryEquityCarryingAmountIncludingPortionAttributableToNoncontrollingInterests",
             "TemporaryEquityRedemptionValue",
@@ -376,9 +411,10 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
         );
 
         map
-    });
+    },
+);
 
-static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<FundamentalConceptName>>> =
+static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<FundamentalConcept>>> =
     Lazy::new(|| {
         let map_inverted = invert_multivalue_indexmap(&US_GAAP_MAPPING);
 
@@ -415,6 +451,7 @@ static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<Fundamen
 /// # Example
 /// ```
 /// use sec_fetcher::accessor::get_us_gaap_human_readable_mapping;
+/// use sec_fetcher::enums::FundamentalConcept;
 ///
 /// fn main() {
 ///     let result = get_us_gaap_human_readable_mapping("AssetsCurrent");
@@ -422,20 +459,20 @@ static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<Fundamen
 ///     assert_eq!(
 ///         result,
 ///         Some(vec![
-///             "CurrentAssets",
-///             "Assets",
+///             FundamentalConcept::CurrentAssets,
+///             FundamentalConcept::Assets,
 ///         ])
 ///     );
 /// }
 /// ```
-pub fn get_us_gaap_human_readable_mapping(us_gaap_key: &str) -> Option<Vec<&'static str>> {
+pub fn get_us_gaap_human_readable_mapping(us_gaap_key: &str) -> Option<Vec<FundamentalConcept>> {
     let map_inverted = &US_GAAP_MAPPING_INVERTED;
     let map_order = &US_GAAP_MAPPING; // Preserve Try Order from US_GAAP_MAPPING
 
     if let Some(mut values) = map_inverted.get(us_gaap_key).cloned() {
         if values.len() > 1 {
             // Compute Try Order by finding the first occurrence of `us_gaap_key` in **each fundamental concept's vector**
-            let get_try_order = |concept: &&'static str| -> usize {
+            let get_try_order = |concept: &FundamentalConcept| -> usize {
                 map_order
                     .get(concept) // Get the corresponding vector for the fundamental concept
                     .and_then(|concepts| concepts.iter().position(|&c| c == us_gaap_key)) // Find index inside that vector
@@ -448,7 +485,7 @@ pub fn get_us_gaap_human_readable_mapping(us_gaap_key: &str) -> Option<Vec<&'sta
                 let try_order = get_try_order(concept);
                 // TODO: Debug log
                 println!(
-                    "Concept: {}, Try Order: {}, US-GAAP: {}",
+                    "Concept: {:?}, Try Order: {}, US-GAAP: {}",
                     concept, try_order, us_gaap_key
                 );
             }
@@ -459,7 +496,7 @@ pub fn get_us_gaap_human_readable_mapping(us_gaap_key: &str) -> Option<Vec<&'sta
             values.sort_by_key(|concept| get_try_order(concept));
         }
 
-        Some(values)
+        Some(values) // Returns `Vec<FundamentalConcept>` directly
     } else {
         None
     }
