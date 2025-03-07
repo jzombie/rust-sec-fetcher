@@ -68,21 +68,25 @@ fn parse_nport_xml(xml: &str) -> Result<Vec<Investment>, Box<dyn Error>> {
             }
             Event::Text(ref e) => {
                 if let Some(investment) = &mut current_investment {
-                    let value = e.unescape()?.to_string();
-                    match current_tag.as_str() {
-                        "name" => investment.name = value,
-                        "lei" => investment.lei = value,
-                        "title" => investment.title = value,
-                        "cusip" => investment.cusip = value,
-                        "balance" => investment.balance = value,
-                        "curCd" => investment.cur_cd = value,
-                        "valUSD" => investment.val_usd = value,
-                        "pctVal" => investment.pct_val = value,
-                        "payoffProfile" => investment.payoff_profile = value,
-                        "assetCat" => investment.asset_cat = value,
-                        "issuerCat" => investment.issuer_cat = value,
-                        "invCountry" => investment.inv_country = value,
-                        _ => {}
+                    let value = e.unescape()?.trim().to_string(); // Trim whitespace
+
+                    // Only update if value is not empty (ignores whitespace-only nodes)
+                    if !value.is_empty() {
+                        match current_tag.as_str() {
+                            "name" => investment.name = value,
+                            "lei" => investment.lei = value,
+                            "title" => investment.title = value,
+                            "cusip" => investment.cusip = value,
+                            "balance" => investment.balance = value,
+                            "curCd" => investment.cur_cd = value,
+                            "valUSD" => investment.val_usd = value,
+                            "pctVal" => investment.pct_val = value,
+                            "payoffProfile" => investment.payoff_profile = value,
+                            "assetCat" => investment.asset_cat = value,
+                            "issuerCat" => investment.issuer_cat = value,
+                            "invCountry" => investment.inv_country = value,
+                            _ => {}
+                        }
                     }
                 }
             }
