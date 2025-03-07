@@ -11,6 +11,7 @@ Note: Instead of manually maintaining a SIC list, autogenerate it when doing CIK
 via: https://data.sec.gov/submissions/CIK##########.json
 pub sic: Option<u64>,                // i.e. 3571
 pub sic_description: Option<String>, // i.e. "Electronic Computers"
+```
 
 ```
 "sic": "XXXX"
