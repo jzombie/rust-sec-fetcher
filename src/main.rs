@@ -6,6 +6,7 @@ use network::{
     fetch_sec_tickers, fetch_us_gaap_fundamentals, CredentialManager, CredentialProvider, SecClient,
 };
 mod accessor;
+mod enums;
 mod transform;
 mod utils;
 use polars::prelude::{CsvWriter, SerWriter};
