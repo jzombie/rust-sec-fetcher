@@ -632,3 +632,32 @@ fn test_net_income_loss() {
         Some(vec!["IncomeLossFromContinuingOperationsAfterTax", "NetIncomeLoss"])
     );
 }
+
+#[test]
+fn test_net_income_loss_attributable_to_noncontrolling_interest() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetIncomeLossAttributableToNoncontrollingInterest"),
+        Some(vec!["NetIncomeLossAttributableToNoncontrollingInterest"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "NetIncomeLossAttributableToNonredeemableNoncontrollingInterest"
+        ),
+        Some(vec!["NetIncomeLossAttributableToNoncontrollingInterest"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "NetIncomeLossAttributableToRedeemableNoncontrollingInterest"
+        ),
+        Some(vec!["NetIncomeLossAttributableToNoncontrollingInterest"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "IncomeLossFromContinuingOperationsAttributableToNoncontrollingEntity"
+        ),
+        Some(vec!["NetIncomeLossAttributableToNoncontrollingInterest"])
+    );
+}
