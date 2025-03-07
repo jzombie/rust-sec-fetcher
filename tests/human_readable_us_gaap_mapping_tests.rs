@@ -170,3 +170,51 @@ fn test_equity() {
         Some(vec!["Equity", "EquityAttributableToParent"])
     );
 }
+
+#[test]
+fn test_equity_attributable_to_noncontrolling_interest() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("MinorityInterest"),
+        Some(vec!["EquityAttributableToNoncontrollingInterest"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("PartnersCapitalAttributableToNoncontrollingInterest"),
+        Some(vec!["EquityAttributableToNoncontrollingInterest"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("MinorityInterestInLimitedPartnerships"),
+        Some(vec!["EquityAttributableToNoncontrollingInterest"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("MinorityInterestInOperatingPartnerships"),
+        Some(vec!["EquityAttributableToNoncontrollingInterest"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("MinorityInterestInPreferredUnitHolders"),
+        Some(vec!["EquityAttributableToNoncontrollingInterest"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("MinorityInterestInJointVentures"),
+        Some(vec!["EquityAttributableToNoncontrollingInterest"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OtherMinorityInterests"),
+        Some(vec!["EquityAttributableToNoncontrollingInterest"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NonredeemableNoncontrollingInterest"),
+        Some(vec!["EquityAttributableToNoncontrollingInterest"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NoncontrollingInterestInVariableInterestEntity"),
+        Some(vec!["EquityAttributableToNoncontrollingInterest"])
+    );
+}
