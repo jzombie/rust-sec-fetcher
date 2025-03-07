@@ -8,6 +8,7 @@ use string_replace_all::StringReplaceAll;
 #[derive(Clone, Debug)]
 pub struct CikSubmission {
     pub cik: u64,
+    // TODO: Add `sic` here and provide the ability elsewhere to map to sector and industry
     pub entity_type: Option<String>,
     pub accession_number: String,
     pub accession_number_stripped: String,
