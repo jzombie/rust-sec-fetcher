@@ -680,3 +680,43 @@ fn test_net_income_loss_available_to_common_stockholders_basic() {
         ])
     );
 }
+
+#[test]
+fn test_assets_non_current() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("AssetsNoncurrent"),
+        Some(vec!["NoncurrentAssets"])
+    );
+}
+
+#[test]
+fn test_noncurrent_liabilities() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("LiabilitiesNoncurrent"),
+        Some(vec!["NoncurrentLiabilities"])
+    );
+}
+
+#[test]
+fn test_non_interest_expense() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NoninterestExpense"),
+        Some(vec!["NoninterestExpense"])
+    );
+}
+
+#[test]
+fn test_non_interest_income() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NoninterestIncome"),
+        Some(vec!["NoninterestIncome"])
+    );
+}
+
+#[test]
+fn test_non_operating_income_loss() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NonoperatingIncomeExpense"),
+        Some(vec!["NonoperatingIncomeLoss"])
+    );
+}
