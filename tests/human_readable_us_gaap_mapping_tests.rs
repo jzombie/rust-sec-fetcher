@@ -432,3 +432,11 @@ fn test_interest_income_expense_operating_net() {
         Some(vec!["InterestIncomeExpenseOperatingNet"])
     );
 }
+
+#[test]
+fn test_liabilities() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("Liabilities"),
+        Some(vec!["Liabilities"])
+    );
+}
