@@ -365,3 +365,46 @@ fn test_income_loss_from_equity_method_investments() {
         Some(vec!["IncomeLossFromEquityMethodInvestments",])
     );
 }
+
+#[test]
+fn test_income_tax_expense_benefit() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeTaxExpenseBenefit"),
+        Some(vec![
+            "IncomeStatementStartPeriodYearToDate",
+            "IncomeTaxExpenseBenefit"
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeTaxExpenseBenefitContinuingOperations"),
+        Some(vec![
+            "IncomeStatementStartPeriodYearToDate",
+            "IncomeTaxExpenseBenefit"
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("FederalHomeLoanBankAssessments"),
+        Some(vec![
+            "IncomeStatementStartPeriodYearToDate",
+            "IncomeTaxExpenseBenefit"
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CurrentIncomeTaxExpenseBenefit"),
+        Some(vec![
+            "IncomeStatementStartPeriodYearToDate",
+            "IncomeTaxExpenseBenefit"
+        ])
+    );
+}
+
+#[test]
+fn test_interest_and_debt_expense() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("InterestAndDebtExpense"),
+        Some(vec!["InterestAndDebtExpense"])
+    );
+}
