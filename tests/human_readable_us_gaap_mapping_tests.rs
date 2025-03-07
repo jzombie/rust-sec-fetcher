@@ -122,7 +122,7 @@ fn test_costs_and_expenses() {
 fn test_current_assets() {
     assert_eq!(
         get_us_gaap_human_readable_mapping("AssetsCurrent"),
-        Some(vec!["Assets", "CurrentAssets"])
+        Some(vec!["CurrentAssets", "Assets"])
     );
 }
 
