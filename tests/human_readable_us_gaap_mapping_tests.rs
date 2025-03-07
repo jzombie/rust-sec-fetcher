@@ -64,8 +64,8 @@ fn test_comprehensive_income_loss_attributable_to_parent() {
     assert_eq!(
         get_us_gaap_human_readable_mapping("ComprehensiveIncomeNetOfTax"),
         Some(vec![
-            "ComprehensiveIncomeLoss",
             "ComprehensiveIncomeLossAttributableToParent",
+            "ComprehensiveIncomeLoss",
         ])
     );
 }
