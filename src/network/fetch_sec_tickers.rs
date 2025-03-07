@@ -1,5 +1,5 @@
 use crate::network::SecClient;
-use crate::transformers::format_cik;
+use crate::transformers::cik_to_string;
 use polars::prelude::*;
 use std::error::Error;
 
@@ -20,7 +20,7 @@ pub async fn fetch_sec_tickers(client: &SecClient) -> Result<SecTickersDataFrame
     if let Some(ticker_map) = data.as_object() {
         for (_, ticker_info) in ticker_map.iter() {
             let cik = ticker_info["cik_str"].as_u64().unwrap_or_default();
-            let formatted_cik = format_cik(cik); // Transform CIK to zero-padded format
+            let formatted_cik = cik_to_string(cik); // Transform CIK to zero-padded format
 
             cik_raw_values.push(cik);
             cik_transformed_values.push(formatted_cik);

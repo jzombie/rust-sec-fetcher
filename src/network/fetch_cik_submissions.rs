@@ -1,5 +1,5 @@
 use crate::network::SecClient;
-use crate::transformers::format_cik;
+use crate::transformers::cik_to_string;
 use chrono::NaiveDate;
 use serde_json::Value;
 use std::error::Error;
@@ -52,7 +52,7 @@ pub async fn fetch_cik_submissions(
     sec_client: &SecClient,
     cik: u64,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
-    let formatted_cik = format_cik(cik);
+    let formatted_cik = cik_to_string(cik);
     let url = format!("https://data.sec.gov/submissions/CIK{}.json", formatted_cik);
     let data: Value = sec_client.fetch_json(&url).await?;
 
