@@ -433,6 +433,7 @@ pub fn get_us_gaap_human_readable_mapping(us_gaap_key: &str) -> Option<Vec<&'sta
     let map_order = &US_GAAP_MAPPING; // Preserve Try Order from US_GAAP_MAPPING
 
     if let Some(mut values) = map_inverted.get(us_gaap_key).cloned() {
+        // TODO: Try-order might can be skipped if only one value length
         // Compute Try Order by finding the first occurrence of `us_gaap_key` in **each fundamental concept's vector**
         let get_try_order = |concept: &&'static str| -> usize {
             map_order
@@ -445,8 +446,14 @@ pub fn get_us_gaap_human_readable_mapping(us_gaap_key: &str) -> Option<Vec<&'sta
         // Debugging: Print Correct Try Order
         for concept in &values {
             let try_order = get_try_order(concept);
-            println!("Concept: {}, Try Order: {}", concept, try_order);
+            // TODO: Debug log
+            println!(
+                "Concept: {}, Try Order: {}, US-GAAP: {}",
+                concept, try_order, us_gaap_key
+            );
         }
+        // TODO: Debug log
+        println!("----");
 
         // Sort by Correct Try Order
         values.sort_by_key(|concept| get_try_order(concept));

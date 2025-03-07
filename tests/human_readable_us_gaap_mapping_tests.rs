@@ -9,7 +9,7 @@ fn test_assets() {
 
     assert_eq!(
         get_us_gaap_human_readable_mapping("AssetsCurrent"),
-        Some(vec!["Assets", "CurrentAssets"])
+        Some(vec!["CurrentAssets", "Assets"])
     );
 }
 
@@ -493,7 +493,7 @@ fn test_net_cash_flow() {
 
     assert_eq!(
         get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInContinuingOperations"),
-        Some(vec!["NetCashFlow", "NetCashFlowContinuing"])
+        Some(vec!["NetCashFlowContinuing", "NetCashFlow"])
     );
 }
 
@@ -501,7 +501,6 @@ fn test_net_cash_flow() {
 fn test_net_cash_flow_continuing() {
     assert_eq!(
         get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInContinuingOperations"),
-        // TODO: Ensure this is actually the order of ops
         Some(vec!["NetCashFlowContinuing", "NetCashFlow"])
     );
 }
