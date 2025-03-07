@@ -1,4 +1,4 @@
-pub mod accessor;
+pub mod accessors;
 pub mod enums;
 pub mod fs;
 pub mod network;
