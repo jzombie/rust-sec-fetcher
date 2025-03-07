@@ -100,6 +100,16 @@ impl SecClient {
 
 impl SecClientDataExt for SecClient {
     fn get_user_agent(&self) -> String {
+        // Note: The intention is to check it here vs. during instantiation as
+        // every network path relies on this method, whereas the instance can
+        // be instantiated different ways.
+        if !EmailAddress::is_valid(&self.email) {
+            // This is a non-recoverable error
+            panic!("Invalid email format");
+        }
+
+        // TODO: Include repository URL
+
         format!(
             "{}/{} (+{})",
             env!("CARGO_PKG_NAME"),
@@ -114,11 +124,6 @@ impl SecClientDataExt for SecClient {
         url: &str,
         headers: Option<Vec<(&str, &str)>>,
     ) -> Result<reqwest::Response, Box<dyn Error>> {
-        if !EmailAddress::is_valid(&self.email) {
-            // This is a non-recoverable error
-            panic!("No valid email defined.");
-        }
-
         let _permit = self.semaphore.acquire().await?;
         sleep(self.min_delay).await;
 

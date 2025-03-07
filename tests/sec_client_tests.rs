@@ -15,6 +15,15 @@ fn test_user_agent() {
     );
 }
 
+#[test]
+#[should_panic(expected = "Invalid email format")]
+fn test_invalid_email_panic() {
+    // Assuming SecClient panics if the email format is invalid
+    let client = SecClient::new("invalid-email", 1, 1000, None);
+
+    client.get_user_agent();
+}
+
 #[tokio::test]
 async fn test_fetch_json_without_retry_success() -> Result<(), Box<dyn Error>> {
     let mut server = Server::new_async().await;
