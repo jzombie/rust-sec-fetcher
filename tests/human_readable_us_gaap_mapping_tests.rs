@@ -661,3 +661,22 @@ fn test_net_income_loss_attributable_to_noncontrolling_interest() {
         Some(vec!["NetIncomeLossAttributableToNoncontrollingInterest"])
     );
 }
+
+#[test]
+fn test_net_income_loss_attributable_to_parent() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetIncomeLoss"),
+        Some(vec!["NetIncomeLossAttributableToParent", "NetIncomeLoss"])
+    );
+}
+
+#[test]
+fn test_net_income_loss_available_to_common_stockholders_basic() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetIncomeLossAvailableToCommonStockholdersBasic"),
+        Some(vec![
+            "NetIncomeLossAvailableToCommonStockholdersBasic",
+            "NetIncomeLoss"
+        ])
+    );
+}

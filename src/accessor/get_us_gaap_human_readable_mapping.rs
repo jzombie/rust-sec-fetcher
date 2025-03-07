@@ -239,6 +239,10 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
         ],
         );
         map.insert(
+            "NetIncomeLossAvailableToCommonStockholdersBasic",
+            vec!["NetIncomeLossAvailableToCommonStockholdersBasic"],
+        );
+        map.insert(
             "NetIncomeLossAttributableToNoncontrollingInterest",
             vec![
                 "NetIncomeLossAttributableToNoncontrollingInterest",
