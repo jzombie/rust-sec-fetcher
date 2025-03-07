@@ -9,6 +9,7 @@ pub struct Investment {
     pub lei: String,
     pub title: String,
     pub cusip: String,
+    pub isin: String,
     pub balance: String,
     pub cur_cd: String,
     pub val_usd: String,
@@ -54,6 +55,7 @@ fn parse_nport_xml(xml: &str) -> Result<Vec<Investment>, Box<dyn Error>> {
                         lei: String::new(),
                         title: String::new(),
                         cusip: String::new(),
+                        isin: String::new(),
                         balance: String::new(),
                         cur_cd: String::new(),
                         val_usd: String::new(),
@@ -65,6 +67,19 @@ fn parse_nport_xml(xml: &str) -> Result<Vec<Investment>, Box<dyn Error>> {
                     });
                 }
                 current_tag = tag;
+            }
+            Event::Empty(ref e) => {
+                // Handle ISIN extraction from attribute inside <isin>
+                if current_tag == "identifiers" {
+                    if let Some(investment) = &mut current_investment {
+                        if let Some(attr) = e
+                            .attributes()
+                            .find(|a| a.as_ref().map_or(false, |a| a.key.as_ref() == b"value"))
+                        {
+                            investment.isin = attr?.unescape_value()?.to_string();
+                        }
+                    }
+                }
             }
             Event::Text(ref e) => {
                 if let Some(investment) = &mut current_investment {
