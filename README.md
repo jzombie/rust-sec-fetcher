@@ -1,17 +1,73 @@
 TODO: Keep notice of 10-Q/A and 10-K/A forms (these are amended)
 
+## SIC
+
 - SIC code list: https://www.sec.gov/search-filings/standard-industrial-classification-sic-code-list
 - SIC code lookup: https://data.sec.gov/submissions/CIK##########.json
 
 Note: Instead of manually maintaining a SIC list, autogenerate it when doing CIK lookups.
 
-    // via: https://data.sec.gov/submissions/CIK##########.json
-    // pub sic: Option<u64>,                // i.e. 3571
-    // pub sic_description: Option<String>, // i.e. "Electronic Computers"
+```
+via: https://data.sec.gov/submissions/CIK##########.json
+pub sic: Option<u64>,                // i.e. 3571
+pub sic_description: Option<String>, // i.e. "Electronic Computers"
 
 ```
 "sic": "XXXX"
 ```
+
+## Sector Mappings
+
+The **11-sector classification** often used in financial markets and economic analysis maps SIC codes into the following broad categories:
+
+The **SIC codes less than 1000** primarily cover **agriculture, forestry, fishing, and related services**. These industries typically fall under the **Materials** or **Consumer Staples** sectors, depending on their classification.
+
+### **Mapping SIC Codes < 1000 to Sectors**
+| **SIC Code Range** | **Industry** | **Mapped Sector** |
+|--------------------|-------------|-------------------|
+| **0100-0199** | Agricultural Production – Crops | **Consumer Staples** |
+| **0200-0299** | Agricultural Production – Livestock | **Consumer Staples** |
+| **0700-0799** | Agricultural Services | **Industrials** |
+| **0800-0899** | Forestry | **Materials** |
+| **0900-0999** | Fishing, Hunting, and Trapping | **Consumer Staples** |
+
+### **Sector Justification**
+- **Consumer Staples**: Covers food-related agriculture (e.g., crops, livestock, and fisheries).
+- **Materials**: Covers raw material-related industries such as forestry and logging.
+- **Industrials**: Covers agricultural support services like farm machinery and commercial agricultural operations.
+
+Would you like a **complete SIC-to-sector mapping function** for automatic classification?
+
+### **11 Common Sectors with SIC Mapping**
+| **Sector**                    | **SIC Code Range** |
+|--------------------------------|--------------------|
+| **Energy**                     | 1000-1499, 2900-2999, 4900-4999 |
+| **Materials**                  | 2800-2899, 3200-3299, 3300-3399 |
+| **Industrials**                | 1500-1799, 3400-3499, 3500-3599, 3700-3799 |
+| **Consumer Discretionary**      | 2300-2399, 2500-2599, 2700-2799, 3100-3199, 3900-3999, 5000-5099, 5600-5699, 5700-5799, 5900-5999 |
+| **Consumer Staples**           | 2000-2099, 2100-2199, 5400-5499, 5500-5599 |
+| **Health Care**                | 8000-8099 |
+| **Financials**                 | 6000-6799 |
+| **Information Technology**      | 3570-3579, 3600-3699, 7370-7379 |
+| **Telecommunication Services**  | 4800-4899 |
+| **Utilities**                  | 4900-4999 |
+| **Real Estate**                | 6500-6799 |
+
+### **Notes on the Mapping**
+
+- **Energy** covers oil, gas, and utilities.
+- **Materials** includes chemicals, metals, and mining.
+- **Industrials** spans machinery, construction, and manufacturing.
+- **Consumer Discretionary** includes luxury goods, retail, and entertainment.
+- **Consumer Staples** consists of essential goods like food and beverages.
+- **Health Care** includes hospitals, pharmaceuticals, and medical equipment.
+- **Financials** covers banks, insurance, and investment services.
+- **Information Technology** includes computing, semiconductors, and software.
+- **Telecommunications** consists of phone, internet, and broadcasting.
+- **Utilities** includes power, gas, and water providers.
+- **Real Estate** covers property management, REITs, and land leasing.
+
+
 
 ## Constructing ETF Constituent Lookups
 
