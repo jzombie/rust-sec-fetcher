@@ -398,7 +398,7 @@ static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<Fundamen
 ///
 /// The function relies on an **inverted** [`IndexMap`](https://docs.rs/indexmap/latest/indexmap/)
 /// (`US_GAAP_MAPPING_INVERTED`) to ensure that both **insertion order is preserved**
-/// and **lookups remain efficient (`O(1)`)**.
+/// and **lookups remain efficient**.
 ///
 /// # Arguments
 /// - `us_gaap_key`: The US GAAP taxonomy concept name (e.g., `"Assets"`, `"NetIncomeLoss"`).
@@ -411,10 +411,6 @@ static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<Fundamen
 /// The returned list maintains the **original "try order"** from the mapping.
 /// This means that when multiple fundamental concepts are mapped to the same
 /// taxonomy concept, they will be returned in the same order they were inserted.
-///
-/// # Complexity
-/// - **Lookup:** `O(1)`, due to `IndexMap`.
-/// - **Cloning:** `O(N)`, where `N` is the number of matching fundamental concepts.
 ///
 /// # Example
 /// ```
