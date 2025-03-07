@@ -1087,3 +1087,58 @@ fn test_revenues_excluding_interest_and_dividends() {
         Some(vec!["RevenuesExcludingInterestAndDividends", "Revenues"])
     );
 }
+
+#[test]
+fn test_revenues_net_interest_expense() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenuesNetOfInterestExpense"),
+        Some(vec!["RevenuesNetInterestExpense", "Revenues"])
+    );
+}
+
+#[test]
+fn test_temporary_equity() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "TemporaryEquityCarryingAmountIncludingPortionAttributableToNoncontrollingInterests"
+        ),
+        Some(vec!["TemporaryEquity"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("TemporaryEquityRedemptionValue"),
+        Some(vec!["TemporaryEquity"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RedeemablePreferredStockCarryingAmount"),
+        Some(vec!["TemporaryEquity"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("TemporaryEquityCarryingAmount"),
+        Some(vec!["TemporaryEquity"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("TemporaryEquityValueExcludingAdditionalPaidInCapital"),
+        Some(vec!["TemporaryEquity"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("TemporaryEquityCarryingAmountAttributableToParent"),
+        Some(vec!["TemporaryEquity"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "TemporaryEquityCarryingAmountAttributableToNoncontrollingInterest"
+        ),
+        Some(vec!["TemporaryEquity"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("TemporaryEquityLiquidationPreference"),
+        Some(vec!["TemporaryEquity"])
+    );
+}
