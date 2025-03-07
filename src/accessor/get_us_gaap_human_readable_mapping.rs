@@ -422,8 +422,8 @@ static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<Fundamen
 ///     assert_eq!(
 ///         result,
 ///         Some(vec![
-///             "Assets",
 ///             "CurrentAssets",
+///             "Assets",
 ///         ])
 ///     );
 /// }

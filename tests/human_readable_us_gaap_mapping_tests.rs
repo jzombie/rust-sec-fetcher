@@ -41,8 +41,8 @@ fn test_comprehensive_income_loss() {
     assert_eq!(
         get_us_gaap_human_readable_mapping("ComprehensiveIncomeNetOfTax"),
         Some(vec![
+            "ComprehensiveIncomeLossAttributableToParent",
             "ComprehensiveIncomeLoss",
-            "ComprehensiveIncomeLossAttributableToParent"
         ])
     );
 }
@@ -145,7 +145,7 @@ fn test_equity() {
 
     assert_eq!(
         get_us_gaap_human_readable_mapping("StockholdersEquity"),
-        Some(vec!["Equity", "EquityAttributableToParent"])
+        Some(vec!["EquityAttributableToParent", "Equity"])
     );
 
     assert_eq!(
@@ -157,7 +157,7 @@ fn test_equity() {
 
     assert_eq!(
         get_us_gaap_human_readable_mapping("PartnersCapital"),
-        Some(vec!["Equity", "EquityAttributableToParent"])
+        Some(vec!["EquityAttributableToParent", "Equity"])
     );
 
     assert_eq!(
@@ -167,7 +167,7 @@ fn test_equity() {
 
     assert_eq!(
         get_us_gaap_human_readable_mapping("MembersEquity"),
-        Some(vec!["Equity", "EquityAttributableToParent"])
+        Some(vec!["EquityAttributableToParent", "Equity"])
     );
 }
 
@@ -223,17 +223,17 @@ fn test_equity_attributable_to_noncontrolling_interest() {
 fn test_equity_attributable_to_parent() {
     assert_eq!(
         get_us_gaap_human_readable_mapping("StockholdersEquity"),
-        Some(vec!["Equity", "EquityAttributableToParent"])
+        Some(vec!["EquityAttributableToParent", "Equity"])
     );
 
     assert_eq!(
         get_us_gaap_human_readable_mapping("PartnersCapital"),
-        Some(vec!["Equity", "EquityAttributableToParent"])
+        Some(vec!["EquityAttributableToParent", "Equity"])
     );
 
     assert_eq!(
         get_us_gaap_human_readable_mapping("MembersEquity"),
-        Some(vec!["Equity", "EquityAttributableToParent"])
+        Some(vec!["EquityAttributableToParent", "Equity"])
     );
 }
 
