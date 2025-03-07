@@ -335,3 +335,33 @@ fn test_income_loss_from_continuing_operations_before_tax() {
         ])
     );
 }
+
+#[test]
+fn test_income_loss_from_discontinued_operations_net_of_tax() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromDiscontinuedOperationsNetOfTax"),
+        Some(vec!["IncomeLossFromDiscontinuedOperationsNetOfTax",])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "DiscontinuedOperationGainLossOnDisposalOfDiscontinuedOperationNetOfTax"
+        ),
+        Some(vec!["IncomeLossFromDiscontinuedOperationsNetOfTax",])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "IncomeLossFromDiscontinuedOperationsNetOfTaxAttributableToReportingEntity"
+        ),
+        Some(vec!["IncomeLossFromDiscontinuedOperationsNetOfTax",])
+    );
+}
+
+#[test]
+fn test_income_loss_from_equity_method_investments() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromEquityMethodInvestments"),
+        Some(vec!["IncomeLossFromEquityMethodInvestments",])
+    );
+}
