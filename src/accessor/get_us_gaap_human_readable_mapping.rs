@@ -451,6 +451,7 @@ static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<Fundamen
 /// # Example
 /// ```
 /// use sec_fetcher::accessor::get_us_gaap_human_readable_mapping;
+/// use sec_fetcher::enums::FundamentalConcept;
 ///
 /// fn main() {
 ///     let result = get_us_gaap_human_readable_mapping("AssetsCurrent");
@@ -458,20 +459,20 @@ static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<Fundamen
 ///     assert_eq!(
 ///         result,
 ///         Some(vec![
-///             "CurrentAssets",
-///             "Assets",
+///             FundamentalConcept::CurrentAssets,
+///             FundamentalConcept::Assets,
 ///         ])
 ///     );
 /// }
 /// ```
-pub fn get_us_gaap_human_readable_mapping(us_gaap_key: &str) -> Option<Vec<&'static str>> {
+pub fn get_us_gaap_human_readable_mapping(us_gaap_key: &str) -> Option<Vec<FundamentalConcept>> {
     let map_inverted = &US_GAAP_MAPPING_INVERTED;
     let map_order = &US_GAAP_MAPPING; // Preserve Try Order from US_GAAP_MAPPING
 
     if let Some(mut values) = map_inverted.get(us_gaap_key).cloned() {
         if values.len() > 1 {
             // Compute Try Order by finding the first occurrence of `us_gaap_key` in **each fundamental concept's vector**
-            let get_try_order = |concept: &&'static str| -> usize {
+            let get_try_order = |concept: &FundamentalConcept| -> usize {
                 map_order
                     .get(concept) // Get the corresponding vector for the fundamental concept
                     .and_then(|concepts| concepts.iter().position(|&c| c == us_gaap_key)) // Find index inside that vector
@@ -484,7 +485,7 @@ pub fn get_us_gaap_human_readable_mapping(us_gaap_key: &str) -> Option<Vec<&'sta
                 let try_order = get_try_order(concept);
                 // TODO: Debug log
                 println!(
-                    "Concept: {}, Try Order: {}, US-GAAP: {}",
+                    "Concept: {:?}, Try Order: {}, US-GAAP: {}",
                     concept, try_order, us_gaap_key
                 );
             }
@@ -495,7 +496,7 @@ pub fn get_us_gaap_human_readable_mapping(us_gaap_key: &str) -> Option<Vec<&'sta
             values.sort_by_key(|concept| get_try_order(concept));
         }
 
-        Some(values)
+        Some(values) // Returns `Vec<FundamentalConcept>` directly
     } else {
         None
     }
