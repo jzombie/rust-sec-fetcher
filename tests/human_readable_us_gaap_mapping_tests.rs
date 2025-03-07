@@ -504,3 +504,131 @@ fn test_net_cash_flow_continuing() {
         Some(vec!["NetCashFlowContinuing", "NetCashFlow"])
     );
 }
+
+#[test]
+fn test_net_cash_flow_discontinued() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInDiscontinuedOperations"),
+        Some(vec!["NetCashFlowDiscontinued"])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_financing_activities() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInFinancingActivities"),
+        Some(vec!["NetCashFlowFromFinancingActivities"])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_financing_activities_continuing() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "NetCashProvidedByUsedInFinancingActivitiesContinuingOperations"
+        ),
+        Some(vec!["NetCashFlowFromFinancingActivitiesContinuing"])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_financing_and_activities_discontinued() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "CashProvidedByUsedInFinancingActivitiesDiscontinuedOperations"
+        ),
+        Some(vec!["NetCashFlowFromFinancingActivitiesDiscontinued"])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_investing_activities() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInInvestingActivities"),
+        Some(vec!["NetCashFlowFromInvestingActivities"])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_investing_activities_continuing() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "NetCashProvidedByUsedInInvestingActivitiesContinuingOperations"
+        ),
+        Some(vec!["NetCashFlowFromInvestingActivitiesContinuing"])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_investing_activities_discontinued() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "CashProvidedByUsedInInvestingActivitiesDiscontinuedOperations"
+        ),
+        Some(vec!["NetCashFlowFromInvestingActivitiesDiscontinued"])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_operating_activities() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInOperatingActivities"),
+        Some(vec!["NetCashFlowFromOperatingActivities"])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_operating_activities_continuing() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations"
+        ),
+        Some(vec!["NetCashFlowFromOperatingActivitiesContinuing"])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_operating_activities_discontinued() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "CashProvidedByUsedInOperatingActivitiesDiscontinuedOperations"
+        ),
+        Some(vec!["NetCashFlowFromOperatingActivitiesDiscontinued"])
+    );
+}
+
+#[test]
+fn test_net_income_loss() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ProfitLoss"),
+        Some(vec!["NetIncomeLoss"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetIncomeLoss"),
+        Some(vec!["NetIncomeLossAttributableToParent", "NetIncomeLoss"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetIncomeLossAvailableToCommonStockholdersBasic"),
+        Some(vec!["NetIncomeLoss"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperations"),
+        Some(vec![
+            "IncomeLossFromContinuingOperationsAfterTax",
+            "NetIncomeLoss"
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossAttributableToParent"),
+        Some(vec!["NetIncomeLoss"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsIncludingPortionAttributableToNoncontrollingInterest"),
+        Some(vec!["IncomeLossFromContinuingOperationsAfterTax", "NetIncomeLoss"])
+    );
+}
