@@ -2,6 +2,13 @@ TODO: Keep notice of 10-Q/A and 10-K/A forms (these are amended)
 
 - SIC code list: https://www.sec.gov/search-filings/standard-industrial-classification-sic-code-list
 - SIC code lookup: https://data.sec.gov/submissions/CIK##########.json
+
+Note: Instead of manually maintaining a SIC list, autogenerate it when doing CIK lookups.
+
+    // via: https://data.sec.gov/submissions/CIK##########.json
+    // pub sic: Option<u64>,                // i.e. 3571
+    // pub sic_description: Option<String>, // i.e. "Electronic Computers"
+
 ```
 "sic": "XXXX"
 ```
