@@ -1,8 +1,7 @@
-use std::borrow::Borrow;
 use std::cmp::{Eq, PartialEq};
-use strum_macros::{AsRefStr, Display, EnumString};
+use strum_macros::{Display, EnumString};
 
-#[derive(Eq, PartialEq, Hash, Clone, EnumString, Display, AsRefStr, Debug)]
+#[derive(Eq, PartialEq, Hash, Clone, EnumString, Display, Debug)]
 pub enum FundamentalConcept {
     Assets,
     BenefitsCostsExpenses,
@@ -69,10 +68,4 @@ pub enum FundamentalConcept {
     RevenuesExcludingInterestAndDividends,
     RevenuesNetInterestExpense,
     TemporaryEquity,
-}
-
-impl Borrow<str> for FundamentalConcept {
-    fn borrow(&self) -> &str {
-        self.as_ref() // Uses `AsRefStr` to return a static string reference
-    }
 }
