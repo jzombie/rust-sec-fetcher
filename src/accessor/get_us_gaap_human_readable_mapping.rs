@@ -1,14 +1,14 @@
-use crate::utils::invert_multivalue_map;
+use crate::utils::invert_multivalue_indexmap;
+use indexmap::IndexMap;
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
 
 pub type FundamentalConceptName = &'static str;
 pub type TaxonomyConceptName = &'static str;
 
 // Human-readable mapping: http://www.xbrlsite.com/2014/Reference/Mapping.pdf
-static US_GAAP_MAPPING: Lazy<HashMap<FundamentalConceptName, Vec<TaxonomyConceptName>>> = Lazy::new(
-    || {
-        let mut map = HashMap::new();
+static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConceptName>>> =
+    Lazy::new(|| {
+        let mut map = IndexMap::new();
 
         // Entries are arranged by `Try Order` ascending
 
@@ -49,7 +49,7 @@ static US_GAAP_MAPPING: Lazy<HashMap<FundamentalConceptName, Vec<TaxonomyConcept
         );
         map.insert(
             "CostsAndExpenses",
-            vec!["CostOfRevenue", "BenefitsLossesAndExpenses"],
+            vec!["CostsAndExpenses", "BenefitsLossesAndExpenses"],
         );
         map.insert("CurrentAssets", vec!["AssetsCurrent"]);
         map.insert("CurrentLiabilities", vec!["LiabilitiesCurrent"]);
@@ -99,16 +99,52 @@ static US_GAAP_MAPPING: Lazy<HashMap<FundamentalConceptName, Vec<TaxonomyConcept
             "GainLossOnSalePropertiesNetTax",
             vec!["GainLossOnSaleOfPropertiesNetOfApplicableIncomeTaxes"],
         );
-        map.insert("GrossProfit", vec![""]);
-        map.insert("IncomeLossBeforeEquityMethodInvestments", vec![""]);
-        map.insert("IncomeLossFromContinuingOperationsAfterTax", vec![""]);
-        map.insert("IncomeLossFromContinuingOperationsBeforeTax", vec![""]);
-        map.insert("IncomeLossFromDiscontinuedOperationsNetOfTax", vec![""]);
-        map.insert("IncomeLossFromEquityMethodInvestments", vec![""]);
-        map.insert("IncomeStatementStartPeriodYearToDate", vec![""]);
-        map.insert("IncomeTaxExpenseBenefit", vec![""]);
-        map.insert("InterestAndDebtExpense", vec![""]);
-        map.insert("InterestAndDividendIncomeOperating", vec![""]);
+        map.insert("GrossProfit", vec!["GrossProfit"]);
+        map.insert("IncomeLossBeforeEquityMethodInvestments", vec!["IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"]);
+        map.insert("IncomeLossFromContinuingOperationsAfterTax", vec![
+            "IncomeLossFromContinuingOperationsIncludingPortionAttributableToNoncontrollingInterest",
+            "IncomeLossBeforeExtraordinaryItemsAndCumulativeEffectOfChangeInAccountingPrinciple",
+            "IncomeLossFromContinuingOperations"
+        ]);
+        map.insert("IncomeLossFromContinuingOperationsBeforeTax", vec![
+            "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+            "IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"
+        ]);
+        map.insert(
+            "IncomeLossFromDiscontinuedOperationsNetOfTax",
+            vec![
+                "IncomeLossFromDiscontinuedOperationsNetOfTax",
+                "DiscontinuedOperationGainLossOnDisposalOfDiscontinuedOperationNetOfTax",
+                "IncomeLossFromDiscontinuedOperationsNetOfTaxAttributableToReportingEntity",
+            ],
+        );
+        map.insert(
+            "IncomeLossFromEquityMethodInvestments",
+            vec!["IncomeLossFromEquityMethodInvestments"],
+        );
+        map.insert(
+            "IncomeStatementStartPeriodYearToDate",
+            vec![
+                "IncomeTaxExpenseBenefit",
+                "IncomeTaxExpenseBenefitContinuingOperations",
+                "FederalHomeLoanBankAssessments",
+                "CurrentIncomeTaxExpenseBenefit",
+            ],
+        );
+        map.insert(
+            "IncomeTaxExpenseBenefit",
+            vec![
+                "IncomeTaxExpenseBenefit",
+                "IncomeTaxExpenseBenefitContinuingOperations",
+                "FederalHomeLoanBankAssessments",
+                "CurrentIncomeTaxExpenseBenefit",
+            ],
+        );
+        map.insert("InterestAndDebtExpense", vec!["InterestAndDebtExpense"]);
+        map.insert(
+            "InterestAndDividendIncomeOperating",
+            vec!["InterestAndDividendIncomeOperating"],
+        );
         map.insert(
             "InterestAndDividendIncomeOperating",
             vec!["InterestAndDividendIncomeOperating"],
@@ -116,16 +152,19 @@ static US_GAAP_MAPPING: Lazy<HashMap<FundamentalConceptName, Vec<TaxonomyConcept
         map.insert("InterestExpenseOperating", vec!["InterestExpense"]);
         map.insert(
             "InterestIncomeExpenseAfterProvisionForLosses",
-            vec!["InterestExpenseOperating"],
+            vec!["InterestIncomeExpenseAfterProvisionForLoanLoss"],
         );
         map.insert(
             "InterestIncomeExpenseOperatingNet",
-            vec![":InterestIncomeExpenseNet"],
+            vec!["InterestIncomeExpenseNet"],
         );
-        map.insert("Liabilities", vec!["InterestExpenseOperating"]);
+        map.insert("Liabilities", vec!["Liabilities"]);
         map.insert(
             "LiabilitiesAndEquity",
-            vec!["InterestExpenseOperating", "LiabilitiesAndPartnersCapital"],
+            vec![
+                "LiabilitiesAndStockholdersEquity",
+                "LiabilitiesAndPartnersCapital",
+            ],
         );
         map.insert(
         "NatureOfOperations",
@@ -198,6 +237,10 @@ static US_GAAP_MAPPING: Lazy<HashMap<FundamentalConceptName, Vec<TaxonomyConcept
             "IncomeLossAttributableToParent",
             "IncomeLossFromContinuingOperationsIncludingPortionAttributableToNoncontrollingInterest"
         ],
+        );
+        map.insert(
+            "NetIncomeLossAvailableToCommonStockholdersBasic",
+            vec!["NetIncomeLossAvailableToCommonStockholdersBasic"],
         );
         map.insert(
             "NetIncomeLossAttributableToNoncontrollingInterest",
@@ -333,22 +376,94 @@ static US_GAAP_MAPPING: Lazy<HashMap<FundamentalConceptName, Vec<TaxonomyConcept
         );
 
         map
-    },
-);
+    });
 
-static US_GAAP_MAPPING_INVERTED: Lazy<HashMap<TaxonomyConceptName, Vec<FundamentalConceptName>>> =
+static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<FundamentalConceptName>>> =
     Lazy::new(|| {
-        let map_inverted = invert_multivalue_map(&US_GAAP_MAPPING);
+        let map_inverted = invert_multivalue_indexmap(&US_GAAP_MAPPING);
 
         map_inverted
     });
 
+/// Retrieves the fundamental accounting concepts corresponding to a given
+/// US GAAP taxonomy concept, preserving the original "try order."
+///
+/// # Description
+/// This function looks up a **US GAAP taxonomy concept** (`us-gaap:*`) and returns
+/// a list of fundamental concept names (`Vec<&'static str>`) that reference it.
+/// The order in the returned list **respects the original "try order"**
+/// defined in the `US_GAAP_MAPPING` structure as documented in:
+///
+/// - [Mappings between Fundamental Accounting Concepts and US GAAP XBRL Taxonomy Concepts (Human readable)](http://www.xbrlsite.com/2014/Reference/Mapping.pdf)
+///
+/// The function relies on an **inverted** [`IndexMap`](https://docs.rs/indexmap/latest/indexmap/)
+/// (`US_GAAP_MAPPING_INVERTED`) to ensure that both **insertion order is preserved**
+/// and **lookups remain efficient (`O(1)`)**.
+///
+/// # Arguments
+/// - `us_gaap_key`: The US GAAP taxonomy concept name (e.g., `"Assets"`, `"NetIncomeLoss"`).
+///
+/// # Returns
+/// - `Some(Vec<&'static str>)` if the given taxonomy concept exists in the mapping.
+/// - `None` if no corresponding fundamental concept is found.
+///
+/// # Order Preservation
+/// The returned list maintains the **original "try order"** from the mapping.
+/// This means that when multiple fundamental concepts are mapped to the same
+/// taxonomy concept, they will be returned in the same order they were inserted.
+///
+/// # Complexity
+/// - **Lookup:** `O(1)`, due to `IndexMap`.
+/// - **Cloning:** `O(N)`, where `N` is the number of matching fundamental concepts.
+///
+/// # Example
+/// ```
+/// use sec_fetcher::accessor::get_us_gaap_human_readable_mapping;
+///
+/// fn main() {
+///     let result = get_us_gaap_human_readable_mapping("AssetsCurrent");
+///
+///     assert_eq!(
+///         result,
+///         Some(vec![
+///             "CurrentAssets",
+///             "Assets",
+///         ])
+///     );
+/// }
+/// ```
 pub fn get_us_gaap_human_readable_mapping(us_gaap_key: &str) -> Option<Vec<&'static str>> {
     let map_inverted = &US_GAAP_MAPPING_INVERTED;
+    let map_order = &US_GAAP_MAPPING; // Preserve Try Order from US_GAAP_MAPPING
 
-    if let Some(values) = map_inverted.get(us_gaap_key) {
-        Some(values.clone()) // Return a clone of the found values
+    if let Some(mut values) = map_inverted.get(us_gaap_key).cloned() {
+        // TODO: Try-order might can be skipped if only one value length
+        // Compute Try Order by finding the first occurrence of `us_gaap_key` in **each fundamental concept's vector**
+        let get_try_order = |concept: &&'static str| -> usize {
+            map_order
+                .get(concept) // Get the corresponding vector for the fundamental concept
+                .and_then(|concepts| concepts.iter().position(|&c| c == us_gaap_key)) // Find index inside that vector
+                .map(|pos| pos + 1) // Convert to 1-based index
+                .unwrap_or(usize::MAX) // If never found, push to the end
+        };
+
+        // Debugging: Print Correct Try Order
+        for concept in &values {
+            let try_order = get_try_order(concept);
+            // TODO: Debug log
+            println!(
+                "Concept: {}, Try Order: {}, US-GAAP: {}",
+                concept, try_order, us_gaap_key
+            );
+        }
+        // TODO: Debug log
+        println!("----");
+
+        // Sort by Correct Try Order
+        values.sort_by_key(|concept| get_try_order(concept));
+
+        Some(values)
     } else {
-        None // Return None if no mapping is found
+        None
     }
 }

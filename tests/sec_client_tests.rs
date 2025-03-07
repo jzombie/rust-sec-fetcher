@@ -1,6 +1,28 @@
 use mockito::Server;
-use sec_fetcher::network::SecClient;
+use sec_fetcher::network::{SecClient, SecClientDataExt};
 use std::error::Error;
+
+#[test]
+fn test_user_agent() {
+    let client = SecClient::new("test@example.com", 1, 1000, None);
+
+    assert_eq!(
+        client.get_user_agent(),
+        format!(
+            "sec-fetcher/{} (+test@example.com)",
+            env!("CARGO_PKG_VERSION")
+        )
+    );
+}
+
+#[test]
+#[should_panic(expected = "Invalid email format")]
+fn test_invalid_email_panic() {
+    // Assuming SecClient panics if the email format is invalid
+    let client = SecClient::new("invalid-email", 1, 1000, None);
+
+    client.get_user_agent();
+}
 
 #[tokio::test]
 async fn test_fetch_json_without_retry_success() -> Result<(), Box<dyn Error>> {

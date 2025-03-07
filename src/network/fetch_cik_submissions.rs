@@ -8,7 +8,14 @@ use string_replace_all::StringReplaceAll;
 #[derive(Clone, Debug)]
 pub struct CikSubmission {
     pub cik: u64,
-    pub entity_type: Option<String>,
+    // TODO: Add these fields (and more), but not per submission; capture as a single separate entity
+    // pub name: Option<String>,            // i.e. "Apple"
+    pub entity_type: Option<String>, // i.e. "operating"
+    // pub sic: Option<u64>,                // i.e. 3571
+    // pub sic_description: Option<String>, // i.e. "Electronic Computers"
+    // pub owner_org: Option<String>,       // i.e. "06 Technology"
+    // insiderTransactionForOwnerExists
+    // insiderTransactionForIssuerExists
     pub accession_number: String,
     pub accession_number_stripped: String,
     pub form: String,

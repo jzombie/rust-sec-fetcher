@@ -16,13 +16,18 @@ pub struct SecClient {
     max_retries: Option<usize>,
 }
 
-trait SecClientDataExt {
+pub trait SecClientDataExt {
+    fn get_user_agent(&self) -> String;
+
+    #[allow(async_fn_in_trait)]
     async fn raw_request_without_retry(
         &self,
         method: reqwest::Method,
         url: &str,
         headers: Option<Vec<(&str, &str)>>,
     ) -> Result<reqwest::Response, Box<dyn Error>>;
+
+    #[allow(async_fn_in_trait)]
     async fn raw_request_with_retry(
         &self,
         method: reqwest::Method,
@@ -30,7 +35,10 @@ trait SecClientDataExt {
         headers: Option<Vec<(&str, &str)>>,
     ) -> Result<reqwest::Response, Box<dyn Error>>;
 
+    #[allow(async_fn_in_trait)]
     async fn fetch_json_without_retry(&self, url: &str) -> Result<Value, Box<dyn Error>>;
+
+    #[allow(async_fn_in_trait)]
     async fn fetch_json_with_retry(&self, url: &str) -> Result<Value, Box<dyn Error>>;
 }
 
@@ -91,24 +99,38 @@ impl SecClient {
 }
 
 impl SecClientDataExt for SecClient {
+    fn get_user_agent(&self) -> String {
+        // Note: The intention is to check it here vs. during instantiation as
+        // every network path relies on this method, whereas the instance can
+        // be instantiated different ways.
+        if !EmailAddress::is_valid(&self.email) {
+            // This is a non-recoverable error
+            panic!("Invalid email format");
+        }
+
+        // TODO: Include repository URL
+
+        format!(
+            "{}/{} (+{})",
+            env!("CARGO_PKG_NAME"),
+            env!("CARGO_PKG_VERSION"),
+            self.email
+        )
+    }
+
     async fn raw_request_without_retry(
         &self,
         method: reqwest::Method,
         url: &str,
         headers: Option<Vec<(&str, &str)>>,
     ) -> Result<reqwest::Response, Box<dyn Error>> {
-        if !EmailAddress::is_valid(&self.email) {
-            // This is a non-recoverable error
-            panic!("No valid email defined.");
-        }
-
         let _permit = self.semaphore.acquire().await?;
         sleep(self.min_delay).await;
 
-        let mut request_builder = self.client.request(method, url).header(
-            "User-Agent",
-            format!("SECDataFetcher/1.0 (+{})", self.email),
-        );
+        let mut request_builder = self
+            .client
+            .request(method, url)
+            .header("User-Agent", self.get_user_agent());
 
         if let Some(hdrs) = headers {
             for (key, value) in hdrs {
