@@ -720,3 +720,32 @@ fn test_non_operating_income_loss() {
         Some(vec!["NonoperatingIncomeLoss"])
     );
 }
+
+#[test]
+fn test_operating_expenses() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OperatingExpenses"),
+        Some(vec!["OperatingExpenses"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OperatingCostsAndExpenses"),
+        Some(vec!["OperatingExpenses"])
+    );
+}
+
+#[test]
+fn test_operating_income_loss() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OperatingIncomeLoss"),
+        Some(vec!["OperatingIncomeLoss"])
+    );
+}
+
+#[test]
+fn test_other_comprehensive_income_loss() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OtherComprehensiveIncomeLossNetOfTax"),
+        Some(vec!["OtherComprehensiveIncomeLoss"])
+    );
+}
