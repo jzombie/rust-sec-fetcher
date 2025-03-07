@@ -16,7 +16,8 @@ pub struct SecClient {
     max_retries: Option<usize>,
 }
 
-trait SecClientDataExt {
+pub trait SecClientDataExt {
+    fn get_user_agent(&self) -> String;
     async fn raw_request_without_retry(
         &self,
         method: reqwest::Method,
@@ -91,6 +92,15 @@ impl SecClient {
 }
 
 impl SecClientDataExt for SecClient {
+    fn get_user_agent(&self) -> String {
+        format!(
+            "{}/{} (+{})",
+            env!("CARGO_PKG_NAME"),
+            env!("CARGO_PKG_VERSION"),
+            self.email
+        )
+    }
+
     async fn raw_request_without_retry(
         &self,
         method: reqwest::Method,
@@ -105,10 +115,10 @@ impl SecClientDataExt for SecClient {
         let _permit = self.semaphore.acquire().await?;
         sleep(self.min_delay).await;
 
-        let mut request_builder = self.client.request(method, url).header(
-            "User-Agent",
-            format!("SECDataFetcher/1.0 (+{})", self.email),
-        );
+        let mut request_builder = self
+            .client
+            .request(method, url)
+            .header("User-Agent", self.get_user_agent());
 
         if let Some(hdrs) = headers {
             for (key, value) in hdrs {

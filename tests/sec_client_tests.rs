@@ -1,6 +1,16 @@
 use mockito::Server;
-use sec_fetcher::network::SecClient;
+use sec_fetcher::network::{SecClient, SecClientDataExt};
 use std::error::Error;
+
+#[test]
+fn test_user_agent() {
+    let client = SecClient::new("test@example.com", 1, 1000, None);
+
+    assert_eq!(
+        client.get_user_agent(),
+        "sec-fetcher/0.1.0 (+test@example.com)"
+    );
+}
 
 #[tokio::test]
 async fn test_fetch_json_without_retry_success() -> Result<(), Box<dyn Error>> {
