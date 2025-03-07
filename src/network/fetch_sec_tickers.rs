@@ -5,6 +5,7 @@ use std::error::Error;
 
 pub type SecTickersDataFrame = DataFrame;
 
+// TODO: Rename to `fetch_company_tickers` and make distinction how these are not fund tickers
 pub async fn fetch_sec_tickers(client: &SecClient) -> Result<SecTickersDataFrame, Box<dyn Error>> {
     // TODO: Also incorporate: https://www.sec.gov/include/ticker.txt
 
@@ -18,7 +19,7 @@ pub async fn fetch_sec_tickers(client: &SecClient) -> Result<SecTickersDataFrame
 
     if let Some(ticker_map) = data.as_object() {
         for (_, ticker_info) in ticker_map.iter() {
-            let cik = ticker_info["cik_str"].as_i64().unwrap_or_default();
+            let cik = ticker_info["cik_str"].as_u64().unwrap_or_default();
             let formatted_cik = format_cik(cik); // Transform CIK to zero-padded format
 
             cik_raw_values.push(cik);

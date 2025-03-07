@@ -1,6 +1,7 @@
 use crate::network::SecClient;
 use std::error::Error;
 
+// TODO: Fetch as dataframe?
 pub async fn fetch_investment_company_series_and_class_dataset(
     sec_client: &SecClient,
     year: usize,

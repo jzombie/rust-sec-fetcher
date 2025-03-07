@@ -3,6 +3,8 @@ use std::error::Error;
 
 use crate::network::SecTickersDataFrame;
 
+// TODO: Refactor to optionally work off of funding data source as well
+// (reference `lookup_cik.rs` example)
 /// Fetches the formatted CIK for a given ticker symbol from the DataFrame
 pub fn get_cik_by_ticker_symbol(
     df_tickers: &SecTickersDataFrame,

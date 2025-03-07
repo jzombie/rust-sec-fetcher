@@ -1,0 +1,18 @@
+[package]
+name = "us-gaap-dist-analyzer"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+itertools = "0.14.0"
+linfa = "0.7"
+linfa-clustering = "0.7"
+linfa-reduction = "0.7.1"
+ndarray = "0.15"
+regex = "1.11.1"
+rust-bert = "0.23.0"
+serde = { version = "1.0.218", features = ["derive"] }
+serde_json = "1.0.140"
+tch = { version = "0.17.0", default-features = false, features = ["download-libtorch"] }
+tokenizers = "0.21.0"

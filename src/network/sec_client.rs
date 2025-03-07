@@ -98,7 +98,8 @@ impl SecClientDataExt for SecClient {
         headers: Option<Vec<(&str, &str)>>,
     ) -> Result<reqwest::Response, Box<dyn Error>> {
         if !EmailAddress::is_valid(&self.email) {
-            return Err("No valid email defined".into());
+            // This is a non-recoverable error
+            panic!("No valid email defined.");
         }
 
         let _permit = self.semaphore.acquire().await?;

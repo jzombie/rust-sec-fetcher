@@ -3,10 +3,11 @@ use std::error::Error;
 use tokio;
 mod network;
 use network::{
-    fetch_sec_tickers, fetch_ticker_fundamentals, CredentialManager, CredentialProvider, SecClient,
+    fetch_sec_tickers, fetch_us_gaap_fundamentals, CredentialManager, CredentialProvider, SecClient,
 };
 mod accessor;
 mod transform;
+mod utils;
 use polars::prelude::{CsvWriter, SerWriter};
 use std::fs::File;
 
@@ -34,13 +35,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         // print!(
         //     "{}",
-        //     fetch_ticker_fundamentals(&client, &tickers_df, &ticker).await?
+        //     fetch_us_gaap_fundamentals(&client, &tickers_df, &ticker).await?
         // );
         // break;
 
-        match fetch_ticker_fundamentals(&client, &tickers_df, &ticker).await {
+        match fetch_us_gaap_fundamentals(&client, &tickers_df, &ticker).await {
             Ok(mut fundamentals_df) => {
-                let file_path = format!("data/{}.csv", ticker);
+                let file_path = format!("data/us-gaap/{}.csv", ticker);
                 match File::create(&file_path) {
                     Ok(mut file) => {
                         if let Err(e) = CsvWriter::new(&mut file)

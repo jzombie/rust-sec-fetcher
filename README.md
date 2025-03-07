@@ -55,6 +55,8 @@ Within this directory, you'll find XML or HTML files containing ETF holdings.
 
 TODO: See if there is always a primary doc like this:
 
+Filings -> recent -> primary document -> NPORT-P -> accession number
+
 ```
 https://www.sec.gov/Archives/edgar/data/884394/000175272425043826/primary_doc.xml
 ```
@@ -107,6 +109,66 @@ Common ETF issuers have recognizable names:
 "State Street"
 The Entity Name column will reflect these ETF providers.
 
-## Logo API
+### N-PORT Field Explanations:
+
+| **Field**            | **Meaning**  | **Possible Values** |
+|----------------------|-------------|----------------------|
+| `<name>`            | The name of the **issuing entity** (company, fund, etc.). | A string, typically the legal name of the company (e.g., `"Everest Group Ltd."`). |
+| `<lei>`             | **Legal Entity Identifier (LEI)** – a unique global identifier for legal entities engaged in financial transactions. | A 20-character alphanumeric string assigned to the company (e.g., `"549300N24XF2VV0B3570"`). |
+| `<title>`           | The security's title, usually the same as `<name>`. | A string, often the same as `<name>`. |
+| `<cusip>`           | **CUSIP (Committee on Uniform Securities Identification Procedures)** – a 9-character alphanumeric identifier for securities traded in the U.S. | A valid CUSIP or `"N/A"` if unavailable (e.g., `"N/A"`). |
+| `<identifiers>`     | A container for security identifiers such as **ISIN (International Securities Identification Number)**. | Contains one or more identifiers (e.g., `<isin value="BMG3223R1088"/>`). |
+| `<isin>` (Inside `<identifiers>`) | **ISIN (International Securities Identification Number)** – a unique identifier for a security, consisting of a 2-letter country code, a 9-character identifier, and a check digit. | A 12-character alphanumeric code (e.g., `"BMG3223R1088"`). |
+| `<balance>`         | The **quantity of the security held**. | A decimal number representing the number of shares or units (e.g., `"193.00000000"`). |
+| `<units>`           | The **unit type** of the holding. | `"NS"` (likely **Number of Shares**), or other unit types like `"Bonds"`, `"Contracts"`, etc. |
+| `<curCd>`           | The **currency code** of the security's valuation. | A 3-letter ISO 4217 currency code (e.g., `"USD"`). |
+| `<valUSD>`          | The **market value** of the holding in **USD**. | A decimal number representing the total value in USD (e.g., `"68632.73000000"`). |
+| `<pctVal>`          | The **percentage of total portfolio value** that this security represents. | A decimal number representing the percentage (e.g., `"0.039377694831"` for ~0.0394%). |
+| `<payoffProfile>`   | The **investment position type**. | `"Long"` (holding the asset expecting appreciation) or `"Short"` (betting on depreciation). |
+| `<assetCat>`        | The **asset class category** of the security. | `"EC"` (Equity), `"FI"` (Fixed Income), `"RE"` (Real Estate), `"HY"` (High Yield), `"CM"` (Commodities), etc. |
+| `<issuerCat>`       | The **issuer classification**. | `"CORP"` (Corporate), `"GOV"` (Government), `"MUNI"` (Municipal), etc. |
+| `<invCountry>`      | The **country of investment** or incorporation of the issuer. | A 2-letter country code (ISO 3166-1 alpha-2, e.g., `"BM"` for Bermuda). |
+| `<isRestrictedSec>` | Indicates if the security is **restricted** (not freely tradable). | `"Y"` (Yes, restricted) or `"N"` (No, freely tradable). |
+| `<fairValLevel>`    | **Fair Value Level** per **FASB ASC 820 (GAAP's Fair Value Hierarchy)**. | `1` (Market Price), `2` (Observable Inputs), `3` (Unobservable Inputs). |
+| `<securityLending>` | A container for security lending-related details. | Contains boolean fields for lending activity. |
+| `<isCashCollateral>` | Indicates if **cash collateral** is involved in a securities lending agreement. | `"Y"` (Yes) or `"N"` (No). |
+| `<isNonCashCollateral>` | Indicates if **non-cash collateral** is involved (e.g., securities, bonds). | `"Y"` (Yes) or `"N"` (No). |
+| `<isLoanByFund>`    | Indicates if the fund itself has **loaned out the security**. | `"Y"` (Yes, loaned) or `"N"` (No). |
+
+
+## TODO: Company information via latest 10-K
+
+submissions CIK -> Latest 10-K -> primary document
+
+Since primary documents for 10-Ks are .htm files, you need to:
+
+- Retrieve the filing URL.
+- Download the HTML document of the primary document.
+- Summarize the business section.
+
+## US-GAAP Mappings
+
+- https://www.sec.gov/files/edgar/filer-information/specifications/xbrl-guide-2024-07-08.pdf
+- http://xbrl.squarespace.com/understanding-sec-xbrl-financi/
+
+### Human-Readable Values and Impute
+
+- http://www.xbrlsite.com/2014/Reference/Mapping.pdf
+- http://www.xbrlsite.com/2014/Reference/ImputeRules.pdf
+
+### Third-Party Assessments / Formulas
+
+- https://documentation.alphavantage.co/FundamentalDataDocs/gaap_documentation.html
+- https://polygon.io/knowledge-base/article/what-fields-can-i-expect-from-polygons-financials-api
+- https://site.financialmodelingprep.com/developer/docs/formula
+
+
+## Other Third-Party
+
+## Prices
+
+- https://docs.alpaca.markets/docs/about-market-data-api
+
+## Logos
 
 - https://www.logo.dev/pricing

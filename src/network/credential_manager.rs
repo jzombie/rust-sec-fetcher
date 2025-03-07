@@ -40,12 +40,14 @@ impl CredentialManager {
 
     /// Retrieves stored credential
     pub fn get_credential(&self) -> Result<String, Box<dyn Error>> {
-        let credential = match &self.cached {
-            Some(credential) => credential,
-            None => &*self.entry.get_password().unwrap().to_string(),
-        };
-
-        Ok(credential.to_string())
+        match &self.cached {
+            Some(credential) => Ok(credential.clone()), // Return cached credential
+            None => {
+                // Attempt to retrieve credential and propagate error if it fails
+                let credential = self.entry.get_password()?;
+                Ok(credential)
+            }
+        }
     }
 
     /// Deletes stored credential
@@ -77,6 +79,8 @@ impl CredentialProvider for CredentialManager {
             Ok(existing) => {
                 println!("Stored credential found");
 
+                println!("TODO: Remove: {}", existing);
+
                 existing
             }
             _ => {
@@ -86,7 +90,14 @@ impl CredentialProvider for CredentialManager {
                 let mut input = String::new();
                 io::stdin().read_line(&mut input).unwrap();
                 let credential = input.trim().to_string();
-                instance.store_credential(&credential)?;
+
+                if let Err(err) = instance.store_credential(&credential) {
+                    if let Some(cached_credential) = instance.get_credential().ok() {
+                        if cached_credential == credential {
+                            eprintln!("Using cached credential for this session, but caught the following error: {}", err);
+                        }
+                    }
+                }
 
                 credential
             }

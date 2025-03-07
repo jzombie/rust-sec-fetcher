@@ -1,7 +1,12 @@
+use csv::ReaderBuilder;
 use sec_fetcher::accessor::get_cik_by_ticker_symbol;
-use sec_fetcher::network::{fetch_sec_tickers, CredentialManager, CredentialProvider, SecClient};
+use sec_fetcher::network::{
+    fetch_cik_submissions, fetch_investment_company_series_and_class_dataset, fetch_sec_tickers,
+    CikSubmission, CredentialManager, CredentialProvider, SecClient,
+};
 use std::env;
 use std::error::Error;
+use std::io::Cursor;
 use tokio;
 
 #[tokio::main]
@@ -18,11 +23,89 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let client = SecClient::from_credential_manager(&credential_manager, 1, 1000, Some(5))?;
 
-    let tickers_df = fetch_sec_tickers(&client).await?;
+    let mut result_cik: Option<String> = None;
 
-    match get_cik_by_ticker_symbol(&tickers_df, ticker_symbol) {
-        Ok(cik) => println!("Ticker: {}, CIK: {}", ticker_symbol, cik),
-        Err(e) => eprintln!("Error: {}", e),
+    // First, try the primary search method
+    let tickers_df = fetch_sec_tickers(&client).await?;
+    if let Ok(cik) = get_cik_by_ticker_symbol(&tickers_df, ticker_symbol) {
+        println!("Ticker: {}, CIK: {} (reg. stocks)", ticker_symbol, cik);
+        result_cik = Some(cik);
+    } else {
+        // If not found, try searching in the investment company dataset
+        println!("No match found in primary search. Searching in investment company dataset...");
+
+        let byte_array = fetch_investment_company_series_and_class_dataset(&client, 2024).await?;
+        let cursor = Cursor::new(&byte_array);
+        let mut reader = ReaderBuilder::new().from_reader(cursor);
+
+        // Extract headers first
+        let headers = reader.headers()?.clone();
+        let ticker_index = headers
+            .iter()
+            .position(|h| h == "Class Ticker")
+            .ok_or("Column 'Class Ticker' not found")?;
+        let cik_index = headers
+            .iter()
+            .position(|h| h == "CIK Number")
+            .ok_or("Column 'CIK Number' not found")?;
+
+        for result in reader.records() {
+            let record = result?;
+            if record.get(ticker_index) == Some(ticker_symbol.as_str()) {
+                if let Some(cik) = record.get(cik_index) {
+                    println!("Ticker: {}, CIK: {} (fund)", ticker_symbol, cik);
+                    result_cik = Some(cik.to_string());
+                }
+            }
+        }
+    }
+
+    if result_cik.is_none() {
+        println!("No matching record found for ticker '{}'.", ticker_symbol);
+    } else {
+        println!(
+            "Submissions URL: https://data.sec.gov/submissions/CIK{}.json",
+            &result_cik.as_ref().unwrap()
+        );
+
+        // // TODO: Lookup filings -> recent -> accessionNumber, strip out the dahes, and paste in
+        // // `primaryDocument` indices which contain NPORT-P, likely have a primary_doc.xml attached
+        // // in which case holdings can be parsed from this
+        // println!(
+        //     "Edgar Data (prefix): https://www.sec.gov/Archives/edgar/data/{}/XXXX/",
+        //     &result_cik.unwrap()
+        // )
+
+        let cik_value = result_cik
+            .as_ref()
+            .and_then(|s| s.parse::<u64>().ok()) // Try parsing to u64
+            .unwrap_or(0); // Default to 0 if parsing fails
+
+        let cik_submissions = fetch_cik_submissions(&client, cik_value).await?;
+
+        if let Some(most_recent_nport_p_submission) =
+            CikSubmission::most_recent_nport_p_submission(&cik_submissions)
+        {
+            println!("{:?}", &most_recent_nport_p_submission);
+            println!(
+                "EDGAR archive URL: {}",
+                most_recent_nport_p_submission.as_edgar_archive_url()
+            );
+        } else {
+            for cik_submission in cik_submissions {
+                println!("{:?}", cik_submission);
+
+                println!(
+                    "EDGAR archive URL: {}",
+                    cik_submission.as_edgar_archive_url()
+                );
+
+                // TODO: Remove
+                if cik_submission.form == "10-K" {
+                    break;
+                }
+            }
+        }
     }
 
     Ok(())
