@@ -312,586 +312,639 @@ fn test_exchange_gains_losses() {
     );
 }
 
-// #[test]
-// fn test_extraordinary_items_of_income_expense_net_of_tax() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("ExtraordinaryItemNetOfTax"),
-//         Some(vec!["ExtraordinaryItemsOfIncomeExpenseNetOfTax"])
-//     );
-// }
-
-// #[test]
-// fn test_gain_loss_on_sale_properties_net_tax() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("GainLossOnSaleOfPropertiesNetOfApplicableIncomeTaxes"),
-//         Some(vec!["GainLossOnSalePropertiesNetTax"])
-//     );
-// }
-
-// #[test]
-// fn test_gross_profit() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("GrossProfit"),
-//         Some(vec!["GrossProfit"])
-//     );
-// }
-
-// #[test]
-// fn test_income_loss_before_equity_method_investments() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"),
-//         Some(vec!["IncomeLossBeforeEquityMethodInvestments", "IncomeLossFromContinuingOperationsBeforeTax"])
-//     );
-// }
-
-// #[test]
-// fn test_income_loss_from_continuing_operations_after_tax() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsIncludingPortionAttributableToNoncontrollingInterest"),
-//         Some(vec!["IncomeLossFromContinuingOperationsAfterTax", "NetIncomeLoss"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "IncomeLossBeforeExtraordinaryItemsAndCumulativeEffectOfChangeInAccountingPrinciple"
-//         ),
-//         Some(vec!["IncomeLossFromContinuingOperationsAfterTax"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperations"),
-//         Some(vec![
-//             "IncomeLossFromContinuingOperationsAfterTax",
-//             "NetIncomeLoss"
-//         ])
-//     );
-// }
-
-// #[test]
-// fn test_income_loss_from_continuing_operations_before_tax() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"),
-//         Some(vec![
-//             "IncomeLossFromContinuingOperationsBeforeTax",
-//         ])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"),
-//         Some(vec![
-//             "IncomeLossBeforeEquityMethodInvestments", "IncomeLossFromContinuingOperationsBeforeTax",
-//         ])
-//     );
-// }
-
-// #[test]
-// fn test_income_loss_from_discontinued_operations_net_of_tax() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("IncomeLossFromDiscontinuedOperationsNetOfTax"),
-//         Some(vec!["IncomeLossFromDiscontinuedOperationsNetOfTax",])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "DiscontinuedOperationGainLossOnDisposalOfDiscontinuedOperationNetOfTax"
-//         ),
-//         Some(vec!["IncomeLossFromDiscontinuedOperationsNetOfTax",])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "IncomeLossFromDiscontinuedOperationsNetOfTaxAttributableToReportingEntity"
-//         ),
-//         Some(vec!["IncomeLossFromDiscontinuedOperationsNetOfTax",])
-//     );
-// }
-
-// #[test]
-// fn test_income_loss_from_equity_method_investments() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("IncomeLossFromEquityMethodInvestments"),
-//         Some(vec!["IncomeLossFromEquityMethodInvestments",])
-//     );
-// }
-
-// #[test]
-// fn test_income_tax_expense_benefit() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("IncomeTaxExpenseBenefit"),
-//         Some(vec![
-//             "IncomeStatementStartPeriodYearToDate",
-//             "IncomeTaxExpenseBenefit"
-//         ])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("IncomeTaxExpenseBenefitContinuingOperations"),
-//         Some(vec![
-//             "IncomeStatementStartPeriodYearToDate",
-//             "IncomeTaxExpenseBenefit"
-//         ])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("FederalHomeLoanBankAssessments"),
-//         Some(vec![
-//             "IncomeStatementStartPeriodYearToDate",
-//             "IncomeTaxExpenseBenefit"
-//         ])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("CurrentIncomeTaxExpenseBenefit"),
-//         Some(vec![
-//             "IncomeStatementStartPeriodYearToDate",
-//             "IncomeTaxExpenseBenefit"
-//         ])
-//     );
-// }
-
-// #[test]
-// fn test_interest_and_debt_expense() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("InterestAndDebtExpense"),
-//         Some(vec!["InterestAndDebtExpense"])
-//     );
-// }
-
-// #[test]
-// fn test_interest_and_divident_income_operating() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("InterestAndDividendIncomeOperating"),
-//         Some(vec!["InterestAndDividendIncomeOperating", "Revenues"])
-//     );
-// }
-
-// #[test]
-// fn test_interest_income_expense_after_provision_for_losses() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("InterestIncomeExpenseAfterProvisionForLoanLoss"),
-//         Some(vec!["InterestIncomeExpenseAfterProvisionForLosses"])
-//     );
-// }
-
-// #[test]
-// fn test_interest_income_expense_operating_net() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("InterestIncomeExpenseNet"),
-//         Some(vec!["InterestIncomeExpenseOperatingNet"])
-//     );
-// }
-
-// #[test]
-// fn test_liabilities() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("Liabilities"),
-//         Some(vec!["Liabilities"])
-//     );
-// }
-
-// #[test]
-// fn test_liabilities_and_equity() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("LiabilitiesAndStockholdersEquity"),
-//         Some(vec!["LiabilitiesAndEquity"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("LiabilitiesAndPartnersCapital"),
-//         Some(vec!["LiabilitiesAndEquity"])
-//     );
-// }
-
-// #[test]
-// fn test_nature_of_operations() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NatureOfOperations"),
-//         Some(vec!["NatureOfOperations"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("BusinessDescriptionAndBasisOfPresentationTextBlock"),
-//         Some(vec!["NatureOfOperations"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "OrganizationConsolidationAndPresentationOfFinancialStatementsDisclosureTextBlock"
-//         ),
-//         Some(vec!["NatureOfOperations"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("OrganizationConsolidationBasisOfPresentationBusinessDescriptionAndAccountingPoliciesTextBlock"),
-//         Some(vec!["NatureOfOperations"])
-//     );
-// }
-
-// #[test]
-// fn test_net_cash_flow() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("CashAndCashEquivalentsPeriodIncreaseDecrease"),
-//         Some(vec!["NetCashFlow"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("CashPeriodIncreaseDecrease"),
-//         Some(vec!["NetCashFlow"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInContinuingOperations"),
-//         Some(vec!["NetCashFlowContinuing", "NetCashFlow"])
-//     );
-// }
-
-// #[test]
-// fn test_net_cash_flow_continuing() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInContinuingOperations"),
-//         Some(vec!["NetCashFlowContinuing", "NetCashFlow"])
-//     );
-// }
-
-// #[test]
-// fn test_net_cash_flow_discontinued() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInDiscontinuedOperations"),
-//         Some(vec!["NetCashFlowDiscontinued"])
-//     );
-// }
-
-// #[test]
-// fn test_net_cash_flow_from_financing_activities() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInFinancingActivities"),
-//         Some(vec!["NetCashFlowFromFinancingActivities"])
-//     );
-// }
-
-// #[test]
-// fn test_net_cash_flow_from_financing_activities_continuing() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "NetCashProvidedByUsedInFinancingActivitiesContinuingOperations"
-//         ),
-//         Some(vec!["NetCashFlowFromFinancingActivitiesContinuing"])
-//     );
-// }
-
-// #[test]
-// fn test_net_cash_flow_from_financing_and_activities_discontinued() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "CashProvidedByUsedInFinancingActivitiesDiscontinuedOperations"
-//         ),
-//         Some(vec!["NetCashFlowFromFinancingActivitiesDiscontinued"])
-//     );
-// }
-
-// #[test]
-// fn test_net_cash_flow_from_investing_activities() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInInvestingActivities"),
-//         Some(vec!["NetCashFlowFromInvestingActivities"])
-//     );
-// }
-
-// #[test]
-// fn test_net_cash_flow_from_investing_activities_continuing() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "NetCashProvidedByUsedInInvestingActivitiesContinuingOperations"
-//         ),
-//         Some(vec!["NetCashFlowFromInvestingActivitiesContinuing"])
-//     );
-// }
-
-// #[test]
-// fn test_net_cash_flow_from_investing_activities_discontinued() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "CashProvidedByUsedInInvestingActivitiesDiscontinuedOperations"
-//         ),
-//         Some(vec!["NetCashFlowFromInvestingActivitiesDiscontinued"])
-//     );
-// }
-
-// #[test]
-// fn test_net_cash_flow_from_operating_activities() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInOperatingActivities"),
-//         Some(vec!["NetCashFlowFromOperatingActivities"])
-//     );
-// }
-
-// #[test]
-// fn test_net_cash_flow_from_operating_activities_continuing() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations"
-//         ),
-//         Some(vec!["NetCashFlowFromOperatingActivitiesContinuing"])
-//     );
-// }
-
-// #[test]
-// fn test_net_cash_flow_from_operating_activities_discontinued() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "CashProvidedByUsedInOperatingActivitiesDiscontinuedOperations"
-//         ),
-//         Some(vec!["NetCashFlowFromOperatingActivitiesDiscontinued"])
-//     );
-// }
-
-// #[test]
-// fn test_net_income_loss() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("ProfitLoss"),
-//         Some(vec!["NetIncomeLoss"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NetIncomeLoss"),
-//         Some(vec!["NetIncomeLossAttributableToParent", "NetIncomeLoss"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NetIncomeLossAvailableToCommonStockholdersBasic"),
-//         Some(vec![
-//             "NetIncomeLossAvailableToCommonStockholdersBasic",
-//             "NetIncomeLoss"
-//         ])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperations"),
-//         Some(vec![
-//             "IncomeLossFromContinuingOperationsAfterTax",
-//             "NetIncomeLoss"
-//         ])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("IncomeLossAttributableToParent"),
-//         Some(vec!["NetIncomeLoss"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsIncludingPortionAttributableToNoncontrollingInterest"),
-//         Some(vec!["IncomeLossFromContinuingOperationsAfterTax", "NetIncomeLoss"])
-//     );
-// }
-
-// #[test]
-// fn test_net_income_loss_attributable_to_noncontrolling_interest() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NetIncomeLossAttributableToNoncontrollingInterest"),
-//         Some(vec!["NetIncomeLossAttributableToNoncontrollingInterest"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "NetIncomeLossAttributableToNonredeemableNoncontrollingInterest"
-//         ),
-//         Some(vec!["NetIncomeLossAttributableToNoncontrollingInterest"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "NetIncomeLossAttributableToRedeemableNoncontrollingInterest"
-//         ),
-//         Some(vec!["NetIncomeLossAttributableToNoncontrollingInterest"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "IncomeLossFromContinuingOperationsAttributableToNoncontrollingEntity"
-//         ),
-//         Some(vec!["NetIncomeLossAttributableToNoncontrollingInterest"])
-//     );
-// }
-
-// #[test]
-// fn test_net_income_loss_attributable_to_parent() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NetIncomeLoss"),
-//         Some(vec!["NetIncomeLossAttributableToParent", "NetIncomeLoss"])
-//     );
-// }
-
-// #[test]
-// fn test_net_income_loss_available_to_common_stockholders_basic() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NetIncomeLossAvailableToCommonStockholdersBasic"),
-//         Some(vec![
-//             "NetIncomeLossAvailableToCommonStockholdersBasic",
-//             "NetIncomeLoss"
-//         ])
-//     );
-// }
-
-// #[test]
-// fn test_assets_non_current() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("AssetsNoncurrent"),
-//         Some(vec!["NoncurrentAssets"])
-//     );
-// }
-
-// #[test]
-// fn test_noncurrent_liabilities() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("LiabilitiesNoncurrent"),
-//         Some(vec!["NoncurrentLiabilities"])
-//     );
-// }
-
-// #[test]
-// fn test_non_interest_expense() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NoninterestExpense"),
-//         Some(vec!["NoninterestExpense"])
-//     );
-// }
-
-// #[test]
-// fn test_non_interest_income() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NoninterestIncome"),
-//         Some(vec!["NoninterestIncome"])
-//     );
-// }
-
-// #[test]
-// fn test_non_operating_income_loss() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NonoperatingIncomeExpense"),
-//         Some(vec!["NonoperatingIncomeLoss"])
-//     );
-// }
-
-// #[test]
-// fn test_operating_expenses() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("OperatingExpenses"),
-//         Some(vec!["OperatingExpenses"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("OperatingCostsAndExpenses"),
-//         Some(vec!["OperatingExpenses"])
-//     );
-// }
-
-// #[test]
-// fn test_operating_income_loss() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("OperatingIncomeLoss"),
-//         Some(vec!["OperatingIncomeLoss"])
-//     );
-// }
-
-// #[test]
-// fn test_other_comprehensive_income_loss() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("OtherComprehensiveIncomeLossNetOfTax"),
-//         Some(vec!["OtherComprehensiveIncomeLoss"])
-//     );
-// }
-
-// #[test]
-// fn test_other_operating_income_expenses() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("OtherOperatingIncome"),
-//         Some(vec!["OtherOperatingIncomeExpenses"])
-//     );
-// }
-
-// #[test]
-// fn test_preferred_stock_dividends_and_other_adjustments() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("PreferredStockDividendsAndOtherAdjustments"),
-//         Some(vec!["PreferredStockDividendsAndOtherAdjustments"])
-//     );
-// }
-
-// #[test]
-// fn test_provision_for_loan_lease_and_other_losses() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("ProvisionForLoanLeaseAndOtherLosses"),
-//         Some(vec!["ProvisionForLoanLeaseAndOtherLosses"])
-//     );
-// }
-
-// #[test]
-// fn test_redeemable_noncontrolling_interest() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("RedeemableNoncontrollingInterestEquityCarryingAmount"),
-//         Some(vec!["RedeemableNoncontrollingInterest"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "RedeemableNoncontrollingInterestEquityCommonCarryingAmount"
-//         ),
-//         Some(vec!["RedeemableNoncontrollingInterest"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "RedeemableNoncontrollingInterestEquityPreferredCarryingAmount"
-//         ),
-//         Some(vec!["RedeemableNoncontrollingInterest"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "RedeemableNoncontrollingInterestEquityOtherCarryingAmount"
-//         ),
-//         Some(vec!["RedeemableNoncontrollingInterest"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("RedeemableNoncontrollingInterestEquityFairValue"),
-//         Some(vec!["RedeemableNoncontrollingInterest"])
-//     );
-// }
-
-// #[test]
-// fn test_research_and_development() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("ResearchAndDevelopmentExpense"),
-//         Some(vec!["ResearchAndDevelopment"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "ResearchAndDevelopmentExpenseExcludingAcquiredInProcessCost"
-//         ),
-//         Some(vec!["ResearchAndDevelopment"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "ResearchAndDevelopmentExpenseSoftwareExcludingAcquiredInProcessCost"
-//         ),
-//         Some(vec!["ResearchAndDevelopment"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("ResearchAndDevelopmentInProcess"),
-//         Some(vec!["ResearchAndDevelopment"])
-//     );
-
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "ResearchAndDevelopmentAssetAcquiredOtherThanThroughBusinessCombinationWrittenOff"
-//         ),
-//         Some(vec!["ResearchAndDevelopment"])
-//     );
-// }
+#[test]
+fn test_extraordinary_items_of_income_expense_net_of_tax() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ExtraordinaryItemNetOfTax"),
+        Some(vec![
+            FundamentalConcept::ExtraordinaryItemsOfIncomeExpenseNetOfTax
+        ])
+    );
+}
+
+#[test]
+fn test_gain_loss_on_sale_properties_net_tax() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("GainLossOnSaleOfPropertiesNetOfApplicableIncomeTaxes"),
+        Some(vec![FundamentalConcept::GainLossOnSalePropertiesNetTax])
+    );
+}
+
+#[test]
+fn test_gross_profit() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("GrossProfit"),
+        Some(vec![FundamentalConcept::GrossProfit])
+    );
+}
+
+#[test]
+fn test_income_loss_before_equity_method_investments() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"),
+        Some(vec![FundamentalConcept::IncomeLossBeforeEquityMethodInvestments, FundamentalConcept::IncomeLossFromContinuingOperationsBeforeTax])
+    );
+}
+
+#[test]
+fn test_income_loss_from_continuing_operations_after_tax() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsIncludingPortionAttributableToNoncontrollingInterest"),
+        Some(vec![FundamentalConcept::IncomeLossFromContinuingOperationsAfterTax, FundamentalConcept::NetIncomeLoss])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "IncomeLossBeforeExtraordinaryItemsAndCumulativeEffectOfChangeInAccountingPrinciple"
+        ),
+        Some(vec![
+            FundamentalConcept::IncomeLossFromContinuingOperationsAfterTax
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperations"),
+        Some(vec![
+            FundamentalConcept::IncomeLossFromContinuingOperationsAfterTax,
+            FundamentalConcept::NetIncomeLoss
+        ])
+    );
+}
+
+#[test]
+fn test_income_loss_from_continuing_operations_before_tax() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest"),
+        Some(vec![
+            FundamentalConcept::IncomeLossFromContinuingOperationsBeforeTax,
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments"),
+        Some(vec![
+            FundamentalConcept::IncomeLossBeforeEquityMethodInvestments, FundamentalConcept::IncomeLossFromContinuingOperationsBeforeTax,
+        ])
+    );
+}
+
+#[test]
+fn test_income_loss_from_discontinued_operations_net_of_tax() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromDiscontinuedOperationsNetOfTax"),
+        Some(vec![
+            FundamentalConcept::IncomeLossFromDiscontinuedOperationsNetOfTax
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "DiscontinuedOperationGainLossOnDisposalOfDiscontinuedOperationNetOfTax"
+        ),
+        Some(vec![
+            FundamentalConcept::IncomeLossFromDiscontinuedOperationsNetOfTax
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "IncomeLossFromDiscontinuedOperationsNetOfTaxAttributableToReportingEntity"
+        ),
+        Some(vec![
+            FundamentalConcept::IncomeLossFromDiscontinuedOperationsNetOfTax
+        ])
+    );
+}
+
+#[test]
+fn test_income_loss_from_equity_method_investments() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromEquityMethodInvestments"),
+        Some(vec![
+            FundamentalConcept::IncomeLossFromEquityMethodInvestments
+        ])
+    );
+}
+
+#[test]
+fn test_income_tax_expense_benefit() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeTaxExpenseBenefit"),
+        Some(vec![
+            FundamentalConcept::IncomeStatementStartPeriodYearToDate,
+            FundamentalConcept::IncomeTaxExpenseBenefit
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeTaxExpenseBenefitContinuingOperations"),
+        Some(vec![
+            FundamentalConcept::IncomeStatementStartPeriodYearToDate,
+            FundamentalConcept::IncomeTaxExpenseBenefit
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("FederalHomeLoanBankAssessments"),
+        Some(vec![
+            FundamentalConcept::IncomeStatementStartPeriodYearToDate,
+            FundamentalConcept::IncomeTaxExpenseBenefit
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CurrentIncomeTaxExpenseBenefit"),
+        Some(vec![
+            FundamentalConcept::IncomeStatementStartPeriodYearToDate,
+            FundamentalConcept::IncomeTaxExpenseBenefit
+        ])
+    );
+}
+
+#[test]
+fn test_interest_and_debt_expense() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("InterestAndDebtExpense"),
+        Some(vec![FundamentalConcept::InterestAndDebtExpense])
+    );
+}
+
+#[test]
+fn test_interest_and_divident_income_operating() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("InterestAndDividendIncomeOperating"),
+        Some(vec![
+            FundamentalConcept::InterestAndDividendIncomeOperating,
+            FundamentalConcept::Revenues
+        ])
+    );
+}
+
+#[test]
+fn test_interest_income_expense_after_provision_for_losses() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("InterestIncomeExpenseAfterProvisionForLoanLoss"),
+        Some(vec![
+            FundamentalConcept::InterestIncomeExpenseAfterProvisionForLosses
+        ])
+    );
+}
+
+#[test]
+fn test_interest_income_expense_operating_net() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("InterestIncomeExpenseNet"),
+        Some(vec![FundamentalConcept::InterestIncomeExpenseOperatingNet])
+    );
+}
+
+#[test]
+fn test_liabilities() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("Liabilities"),
+        Some(vec![FundamentalConcept::Liabilities])
+    );
+}
+
+#[test]
+fn test_liabilities_and_equity() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("LiabilitiesAndStockholdersEquity"),
+        Some(vec![FundamentalConcept::LiabilitiesAndEquity])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("LiabilitiesAndPartnersCapital"),
+        Some(vec![FundamentalConcept::LiabilitiesAndEquity])
+    );
+}
+
+#[test]
+fn test_nature_of_operations() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NatureOfOperations"),
+        Some(vec![FundamentalConcept::NatureOfOperations])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("BusinessDescriptionAndBasisOfPresentationTextBlock"),
+        Some(vec![FundamentalConcept::NatureOfOperations])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "OrganizationConsolidationAndPresentationOfFinancialStatementsDisclosureTextBlock"
+        ),
+        Some(vec![FundamentalConcept::NatureOfOperations])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OrganizationConsolidationBasisOfPresentationBusinessDescriptionAndAccountingPoliciesTextBlock"),
+        Some(vec![FundamentalConcept::NatureOfOperations])
+    );
+}
+
+#[test]
+fn test_net_cash_flow() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CashAndCashEquivalentsPeriodIncreaseDecrease"),
+        Some(vec![FundamentalConcept::NetCashFlow])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CashPeriodIncreaseDecrease"),
+        Some(vec![FundamentalConcept::NetCashFlow])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInContinuingOperations"),
+        Some(vec![
+            FundamentalConcept::NetCashFlowContinuing,
+            FundamentalConcept::NetCashFlow
+        ])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_continuing() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInContinuingOperations"),
+        Some(vec![
+            FundamentalConcept::NetCashFlowContinuing,
+            FundamentalConcept::NetCashFlow
+        ])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_discontinued() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInDiscontinuedOperations"),
+        Some(vec![FundamentalConcept::NetCashFlowDiscontinued])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_financing_activities() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInFinancingActivities"),
+        Some(vec![FundamentalConcept::NetCashFlowFromFinancingActivities])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_financing_activities_continuing() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "NetCashProvidedByUsedInFinancingActivitiesContinuingOperations"
+        ),
+        Some(vec![
+            FundamentalConcept::NetCashFlowFromFinancingActivitiesContinuing
+        ])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_financing_and_activities_discontinued() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "CashProvidedByUsedInFinancingActivitiesDiscontinuedOperations"
+        ),
+        Some(vec![
+            FundamentalConcept::NetCashFlowFromFinancingActivitiesDiscontinued
+        ])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_investing_activities() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInInvestingActivities"),
+        Some(vec![FundamentalConcept::NetCashFlowFromInvestingActivities])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_investing_activities_continuing() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "NetCashProvidedByUsedInInvestingActivitiesContinuingOperations"
+        ),
+        Some(vec![
+            FundamentalConcept::NetCashFlowFromInvestingActivitiesContinuing
+        ])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_investing_activities_discontinued() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "CashProvidedByUsedInInvestingActivitiesDiscontinuedOperations"
+        ),
+        Some(vec![
+            FundamentalConcept::NetCashFlowFromInvestingActivitiesDiscontinued
+        ])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_operating_activities() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInOperatingActivities"),
+        Some(vec![FundamentalConcept::NetCashFlowFromOperatingActivities])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_operating_activities_continuing() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations"
+        ),
+        Some(vec![
+            FundamentalConcept::NetCashFlowFromOperatingActivitiesContinuing
+        ])
+    );
+}
+
+#[test]
+fn test_net_cash_flow_from_operating_activities_discontinued() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "CashProvidedByUsedInOperatingActivitiesDiscontinuedOperations"
+        ),
+        Some(vec![
+            FundamentalConcept::NetCashFlowFromOperatingActivitiesDiscontinued
+        ])
+    );
+}
+
+#[test]
+fn test_net_income_loss() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ProfitLoss"),
+        Some(vec![FundamentalConcept::NetIncomeLoss])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetIncomeLoss"),
+        Some(vec![
+            FundamentalConcept::NetIncomeLossAttributableToParent,
+            FundamentalConcept::NetIncomeLoss
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetIncomeLossAvailableToCommonStockholdersBasic"),
+        Some(vec![
+            FundamentalConcept::NetIncomeLossAvailableToCommonStockholdersBasic,
+            FundamentalConcept::NetIncomeLoss
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperations"),
+        Some(vec![
+            FundamentalConcept::IncomeLossFromContinuingOperationsAfterTax,
+            FundamentalConcept::NetIncomeLoss
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossAttributableToParent"),
+        Some(vec![FundamentalConcept::NetIncomeLoss])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("IncomeLossFromContinuingOperationsIncludingPortionAttributableToNoncontrollingInterest"),
+        Some(vec![FundamentalConcept::IncomeLossFromContinuingOperationsAfterTax, FundamentalConcept::NetIncomeLoss])
+    );
+}
+
+#[test]
+fn test_net_income_loss_attributable_to_noncontrolling_interest() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetIncomeLossAttributableToNoncontrollingInterest"),
+        Some(vec![
+            FundamentalConcept::NetIncomeLossAttributableToNoncontrollingInterest
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "NetIncomeLossAttributableToNonredeemableNoncontrollingInterest"
+        ),
+        Some(vec![
+            FundamentalConcept::NetIncomeLossAttributableToNoncontrollingInterest
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "NetIncomeLossAttributableToRedeemableNoncontrollingInterest"
+        ),
+        Some(vec![
+            FundamentalConcept::NetIncomeLossAttributableToNoncontrollingInterest
+        ])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "IncomeLossFromContinuingOperationsAttributableToNoncontrollingEntity"
+        ),
+        Some(vec![
+            FundamentalConcept::NetIncomeLossAttributableToNoncontrollingInterest
+        ])
+    );
+}
+
+#[test]
+fn test_net_income_loss_attributable_to_parent() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetIncomeLoss"),
+        Some(vec![
+            FundamentalConcept::NetIncomeLossAttributableToParent,
+            FundamentalConcept::NetIncomeLoss
+        ])
+    );
+}
+
+#[test]
+fn test_net_income_loss_available_to_common_stockholders_basic() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetIncomeLossAvailableToCommonStockholdersBasic"),
+        Some(vec![
+            FundamentalConcept::NetIncomeLossAvailableToCommonStockholdersBasic,
+            FundamentalConcept::NetIncomeLoss
+        ])
+    );
+}
+
+#[test]
+fn test_assets_non_current() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("AssetsNoncurrent"),
+        Some(vec![FundamentalConcept::NoncurrentAssets])
+    );
+}
+
+#[test]
+fn test_noncurrent_liabilities() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("LiabilitiesNoncurrent"),
+        Some(vec![FundamentalConcept::NoncurrentLiabilities])
+    );
+}
+
+#[test]
+fn test_non_interest_expense() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NoninterestExpense"),
+        Some(vec![FundamentalConcept::NoninterestExpense])
+    );
+}
+
+#[test]
+fn test_non_interest_income() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NoninterestIncome"),
+        Some(vec![FundamentalConcept::NoninterestIncome])
+    );
+}
+
+#[test]
+fn test_non_operating_income_loss() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NonoperatingIncomeExpense"),
+        Some(vec![FundamentalConcept::NonoperatingIncomeLoss])
+    );
+}
+
+#[test]
+fn test_operating_expenses() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OperatingExpenses"),
+        Some(vec![FundamentalConcept::OperatingExpenses])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OperatingCostsAndExpenses"),
+        Some(vec![FundamentalConcept::OperatingExpenses])
+    );
+}
+
+#[test]
+fn test_operating_income_loss() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OperatingIncomeLoss"),
+        Some(vec![FundamentalConcept::OperatingIncomeLoss])
+    );
+}
+
+#[test]
+fn test_other_comprehensive_income_loss() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OtherComprehensiveIncomeLossNetOfTax"),
+        Some(vec![FundamentalConcept::OtherComprehensiveIncomeLoss])
+    );
+}
+
+#[test]
+fn test_other_operating_income_expenses() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OtherOperatingIncome"),
+        Some(vec![FundamentalConcept::OtherOperatingIncomeExpenses])
+    );
+}
+
+#[test]
+fn test_preferred_stock_dividends_and_other_adjustments() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("PreferredStockDividendsAndOtherAdjustments"),
+        Some(vec![
+            FundamentalConcept::PreferredStockDividendsAndOtherAdjustments
+        ])
+    );
+}
+
+#[test]
+fn test_provision_for_loan_lease_and_other_losses() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ProvisionForLoanLeaseAndOtherLosses"),
+        Some(vec![
+            FundamentalConcept::ProvisionForLoanLeaseAndOtherLosses
+        ])
+    );
+}
+
+#[test]
+fn test_redeemable_noncontrolling_interest() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RedeemableNoncontrollingInterestEquityCarryingAmount"),
+        Some(vec![FundamentalConcept::RedeemableNoncontrollingInterest])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "RedeemableNoncontrollingInterestEquityCommonCarryingAmount"
+        ),
+        Some(vec![FundamentalConcept::RedeemableNoncontrollingInterest])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "RedeemableNoncontrollingInterestEquityPreferredCarryingAmount"
+        ),
+        Some(vec![FundamentalConcept::RedeemableNoncontrollingInterest])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "RedeemableNoncontrollingInterestEquityOtherCarryingAmount"
+        ),
+        Some(vec![FundamentalConcept::RedeemableNoncontrollingInterest])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RedeemableNoncontrollingInterestEquityFairValue"),
+        Some(vec![FundamentalConcept::RedeemableNoncontrollingInterest])
+    );
+}
+
+#[test]
+fn test_research_and_development() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ResearchAndDevelopmentExpense"),
+        Some(vec![FundamentalConcept::ResearchAndDevelopment])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "ResearchAndDevelopmentExpenseExcludingAcquiredInProcessCost"
+        ),
+        Some(vec![FundamentalConcept::ResearchAndDevelopment])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "ResearchAndDevelopmentExpenseSoftwareExcludingAcquiredInProcessCost"
+        ),
+        Some(vec![FundamentalConcept::ResearchAndDevelopment])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("ResearchAndDevelopmentInProcess"),
+        Some(vec![FundamentalConcept::ResearchAndDevelopment])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "ResearchAndDevelopmentAssetAcquiredOtherThanThroughBusinessCombinationWrittenOff"
+        ),
+        Some(vec![FundamentalConcept::ResearchAndDevelopment])
+    );
+}
 
 // #[test]
 // fn test_revenues() {
