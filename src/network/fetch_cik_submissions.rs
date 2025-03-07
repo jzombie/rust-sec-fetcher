@@ -106,6 +106,7 @@ pub async fn fetch_cik_submissions(
             cik,
             entity_type: entity_type_value.clone(),
             accession_number: accession_number.as_str().unwrap_or("").to_string(),
+            // TODO: Move this to `transform` util
             accession_number_stripped: accession_number
                 .as_str()
                 .unwrap_or("")

@@ -4,6 +4,7 @@ use once_cell::sync::Lazy;
 
 pub type TaxonomyConceptName = &'static str;
 
+// TODO: Move to `transform` directory
 // Human-readable mapping: http://www.xbrlsite.com/2014/Reference/Mapping.pdf
 static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConcept, Vec<TaxonomyConceptName>>> = Lazy::new(
     || {

@@ -86,7 +86,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         if let Some(most_recent_nport_p_submission) =
             CikSubmission::most_recent_nport_p_submission(&cik_submissions)
         {
-            println!("{:?}", &most_recent_nport_p_submission);
+            println!(
+                "Most recent NPORT-P submission: {:?}",
+                &most_recent_nport_p_submission
+            );
             println!(
                 "EDGAR archive URL: {}",
                 most_recent_nport_p_submission.as_edgar_archive_url()
