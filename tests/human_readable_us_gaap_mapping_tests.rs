@@ -77,3 +77,59 @@ fn test_comprehensive_income_loss_attributable_to_parent() {
         ]))
     );
 }
+
+#[test]
+fn test_cost_of_revenue() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CostOfRevenue")
+            .map(|v| v.into_iter().collect::<HashSet<_>>()),
+        Some(HashSet::from(["CostOfRevenue", "CostsAndExpenses"]))
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CostOfGoodsAndServicesSold")
+            .map(|v| v.into_iter().collect::<HashSet<_>>()),
+        Some(HashSet::from(["CostOfRevenue"]))
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CostOfServices")
+            .map(|v| v.into_iter().collect::<HashSet<_>>()),
+        Some(HashSet::from(["CostOfRevenue"]))
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CostOfGoodsSold")
+            .map(|v| v.into_iter().collect::<HashSet<_>>()),
+        Some(HashSet::from(["CostOfRevenue"]))
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "CostOfGoodsSoldExcludingDepreciationDepletionAndAmortization"
+        )
+        .map(|v| v.into_iter().collect::<HashSet<_>>()),
+        Some(HashSet::from(["CostOfRevenue"]))
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CostOfGoodsSoldElectric")
+            .map(|v| v.into_iter().collect::<HashSet<_>>()),
+        Some(HashSet::from(["CostOfRevenue"]))
+    );
+}
+
+#[test]
+fn test_costs_and_expenses() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CostsAndExpenses")
+            .map(|v| v.into_iter().collect::<HashSet<_>>()),
+        Some(HashSet::from(["CostsAndExpenses"]))
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("BenefitsLossesAndExpenses")
+            .map(|v| v.into_iter().collect::<HashSet<_>>()),
+        Some(HashSet::from(["CostsAndExpenses", "BenefitsCostsExpenses"]))
+    );
+}

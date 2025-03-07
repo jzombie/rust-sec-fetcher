@@ -49,7 +49,7 @@ static US_GAAP_MAPPING: Lazy<HashMap<FundamentalConceptName, Vec<TaxonomyConcept
         );
         map.insert(
             "CostsAndExpenses",
-            vec!["CostOfRevenue", "BenefitsLossesAndExpenses"],
+            vec!["CostsAndExpenses", "BenefitsLossesAndExpenses"],
         );
         map.insert("CurrentAssets", vec!["AssetsCurrent"]);
         map.insert("CurrentLiabilities", vec!["LiabilitiesCurrent"]);
