@@ -408,3 +408,19 @@ fn test_interest_and_debt_expense() {
         Some(vec!["InterestAndDebtExpense"])
     );
 }
+
+#[test]
+fn test_interest_and_divident_income_operating() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("InterestAndDividendIncomeOperating"),
+        Some(vec!["InterestAndDividendIncomeOperating", "Revenues"])
+    );
+}
+
+#[test]
+fn test_interest_income_expense_after_provision_for_losses() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("InterestIncomeExpenseAfterProvisionForLoanLoss"),
+        Some(vec!["InterestIncomeExpenseAfterProvisionForLosses"])
+    );
+}
