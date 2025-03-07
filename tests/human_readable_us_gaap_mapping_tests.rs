@@ -453,3 +453,46 @@ fn test_liabilities_and_equity() {
         Some(vec!["LiabilitiesAndEquity"])
     );
 }
+
+#[test]
+fn test_nature_of_operations() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NatureOfOperations"),
+        Some(vec!["NatureOfOperations"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("BusinessDescriptionAndBasisOfPresentationTextBlock"),
+        Some(vec!["NatureOfOperations"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "OrganizationConsolidationAndPresentationOfFinancialStatementsDisclosureTextBlock"
+        ),
+        Some(vec!["NatureOfOperations"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OrganizationConsolidationBasisOfPresentationBusinessDescriptionAndAccountingPoliciesTextBlock"),
+        Some(vec!["NatureOfOperations"])
+    );
+}
+
+#[test]
+fn test_net_cash_flow() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CashAndCashEquivalentsPeriodIncreaseDecrease"),
+        Some(vec!["NetCashFlow"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CashPeriodIncreaseDecrease"),
+        Some(vec!["NetCashFlow"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInContinuingOperations"),
+        Some(vec!["NetCashFlow", "NetCashFlowContinuing"])
+    );
+}
