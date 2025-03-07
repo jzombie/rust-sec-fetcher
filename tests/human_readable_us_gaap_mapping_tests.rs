@@ -1051,12 +1051,12 @@ fn test_revenues() {
 
     assert_eq!(
         get_us_gaap_human_readable_mapping("RevenuesExcludingInterestAndDividends"),
-        Some(vec!["Revenues"])
+        Some(vec!["RevenuesExcludingInterestAndDividends", "Revenues"])
     );
 
     assert_eq!(
         get_us_gaap_human_readable_mapping("InvestmentBankingRevenue"),
-        Some(vec!["Revenues"])
+        Some(vec!["RevenuesExcludingInterestAndDividends", "Revenues"])
     );
 
     assert_eq!(
@@ -1067,5 +1067,23 @@ fn test_revenues() {
     assert_eq!(
         get_us_gaap_human_readable_mapping("ElectricUtilityRevenue"),
         Some(vec!["Revenues"])
+    );
+}
+
+#[test]
+fn test_revenues_excluding_interest_and_dividends() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("RevenuesExcludingInterestAndDividends"),
+        Some(vec!["RevenuesExcludingInterestAndDividends", "Revenues"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("BrokerageCommissionsRevenue"),
+        Some(vec!["RevenuesExcludingInterestAndDividends"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("InvestmentBankingRevenue"),
+        Some(vec!["RevenuesExcludingInterestAndDividends", "Revenues"])
     );
 }
