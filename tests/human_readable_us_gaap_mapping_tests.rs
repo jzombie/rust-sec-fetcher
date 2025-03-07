@@ -496,3 +496,12 @@ fn test_net_cash_flow() {
         Some(vec!["NetCashFlow", "NetCashFlowContinuing"])
     );
 }
+
+#[test]
+fn test_net_cash_flow_continuing() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NetCashProvidedByUsedInContinuingOperations"),
+        // TODO: Ensure this is actually the order of ops
+        Some(vec!["NetCashFlowContinuing", "NetCashFlow"])
+    );
+}

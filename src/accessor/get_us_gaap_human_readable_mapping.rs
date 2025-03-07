@@ -430,10 +430,29 @@ static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<Fundamen
 /// ```
 pub fn get_us_gaap_human_readable_mapping(us_gaap_key: &str) -> Option<Vec<&'static str>> {
     let map_inverted = &US_GAAP_MAPPING_INVERTED;
+    let map_order = &US_GAAP_MAPPING; // Preserve Try Order from US_GAAP_MAPPING
 
-    if let Some(values) = map_inverted.get(us_gaap_key) {
-        Some(values.clone()) // Return a clone of the found values
+    if let Some(mut values) = map_inverted.get(us_gaap_key).cloned() {
+        // Compute Try Order by finding the first occurrence of `us_gaap_key` in **each fundamental concept's vector**
+        let get_try_order = |concept: &&'static str| -> usize {
+            map_order
+                .get(concept) // Get the corresponding vector for the fundamental concept
+                .and_then(|concepts| concepts.iter().position(|&c| c == us_gaap_key)) // Find index inside that vector
+                .map(|pos| pos + 1) // Convert to 1-based index
+                .unwrap_or(usize::MAX) // If never found, push to the end
+        };
+
+        // Debugging: Print Correct Try Order
+        for concept in &values {
+            let try_order = get_try_order(concept);
+            println!("Concept: {}, Try Order: {}", concept, try_order);
+        }
+
+        // Sort by Correct Try Order
+        values.sort_by_key(|concept| get_try_order(concept));
+
+        Some(values)
     } else {
-        None // Return None if no mapping is found
+        None
     }
 }
