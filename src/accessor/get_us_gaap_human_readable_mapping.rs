@@ -342,6 +342,53 @@ static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<Fundamen
         map_inverted
     });
 
+/// Retrieves the fundamental accounting concepts corresponding to a given
+/// US GAAP taxonomy concept, preserving the original "try order."
+///
+/// # Description
+/// This function looks up a **US GAAP taxonomy concept** (`us-gaap:*`) and returns
+/// a list of fundamental concept names (`Vec<&'static str>`) that reference it.
+/// The order in the returned list **respects the original "try order"**
+/// defined in the `US_GAAP_MAPPING` structure as documented in:
+///
+/// - [Mappings between Fundamental Accounting Concepts and US GAAP XBRL Taxonomy Concepts (Human readable)](http://www.xbrlsite.com/2014/Reference/Mapping.pdf)
+///
+/// The function relies on an **inverted** [`IndexMap`](https://docs.rs/indexmap/latest/indexmap/)
+/// (`US_GAAP_MAPPING_INVERTED`) to ensure that both **insertion order is preserved**
+/// and **lookups remain efficient (`O(1)`)**.
+///
+/// # Arguments
+/// - `us_gaap_key`: The US GAAP taxonomy concept name (e.g., `"Assets"`, `"NetIncomeLoss"`).
+///
+/// # Returns
+/// - `Some(Vec<&'static str>)` if the given taxonomy concept exists in the mapping.
+/// - `None` if no corresponding fundamental concept is found.
+///
+/// # Order Preservation
+/// The returned list maintains the **original "try order"** from the mapping.
+/// This means that when multiple fundamental concepts are mapped to the same
+/// taxonomy concept, they will be returned in the same order they were inserted.
+///
+/// # Complexity
+/// - **Lookup:** `O(1)`, due to `IndexMap`.
+/// - **Cloning:** `O(N)`, where `N` is the number of matching fundamental concepts.
+///
+/// # Example
+/// ```
+/// use sec_fetcher::accessor::get_us_gaap_human_readable_mapping;
+///
+/// fn main() {
+///     let result = get_us_gaap_human_readable_mapping("AssetsCurrent");
+///
+///     assert_eq!(
+///         result,
+///         Some(vec![
+///             "Assets",
+///             "CurrentAssets",
+///         ])
+///     );
+/// }
+/// ```
 pub fn get_us_gaap_human_readable_mapping(us_gaap_key: &str) -> Option<Vec<&'static str>> {
     let map_inverted = &US_GAAP_MAPPING_INVERTED;
 
