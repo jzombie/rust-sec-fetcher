@@ -1,6 +1,10 @@
+use std::cmp::{Eq, PartialEq};
+
+#[derive(Eq, PartialEq, Hash, Clone)]
 pub enum FundamentalConcept {
     Assets,
     BenefitsCostsExpenses,
+    CommitmentsAndContingencies,
     ComprehensiveIncomeLoss,
     ComprehensiveIncomeLossAttributableToNoncontrollingInterest,
     ComprehensiveIncomeLossAttributableToParent,
@@ -25,8 +29,10 @@ pub enum FundamentalConcept {
     InterestAndDebtExpense,
     InterestAndDividendIncomeOperating,
     InterestExpenseOperating,
+    InterestIncomeExpenseAfterProvisionForLosses,
     InterestIncomeExpenseOperatingNet,
     Liabilities,
+    LiabilitiesAndEquity,
     NatureOfOperations,
     NetCashFlow,
     NetCashFlowContinuing,
