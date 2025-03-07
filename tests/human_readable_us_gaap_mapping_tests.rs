@@ -424,3 +424,11 @@ fn test_interest_income_expense_after_provision_for_losses() {
         Some(vec!["InterestIncomeExpenseAfterProvisionForLosses"])
     );
 }
+
+#[test]
+fn test_interest_income_expense_operating_net() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("InterestIncomeExpenseNet"),
+        Some(vec!["InterestIncomeExpenseOperatingNet"])
+    );
+}
