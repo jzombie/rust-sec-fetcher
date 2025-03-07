@@ -125,3 +125,48 @@ fn test_current_assets() {
         Some(vec!["Assets", "CurrentAssets"])
     );
 }
+
+#[test]
+fn test_current_liabilities() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("LiabilitiesCurrent"),
+        Some(vec!["CurrentLiabilities"])
+    );
+}
+
+#[test]
+fn test_equity() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"
+        ),
+        Some(vec!["Equity"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("StockholdersEquity"),
+        Some(vec!["Equity", "EquityAttributableToParent"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "PartnersCapitalIncludingPortionAttributableToNoncontrollingInterest"
+        ),
+        Some(vec!["Equity"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("PartnersCapital"),
+        Some(vec!["Equity", "EquityAttributableToParent"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CommonStockholdersEquity"),
+        Some(vec!["Equity"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("MembersEquity"),
+        Some(vec!["Equity", "EquityAttributableToParent"])
+    );
+}
