@@ -7,7 +7,8 @@ use network::{
 };
 mod accessors;
 mod enums;
-mod transform;
+mod parsers;
+mod transformers;
 mod utils;
 use polars::prelude::{CsvWriter, SerWriter};
 use std::fs::File;

@@ -1,4 +1,4 @@
-use sec_fetcher::accessors::distill_us_gaap_fundamental_concepts;
+use sec_fetcher::accessor::distill_us_gaap_fundamental_concepts;
 
 pub fn main() {
     println!(
