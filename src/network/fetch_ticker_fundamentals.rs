@@ -24,6 +24,8 @@ pub async fn fetch_ticker_fundamentals(
 
     let data: Value = client.fetch_json(&url).await?;
 
+    // TODO: Move into parsers
+
     let mut fact_category_values = Vec::new();
     let mut fact_name_values = Vec::new();
     let mut label_values = Vec::new();

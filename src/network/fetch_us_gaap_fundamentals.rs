@@ -1,4 +1,4 @@
-use crate::accessor::get_cik_by_ticker_symbol;
+use crate::accessors::get_cik_by_ticker_symbol;
 use crate::network::{SecClient, SecTickersDataFrame};
 use polars::prelude::pivot::pivot;
 use polars::prelude::*;

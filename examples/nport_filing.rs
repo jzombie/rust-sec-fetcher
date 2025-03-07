@@ -1,4 +1,4 @@
-use sec_fetcher::network::{fetch_n_port_filing, CredentialManager, CredentialProvider, SecClient};
+use sec_fetcher::network::{fetch_nport_filing, CredentialManager, CredentialProvider, SecClient};
 use std::error::Error;
 
 #[tokio::main]
@@ -9,7 +9,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let cik = 884394; // Example CIK
     let accession_number = "000175272425043826/primary_doc"; // Example accession number
 
-    let investments = fetch_n_port_filing(&sec_client, cik, accession_number).await?;
+    let investments = fetch_nport_filing(&sec_client, cik, accession_number).await?;
 
     for (i, investment) in investments.iter().enumerate() {
         println!("Investment {}: {:?}", i + 1, investment);
