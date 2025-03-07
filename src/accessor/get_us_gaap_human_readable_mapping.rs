@@ -161,7 +161,10 @@ static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConceptName, Vec<TaxonomyConcep
         map.insert("Liabilities", vec!["Liabilities"]);
         map.insert(
             "LiabilitiesAndEquity",
-            vec!["InterestExpenseOperating", "LiabilitiesAndPartnersCapital"],
+            vec![
+                "LiabilitiesAndStockholdersEquity",
+                "LiabilitiesAndPartnersCapital",
+            ],
         );
         map.insert(
         "NatureOfOperations",

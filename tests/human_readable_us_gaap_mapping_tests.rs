@@ -440,3 +440,16 @@ fn test_liabilities() {
         Some(vec!["Liabilities"])
     );
 }
+
+#[test]
+fn test_liabilities_and_equity() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("LiabilitiesAndStockholdersEquity"),
+        Some(vec!["LiabilitiesAndEquity"])
+    );
+
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("LiabilitiesAndPartnersCapital"),
+        Some(vec!["LiabilitiesAndEquity"])
+    );
+}
