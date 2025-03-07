@@ -138,143 +138,179 @@ fn test_current_assets() {
     );
 }
 
-// #[test]
-// fn test_current_liabilities() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("LiabilitiesCurrent"),
-//         Some(vec!["CurrentLiabilities"])
-//     );
-// }
+#[test]
+fn test_current_liabilities() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("LiabilitiesCurrent"),
+        Some(vec![FundamentalConcept::CurrentLiabilities])
+    );
+}
 
-// #[test]
-// fn test_equity() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"
-//         ),
-//         Some(vec!["Equity"])
-//     );
+#[test]
+fn test_equity() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"
+        ),
+        Some(vec![FundamentalConcept::Equity])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("StockholdersEquity"),
-//         Some(vec!["EquityAttributableToParent", "Equity"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("StockholdersEquity"),
+        Some(vec![
+            FundamentalConcept::EquityAttributableToParent,
+            FundamentalConcept::Equity
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "PartnersCapitalIncludingPortionAttributableToNoncontrollingInterest"
-//         ),
-//         Some(vec!["Equity"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "PartnersCapitalIncludingPortionAttributableToNoncontrollingInterest"
+        ),
+        Some(vec![FundamentalConcept::Equity])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("PartnersCapital"),
-//         Some(vec!["EquityAttributableToParent", "Equity"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("PartnersCapital"),
+        Some(vec![
+            FundamentalConcept::EquityAttributableToParent,
+            FundamentalConcept::Equity
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("CommonStockholdersEquity"),
-//         Some(vec!["Equity"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("CommonStockholdersEquity"),
+        Some(vec![FundamentalConcept::Equity])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("MembersEquity"),
-//         Some(vec!["EquityAttributableToParent", "Equity"])
-//     );
-// }
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("MembersEquity"),
+        Some(vec![
+            FundamentalConcept::EquityAttributableToParent,
+            FundamentalConcept::Equity
+        ])
+    );
+}
 
-// #[test]
-// fn test_equity_attributable_to_noncontrolling_interest() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("MinorityInterest"),
-//         Some(vec!["EquityAttributableToNoncontrollingInterest"])
-//     );
+#[test]
+fn test_equity_attributable_to_noncontrolling_interest() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("MinorityInterest"),
+        Some(vec![
+            FundamentalConcept::EquityAttributableToNoncontrollingInterest
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("PartnersCapitalAttributableToNoncontrollingInterest"),
-//         Some(vec!["EquityAttributableToNoncontrollingInterest"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("PartnersCapitalAttributableToNoncontrollingInterest"),
+        Some(vec![
+            FundamentalConcept::EquityAttributableToNoncontrollingInterest
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("MinorityInterestInLimitedPartnerships"),
-//         Some(vec!["EquityAttributableToNoncontrollingInterest"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("MinorityInterestInLimitedPartnerships"),
+        Some(vec![
+            FundamentalConcept::EquityAttributableToNoncontrollingInterest
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("MinorityInterestInOperatingPartnerships"),
-//         Some(vec!["EquityAttributableToNoncontrollingInterest"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("MinorityInterestInOperatingPartnerships"),
+        Some(vec![
+            FundamentalConcept::EquityAttributableToNoncontrollingInterest
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("MinorityInterestInPreferredUnitHolders"),
-//         Some(vec!["EquityAttributableToNoncontrollingInterest"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("MinorityInterestInPreferredUnitHolders"),
+        Some(vec![
+            FundamentalConcept::EquityAttributableToNoncontrollingInterest
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("MinorityInterestInJointVentures"),
-//         Some(vec!["EquityAttributableToNoncontrollingInterest"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("MinorityInterestInJointVentures"),
+        Some(vec![
+            FundamentalConcept::EquityAttributableToNoncontrollingInterest
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("OtherMinorityInterests"),
-//         Some(vec!["EquityAttributableToNoncontrollingInterest"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("OtherMinorityInterests"),
+        Some(vec![
+            FundamentalConcept::EquityAttributableToNoncontrollingInterest
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NonredeemableNoncontrollingInterest"),
-//         Some(vec!["EquityAttributableToNoncontrollingInterest"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NonredeemableNoncontrollingInterest"),
+        Some(vec![
+            FundamentalConcept::EquityAttributableToNoncontrollingInterest
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("NoncontrollingInterestInVariableInterestEntity"),
-//         Some(vec!["EquityAttributableToNoncontrollingInterest"])
-//     );
-// }
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("NoncontrollingInterestInVariableInterestEntity"),
+        Some(vec![
+            FundamentalConcept::EquityAttributableToNoncontrollingInterest
+        ])
+    );
+}
 
-// #[test]
-// fn test_equity_attributable_to_parent() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("StockholdersEquity"),
-//         Some(vec!["EquityAttributableToParent", "Equity"])
-//     );
+#[test]
+fn test_equity_attributable_to_parent() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("StockholdersEquity"),
+        Some(vec![
+            FundamentalConcept::EquityAttributableToParent,
+            FundamentalConcept::Equity
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("PartnersCapital"),
-//         Some(vec!["EquityAttributableToParent", "Equity"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("PartnersCapital"),
+        Some(vec![
+            FundamentalConcept::EquityAttributableToParent,
+            FundamentalConcept::Equity
+        ])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("MembersEquity"),
-//         Some(vec!["EquityAttributableToParent", "Equity"])
-//     );
-// }
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("MembersEquity"),
+        Some(vec![
+            FundamentalConcept::EquityAttributableToParent,
+            FundamentalConcept::Equity
+        ])
+    );
+}
 
-// #[test]
-// fn test_exchange_gains_losses() {
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("EffectOfExchangeRateOnCashAndCashEquivalents"),
-//         Some(vec!["ExchangeGainsLosses"])
-//     );
+#[test]
+fn test_exchange_gains_losses() {
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("EffectOfExchangeRateOnCashAndCashEquivalents"),
+        Some(vec![FundamentalConcept::ExchangeGainsLosses])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "EffectOfExchangeRateOnCashAndCashEquivalentsContinuingOperations"
-//         ),
-//         Some(vec!["ExchangeGainsLosses"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "EffectOfExchangeRateOnCashAndCashEquivalentsContinuingOperations"
+        ),
+        Some(vec![FundamentalConcept::ExchangeGainsLosses])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping("EffectOfExchangeRateOnCashContinuingOperations"),
-//         Some(vec!["ExchangeGainsLosses"])
-//     );
+    assert_eq!(
+        get_us_gaap_human_readable_mapping("EffectOfExchangeRateOnCashContinuingOperations"),
+        Some(vec![FundamentalConcept::ExchangeGainsLosses])
+    );
 
-//     assert_eq!(
-//         get_us_gaap_human_readable_mapping(
-//             "EffectOfExchangeRateOnCashAndCashEquivalentsDiscontinuedOperations"
-//         ),
-//         Some(vec!["ExchangeGainsLosses"])
-//     );
-// }
+    assert_eq!(
+        get_us_gaap_human_readable_mapping(
+            "EffectOfExchangeRateOnCashAndCashEquivalentsDiscontinuedOperations"
+        ),
+        Some(vec![FundamentalConcept::ExchangeGainsLosses])
+    );
+}
 
 // #[test]
 // fn test_extraordinary_items_of_income_expense_net_of_tax() {
