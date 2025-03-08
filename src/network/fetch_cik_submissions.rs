@@ -1,5 +1,5 @@
 use crate::network::SecClient;
-use crate::transformers::cik_to_string;
+use crate::models::Cik;
 use chrono::NaiveDate;
 use serde_json::Value;
 use std::error::Error;
@@ -7,7 +7,7 @@ use string_replace_all::StringReplaceAll;
 
 #[derive(Clone, Debug)]
 pub struct CikSubmission {
-    pub cik: u64,
+    pub cik: Cik,
     // TODO: Add these fields (and more), but not per submission; capture as a single separate entity
     // pub name: Option<String>,            // i.e. "Apple"
     pub entity_type: Option<String>, // i.e. "operating"
@@ -42,7 +42,7 @@ impl CikSubmission {
     pub fn as_edgar_archive_url(&self) -> String {
         format!(
             "https://www.sec.gov/Archives/edgar/data/{}/{}/",
-            self.cik, self.accession_number_stripped
+            self.cik.to_string(), self.accession_number_stripped
         )
     }
 }
@@ -50,10 +50,9 @@ impl CikSubmission {
 // TODO: Move into impl?
 pub async fn fetch_cik_submissions(
     sec_client: &SecClient,
-    cik: u64,
+    cik: Cik,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
-    let formatted_cik = cik_to_string(cik);
-    let url = format!("https://data.sec.gov/submissions/CIK{}.json", formatted_cik);
+    let url = format!("https://data.sec.gov/submissions/CIK{}.json", cik.to_string());
     let data: Value = sec_client.fetch_json(&url).await?;
 
     let entity_type_value: Option<String> = data["entityType"].as_str().map(|s| s.to_string());
@@ -104,7 +103,7 @@ pub async fn fetch_cik_submissions(
             .and_then(|date_str| NaiveDate::parse_from_str(date_str, "%Y-%m-%d").ok());
 
         cik_submissions.push(CikSubmission {
-            cik,
+            cik: cik.clone(),
             entity_type: entity_type_value.clone(),
             accession_number: accession_number.as_str().unwrap_or("").to_string(),
             // TODO: Move this to `transform` util

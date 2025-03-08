@@ -14,11 +14,11 @@ pub async fn fetch_us_gaap_fundamentals(
     ticker_symbol: &str,
 ) -> Result<TickerFundamentalsDataFrame, Box<dyn Error>> {
     // Get the formatted CIK for the ticker
-    let formatted_cik = get_cik_by_ticker_symbol(df_tickers, ticker_symbol)?;
+    let cik = get_cik_by_ticker_symbol(df_tickers, ticker_symbol)?;
 
     let url = format!(
         "https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json",
-        formatted_cik
+        cik.to_string()
     );
 
     // TODO: Debug log

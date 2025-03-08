@@ -5,3 +5,4 @@ pub mod network;
 pub mod parsers;
 pub mod transformers;
 pub mod utils;
+pub mod models;

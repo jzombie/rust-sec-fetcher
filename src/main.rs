@@ -10,6 +10,7 @@ mod enums;
 mod parsers;
 mod transformers;
 mod utils;
+mod models;
 use polars::prelude::{CsvWriter, SerWriter};
 use std::fs::File;
 

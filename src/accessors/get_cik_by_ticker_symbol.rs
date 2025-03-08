@@ -1,6 +1,6 @@
 use polars::prelude::*;
 use std::error::Error;
-
+use crate::models::Cik;
 use crate::network::SecTickersDataFrame;
 
 // TODO: Refactor to optionally work off of funding data source as well
@@ -18,7 +18,7 @@ use crate::network::SecTickersDataFrame;
 /// - `ticker_symbol` - A **stock ticker symbol** (case-sensitive) as a `&str`.
 ///
 /// # Returns
-/// - `Ok(String)` - A **10-digit zero-padded CIK** as a `String`.
+/// - `Ok(Cik)` - A `Cik` model instance.
 /// - `Err(Box<dyn Error>)` - If:
 ///   - The ticker column is not a string type.
 ///   - The CIK column is not a string type.
@@ -35,7 +35,7 @@ use crate::network::SecTickersDataFrame;
 pub fn get_cik_by_ticker_symbol(
     df_tickers: &SecTickersDataFrame,
     ticker_symbol: &str,
-) -> Result<String, Box<dyn Error>> {
+) -> Result<Cik, Box<dyn Error>> {
     let ticker_series = df_tickers.column("ticker")?;
 
     // Ensure ticker column is a UTF-8 (string) type
@@ -61,7 +61,9 @@ pub fn get_cik_by_ticker_symbol(
     }
 
     let cik_utf8 = cik_series.str()?; // Convert to Utf8Chunked
-    let cik_value = cik_utf8.get(0).ok_or("CIK value not found")?;
+    let cik_str = cik_utf8.get(0).ok_or("CIK value not found")?;
 
-    Ok(cik_value.to_string())
+    let cik = Cik::from_str(cik_str)?;
+
+    Ok(cik)
 }
