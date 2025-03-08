@@ -1,3 +1,4 @@
+// TODO: Document terminology
 #[derive(Debug, Clone)]
 pub struct Cik {
     pub value: u64,
@@ -27,7 +28,9 @@ impl From<std::num::ParseIntError> for CikError {
 }
 
 impl Cik {
-   /// Creates a `Cik` instance from a `u64` value.
+    // TODO: From `AccessionNumber`
+
+    /// Creates a `Cik` instance from a `u64` value.
     ///
     /// # Errors
     /// - Returns `CikError::InvalidLength` if the numeric value exceeds 10 digits.

@@ -1,5 +1,7 @@
+// TODO: Document terminology
 #[derive(Debug, Clone)]
 pub struct AccessionNumber {
+    // TODO: Use Cik model type here
     pub cik: u64,       // First 10 digits (zero-padded)
     pub year: u16,      // Next 2 digits (filing year)
     pub sequence: u32,  // Last 6 digits (filing sequence number)
@@ -38,18 +40,34 @@ impl AccessionNumber {
     /// - Returns `AccessionNumberError::InvalidLength` if the cleaned string is not **18 digits**.
     /// - Returns `AccessionNumberError::ParseError` if parsing fails.
     pub fn from_str(accession_str: &str) -> Result<Self, AccessionNumberError> {
-        let clean_str: String = accession_str.chars().filter(|c| c.is_numeric()).collect();
-
+        // Remove dashes so we can handle both formatted and unformatted cases
+        let clean_str: String = accession_str.chars().filter(|c| c.is_ascii_digit()).collect();
+    
+        // Ensure the total length is exactly 18 digits
         if clean_str.len() != 18 {
             return Err(AccessionNumberError::InvalidLength);
         }
+    
+        // Extract fields based on fixed positions
+        let cik_part = &clean_str[0..10];
+        let year_part = &clean_str[10..12];
+        let sequence_part = &clean_str[12..18];
+    
+        // Ensure fields contain only numbers before parsing
+        if !clean_str.chars().all(|c| c.is_ascii_digit()) {
+            return Err(AccessionNumberError::ParseError(
+                "Non-numeric character found".parse::<u64>().unwrap_err(),
+            ));
+        }
 
-        let cik = clean_str[0..10].parse::<u64>()?;
-        let year = clean_str[10..12].parse::<u16>()?;
-        let sequence = clean_str[12..18].parse::<u32>()?;
-
+        // Parse fields into numbers
+        let cik = cik_part.parse::<u64>()?;
+        let year = year_part.parse::<u16>()?;
+        let sequence = sequence_part.parse::<u32>()?;
+    
         Ok(Self { cik, year, sequence })
-    }
+    }    
+     
 
     /// Creates an **Accession Number** from numeric components.
     ///
