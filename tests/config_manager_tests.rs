@@ -1,4 +1,4 @@
-
+use std::env;
 use std::fs;
 use std::io::Write;
 use tempfile::tempdir;
@@ -16,20 +16,21 @@ fn create_temp_config(contents: &str) -> (tempfile::TempDir, PathBuf) {
     (dir, path) // Return both the directory and path
 }
 
-// TODO: Fix issue where it locks up waiting for interactive input
-// Test: Load default config when no file exists
-// #[test]
-// fn test_load_default_config() {
-//     let config_manager = ConfigManager::load().expect("Failed to load config");
-//     let config = config_manager.get_config();
 
+#[test]
+fn test_load_default_config() {
+    env::set_var("INTERACTIVE_MODE", "false");
 
-//     assert_eq!(config.max_concurrent, Some(1));
-//     assert_eq!(config.min_delay_ms, Some(1000));
-//     assert_eq!(config.max_retries, Some(5));
-// }
+    let config_manager = ConfigManager::load().expect("Failed to load config");
+    let config = config_manager.get_config();
 
-/// Test: Load a valid custom config file
+    assert_eq!(config.max_concurrent, Some(1));
+    assert_eq!(config.min_delay_ms, Some(1000));
+    assert_eq!(config.max_retries, Some(5));
+
+    env::remove_var("INTERACTIVE_MODE");
+}
+
 #[test]
 fn test_load_custom_config() {
     let config_contents = r#"
@@ -54,7 +55,6 @@ fn test_load_custom_config() {
     drop(temp_dir); // Explicitly drop temp_dir (not necessary but ensures cleanup after test)
 }
 
-/// Test: Fail when trying to load a non-existent config file
 #[test]
 fn test_load_non_existent_config() {
     let config_path = PathBuf::from("non_existent_config.toml");
