@@ -5,9 +5,8 @@ use serde_json::to_string_pretty;
 use std::error::Error;
 use std::path::{PathBuf};
 use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
-use crate::config::CredentialManager;
+use crate::config::{CredentialManager, CredentialProvider};
 
-use super::credential_manager;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppConfig {
@@ -70,7 +69,7 @@ impl ConfigManager {
     }
     
     /// Loads configuration from file and environment variables.
-    pub fn load(credential_manager: Option<&CredentialManager>) -> Result<Self, Box<dyn Error>> {
+    pub fn load() -> Result<Self, Box<dyn Error>> {
         let config_path = Self::get_config_path();
 
         let config = Config::builder()
@@ -82,11 +81,10 @@ impl ConfigManager {
         let mut settings: AppConfig = config.try_deserialize()?;
 
         if settings.email.is_none() {
-            if let Some(credential_manager) = credential_manager {
-                let email = credential_manager.get_credential()
-                    .map_err(|err| format!("Could not obtain credential from credential manager. {:?}", err))?;
-                settings.email = Some(email);
-            }
+            let credential_manager = CredentialManager::try_from_prompt::<CredentialManager>()?;
+            let email = credential_manager.get_credential()
+                .map_err(|err| format!("Could not obtain credential from credential manager. {:?}", err))?;
+            settings.email = Some(email);
         }
 
         Ok(Self { config: settings })

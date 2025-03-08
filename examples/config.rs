@@ -9,7 +9,8 @@ fn main() {
 
     let credential_manager = CredentialManager::new("jeremy").unwrap();
 
-    let config_manager = ConfigManager::load(Some(&credential_manager)).map_err(|err| eprint!("{:?}\n", err)).unwrap();
+    // let config_manager = ConfigManager::load(Some(&credential_manager)).map_err(|err| eprint!("{:?}\n", err)).unwrap();
+    let config_manager = ConfigManager::load().unwrap();
 
     let config = config_manager.get_config();
     print!("{}\n", config.pretty_print());

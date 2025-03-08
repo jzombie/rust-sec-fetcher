@@ -18,6 +18,11 @@ pub trait CredentialProvider {
 }
 
 impl CredentialManager {
+    /// Calls `from_prompt()` if the trait is implemented, otherwise returns an error.
+    pub fn try_from_prompt<T: CredentialProvider>() -> Result<T, Box<dyn Error>> {
+        T::from_prompt()
+    }
+
     /// Creates a new instance for a given user
     pub fn new(username: &str) -> Result<Self, Box<dyn Error>> {
         let entry = Entry::new(SERVICE, username)?;
