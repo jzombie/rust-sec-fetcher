@@ -14,7 +14,7 @@ fn overwrite_option<T>(base: &mut Option<T>, new: Option<T>) {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Merge)]
 pub struct AppConfig {
-    #[merge(strategy = overwrite_option)] // ✅ Always replace with new value
+    #[merge(strategy = overwrite_option)] // Always replace with new value
     pub email: Option<String>,
 
     #[merge(strategy = overwrite_option)]
