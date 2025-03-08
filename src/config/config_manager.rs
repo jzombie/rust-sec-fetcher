@@ -3,6 +3,7 @@ use dirs::config_dir;
 use serde::Deserialize;
 use std::error::Error;
 use std::path::{PathBuf};
+use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct AppConfig {
@@ -10,8 +11,8 @@ pub struct AppConfig {
     pub max_concurrent: usize,
     pub min_delay_ms: u64,
     pub max_retries: Option<usize>,
-    pub cache_dir: String,
-    pub cache_mode: String, // Will be converted later
+    pub cache_dir_str: Option<String>,
+    pub cache_mode_str: Option<String>,
 }
 
 pub struct ConfigManager {
@@ -19,19 +20,20 @@ pub struct ConfigManager {
 }
 
 impl ConfigManager {
+    pub fn get_suggested_system_path() -> Option<PathBuf> {
+        config_dir().map(|dir| dir.join(env!("CARGO_PKG_NAME")).join("config.toml"))
+    }
+    
     /// Determines the standard config file location.
-    fn get_config_path() -> PathBuf {
-        let default_path = PathBuf::from("config.toml"); // Fallback if no global config
-
-        if let Some(config_dir) = config_dir() {
-            let path = config_dir.join(env!("CARGO_PKG_NAME")).join("config.toml");
+    pub fn get_config_path() -> PathBuf {
+        if let Some(path) = Self::get_suggested_system_path() {
             if path.exists() {
                 return path;
             }
         }
-        default_path
+        PathBuf::from("config.toml") // Fallback if no global config
     }
-
+    
     /// Loads configuration from file and environment variables.
     pub fn load() -> Result<Self, Box<dyn Error>> {
         let config_path = Self::get_config_path();
