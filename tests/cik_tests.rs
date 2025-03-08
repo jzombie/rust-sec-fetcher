@@ -1,7 +1,5 @@
 use sec_fetcher::models::{Cik, CikError, AccessionNumber};
 
-// TODO: Add tests from `AccessionNumber`
-
 #[test]
 fn test_cik_to_string() {
     assert_eq!(Cik::from_u64(12345).unwrap().to_string(), "0000012345");
