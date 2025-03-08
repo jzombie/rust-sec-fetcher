@@ -1,4 +1,4 @@
-use sec_fetcher::config::{ConfigManager, CredentialManager};
+use sec_fetcher::config::ConfigManager;
 
 fn main() {
     let suggested_system_path = ConfigManager::get_suggested_system_path();
@@ -7,7 +7,6 @@ fn main() {
     let config_path = ConfigManager::get_config_path();
     println!("Config path: {:?}", config_path);
 
-    // let config_manager = ConfigManager::load(Some(&credential_manager)).map_err(|err| eprint!("{:?}\n", err)).unwrap();
     let config_manager = ConfigManager::load().unwrap();
 
     let config = config_manager.get_config();
