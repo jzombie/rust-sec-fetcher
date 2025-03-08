@@ -147,4 +147,17 @@ impl AccessionNumber {
     pub fn to_string(&self) -> String {
         format!("{:010}-{:02}-{:06}", self.cik.to_string(), self.year, self.sequence)
     }
+
+    /// Returns the Accession Number as a **plain numeric string** (without dashes).
+    ///
+    /// # Example:
+    /// ```rust
+    /// use sec_fetcher::models::AccessionNumber;
+    /// 
+    /// let accession = AccessionNumber::from_str("0001234567-23-000045").unwrap();
+    /// assert_eq!(accession.to_unformatted_string(), "000123456723000045");
+    /// ```
+    pub fn to_unformatted_string(&self) -> String {
+        format!("{:010}{:02}{:06}", self.cik.to_string(), self.year, self.sequence)
+    }
 }
