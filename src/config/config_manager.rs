@@ -81,9 +81,10 @@ impl ConfigManager {
         let mut settings: AppConfig = config.try_deserialize()?;
 
         if settings.email.is_none() {
-            let credential_manager = CredentialManager::try_from_prompt::<CredentialManager>()?;
+            // Attempt to retrieve credential from a provider
+            let credential_manager = CredentialManager::from_prompt()?;
             let email = credential_manager.get_credential()
-                .map_err(|err| format!("Could not obtain credential from credential manager. {:?}", err))?;
+                .map_err(|err| format!("Could not obtain credential from credential manager: {:?}", err))?;
             settings.email = Some(email);
         }
 
