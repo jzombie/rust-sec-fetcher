@@ -14,7 +14,7 @@ use sec_fetcher::{
 async fn main() -> Result<(), Box<dyn Error>> {
     let config_manager = ConfigManager::load()?;
 
-    let client = SecClient::from_config_manager(&config_manager, 1, 1000, Some(5))?;
+    let client = SecClient::from_config_manager(&config_manager)?;
 
     let tickers_df = fetch_sec_tickers(&client).await?;
     println!("Total records: {}", tickers_df.height());

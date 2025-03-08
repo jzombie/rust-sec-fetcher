@@ -5,7 +5,7 @@ use std::error::Error;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let config_manager = ConfigManager::load()?;
-    let client = SecClient::from_config_manager(&config_manager, 1, 1000, Some(5))?;
+    let client = SecClient::from_config_manager(&config_manager)?;
 
     let cik_u64 = 884394; // Example CIK
     let cik = Cik::from_u64(cik_u64)?;

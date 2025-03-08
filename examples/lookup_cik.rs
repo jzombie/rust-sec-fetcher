@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let ticker_symbol = &args[1];
 
     let config_manager = ConfigManager::load()?;
-    let client = SecClient::from_config_manager(&config_manager, 1, 1000, Some(5))?;
+    let client = SecClient::from_config_manager(&config_manager)?;
 
     let mut result_cik: Option<Cik> = None;
 

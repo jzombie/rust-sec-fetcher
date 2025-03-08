@@ -7,9 +7,8 @@ use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
 use tokio::time::{sleep, Duration};
-use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Result as MiddlewareResult};
-use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
-use std::path::PathBuf;
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use http_cache_reqwest::{Cache, CACacheManager, HttpCache, HttpCacheOptions};
 
 pub struct SecClient {
     email: String,
@@ -47,24 +46,30 @@ pub trait SecClientDataExt {
 
 impl SecClient {
     /// Creates a new async SEC HTTP client with optional rate limiting
-    pub fn new(
-        email: &str,
-        max_concurrent: usize,
-        min_delay_ms: u64,
-        max_retries: Option<usize>,
-    ) -> Self {
-        // TODO: Make cache client configurable
+    pub fn from_config_manager(
+        config_manager: &ConfigManager,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let config = &config_manager.get_config();
+
+        let email = match config.email {
+            Some(email) => email,
+            None => return Err("No email specified.".into())
+        };
+
+        // TODO: Clean up
         let cache_client = ClientBuilder::new(Client::new())
         .with(Cache(HttpCache {
             // https://docs.rs/http-cache-reqwest/latest/http_cache_reqwest/enum.CacheMode.html
             // mode: CacheMode::Default,
 
             // This will cache https://data.sec.gov/api/xbrl/companyfacts/CIKXXXXXXXXXX.json
-            mode: CacheMode::IgnoreRules,
+            // mode: CacheMode::IgnoreRules,
+            mode: config.get_cache_mode(),
             //
             manager: CACacheManager {
             // https://docs.rs/http-cache-reqwest/latest/http_cache_reqwest/struct.CACacheManager.html
-            path: PathBuf::from("data/cache")
+            // path: PathBuf::from("data/cache")
+            path: config.get_cache_dir(),
 
             // or temp directory of OS
             // path: env::temp_dir();
@@ -73,29 +78,15 @@ impl SecClient {
         }))
         .build();
 
-        SecClient {
-            email: email.to_string(),
-            client: cache_client,
-            semaphore: Arc::new(Semaphore::new(max_concurrent)),
-            min_delay: Duration::from_millis(min_delay_ms),
-            max_retries,
-        }
-    }
-
-    pub fn from_config_manager(
-        config_manager: &ConfigManager,
-        max_concurrent: usize,
-        max_delay_ms: u64,
-        max_retries: Option<usize>,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
-        let email = match &config_manager.get_config().email {
-            Some(email) => email,
-            None => return Err("No email specified.".into())
-        };
-
-        let instance = Self::new(&email, max_concurrent, max_delay_ms, max_retries);
-
-        Ok(instance)
+        Ok(
+            Self {
+                email: email.to_string(),
+                client: cache_client,
+                semaphore: Arc::new(Semaphore::new(max_concurrent)),
+                min_delay: Duration::from_millis(min_delay_ms),
+                max_retries,
+            }
+        )
     }
 
     pub async fn raw_request(
