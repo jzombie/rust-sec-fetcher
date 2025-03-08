@@ -7,13 +7,13 @@ use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
 use tokio::time::{sleep, Duration};
-// use reqwest_middleware::{ClientBuilder, Result};
-// use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Result as MiddlewareResult};
+use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
 
 
 pub struct SecClient {
     email: String,
-    client: Client,
+    client: ClientWithMiddleware,
     semaphore: Arc<Semaphore>, // Limit concurrent requests
     min_delay: Duration,       // Enforce delay
     max_retries: Option<usize>,
@@ -53,9 +53,17 @@ impl SecClient {
         min_delay_ms: u64,
         max_retries: Option<usize>,
     ) -> Self {
+        let cache_client = ClientBuilder::new(Client::new())
+        .with(Cache(HttpCache {
+          mode: CacheMode::Default,
+          manager: CACacheManager::default(),
+          options: HttpCacheOptions::default(),
+        }))
+        .build();
+
         SecClient {
             email: email.to_string(),
-            client: Client::new(),
+            client: cache_client,
             semaphore: Arc::new(Semaphore::new(max_concurrent)),
             min_delay: Duration::from_millis(min_delay_ms),
             max_retries,
