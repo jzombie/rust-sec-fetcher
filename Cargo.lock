@@ -2080,6 +2080,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "quick-xml"
+version = "0.37.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "165859e9e55f79d67b96c5d96f4e88b6f2695a1972849c15a6a3f5c59fc2c003"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2421,11 +2430,11 @@ dependencies = [
  "mockito",
  "once_cell",
  "polars",
+ "quick-xml",
  "rand 0.9.0",
  "rayon",
  "reqwest",
  "serde_json",
- "string-replace-all",
  "strum",
  "strum_macros 0.27.1",
  "tokio",
@@ -2650,15 +2659,6 @@ name = "strength_reduce"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe895eb47f22e2ddd4dabc02bce419d2e643c8e3b585c78158b349195bc24d82"
-
-[[package]]
-name = "string-replace-all"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b12025ac754369ba77abd5ac18822294caaa36cdbdfd8832cacc4f904b5ff23c"
-dependencies = [
- "regex",
-]
 
 [[package]]
 name = "strum"

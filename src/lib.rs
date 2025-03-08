@@ -1,6 +1,8 @@
-pub mod accessor;
+pub mod accessors;
 pub mod enums;
 pub mod fs;
 pub mod network;
-pub mod transform;
+pub mod parsers;
+pub mod transformers;
 pub mod utils;
+pub mod models;

@@ -5,10 +5,12 @@ mod network;
 use network::{
     fetch_sec_tickers, fetch_us_gaap_fundamentals, CredentialManager, CredentialProvider, SecClient,
 };
-mod accessor;
+mod accessors;
 mod enums;
-mod transform;
+mod parsers;
+mod transformers;
 mod utils;
+mod models;
 use polars::prelude::{CsvWriter, SerWriter};
 use std::fs::File;
 

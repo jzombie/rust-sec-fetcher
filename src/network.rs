@@ -15,3 +15,6 @@ pub use credential_manager::{CredentialManager, CredentialProvider};
 
 mod fetch_cik_submissions;
 pub use fetch_cik_submissions::{fetch_cik_submissions, CikSubmission};
+
+mod fetch_nport_filing;
+pub use fetch_nport_filing::fetch_nport_filing;

@@ -4,6 +4,7 @@ use once_cell::sync::Lazy;
 
 pub type TaxonomyConceptName = &'static str;
 
+// TODO: Move to `transform` directory
 // Human-readable mapping: http://www.xbrlsite.com/2014/Reference/Mapping.pdf
 static US_GAAP_MAPPING: Lazy<IndexMap<FundamentalConcept, Vec<TaxonomyConceptName>>> = Lazy::new(
     || {
@@ -450,7 +451,7 @@ static US_GAAP_MAPPING_INVERTED: Lazy<IndexMap<TaxonomyConceptName, Vec<Fundamen
 ///
 /// # Example
 /// ```
-/// use sec_fetcher::accessor::distill_us_gaap_fundamental_concepts;
+/// use sec_fetcher::transformers::distill_us_gaap_fundamental_concepts;
 /// use sec_fetcher::enums::FundamentalConcept;
 ///
 /// fn main() {
