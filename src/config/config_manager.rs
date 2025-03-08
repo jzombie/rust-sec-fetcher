@@ -4,7 +4,7 @@ use std::error::Error;
 use std::path::PathBuf;
 use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
 use crate::config::{AppConfig, CredentialManager, CredentialProvider};
-use crate::utils::is_terminal;
+use crate::utils::is_interactive_mode;
 
 pub struct ConfigManager {
     config: AppConfig
@@ -37,7 +37,7 @@ impl ConfigManager {
         let mut settings: AppConfig = config.try_deserialize()?;
     
         if settings.email.is_none() {
-            if is_terminal() {
+            if is_interactive_mode() {
                 let credential_manager = CredentialManager::from_prompt()?;
                 let email = credential_manager.get_credential()
                     .map_err(|err| format!("Could not obtain credential from credential manager: {:?}", err))?;
