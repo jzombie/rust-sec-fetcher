@@ -52,7 +52,7 @@ pub fn is_interactive_mode() -> bool {
 /// set_interactive_mode_override(Some(false)); // Force non-interactive mode
 /// assert!(!is_interactive_mode());
 ///
-/// set_interactive_mode_override(None); // 🔄 Restore normal behavior
+/// set_interactive_mode_override(None); // Restore normal behavior
 /// assert_eq!(env::var("INTERACTIVE_MODE_OVERRIDE").is_err(), true);
 /// ```
 ///
