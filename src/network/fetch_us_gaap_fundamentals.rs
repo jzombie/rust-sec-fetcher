@@ -26,6 +26,8 @@ pub async fn fetch_us_gaap_fundamentals(
 
     let data: Value = client.fetch_json(&url).await?;
 
+    // TODO: Move the following into `parsers`
+
     let mut fact_category_values = Vec::new();
     let mut fact_name_values = Vec::new();
     let mut label_values = Vec::new();

@@ -55,6 +55,8 @@ pub async fn fetch_cik_submissions(
     let url = format!("https://data.sec.gov/submissions/CIK{}.json", cik.to_string());
     let data: Value = sec_client.fetch_json(&url).await?;
 
+    // TODO: Move the following into `parsers`
+
     let entity_type_value: Option<String> = data["entityType"].as_str().map(|s| s.to_string());
 
     let mut accession_number_values = Vec::new();
