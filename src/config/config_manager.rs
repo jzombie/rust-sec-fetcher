@@ -6,7 +6,7 @@ use std::path::{PathBuf};
 use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct AppConfig {
+pub struct TomlConfig {
     pub email: Option<String>,
     pub max_concurrent: Option<usize>,
     pub min_delay_ms: Option<u64>,
@@ -16,7 +16,7 @@ pub struct AppConfig {
 }
 
 pub struct ConfigManager {
-    config: AppConfig,
+    config: TomlConfig,
 }
 
 impl ConfigManager {
@@ -44,12 +44,12 @@ impl ConfigManager {
             // .add_source(config::Environment::with_prefix("SEC")) // Environment variable overrides (e.g., `SEC_EMAIL`)
             .build()?;
 
-        let settings: AppConfig = config.try_deserialize()?;
+        let settings: TomlConfig = config.try_deserialize()?;
         Ok(Self { config: settings })
     }
 
     /// Retrieves a reference to the configuration.
-    pub fn get_config(&self) -> &AppConfig {
+    pub fn get_config(&self) -> &TomlConfig {
         &self.config
     }
 
