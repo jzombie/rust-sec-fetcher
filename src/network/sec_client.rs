@@ -64,7 +64,7 @@ impl SecClient {
 
             // This will cache https://data.sec.gov/api/xbrl/companyfacts/CIKXXXXXXXXXX.json
             // mode: CacheMode::IgnoreRules,
-            mode: config.get_cache_mode(),
+            mode: config.get_cache_mode()?,
             //
             manager: CACacheManager {
             // https://docs.rs/http-cache-reqwest/latest/http_cache_reqwest/struct.CACacheManager.html

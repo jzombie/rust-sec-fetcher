@@ -12,8 +12,8 @@ pub struct AppConfig {
     pub min_delay_ms: Option<u64>,
     pub max_retries: Option<usize>,
     // TODO: Differentiate between network cache and transformed asset cache
-    pub cache_dir: Option<String>, // TODO: Use PathBuf directly
-    pub cache_mode: Option<String>, // TODO: Use CacheMode directly
+    pub cache_dir: Option<String>,
+    pub cache_mode: Option<String>,
 }
 
 impl Default for AppConfig {
@@ -57,18 +57,24 @@ impl AppConfig {
             })
     }
 
-    pub fn get_cache_mode(&self) -> CacheMode {
-        match &self.cache_mode {
+    // https://docs.rs/http-cache/0.20.1/http_cache/enum.CacheMode.html
+    pub fn get_cache_mode(&self) -> Result<CacheMode, Box<dyn std::error::Error>> {
+        let cache_mode = match &self.cache_mode {
             Some(cache_mode) => {
                 match cache_mode.as_str() {
                     "Default" => CacheMode::Default,
-                    "ForceCache" => CacheMode::ForceCache,
+                    "NoStore" => CacheMode::NoStore,
+                    "Reload" => CacheMode::Reload,
                     "NoCache" => CacheMode::NoCache,
+                    "ForceCache" => CacheMode::ForceCache,
+                    "OnlyIfCached" => CacheMode::OnlyIfCached,
                     "IgnoreRules" => CacheMode::IgnoreRules,
-                    _ => CacheMode::Default, // Fallback
+                    _ => return Err(format!("Unhandled cache mode: {}", cache_mode).into())
                 }
             }
             _ => CacheMode::Default
-        }
+        };
+
+        Ok(cache_mode)
     }
 }
