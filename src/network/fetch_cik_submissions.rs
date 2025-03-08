@@ -1,10 +1,10 @@
 use crate::network::SecClient;
-use crate::models::Cik;
+use crate::models::{Cik, AccessionNumber};
 use chrono::NaiveDate;
 use serde_json::Value;
 use std::error::Error;
-use string_replace_all::StringReplaceAll;
 
+// TODO: Move to models
 #[derive(Clone, Debug)]
 pub struct CikSubmission {
     pub cik: Cik,
@@ -16,8 +16,7 @@ pub struct CikSubmission {
     // pub owner_org: Option<String>,       // i.e. "06 Technology"
     // insiderTransactionForOwnerExists
     // insiderTransactionForIssuerExists
-    pub accession_number: String,
-    pub accession_number_stripped: String,
+    pub accession_number: AccessionNumber,
     pub form: String,
     pub primary_document: String,
     pub filing_date: Option<NaiveDate>, // New field for the date
@@ -42,7 +41,7 @@ impl CikSubmission {
     pub fn as_edgar_archive_url(&self) -> String {
         format!(
             "https://www.sec.gov/Archives/edgar/data/{}/{}/",
-            self.cik.to_string(), self.accession_number_stripped
+            self.cik.to_string(), self.accession_number.to_string()
         )
     }
 }
@@ -52,6 +51,7 @@ pub async fn fetch_cik_submissions(
     sec_client: &SecClient,
     cik: Cik,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
+    // TODO: Migrate to `cik.get_submissions_url``
     let url = format!("https://data.sec.gov/submissions/CIK{}.json", cik.to_string());
     let data: Value = sec_client.fetch_json(&url).await?;
 
@@ -92,7 +92,7 @@ pub async fn fetch_cik_submissions(
 
     let mut cik_submissions: Vec<CikSubmission> = Vec::with_capacity(accession_number_values.len());
 
-    for (accession_number, form, primary_document, filing_date) in itertools::izip!(
+    for (accession_number_value, form, primary_document, filing_date) in itertools::izip!(
         &accession_number_values,
         &form_values,
         &primary_document_values,
@@ -102,16 +102,13 @@ pub async fn fetch_cik_submissions(
             .as_str()
             .and_then(|date_str| NaiveDate::parse_from_str(date_str, "%Y-%m-%d").ok());
 
+        let accession_number_str = accession_number_value.as_str().unwrap_or_default();
+        let accession_number = AccessionNumber::from_str(accession_number_str)?;
+
         cik_submissions.push(CikSubmission {
             cik: cik.clone(),
             entity_type: entity_type_value.clone(),
-            accession_number: accession_number.as_str().unwrap_or("").to_string(),
-            // TODO: Move this to `transform` util
-            accession_number_stripped: accession_number
-                .as_str()
-                .unwrap_or("")
-                .to_string()
-                .replace_all("-", ""),
+            accession_number,
             form: form.as_str().unwrap_or("").to_string(),
             primary_document: primary_document.as_str().unwrap_or("").to_string(),
             filing_date: filing_date_parsed,
