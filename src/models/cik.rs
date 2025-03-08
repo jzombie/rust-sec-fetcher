@@ -1,3 +1,5 @@
+use crate::models::AccessionNumber;
+
 /// Represents an SEC **CIK (Central Index Key)**, a unique identifier for entities.
 ///
 /// A **CIK** is a **permanent 10-digit identifier** assigned by the SEC to:
@@ -53,7 +55,19 @@ impl From<std::num::ParseIntError> for CikError {
 }
 
 impl Cik {
-    // TODO: From `AccessionNumber`
+    /// Creates a `Cik` instance from a `AccessionNumber` instance.
+    ///
+    /// # Example:
+    /// ```rust
+    /// use sec_fetcher::models::{AccessionNumber, Cik};
+    /// 
+    /// let accession = AccessionNumber::from_str("0001234567-23-000045").unwrap();
+    /// let cik = Cik::from_accession_number(&accession);
+    /// assert_eq!(cik.to_u64(), accession.cik.to_u64());
+    /// ```
+    pub fn from_accession_number(accession_number: &AccessionNumber) -> Self {
+        accession_number.cik.clone()
+    }
 
     /// Creates a `Cik` instance from a `u64` value.
     ///

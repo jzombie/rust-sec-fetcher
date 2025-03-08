@@ -1,4 +1,6 @@
-use sec_fetcher::models::{Cik, CikError};
+use sec_fetcher::models::{Cik, CikError, AccessionNumber};
+
+// TODO: Add tests from `AccessionNumber`
 
 #[test]
 fn test_cik_to_string() {
@@ -25,4 +27,19 @@ fn test_cik_from_str_invalid() {
 #[test]
 fn test_cik_from_u64_invalid() {
     assert!(matches!(Cik::from_u64(10000000000), Err(CikError::InvalidLength))); // More than 10 digits
+}
+
+#[test]
+fn test_from_accession_number() {
+    {
+        let accession = AccessionNumber::from_str("0001234567-23-000045").unwrap();
+        let cik = Cik::from_accession_number(&accession);
+        assert_eq!(accession.cik.to_u64(), cik.to_u64());
+    }
+ 
+    {
+        let accession = AccessionNumber::from_str("0009876543-99-123456").unwrap();
+        let cik = Cik::from_accession_number(&accession);
+        assert_eq!(accession.cik.to_u64(), cik.to_u64());        
+    }
 }
