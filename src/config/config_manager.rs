@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
 use crate::config::{AppConfig, CredentialManager, CredentialProvider};
 use crate::utils::is_interactive_mode;
-
+use merge::Merge;
 pub struct ConfigManager {
     config: AppConfig
 }
@@ -34,18 +34,21 @@ impl ConfigManager {
             .add_source(File::with_name(config_path.to_str().unwrap()).required(false)) // Load if exists
             .build()?;
 
-        let mut settings: AppConfig = config.try_deserialize()?;
+        let mut settings: AppConfig = AppConfig::default();
+        let mut user_settings: AppConfig = config.try_deserialize()?;
     
-        if settings.email.is_none() {
+        if user_settings.email.is_none() {
             if is_interactive_mode() {
                 let credential_manager = CredentialManager::from_prompt()?;
                 let email = credential_manager.get_credential()
                     .map_err(|err| format!("Could not obtain credential from credential manager: {:?}", err))?;
-                settings.email = Some(email);
+                user_settings.email = Some(email);
             } else {
                 return Err("Could not obtain email credential".into());
             }
         }
+
+        settings.merge(user_settings);
 
         Ok(Self { config: settings })
     }

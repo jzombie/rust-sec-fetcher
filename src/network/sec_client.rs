@@ -51,7 +51,7 @@ impl SecClient {
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let config = &config_manager.get_config();
 
-        let email = match config.email {
+        let email = match &config.email {
             Some(email) => email,
             None => return Err("No email specified.".into())
         };
@@ -82,9 +82,9 @@ impl SecClient {
             Self {
                 email: email.to_string(),
                 client: cache_client,
-                semaphore: Arc::new(Semaphore::new(max_concurrent)),
-                min_delay: Duration::from_millis(min_delay_ms),
-                max_retries,
+                semaphore: Arc::new(Semaphore::new(config.max_concurrent.unwrap())),
+                min_delay: Duration::from_millis(config.min_delay_ms.unwrap()),
+                max_retries: config.max_retries,
             }
         )
     }

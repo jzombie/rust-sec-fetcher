@@ -3,9 +3,9 @@ use serde::{Serialize, Deserialize};
 use serde_json::to_string_pretty;
 use std::path::PathBuf;
 use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
+use merge::Merge;
 
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Merge)]
 pub struct AppConfig {
     pub email: Option<String>,
     pub max_concurrent: Option<usize>,
