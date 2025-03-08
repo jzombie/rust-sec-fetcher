@@ -34,8 +34,21 @@ impl ConfigManager {
             .build()?;
 
         let mut settings: AppConfig = AppConfig::default();
-        let mut user_settings: AppConfig = config.try_deserialize()?;
-
+        let mut user_settings: AppConfig = config.try_deserialize().map_err(|err| -> Box<dyn std::error::Error> {
+            let valid_keys_list = AppConfig::get_valid_keys()
+                .iter()
+                .map(|(key, typ)| format!("  - {} ({})", key, typ))
+                .collect::<Vec<_>>()
+                .join("\n");
+        
+            let error_message = format!(
+                "{}\n\nValid configuration keys are:\n{}",
+                err, valid_keys_list
+            );
+        
+            error_message.into()
+        })?;
+        
         if user_settings.email.is_none() {
             if is_interactive_mode() {
                 let credential_manager = CredentialManager::from_prompt()?;

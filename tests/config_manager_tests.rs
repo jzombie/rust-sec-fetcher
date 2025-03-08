@@ -81,12 +81,6 @@ fn test_fails_on_invalid_key() {
 
     assert!(result.is_err()); // Ensure it fails due to an invalid key
     let error_message = result.unwrap_err().to_string();
-
-    // Depending on the error message format from `config-rs`, adjust this check
-    assert!(
-        error_message.contains("unknown field `invalid_key`")
-            || error_message.contains("unexpected key"),
-        "Unexpected error message: {}",
-        error_message
-    );
+    
+    assert_eq!(error_message,  "unknown field `invalid_key`, expected one of `email`, `max_concurrent`, `min_delay_ms`, `max_retries`, `http_cache_dir`, `http_cache_mode`\n\nValid configuration keys are:\n  - email (String | Null)\n  - http_cache_dir (String | Null)\n  - http_cache_mode (String | Null)\n  - max_concurrent (Integer | Null)\n  - max_retries (Integer | Null)\n  - min_delay_ms (Integer | Null)", "Unexpected error message: {}", error_message);
 }

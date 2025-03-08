@@ -4,6 +4,9 @@ use serde_json::to_string_pretty;
 use std::path::PathBuf;
 use http_cache_reqwest::CacheMode;
 use merge::Merge;
+use schemars::{JsonSchema, schema_for};
+use schemars::schema::{Schema, SchemaObject, SingleOrVec};
+
 
 /// Always replace `Some(value)` with `Some(new_value)`
 fn overwrite_option<T>(base: &mut Option<T>, new: Option<T>) {
@@ -12,7 +15,7 @@ fn overwrite_option<T>(base: &mut Option<T>, new: Option<T>) {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Merge)]
+#[derive(Debug, Serialize, Deserialize, Clone, Merge, JsonSchema)]
 #[serde(deny_unknown_fields)]  // This ensures unknown keys cause an error
 pub struct AppConfig {
     #[merge(strategy = overwrite_option)] // Always replace with new value
@@ -56,6 +59,37 @@ impl Default for AppConfig {
 impl AppConfig {
     pub fn pretty_print(&self) -> String {
         to_string_pretty(self).unwrap_or_else(|_| "Failed to serialize config".to_string())
+    }
+
+    /// Returns a dynamically generated list of valid keys with their types
+     /// Returns a dynamically generated list of valid keys with their types
+     pub fn get_valid_keys() -> Vec<(String, String)> {
+        let schema = schema_for!(AppConfig);
+
+        schema
+            .schema
+            .object
+            .as_ref()
+            .unwrap()
+            .properties
+            .iter()
+            .map(|(key, value)| {
+                let type_name = Self::extract_type_name(value);
+                (key.clone(), type_name)
+            })
+            .collect()
+    }
+
+    /// Extracts the expected type of a field from its schema representation.
+    fn extract_type_name(schema: &Schema) -> String {
+        if let Schema::Object(SchemaObject { instance_type: Some(types), .. }) = schema {
+            match types {
+                SingleOrVec::Single(t) => format!("{:?}", t),  // ✅ Single type
+                SingleOrVec::Vec(vec) => vec.iter().map(|t| format!("{:?}", t)).collect::<Vec<_>>().join(" | "), // ✅ Multiple types
+            }
+        } else {
+            "Unknown".to_string()
+        }
     }
 
     /// Returns the HTTP cache directory path as a `PathBuf` instance.
