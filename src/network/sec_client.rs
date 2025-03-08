@@ -1,4 +1,4 @@
-use crate::config::CredentialManager;
+use crate::config::ConfigManager;
 use email_address::EmailAddress;
 use rand::Rng;
 use reqwest::Client;
@@ -82,13 +82,16 @@ impl SecClient {
         }
     }
 
-    pub fn from_credential_manager(
-        credential_manager: &CredentialManager,
+    pub fn from_config_manager(
+        config_manager: &ConfigManager,
         max_concurrent: usize,
         max_delay_ms: u64,
         max_retries: Option<usize>,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let email = credential_manager.get_credential()?;
+        let email = match &config_manager.get_config().email {
+            Some(email) => email,
+            None => return Err("No email specified.".into())
+        };
 
         let instance = Self::new(&email, max_concurrent, max_delay_ms, max_retries);
 

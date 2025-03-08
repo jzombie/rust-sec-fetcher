@@ -4,7 +4,7 @@ use std::fs::File;
 use polars::prelude::{CsvWriter, SerWriter};
 use tokio;
 use sec_fetcher::{
-    config::{CredentialManager, CredentialProvider},
+    config::ConfigManager,
     network::{
         fetch_sec_tickers, fetch_us_gaap_fundamentals, SecClient,
     }
@@ -12,9 +12,9 @@ use sec_fetcher::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let credential_manager = CredentialManager::from_prompt()?;
+    let config_manager = ConfigManager::load()?;
 
-    let client = SecClient::from_credential_manager(&credential_manager, 1, 1000, Some(5))?;
+    let client = SecClient::from_config_manager(&config_manager, 1, 1000, Some(5))?;
 
     let tickers_df = fetch_sec_tickers(&client).await?;
     println!("Total records: {}", tickers_df.height());
