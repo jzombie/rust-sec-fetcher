@@ -9,11 +9,23 @@ pub struct ConfigManager {
     config: AppConfig
 }
 
-impl ConfigManager {  
-    // TODO: Add ability to set path directly in here (and/or add `from_config` method)
-    /// Loads configuration from file and environment variables.
+impl ConfigManager {
+    /// Loads configuration using the default path.
     pub fn load() -> Result<Self, Box<dyn Error>> {
-        let config_path = Self::get_config_path();
+        Self::from_config(None)
+    }
+
+    /// Loads configuration from the given file path (if provided) or defaults to the standard config path.
+    ///
+    /// If no path is provided, the default configuration path will be used.
+    pub fn from_config(path: Option<PathBuf>) -> Result<Self, Box<dyn Error>> {
+        if let Some(path) = &path {
+            if !path.exists() {
+                return Err(format!("Config path does not exist: {}", path.to_string_lossy().into_owned()).into());
+            }
+        };
+
+        let config_path = path.unwrap_or_else(Self::get_config_path);
 
         let config = Config::builder()
             .add_source(File::with_name(config_path.to_str().unwrap()).required(false)) // Load if exists
