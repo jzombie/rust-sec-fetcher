@@ -10,21 +10,7 @@ pub struct ConfigManager {
     config: AppConfig
 }
 
-impl ConfigManager {
-    pub fn get_suggested_system_path() -> Option<PathBuf> {
-        config_dir().map(|dir| dir.join(env!("CARGO_PKG_NAME")).join("config.toml"))
-    }
-    
-    /// Determines the standard config file location.
-    pub fn get_config_path() -> PathBuf {
-        if let Some(path) = Self::get_suggested_system_path() {
-            if path.exists() {
-                return path;
-            }
-        }
-        PathBuf::from("config.toml") // Fallback if no global config
-    }
-    
+impl ConfigManager {  
     // TODO: Add ability to set path directly in here (and/or add `from_config` method)
     /// Loads configuration from file and environment variables.
     pub fn load() -> Result<Self, Box<dyn Error>> {
@@ -56,5 +42,19 @@ impl ConfigManager {
     /// Retrieves a reference to the configuration.
     pub fn get_config(&self) -> &AppConfig {
         &self.config
+    }
+
+    pub fn get_suggested_system_path() -> Option<PathBuf> {
+        config_dir().map(|dir| dir.join(env!("CARGO_PKG_NAME")).join("config.toml"))
+    }
+    
+    /// Determines the standard config file location.
+    pub fn get_config_path() -> PathBuf {
+        if let Some(path) = Self::get_suggested_system_path() {
+            if path.exists() {
+                return path;
+            }
+        }
+        PathBuf::from("config.toml") // Fallback if no global config
     }
 }
