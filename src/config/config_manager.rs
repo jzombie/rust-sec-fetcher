@@ -5,6 +5,8 @@ use std::path::PathBuf;
 use crate::config::{AppConfig, CredentialManager, CredentialProvider};
 use crate::utils::is_interactive_mode;
 use merge::Merge;
+
+#[derive(Debug)]
 pub struct ConfigManager {
     config: AppConfig
 }

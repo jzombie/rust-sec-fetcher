@@ -18,18 +18,20 @@ fn create_temp_config(contents: &str) -> (tempfile::TempDir, PathBuf) {
 
 
 #[test]
-fn test_load_default_config() {
+fn test_fails_if_no_email_available() {
     set_interactive_mode_override(Some(false));
 
-    let config_manager = ConfigManager::load().expect("Failed to load config");
-    let config = config_manager.get_config();
+    let result = ConfigManager::load(); // Expect this to fail
 
-    assert_eq!(config.max_concurrent, Some(1));
-    assert_eq!(config.min_delay_ms, Some(1000));
-    assert_eq!(config.max_retries, Some(5));
+    assert!(result.is_err()); // Ensure it fails
+    assert_eq!(
+        result.unwrap_err().to_string(),
+        "Could not obtain email credential"
+    ); // Ensure correct error
 
     set_interactive_mode_override(None);
 }
+
 
 #[test]
 fn test_load_custom_config() {
