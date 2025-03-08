@@ -3,12 +3,12 @@ use sec_fetcher::models::{AccessionNumber, AccessionNumberError};
 #[test]
 fn test_accession_number_from_str_valid() {
     let accession = AccessionNumber::from_str("0001234567-23-000045").unwrap();
-    assert_eq!(accession.cik, 1234567);
+    assert_eq!(accession.cik.to_u64(), 1234567);
     assert_eq!(accession.year, 23);
     assert_eq!(accession.sequence, 45);
 
     let accession = AccessionNumber::from_str("0009876543-99-123456").unwrap();
-    assert_eq!(accession.cik, 9876543);
+    assert_eq!(accession.cik.to_u64(), 9876543);
     assert_eq!(accession.year, 99);
     assert_eq!(accession.sequence, 123456);
 }

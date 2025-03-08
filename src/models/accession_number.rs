@@ -1,8 +1,9 @@
+use crate::models::{Cik, CikError};
+
 // TODO: Document terminology
 #[derive(Debug, Clone)]
 pub struct AccessionNumber {
-    // TODO: Use Cik model type here
-    pub cik: u64,       // First 10 digits (zero-padded)
+    pub cik: Cik,       // First 10 digits (zero-padded)
     pub year: u16,      // Next 2 digits (filing year)
     pub sequence: u32,  // Last 6 digits (filing sequence number)
 }
@@ -11,13 +12,16 @@ pub struct AccessionNumber {
 pub enum AccessionNumberError {
     InvalidLength,
     ParseError(std::num::ParseIntError),
+    CikError(CikError),
 }
+
 
 impl std::fmt::Display for AccessionNumberError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             AccessionNumberError::InvalidLength => write!(f, "Accession number must be 18 digits (XXXXXXXXXX-YY-NNNNNN)"),
             AccessionNumberError::ParseError(e) => write!(f, "Failed to parse Accession Number: {}", e),
+            AccessionNumberError::CikError(e) => write!(f, "CIK Error: {}", e), // Display `CikError`
         }
     }
 }
@@ -29,6 +33,13 @@ impl From<std::num::ParseIntError> for AccessionNumberError {
         AccessionNumberError::ParseError(err)
     }
 }
+
+impl From<CikError> for AccessionNumberError {
+    fn from(err: CikError) -> Self {
+        AccessionNumberError::CikError(err)
+    }
+}
+
 
 impl AccessionNumber {
     /// Parses an **Accession Number** string (with or without dashes).
@@ -65,7 +76,9 @@ impl AccessionNumber {
         }
     
         // Parse fields into numbers
-        let cik = cik_part.parse::<u64>()?;
+        let cik_u64 = cik_part.parse::<u64>()?;
+        let cik = Cik::from_u64(cik_u64).map_err(AccessionNumberError::from)?;
+
         let year = year_part.parse::<u16>()?;
         let sequence = sequence_part.parse::<u32>()?;
     
@@ -81,8 +94,8 @@ impl AccessionNumber {
     ///
     /// # Errors
     /// - Returns `AccessionNumberError::InvalidLength` if any field exceeds its expected length.
-    pub fn from_parts(cik: u64, year: u16, sequence: u32) -> Result<Self, AccessionNumberError> {
-        if cik > 9_999_999_999 {
+    pub fn from_parts(cik_u64: u64, year: u16, sequence: u32) -> Result<Self, AccessionNumberError> {
+        if cik_u64 > 9_999_999_999 {
             return Err(AccessionNumberError::InvalidLength);
         }
         if year > 99 {
@@ -92,6 +105,8 @@ impl AccessionNumber {
             return Err(AccessionNumberError::InvalidLength);
         }
 
+        let cik = Cik::from_u64(cik_u64).map_err(AccessionNumberError::from)?;
+
         Ok(Self { cik, year, sequence })
     }
 
@@ -99,6 +114,6 @@ impl AccessionNumber {
     ///
     /// - Example Output: `"0001234567-23-000045"`
     pub fn to_string(&self) -> String {
-        format!("{:010}-{:02}-{:06}", self.cik, self.year, self.sequence)
+        format!("{:010}-{:02}-{:06}", self.cik.to_string(), self.year, self.sequence)
     }
 }
