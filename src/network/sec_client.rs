@@ -7,6 +7,9 @@ use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
 use tokio::time::{sleep, Duration};
+// use reqwest_middleware::{ClientBuilder, Result};
+// use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
+
 
 pub struct SecClient {
     email: String,
@@ -67,13 +70,7 @@ impl SecClient {
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let email = credential_manager.get_credential()?;
 
-        let instance = Self {
-            email,
-            client: Client::new(),
-            semaphore: Arc::new(Semaphore::new(max_concurrent)),
-            min_delay: Duration::from_millis(max_delay_ms),
-            max_retries,
-        };
+        let instance = Self::new(&email, max_concurrent, max_delay_ms, max_retries);
 
         Ok(instance)
     }
