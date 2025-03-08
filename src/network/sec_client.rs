@@ -50,43 +50,34 @@ impl SecClient {
         config_manager: &ConfigManager,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let config = &config_manager.get_config();
-
-        let email = match &config.email {
-            Some(email) => email,
-            None => return Err("No email specified.".into())
-        };
-
-        // TODO: Clean up
+    
+        let email = config.email.as_ref()
+            .ok_or_else(|| "Missing required field: email".to_string())?; // Error if missing
+    
+        let max_concurrent = config.max_concurrent
+            .ok_or_else(|| "Missing required field: max_concurrent".to_string())?; // Error if missing
+    
+        let min_delay = config.min_delay_ms
+            .ok_or_else(|| "Missing required field: min_delay_ms".to_string())?; // Error if missing
+    
+    
         let cache_client = ClientBuilder::new(Client::new())
-        .with(Cache(HttpCache {
-            // https://docs.rs/http-cache-reqwest/latest/http_cache_reqwest/enum.CacheMode.html
-            // mode: CacheMode::Default,
-
-            // This will cache https://data.sec.gov/api/xbrl/companyfacts/CIKXXXXXXXXXX.json
-            // mode: CacheMode::IgnoreRules,
-            mode: config.get_cache_mode()?,
-            //
-            manager: CACacheManager {
-            // https://docs.rs/http-cache-reqwest/latest/http_cache_reqwest/struct.CACacheManager.html
-            // path: PathBuf::from("data/cache")
-            path: config.get_cache_dir(),
-
-            // or temp directory of OS
-            // path: env::temp_dir();
-            },
-            options: HttpCacheOptions::default(),
-        }))
-        .build();
-
-        Ok(
-            Self {
-                email: email.to_string(),
-                client: cache_client,
-                semaphore: Arc::new(Semaphore::new(config.max_concurrent.unwrap())),
-                min_delay: Duration::from_millis(config.min_delay_ms.unwrap()),
-                max_retries: config.max_retries,
-            }
-        )
+            .with(Cache(HttpCache {
+                mode: config.get_http_cache_mode()?,
+                manager: CACacheManager {
+                    path: config.get_http_cache_dir(),
+                },
+                options: HttpCacheOptions::default(),
+            }))
+            .build();
+    
+        Ok(Self {
+            email: email.to_string(),
+            client: cache_client,
+            semaphore: Arc::new(Semaphore::new(max_concurrent)),
+            min_delay: Duration::from_millis(min_delay),
+            max_retries: config.max_retries,
+        })
     }
 
     pub async fn raw_request(

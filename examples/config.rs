@@ -13,8 +13,8 @@ fn main() {
     let config = config_manager.get_config();
     print!("{}\n", config.pretty_print());
 
-    let cache_mode = config.get_cache_mode();
-    let cache_dir = config.get_cache_dir();
+    let cache_mode = config.get_http_cache_mode();
+    let cache_dir = config.get_http_cache_dir();
 
     println!("Cache mode: {:?}", cache_mode);
     println!("Cache dir: {:?}", cache_dir);
