@@ -8,7 +8,13 @@ fn main() {
     println!("Config path: {:?}", config_path);
 
     let config_manager = ConfigManager::load().unwrap();
-    let cache_mode = config_manager.get_config().get_cache_mode();
+
+    let config = config_manager.get_config();
+    print!("{:?}", config);
+
+    let cache_mode = config.get_cache_mode();
+    let cache_dir = config.get_cache_dir();
 
     println!("Cache mode: {:?}", cache_mode);
+    println!("Cache dir: {:?}", cache_dir);
 }

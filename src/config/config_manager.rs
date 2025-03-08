@@ -16,6 +16,10 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
+    pub fn get_cache_dir(&self) -> Option<PathBuf> {
+        self.cache_dir.clone().map(|dir_string| PathBuf::from(dir_string))
+    }
+
     pub fn get_cache_mode(&self) -> CacheMode {
         match &self.cache_mode {
             Some(cache_mode) => {
