@@ -2,7 +2,6 @@ use config::{Config, File};
 use dirs::config_dir;
 use std::error::Error;
 use std::path::PathBuf;
-use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
 use crate::config::{AppConfig, CredentialManager, CredentialProvider};
 use crate::utils::is_interactive_mode;
 use merge::Merge;
