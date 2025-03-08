@@ -6,6 +6,7 @@ use std::error::Error;
 use std::path::{PathBuf};
 use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
 use crate::config::{CredentialManager, CredentialProvider};
+use crate::utils::is_terminal;
 
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -79,13 +80,16 @@ impl ConfigManager {
             .build()?;
 
         let mut settings: AppConfig = config.try_deserialize()?;
-
+    
         if settings.email.is_none() {
-            // Attempt to retrieve credential from a provider
-            let credential_manager = CredentialManager::from_prompt()?;
-            let email = credential_manager.get_credential()
-                .map_err(|err| format!("Could not obtain credential from credential manager: {:?}", err))?;
-            settings.email = Some(email);
+            if is_terminal() {
+                let credential_manager = CredentialManager::from_prompt()?;
+                let email = credential_manager.get_credential()
+                    .map_err(|err| format!("Could not obtain credential from credential manager: {:?}", err))?;
+                settings.email = Some(email);
+            } else {
+                return Err("Could not obtain email credential".into());
+            }
         }
 
         Ok(Self { config: settings })
