@@ -1,25 +1,9 @@
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use std::error::Error;
+use crate::models::NportInvestment;
 
-#[derive(Debug)]
-pub struct Investment {
-    pub name: String,
-    pub lei: String, // Legal Entity Identifier
-    pub title: String,
-    pub cusip: String, // Committee on Uniform Securities Identification Procedures
-    pub isin: String,  // International Securities Identification Number
-    pub balance: String,
-    pub cur_cd: String,
-    pub val_usd: String,
-    pub pct_val: String,
-    pub payoff_profile: String,
-    pub asset_cat: String,
-    pub issuer_cat: String,
-    pub inv_country: String,
-}
-
-pub fn parse_nport_xml(xml: &str) -> Result<Vec<Investment>, Box<dyn Error>> {
+pub fn parse_nport_xml(xml: &str) -> Result<Vec<NportInvestment>, Box<dyn Error>> {
     let mut reader = Reader::from_str(xml);
 
     let mut investments = Vec::new();
@@ -31,7 +15,7 @@ pub fn parse_nport_xml(xml: &str) -> Result<Vec<Investment>, Box<dyn Error>> {
             Event::Start(ref e) => {
                 let tag = std::str::from_utf8(e.name().as_ref())?.to_string();
                 if tag == "invstOrSec" {
-                    current_investment = Some(Investment {
+                    current_investment = Some(NportInvestment {
                         name: String::new(),
                         lei: String::new(),
                         title: String::new(),
