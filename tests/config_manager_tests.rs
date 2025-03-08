@@ -64,3 +64,29 @@ fn test_load_non_existent_config() {
     
     assert!(result.is_err());
 }
+
+#[test]
+fn test_fails_on_invalid_key() {
+    let config_contents = r#"
+        email = "test@example.com"
+        max_concurrent = 10
+        min_delay_ms = 500
+        max_retries = 3
+        invalid_key = "this_should_fail"
+    "#;
+
+    let (_temp_dir, config_path) = create_temp_config(config_contents);
+
+    let result = ConfigManager::from_config(Some(config_path));
+
+    assert!(result.is_err()); // Ensure it fails due to an invalid key
+    let error_message = result.unwrap_err().to_string();
+
+    // Depending on the error message format from `config-rs`, adjust this check
+    assert!(
+        error_message.contains("unknown field `invalid_key`")
+            || error_message.contains("unexpected key"),
+        "Unexpected error message: {}",
+        error_message
+    );
+}

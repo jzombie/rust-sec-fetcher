@@ -13,6 +13,7 @@ fn overwrite_option<T>(base: &mut Option<T>, new: Option<T>) {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Merge)]
+#[serde(deny_unknown_fields)]  // This ensures unknown keys cause an error
 pub struct AppConfig {
     #[merge(strategy = overwrite_option)] // Always replace with new value
     pub email: Option<String>,
