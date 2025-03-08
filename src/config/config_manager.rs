@@ -7,12 +7,12 @@ use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheO
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct AppConfig {
-    pub email: String,
-    pub max_concurrent: usize,
-    pub min_delay_ms: u64,
+    pub email: Option<String>,
+    pub max_concurrent: Option<usize>,
+    pub min_delay_ms: Option<u64>,
     pub max_retries: Option<usize>,
-    pub cache_dir_str: Option<String>,
-    pub cache_mode_str: Option<String>,
+    pub cache_dir: Option<String>,
+    pub cache_mode: Option<String>,
 }
 
 pub struct ConfigManager {
@@ -51,5 +51,20 @@ impl ConfigManager {
     /// Retrieves a reference to the configuration.
     pub fn get_config(&self) -> &AppConfig {
         &self.config
+    }
+
+    pub fn get_cache_mode(&self) -> CacheMode {
+        match &self.config.cache_mode {
+            Some(cache_mode) => {
+                match cache_mode.as_str() {
+                    "Default" => CacheMode::Default,
+                    "ForceCache" => CacheMode::ForceCache,
+                    "NoCache" => CacheMode::NoCache,
+                    "IgnoreRules" => CacheMode::IgnoreRules,
+                    _ => CacheMode::Default, // Fallback
+                }
+            }
+            _ => CacheMode::Default
+        }
     }
 }
