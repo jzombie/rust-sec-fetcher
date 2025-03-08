@@ -144,6 +144,7 @@ impl SecClientDataExt for SecClient {
         url: &str,
         headers: Option<Vec<(&str, &str)>>,
     ) -> Result<reqwest::Response, Box<dyn Error>> {
+        // FIXME: Determine if is cached before sleeping; subsequent requests could be made much faster
         let _permit = self.semaphore.acquire().await?;
         sleep(self.min_delay).await;
 
