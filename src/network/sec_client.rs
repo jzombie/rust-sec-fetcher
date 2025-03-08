@@ -9,7 +9,7 @@ use tokio::sync::Semaphore;
 use tokio::time::{sleep, Duration};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Result as MiddlewareResult};
 use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
-
+use std::path::PathBuf;
 
 pub struct SecClient {
     email: String,
@@ -56,7 +56,10 @@ impl SecClient {
         let cache_client = ClientBuilder::new(Client::new())
         .with(Cache(HttpCache {
           mode: CacheMode::Default,
-          manager: CACacheManager::default(),
+          manager: CACacheManager {
+            // https://docs.rs/http-cache-reqwest/latest/http_cache_reqwest/struct.CACacheManager.html
+            path: PathBuf::from("data/cache")
+          },
           options: HttpCacheOptions::default(),
         }))
         .build();
