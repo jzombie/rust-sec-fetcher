@@ -53,12 +53,16 @@ impl SecClient {
         min_delay_ms: u64,
         max_retries: Option<usize>,
     ) -> Self {
+        // TODO: Make cache client configurable
         let cache_client = ClientBuilder::new(Client::new())
         .with(Cache(HttpCache {
           mode: CacheMode::Default,
           manager: CACacheManager {
             // https://docs.rs/http-cache-reqwest/latest/http_cache_reqwest/struct.CACacheManager.html
             path: PathBuf::from("data/cache")
+
+            // or temp directory of OS
+            // path: env::temp_dir();
           },
           options: HttpCacheOptions::default(),
         }))
