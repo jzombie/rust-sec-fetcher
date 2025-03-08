@@ -2,7 +2,7 @@ use std::env;
 use serde::{Serialize, Deserialize};
 use serde_json::to_string_pretty;
 use std::path::PathBuf;
-use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
+use http_cache_reqwest::CacheMode;
 use merge::Merge;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Merge)]
