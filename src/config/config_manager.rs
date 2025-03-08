@@ -65,6 +65,7 @@ impl ConfigManager {
         PathBuf::from("config.toml") // Fallback if no global config
     }
     
+    // TODO: Add ability to set path directly in here (and/or add `from_config` method)
     /// Loads configuration from file and environment variables.
     pub fn load() -> Result<Self, Box<dyn Error>> {
         let config_path = Self::get_config_path();
