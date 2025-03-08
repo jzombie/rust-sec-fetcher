@@ -18,18 +18,20 @@ pub struct AppConfig {
 
 impl Default for AppConfig {
     fn default() -> Self {
-        let mut instance = Self {
+        let temp_cache_dir = {
+            let mut temp_cache = env::temp_dir();
+            temp_cache.push(format!("{}/cache", env!("CARGO_PKG_NAME")));
+            temp_cache
+        };
+
+        Self {
             email: None,
             max_concurrent: Some(1),
             min_delay_ms: Some(1000),
             max_retries: Some(5),
-            cache_dir: None,
+            cache_dir: Some(temp_cache_dir.to_string_lossy().into_owned()),
             cache_mode: None
-        };
-
-        instance.cache_dir = Some(instance.get_cache_dir().to_string_lossy().into_owned());
-
-        instance
+        }
     }
 }
 
@@ -50,11 +52,7 @@ impl AppConfig {
         self.cache_dir
             .as_ref()
             .map(PathBuf::from)
-            .unwrap_or_else(|| {
-                let mut temp_cache = env::temp_dir();
-                temp_cache.push(format!("{}/cache", env!("CARGO_PKG_NAME")));
-                temp_cache
-            })
+            .unwrap_or_default()
     }
 
     // https://docs.rs/http-cache/0.20.1/http_cache/enum.CacheMode.html
