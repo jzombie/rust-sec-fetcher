@@ -10,7 +10,7 @@ fn main() {
     let config_manager = ConfigManager::load().unwrap();
 
     let config = config_manager.get_config();
-    print!("{:?}", config);
+    print!("{}\n", config.pretty_print());
 
     let cache_mode = config.get_cache_mode();
     let cache_dir = config.get_cache_dir();

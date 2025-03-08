@@ -1,11 +1,12 @@
 use config::{Config, File};
 use dirs::config_dir;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
+use serde_json::to_string_pretty;
 use std::error::Error;
 use std::path::{PathBuf};
 use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppConfig {
     pub email: Option<String>,
     pub max_concurrent: Option<usize>,
@@ -15,7 +16,17 @@ pub struct AppConfig {
     pub cache_mode: Option<String>,
 }
 
+// TODO: Implement default?
+
 impl AppConfig {
+    pub fn pretty_print(&self) -> String {
+        to_string_pretty(self).unwrap_or_else(|_| "Failed to serialize config".to_string())
+    }
+
+    // pub fn merge(&mut self, other: &self) {
+    //     // TODO: Iterate over every prop, and if it's none in local, merge the other
+    // }
+
     pub fn get_cache_dir(&self) -> Option<PathBuf> {
         self.cache_dir.clone().map(|dir_string| PathBuf::from(dir_string))
     }
@@ -66,6 +77,9 @@ impl ConfigManager {
             .build()?;
 
         let settings: AppConfig = config.try_deserialize()?;
+
+        // TODO: Merge default
+
         Ok(Self { config: settings })
     }
 
