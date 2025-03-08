@@ -6,7 +6,7 @@ use std::path::{PathBuf};
 use http_cache_reqwest::{Cache, CacheMode, CACacheManager, HttpCache, HttpCacheOptions};
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct TomlConfig {
+pub struct AppConfig {
     pub email: Option<String>,
     pub max_concurrent: Option<usize>,
     pub min_delay_ms: Option<u64>,
@@ -15,8 +15,25 @@ pub struct TomlConfig {
     pub cache_mode: Option<String>,
 }
 
+impl AppConfig {
+    pub fn get_cache_mode(&self) -> CacheMode {
+        match &self.cache_mode {
+            Some(cache_mode) => {
+                match cache_mode.as_str() {
+                    "Default" => CacheMode::Default,
+                    "ForceCache" => CacheMode::ForceCache,
+                    "NoCache" => CacheMode::NoCache,
+                    "IgnoreRules" => CacheMode::IgnoreRules,
+                    _ => CacheMode::Default, // Fallback
+                }
+            }
+            _ => CacheMode::Default
+        }
+    }
+}
+
 pub struct ConfigManager {
-    config: TomlConfig,
+    config: AppConfig,
 }
 
 impl ConfigManager {
@@ -44,27 +61,12 @@ impl ConfigManager {
             // .add_source(config::Environment::with_prefix("SEC")) // Environment variable overrides (e.g., `SEC_EMAIL`)
             .build()?;
 
-        let settings: TomlConfig = config.try_deserialize()?;
+        let settings: AppConfig = config.try_deserialize()?;
         Ok(Self { config: settings })
     }
 
     /// Retrieves a reference to the configuration.
-    pub fn get_config(&self) -> &TomlConfig {
+    pub fn get_config(&self) -> &AppConfig {
         &self.config
-    }
-
-    pub fn get_cache_mode(&self) -> CacheMode {
-        match &self.config.cache_mode {
-            Some(cache_mode) => {
-                match cache_mode.as_str() {
-                    "Default" => CacheMode::Default,
-                    "ForceCache" => CacheMode::ForceCache,
-                    "NoCache" => CacheMode::NoCache,
-                    "IgnoreRules" => CacheMode::IgnoreRules,
-                    _ => CacheMode::Default, // Fallback
-                }
-            }
-            _ => CacheMode::Default
-        }
     }
 }

@@ -8,7 +8,7 @@ fn main() {
     println!("Config path: {:?}", config_path);
 
     let config_manager = ConfigManager::load().unwrap();
-    let cache_mode = config_manager.get_cache_mode();
+    let cache_mode = config_manager.get_config().get_cache_mode();
 
     println!("Cache mode: {:?}", cache_mode);
 }
