@@ -26,9 +26,11 @@ fn test_accession_number_from_str_without_dashes() {
 fn test_accession_number_to_string() {
     let accession = AccessionNumber::from_parts(1234567, 23, 45).unwrap();
     assert_eq!(accession.to_string(), "0001234567-23-000045");
+    assert_eq!(accession.to_unformatted_string(), "000123456723000045");
 
     let accession = AccessionNumber::from_parts(9876543210, 99, 123456).unwrap();
     assert_eq!(accession.to_string(), "9876543210-99-123456");
+    assert_eq!(accession.to_unformatted_string(), "987654321099123456");
 }
 
 #[test]
