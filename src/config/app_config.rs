@@ -5,13 +5,31 @@ use std::path::PathBuf;
 use http_cache_reqwest::CacheMode;
 use merge::Merge;
 
+/// Always replace `Some(value)` with `Some(new_value)`
+fn overwrite_option<T>(base: &mut Option<T>, new: Option<T>) {
+    if let Some(value) = new {
+        *base = Some(value);
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Merge)]
 pub struct AppConfig {
+    #[merge(strategy = overwrite_option)] // ✅ Always replace with new value
     pub email: Option<String>,
+
+    #[merge(strategy = overwrite_option)]
     pub max_concurrent: Option<usize>,
+
+    #[merge(strategy = overwrite_option)]
     pub min_delay_ms: Option<u64>,
+
+    #[merge(strategy = overwrite_option)]
     pub max_retries: Option<usize>,
+
+    #[merge(strategy = overwrite_option)]
     pub http_cache_dir: Option<String>,
+
+    #[merge(strategy = overwrite_option)]
     pub http_cache_mode: Option<String>,
 }
 

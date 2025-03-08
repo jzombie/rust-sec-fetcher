@@ -33,7 +33,7 @@ impl ConfigManager {
 
         let mut settings: AppConfig = AppConfig::default();
         let mut user_settings: AppConfig = config.try_deserialize()?;
-    
+
         if user_settings.email.is_none() {
             if is_interactive_mode() {
                 let credential_manager = CredentialManager::from_prompt()?;
