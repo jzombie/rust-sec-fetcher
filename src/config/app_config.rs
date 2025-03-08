@@ -11,6 +11,7 @@ pub struct AppConfig {
     pub max_concurrent: Option<usize>,
     pub min_delay_ms: Option<u64>,
     pub max_retries: Option<usize>,
+    // TODO: Differentiate between network cache and transformed asset cache
     pub cache_dir: Option<String>, // TODO: Use PathBuf directly
     pub cache_mode: Option<String>, // TODO: Use CacheMode directly
 }
@@ -22,7 +23,6 @@ impl Default for AppConfig {
             max_concurrent: Some(1),
             min_delay_ms: Some(1000),
             max_retries: Some(5),
-            // TODO: Differentiate between network cache and transformed asset cache
             cache_dir: None,
             cache_mode: None
         }
