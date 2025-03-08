@@ -1,16 +1,17 @@
+use crate::models::Cik;
 use crate::network::SecClient;
 use crate::parsers::{parse_nport_xml, Investment};
 use std::error::Error;
 
 pub async fn fetch_nport_filing(
     sec_client: &SecClient,
-    cik: u64,
+    cik: Cik,
     accession_number: &str, // TODO: Strip using transformer
 ) -> Result<Vec<Investment>, Box<dyn Error>> {
     // TODO: Move to transformer and dedupe
     let url = format!(
         "https://www.sec.gov/Archives/edgar/data/{}/{}.xml",
-        cik, accession_number
+        cik.to_string(), accession_number
     );
 
     let response = sec_client
