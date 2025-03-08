@@ -1,4 +1,5 @@
-use sec_fetcher::{models::{Cik, AccessionNumber}, network::{fetch_nport_filing, CredentialManager, CredentialProvider, SecClient}};
+use sec_fetcher::{models::{Cik, AccessionNumber}, network::{fetch_nport_filing, SecClient}};
+use sec_fetcher::config::{CredentialManager, CredentialProvider};
 use std::error::Error;
 
 #[tokio::main]

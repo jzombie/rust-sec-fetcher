@@ -1,4 +1,4 @@
-use crate::network::CredentialManager;
+use crate::config::CredentialManager;
 use email_address::EmailAddress;
 use rand::Rng;
 use reqwest::Client;

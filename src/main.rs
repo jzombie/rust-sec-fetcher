@@ -1,18 +1,14 @@
 use std::collections::HashMap;
 use std::error::Error;
-use tokio;
-mod network;
-use network::{
-    fetch_sec_tickers, fetch_us_gaap_fundamentals, CredentialManager, CredentialProvider, SecClient,
-};
-mod accessors;
-mod enums;
-mod parsers;
-mod transformers;
-mod utils;
-mod models;
-use polars::prelude::{CsvWriter, SerWriter};
 use std::fs::File;
+use polars::prelude::{CsvWriter, SerWriter};
+use tokio;
+use sec_fetcher::{
+    config::{CredentialManager, CredentialProvider},
+    network::{
+        fetch_sec_tickers, fetch_us_gaap_fundamentals, SecClient,
+    }
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

@@ -1,3 +1,4 @@
+pub mod config;
 pub mod accessors;
 pub mod enums;
 pub mod fs;

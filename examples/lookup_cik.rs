@@ -2,8 +2,9 @@ use csv::ReaderBuilder;
 use sec_fetcher::accessors::get_cik_by_ticker_symbol;
 use sec_fetcher::network::{
     fetch_cik_submissions, fetch_investment_company_series_and_class_dataset, fetch_sec_tickers,
-    CikSubmission, CredentialManager, CredentialProvider, SecClient,
+    CikSubmission, SecClient,
 };
+use sec_fetcher::config::{CredentialManager, CredentialProvider};
 use sec_fetcher::models::Cik;
 use std::env;
 use std::error::Error;

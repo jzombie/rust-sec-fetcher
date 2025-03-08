@@ -1,5 +1,4 @@
-use keyring::credential;
-use sec_fetcher::network::{CredentialManager, CredentialProvider};
+use sec_fetcher::config::{CredentialManager, CredentialProvider};
 use std::io::{self, Write};
 
 /// Prompt user for input
