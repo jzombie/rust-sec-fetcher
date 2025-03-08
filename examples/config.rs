@@ -7,8 +7,6 @@ fn main() {
     let config_path = ConfigManager::get_config_path();
     println!("Config path: {:?}", config_path);
 
-    let credential_manager = CredentialManager::new("jeremy").unwrap();
-
     // let config_manager = ConfigManager::load(Some(&credential_manager)).map_err(|err| eprint!("{:?}\n", err)).unwrap();
     let config_manager = ConfigManager::load().unwrap();
 
