@@ -1,19 +1,19 @@
 use std::env;
-use sec_fetcher::utils::is_interactive_mode;
+use sec_fetcher::utils::{is_interactive_mode, set_interactive_mode_override};
 
 #[test]
 fn test_interactive_mode_override() {
-    env::set_var("INTERACTIVE_MODE", "true");
-    assert!(is_interactive_mode()); // Forced interactive mode
+    assert!(env::var("INTERACTIVE_MODE_OVERRIDE").is_err()); // Check if unset
 
-    env::set_var("INTERACTIVE_MODE", "1");
-    assert!(is_interactive_mode()); // Forced interactive mode
+    set_interactive_mode_override(Some(true));
+    assert!(is_interactive_mode());
+    assert_eq!(env::var("INTERACTIVE_MODE_OVERRIDE").unwrap(), "1");
 
-    env::set_var("INTERACTIVE_MODE", "false");
-    assert!(!is_interactive_mode()); // Forced non-interactive mode
+    set_interactive_mode_override(Some(false));
+    assert!(!is_interactive_mode());
+    assert_eq!(env::var("INTERACTIVE_MODE_OVERRIDE").unwrap(), "0");
 
-    env::set_var("INTERACTIVE_MODE", "0");
-    assert!(!is_interactive_mode()); // Forced non-interactive mode
-
-    env::remove_var("INTERACTIVE_MODE"); // Restore original behavior
+    set_interactive_mode_override(None); // Restore original behavior
+    assert!(env::var("INTERACTIVE_MODE_OVERRIDE").is_err());
 }
+

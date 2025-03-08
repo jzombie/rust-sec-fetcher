@@ -1,9 +1,9 @@
-use std::env;
 use std::fs;
 use std::io::Write;
 use tempfile::tempdir;
 use std::path::PathBuf;
 use sec_fetcher::config::ConfigManager;
+use sec_fetcher::utils::set_interactive_mode_override;
 
 /// Helper function to create a temporary config file
 fn create_temp_config(contents: &str) -> (tempfile::TempDir, PathBuf) {
@@ -19,7 +19,7 @@ fn create_temp_config(contents: &str) -> (tempfile::TempDir, PathBuf) {
 
 #[test]
 fn test_load_default_config() {
-    env::set_var("INTERACTIVE_MODE", "false");
+    set_interactive_mode_override(Some(false));
 
     let config_manager = ConfigManager::load().expect("Failed to load config");
     let config = config_manager.get_config();
@@ -28,7 +28,7 @@ fn test_load_default_config() {
     assert_eq!(config.min_delay_ms, Some(1000));
     assert_eq!(config.max_retries, Some(5));
 
-    env::remove_var("INTERACTIVE_MODE");
+    set_interactive_mode_override(None);
 }
 
 #[test]
