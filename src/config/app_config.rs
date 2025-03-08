@@ -18,14 +18,18 @@ pub struct AppConfig {
 
 impl Default for AppConfig {
     fn default() -> Self {
-        Self {
+        let mut instance = Self {
             email: None,
             max_concurrent: Some(1),
             min_delay_ms: Some(1000),
             max_retries: Some(5),
             cache_dir: None,
             cache_mode: None
-        }
+        };
+
+        instance.cache_dir = Some(instance.get_cache_dir().to_string_lossy().into_owned());
+
+        instance
     }
 }
 
