@@ -1,4 +1,29 @@
-// TODO: Document terminology
+/// Represents an SEC **CIK (Central Index Key)**, a unique identifier for entities.
+///
+/// A **CIK** is a **permanent 10-digit identifier** assigned by the SEC to:
+/// - Public companies
+/// - Mutual funds
+/// - Insiders (e.g., executives, large shareholders)
+/// - Broker-dealers
+///
+/// # Format:
+/// - Always a **10-digit zero-padded number**.
+/// - Example: `"0000320193"` (Apple Inc.)
+///
+/// # Example:
+/// ```rust
+/// use sec_fetcher::models::Cik;
+/// 
+/// let cik = Cik { value: 320193 };
+/// assert_eq!(cik.to_string(), "0000320193");
+/// ```
+///
+/// # Notes:
+/// - CIKs are **not reassigned or reused**.
+/// - Used in SEC filings to track registrants, insiders, and related entities.
+///
+/// # Reference:
+/// - [SEC CIK Lookup](https://www.sec.gov/edgar/searchedgar/cik)
 #[derive(Debug, Clone)]
 pub struct Cik {
     pub value: u64,

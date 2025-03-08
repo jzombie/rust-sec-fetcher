@@ -1,6 +1,37 @@
 use crate::models::{Cik, CikError};
 
-// TODO: Document terminology
+/// Represents an SEC **Accession Number**, which is a unique identifier for a filing.
+///
+/// An **Accession Number** is always **18 digits long** and consists of:
+/// - **CIK (Central Index Key)** (10 digits): The SEC identifier of the filer.
+/// - **Year (YY)** (2 digits): The last two digits of the filing year.
+/// - **Sequence Number (NNNNNN)** (6 digits): A unique sequence number for filings within the same year.
+///
+/// # Format:
+/// - `XXXXXXXXXX-YY-NNNNNN` (with dashes)
+/// - `XXXXXXXXXXXXXXXXXX` (without dashes)
+///
+/// # Example:
+/// ```rust
+/// use sec_fetcher::models::{AccessionNumber, Cik};
+/// 
+/// let accession_number = AccessionNumber {
+///     cik: Cik { value: 1234567890 },
+///     year: 24,
+///     sequence: 123456,
+/// };
+/// assert_eq!(accession_number.to_string(), "1234567890-24-123456");
+/// ```
+///
+/// # Notes:
+/// - The **CIK in an Accession Number** represents the **filer**, not necessarily the referenced entity.
+/// - To retrieve filings, use the **Accession Number** in SEC's EDGAR system.
+///
+/// # Reference:
+/// - [Search SEC Filings by Accession Number](https://www.sec.gov/edgar/searchedgar/companysearch.html)
+/// - [SEC CIK Lookup](https://www.sec.gov/edgar/searchedgar/cik)
+/// - [SEC CIK Data API (JSON)](https://www.sec.gov/files/company_tickers.json)
+
 #[derive(Debug, Clone)]
 pub struct AccessionNumber {
     pub cik: Cik,       // First 10 digits (zero-padded)
