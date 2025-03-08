@@ -35,7 +35,7 @@ fn test_accession_number_to_string() {
 fn test_accession_number_invalid_length() {
     // Extra digit in the year
     assert!(matches!(
-        AccessionNumber::from_str("0001234567-230-00045"),
+        AccessionNumber::from_str("0001234567-233-000045"),
         Err(AccessionNumberError::InvalidLength)
     ));
 

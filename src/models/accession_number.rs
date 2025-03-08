@@ -41,8 +41,9 @@ impl AccessionNumber {
     /// - Returns `AccessionNumberError::ParseError` if parsing fails.
     pub fn from_str(accession_str: &str) -> Result<Self, AccessionNumberError> {
         // Remove dashes so we can handle both formatted and unformatted cases
-        let clean_str: String = accession_str.chars().filter(|c| c.is_ascii_digit()).collect();
-    
+        // let clean_str: String = accession_str.chars().filter(|c| c.is_ascii_digit()).collect();
+        let clean_str: String = accession_str.chars().filter(|&c| c != '-').collect();
+
         // Ensure the total length is exactly 18 digits
         if clean_str.len() != 18 {
             return Err(AccessionNumberError::InvalidLength);
@@ -53,21 +54,24 @@ impl AccessionNumber {
         let year_part = &clean_str[10..12];
         let sequence_part = &clean_str[12..18];
     
-        // Ensure fields contain only numbers before parsing
-        if !clean_str.chars().all(|c| c.is_ascii_digit()) {
+        // Ensure fields contain only digits before parsing
+        if !cik_part.chars().all(|c| c.is_ascii_digit())
+            || !year_part.chars().all(|c| c.is_ascii_digit())
+            || !sequence_part.chars().all(|c| c.is_ascii_digit())
+        {
             return Err(AccessionNumberError::ParseError(
                 "Non-numeric character found".parse::<u64>().unwrap_err(),
             ));
         }
-
+    
         // Parse fields into numbers
         let cik = cik_part.parse::<u64>()?;
         let year = year_part.parse::<u16>()?;
         let sequence = sequence_part.parse::<u32>()?;
     
         Ok(Self { cik, year, sequence })
-    }    
-     
+    }
+    
 
     /// Creates an **Accession Number** from numeric components.
     ///
