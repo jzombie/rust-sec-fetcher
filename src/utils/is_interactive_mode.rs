@@ -31,6 +31,34 @@ pub fn is_interactive_mode() -> bool {
     io::stdin().is_terminal() && io::stdout().is_terminal()
 }
 
+/// Sets or clears the override for interactive mode.
+///
+/// This function modifies the `INTERACTIVE_MODE_OVERRIDE` environment variable, which controls
+/// whether the program behaves as if it's running in an interactive terminal session.
+///
+/// ### **Override Behavior**
+/// - `Some(true)`: Forces **interactive mode**, even if stdin/stdout are not terminals.
+/// - `Some(false)`: Forces **non-interactive mode**, even if stdin/stdout are terminals.
+/// - `None`: Clears the override, restoring automatic detection of interactive mode.
+///
+/// # Example Usage
+/// ```rust
+/// use std::env;
+/// use sec_fetcher::utils::{is_interactive_mode, set_interactive_mode_override};
+///
+/// set_interactive_mode_override(Some(true)); // Force interactive mode
+/// assert!(is_interactive_mode());
+///
+/// set_interactive_mode_override(Some(false)); // Force non-interactive mode
+/// assert!(!is_interactive_mode());
+///
+/// set_interactive_mode_override(None); // 🔄 Restore normal behavior
+/// assert_eq!(env::var("INTERACTIVE_MODE_OVERRIDE").is_err(), true);
+/// ```
+///
+/// # Notes
+/// - The override applies **only to the current process** and does **not persist** beyond execution.
+/// - If no override is set, `is_interactive_mode()` defaults to checking `stdin` and `stdout`.
 pub fn set_interactive_mode_override(mode_override: Option<bool>) {
     match mode_override {
         Some(mode_override) => {
