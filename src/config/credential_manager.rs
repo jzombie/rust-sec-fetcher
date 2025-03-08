@@ -1,6 +1,7 @@
 use keyring::Entry;
 use std::error::Error;
 use std::io::{self, Write};
+use crate::utils::is_terminal;
 
 /// Service name used for keyring storage
 const SERVICE: &str = env!("CARGO_PKG_NAME");
@@ -66,6 +67,10 @@ impl CredentialManager {
 impl CredentialProvider for CredentialManager {
     /// Gets the credential or prompts the user for input
     fn from_prompt() -> Result<Self, Box<dyn Error>> {
+        if !is_terminal() {
+            return Err("`from_prompt` can only be run in interactive terminal mode.".into());
+        }
+
         print!("Enter your username: ");
         io::stdout().flush().unwrap();
 
