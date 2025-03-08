@@ -19,16 +19,12 @@ pub struct AppConfig {
     pub cache_mode: Option<String>,
 }
 
-// TODO: Implement default?
+// TODO: Implement default config
 
 impl AppConfig {
     pub fn pretty_print(&self) -> String {
         to_string_pretty(self).unwrap_or_else(|_| "Failed to serialize config".to_string())
     }
-
-    // pub fn merge(&mut self, other: &self) {
-    //     // TODO: Iterate over every prop, and if it's none in local, merge the other
-    // }
 
     pub fn get_cache_dir(&self) -> Option<PathBuf> {
         self.cache_dir.clone().map(|dir_string| PathBuf::from(dir_string))
@@ -75,8 +71,6 @@ impl ConfigManager {
 
         let config = Config::builder()
             .add_source(File::with_name(config_path.to_str().unwrap()).required(false)) // Load if exists
-            // TODO: Handle or remove
-            // .add_source(config::Environment::with_prefix("SEC")) // Environment variable overrides (e.g., `SEC_EMAIL`)
             .build()?;
 
         let mut settings: AppConfig = config.try_deserialize()?;
