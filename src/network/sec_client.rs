@@ -58,7 +58,9 @@ impl SecClient {
         .with(Cache(HttpCache {
             // https://docs.rs/http-cache-reqwest/latest/http_cache_reqwest/enum.CacheMode.html
             // mode: CacheMode::Default,
-            mode: CacheMode::ForceCache,
+
+            // This will cache https://data.sec.gov/api/xbrl/companyfacts/CIKXXXXXXXXXX.json
+            mode: CacheMode::IgnoreRules,
             //
             manager: CACacheManager {
             // https://docs.rs/http-cache-reqwest/latest/http_cache_reqwest/struct.CACacheManager.html
