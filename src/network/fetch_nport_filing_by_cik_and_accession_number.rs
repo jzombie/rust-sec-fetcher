@@ -4,7 +4,7 @@ use crate::parsers::parse_nport_xml;
 use std::error::Error;
 
 // TODO: Include expense ratios!
-pub async fn fetch_nport_filing(
+pub async fn fetch_nport_filing_by_cik_and_accession_number(
     sec_client: &SecClient,
     cik: Cik,
     accession_number: AccessionNumber,

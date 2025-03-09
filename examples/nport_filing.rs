@@ -1,7 +1,7 @@
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::{
     models::{AccessionNumber, Cik},
-    network::{fetch_nport_filing, SecClient},
+    network::{fetch_nport_filing_by_cik_and_accession_number, SecClient},
 };
 use std::error::Error;
 
@@ -15,7 +15,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let accession_number_str = "000175272425043826"; // Example accession number
     let accession_number = AccessionNumber::from_str(accession_number_str)?;
 
-    let investments = fetch_nport_filing(&client, cik, accession_number).await?;
+    let investments = fetch_nport_filing_by_cik_and_accession_number(&client, cik, accession_number).await?;
 
     for (i, investment) in investments.iter().enumerate() {
         println!("Investment {}: {:?}", i + 1, investment);
