@@ -43,17 +43,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let investment_companies = fetch_investment_company_series_and_class_dataset(&client, 2024).await?;
 
         for result in investment_companies.iter() {
-            // let record = result?;
-            // if record.get(ticker_index) == Some(ticker_symbol.as_str()) {
-            //     if let Some(cik_str) = record.get(cik_index) {
-            //         println!("Ticker: {}, CIK: {} (fund)", ticker_symbol, cik_str);
-
-            //         let cik = Cik::from_str(cik_str)?;
-            //         result_cik = Some(cik);
-            //     }
-            // }
             if result.class_ticker == Some(ticker_symbol.clone()) {
-                // result_cik = result.cik_number;
                 if let Some(cik_str) = &result.cik_number {
                     result_cik = Some(Cik::from_str(&cik_str).unwrap());
                     break;
