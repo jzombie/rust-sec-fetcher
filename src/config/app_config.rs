@@ -35,6 +35,8 @@ pub struct AppConfig {
 
     #[merge(strategy = overwrite_option)]
     pub http_cache_mode: Option<String>,
+
+    // TODO: Add configs for local data cache
 }
 
 impl Default for AppConfig {
