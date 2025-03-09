@@ -5,6 +5,7 @@ pub struct InvestmentCompany {
     #[serde(rename = "Reporting File Number")]
     pub reporting_file_number: Option<String>,
 
+    // TODO: Rework so that this is a `Cik` object
     #[serde(rename = "CIK Number")]
     pub cik_number: Option<String>,
 
