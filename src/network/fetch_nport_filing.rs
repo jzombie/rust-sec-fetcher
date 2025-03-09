@@ -3,6 +3,14 @@ use crate::network::SecClient;
 use crate::parsers::parse_nport_xml;
 use std::error::Error;
 
+// TODO: Implement
+// pub async fn fetch_nport_filing_by_ticker_symbol(
+//     sec_client: &SecClient,
+//     ticker_symbol: &str,
+// ) -> Result<Vec<NportInvestment>, Box<dyn Error>> {
+    
+// }
+
 // TODO: Include expense ratios!
 pub async fn fetch_nport_filing_by_cik_and_accession_number(
     sec_client: &SecClient,

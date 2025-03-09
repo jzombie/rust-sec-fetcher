@@ -1,7 +1,56 @@
+use csv::ReaderBuilder;
+use std::io::Cursor;
 use crate::network::SecClient;
 use std::error::Error;
+use serde::Deserialize;
 
-// TODO: Fetch as dataframe or vector of structs
+#[derive(Debug, Deserialize)]
+pub struct InvestmentCompany {
+    #[serde(rename = "Reporting File Number")]
+    pub reporting_file_number: Option<String>,
+
+    #[serde(rename = "CIK Number")]
+    pub cik_number: Option<String>,
+
+    #[serde(rename = "Entity Name")]
+    pub entity_name: Option<String>,
+
+    #[serde(rename = "Entity Org Type")]
+    pub entity_org_type: Option<String>,
+
+    #[serde(rename = "Series ID")]
+    pub series_id: Option<String>,
+
+    #[serde(rename = "Series Name")]
+    pub series_name: Option<String>,
+
+    #[serde(rename = "Class ID")]
+    pub class_id: Option<String>,
+
+    #[serde(rename = "Class Name")]
+    pub class_name: Option<String>,
+
+    #[serde(rename = "Class Ticker")]
+    pub class_ticker: Option<String>,
+
+    #[serde(rename = "Address_1")]
+    pub address_1: Option<String>,
+
+    #[serde(rename = "Address_2")]
+    pub address_2: Option<String>,
+
+    #[serde(rename = "City")]
+    pub city: Option<String>,
+
+    #[serde(rename = "State")]
+    pub state: Option<String>,
+
+    #[serde(rename = "Zip Code")]
+    pub zip_code: Option<String>,
+}
+
+
+// TODO: Update the return type
 
 /// Fetches the **Investment Company Series and Class Report** from the SEC's dataset.
 ///
@@ -30,7 +79,7 @@ use std::error::Error;
 pub async fn fetch_investment_company_series_and_class_dataset(
     sec_client: &SecClient,
     year: usize,
-) -> Result<Vec<u8>, Box<dyn Error>> {
+) -> Result<Vec<InvestmentCompany>, Box<dyn Error>> {
     let url = format!(
         "https://www.sec.gov/files/investment/data/other/investment-company-series-and-class-information/investment-company-series-class-{}.csv",
         year
@@ -39,6 +88,89 @@ pub async fn fetch_investment_company_series_and_class_dataset(
     let response = sec_client
         .raw_request(reqwest::Method::GET, &url, None)
         .await?;
-    let bytes = response.bytes().await?;
-    Ok(bytes.to_vec())
-}
+    let byte_array = response.bytes().await?;
+
+    let cursor = Cursor::new(&byte_array);
+    let mut reader = ReaderBuilder::new().from_reader(cursor);
+
+    let mut records = Vec::new();
+
+    for result in reader.deserialize() {
+        let record: InvestmentCompany = result?;
+        records.push(record);
+    }
+
+    Ok(records)
+} 
+
+
+// pub async fn fetch_investment_company_series_and_class_dataset(
+//     sec_client: &SecClient,
+//     year: usize,
+// ) -> Result<Vec<u8>, Box<dyn Error>> {
+//     let url = format!(
+//         "https://www.sec.gov/files/investment/data/other/investment-company-series-and-class-information/investment-company-series-class-{}.csv",
+//         year
+//     );
+
+//     let response = sec_client
+//         .raw_request(reqwest::Method::GET, &url, None)
+//         .await?;
+//     let byte_array = response.bytes().await?;
+
+//     // TODO: Move to `parsers`
+    
+//     let cursor = Cursor::new(&byte_array);
+//     let mut reader = ReaderBuilder::new().from_reader(cursor);
+
+//     // Extract headers first
+//     let headers = reader.headers()?.clone();
+
+//     // let ticker_index = headers
+//     //     .iter()
+//     //     .position(|h| h == "Class Ticker")
+//     //     .ok_or("Column 'Class Ticker' not found")?;
+//     // let cik_index = headers
+//     //     .iter()
+//     //     .position(|h| h == "CIK Number")
+//     //     .ok_or("Column 'CIK Number' not found")?;
+
+//     for result in reader.records() {
+//         let record = result?;
+
+//         for (col, header) in headers.iter().enumerate() {
+//             record.get(col);
+//         }
+
+//         // TODO: Remove
+//         println!("{:?}", record);
+
+//         // if record.get(ticker_index) == Some(ticker_symbol.as_str()) {
+//         //     if let Some(cik_str) = record.get(cik_index) {
+//         //         println!("Ticker: {}, CIK: {} (fund)", ticker_symbol, cik_str);
+
+//         //         let cik = Cik::from_str(cik_str)?;
+//         //         result_cik = Some(cik);
+//         //     }
+//         // }
+//     }
+
+//     // TODO: Remove
+//     Ok(vec![])
+
+//     // Reporting File Number
+//     // CIK Number
+//     // Entity Name
+//     // Entity Org Type
+//     // Series ID
+//     // Series Name
+//     // Class ID
+//     // Class Name
+//     // Class Ticker
+//     // Address_1
+//     // Address_2
+//     // City
+//     // State
+//     // Zip Code
+
+// }
