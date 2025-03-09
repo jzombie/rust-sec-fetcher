@@ -40,29 +40,23 @@ async fn main() -> Result<(), Box<dyn Error>> {
         // If not found, try searching in the investment company dataset
         println!("No match found in primary search. Searching in investment company dataset...");
 
-        let byte_array = fetch_investment_company_series_and_class_dataset(&client, 2024).await?;
-        let cursor = Cursor::new(&byte_array);
-        let mut reader = ReaderBuilder::new().from_reader(cursor);
+        let investment_companies = fetch_investment_company_series_and_class_dataset(&client, 2024).await?;
 
-        // Extract headers first
-        let headers = reader.headers()?.clone();
-        let ticker_index = headers
-            .iter()
-            .position(|h| h == "Class Ticker")
-            .ok_or("Column 'Class Ticker' not found")?;
-        let cik_index = headers
-            .iter()
-            .position(|h| h == "CIK Number")
-            .ok_or("Column 'CIK Number' not found")?;
+        for result in investment_companies.iter() {
+            // let record = result?;
+            // if record.get(ticker_index) == Some(ticker_symbol.as_str()) {
+            //     if let Some(cik_str) = record.get(cik_index) {
+            //         println!("Ticker: {}, CIK: {} (fund)", ticker_symbol, cik_str);
 
-        for result in reader.records() {
-            let record = result?;
-            if record.get(ticker_index) == Some(ticker_symbol.as_str()) {
-                if let Some(cik_str) = record.get(cik_index) {
-                    println!("Ticker: {}, CIK: {} (fund)", ticker_symbol, cik_str);
-
-                    let cik = Cik::from_str(cik_str)?;
-                    result_cik = Some(cik);
+            //         let cik = Cik::from_str(cik_str)?;
+            //         result_cik = Some(cik);
+            //     }
+            // }
+            if result.class_ticker == Some(ticker_symbol.clone()) {
+                // result_cik = result.cik_number;
+                if let Some(cik_str) = &result.cik_number {
+                    result_cik = Some(Cik::from_str(&cik_str).unwrap());
+                    break;
                 }
             }
         }
