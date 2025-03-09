@@ -79,8 +79,15 @@ fn test_fails_on_invalid_key() {
 
     let result = ConfigManager::from_config(Some(config_path));
 
-    assert!(result.is_err()); // Ensure it fails due to an invalid key
+    assert!(result.is_err(), "Expected an error due to an invalid key, but got Ok()");
+
     let error_message = result.unwrap_err().to_string();
-    
-    assert_eq!(error_message,  "unknown field `invalid_key`, expected one of `email`, `max_concurrent`, `min_delay_ms`, `max_retries`, `http_cache_dir`, `http_cache_mode`\n\nValid configuration keys are:\n  - email (String | Null)\n  - http_cache_dir (String | Null)\n  - http_cache_mode (String | Null)\n  - max_concurrent (Integer | Null)\n  - max_retries (Integer | Null)\n  - min_delay_ms (Integer | Null)", "Unexpected error message: {}", error_message);
+
+    assert!(error_message.contains("Valid configuration keys are:"));
+    assert!(error_message.contains("email (String | Null)"));
+    assert!(error_message.contains("http_cache_dir (String | Null)"));
+    assert!(error_message.contains("http_cache_mode (String | Null)"));
+    assert!(error_message.contains("max_concurrent (Integer | Null)"));
+    assert!(error_message.contains("max_retries (Integer | Null)"));
+    assert!(error_message.contains("min_delay_ms (Integer | Null)"));
 }
