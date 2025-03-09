@@ -1,14 +1,14 @@
-use config::{Config, File};
-use dirs::config_dir;
-use std::error::Error;
-use std::path::PathBuf;
 use crate::config::{AppConfig, CredentialManager, CredentialProvider};
 use crate::utils::is_interactive_mode;
+use config::{Config, File};
+use dirs::config_dir;
 use merge::Merge;
+use std::error::Error;
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct ConfigManager {
-    config: AppConfig
+    config: AppConfig,
 }
 
 impl ConfigManager {
@@ -23,7 +23,11 @@ impl ConfigManager {
     pub fn from_config(path: Option<PathBuf>) -> Result<Self, Box<dyn Error>> {
         if let Some(path) = &path {
             if !path.exists() {
-                return Err(format!("Config path does not exist: {}", path.to_string_lossy().into_owned()).into());
+                return Err(format!(
+                    "Config path does not exist: {}",
+                    path.to_string_lossy().into_owned()
+                )
+                .into());
             }
         };
 
@@ -34,26 +38,33 @@ impl ConfigManager {
             .build()?;
 
         let mut settings: AppConfig = AppConfig::default();
-        let mut user_settings: AppConfig = config.try_deserialize().map_err(|err| -> Box<dyn std::error::Error> {
-            let valid_keys_list = AppConfig::get_valid_keys()
-                .iter()
-                .map(|(key, typ)| format!("  - {} ({})", key, typ))
-                .collect::<Vec<_>>()
-                .join("\n");
-        
-            let error_message = format!(
-                "{}\n\nValid configuration keys are:\n{}",
-                err, valid_keys_list
-            );
-        
-            error_message.into()
-        })?;
-        
+        let mut user_settings: AppConfig =
+            config
+                .try_deserialize()
+                .map_err(|err| -> Box<dyn std::error::Error> {
+                    let valid_keys_list = AppConfig::get_valid_keys()
+                        .iter()
+                        .map(|(key, typ)| format!("  - {} ({})", key, typ))
+                        .collect::<Vec<_>>()
+                        .join("\n");
+
+                    let error_message = format!(
+                        "{}\n\nValid configuration keys are:\n{}",
+                        err, valid_keys_list
+                    );
+
+                    error_message.into()
+                })?;
+
         if user_settings.email.is_none() {
             if is_interactive_mode() {
                 let credential_manager = CredentialManager::from_prompt()?;
-                let email = credential_manager.get_credential()
-                    .map_err(|err| format!("Could not obtain credential from credential manager: {:?}", err))?;
+                let email = credential_manager.get_credential().map_err(|err| {
+                    format!(
+                        "Could not obtain credential from credential manager: {:?}",
+                        err
+                    )
+                })?;
                 user_settings.email = Some(email);
             } else {
                 return Err("Could not obtain email credential".into());
@@ -67,7 +78,7 @@ impl ConfigManager {
 
     pub fn from_app_config(app_config: &AppConfig) -> Self {
         Self {
-            config: app_config.clone()
+            config: app_config.clone(),
         }
     }
 
@@ -79,7 +90,7 @@ impl ConfigManager {
     pub fn get_suggested_system_path() -> Option<PathBuf> {
         config_dir().map(|dir| dir.join(env!("CARGO_PKG_NAME")).join("config.toml"))
     }
-    
+
     /// Determines the standard config file location.
     pub fn get_config_path() -> PathBuf {
         if let Some(path) = Self::get_suggested_system_path() {

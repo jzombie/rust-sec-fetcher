@@ -1,14 +1,12 @@
+use polars::prelude::{CsvWriter, SerWriter};
+use sec_fetcher::{
+    config::ConfigManager,
+    network::{fetch_sec_tickers, fetch_us_gaap_fundamentals, SecClient},
+};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
-use polars::prelude::{CsvWriter, SerWriter};
 use tokio;
-use sec_fetcher::{
-    config::ConfigManager,
-    network::{
-        fetch_sec_tickers, fetch_us_gaap_fundamentals, SecClient,
-    }
-};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

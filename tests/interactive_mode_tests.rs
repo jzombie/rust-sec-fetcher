@@ -1,5 +1,5 @@
-use std::env;
 use sec_fetcher::utils::{is_interactive_mode, set_interactive_mode_override};
+use std::env;
 
 #[test]
 fn test_interactive_mode_override() {
@@ -16,4 +16,3 @@ fn test_interactive_mode_override() {
     set_interactive_mode_override(None); // Restore original behavior
     assert!(env::var("INTERACTIVE_MODE_OVERRIDE").is_err());
 }
-

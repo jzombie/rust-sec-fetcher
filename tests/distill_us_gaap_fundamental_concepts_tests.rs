@@ -1,4 +1,4 @@
-use sec_fetcher::{transformers::distill_us_gaap_fundamental_concepts, enums::FundamentalConcept};
+use sec_fetcher::{enums::FundamentalConcept, transformers::distill_us_gaap_fundamental_concepts};
 
 #[test]
 fn test_assets() {

@@ -23,7 +23,7 @@ pub fn is_interactive_mode() -> bool {
         match value.as_str() {
             "1" | "true" => return true,   // Force interactive mode
             "0" | "false" => return false, // Force non-interactive mode
-            _ => {} // Ignore invalid values and fallback to default behavior
+            _ => {}                        // Ignore invalid values and fallback to default behavior
         }
     }
 
@@ -61,12 +61,13 @@ pub fn is_interactive_mode() -> bool {
 /// - If no override is set, `is_interactive_mode()` defaults to checking `stdin` and `stdout`.
 pub fn set_interactive_mode_override(mode_override: Option<bool>) {
     match mode_override {
-        Some(mode_override) => {
-            env::set_var(INTERACTIVE_MODE_OVERRIDE_KEY, match mode_override {
+        Some(mode_override) => env::set_var(
+            INTERACTIVE_MODE_OVERRIDE_KEY,
+            match mode_override {
                 true => "1",
-                false =>"0"
-            })
-        },
-        None => env::remove_var(INTERACTIVE_MODE_OVERRIDE_KEY)
+                false => "0",
+            },
+        ),
+        None => env::remove_var(INTERACTIVE_MODE_OVERRIDE_KEY),
     }
 }

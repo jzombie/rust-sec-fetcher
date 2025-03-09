@@ -1,7 +1,7 @@
+use crate::models::NportInvestment;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use std::error::Error;
-use crate::models::NportInvestment;
 
 pub fn parse_nport_xml(xml: &str) -> Result<Vec<NportInvestment>, Box<dyn Error>> {
     let mut reader = Reader::from_str(xml);

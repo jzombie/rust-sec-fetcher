@@ -1,14 +1,14 @@
 use crate::config::ConfigManager;
 use email_address::EmailAddress;
+use http_cache_reqwest::{CACacheManager, Cache, HttpCache, HttpCacheOptions};
 use rand::Rng;
 use reqwest::Client;
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use serde_json::Value;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
 use tokio::time::{sleep, Duration};
-use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use http_cache_reqwest::{Cache, CACacheManager, HttpCache, HttpCacheOptions};
 
 pub struct SecClient {
     email: String,
@@ -50,17 +50,20 @@ impl SecClient {
         config_manager: &ConfigManager,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let config = &config_manager.get_config();
-    
-        let email = config.email.as_ref()
+
+        let email = config
+            .email
+            .as_ref()
             .ok_or_else(|| "Missing required field: email".to_string())?; // Error if missing
-    
-        let max_concurrent = config.max_concurrent
+
+        let max_concurrent = config
+            .max_concurrent
             .ok_or_else(|| "Missing required field: max_concurrent".to_string())?; // Error if missing
-    
-        let min_delay = config.min_delay_ms
+
+        let min_delay = config
+            .min_delay_ms
             .ok_or_else(|| "Missing required field: min_delay_ms".to_string())?; // Error if missing
-    
-    
+
         let cache_client = ClientBuilder::new(Client::new())
             .with(Cache(HttpCache {
                 mode: config.get_http_cache_mode()?,
@@ -70,7 +73,7 @@ impl SecClient {
                 options: HttpCacheOptions::default(),
             }))
             .build();
-    
+
         Ok(Self {
             email: email.to_string(),
             client: cache_client,

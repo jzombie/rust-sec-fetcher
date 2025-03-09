@@ -1,5 +1,8 @@
-use sec_fetcher::{models::{Cik, AccessionNumber}, network::{fetch_nport_filing, SecClient}};
 use sec_fetcher::config::ConfigManager;
+use sec_fetcher::{
+    models::{AccessionNumber, Cik},
+    network::{fetch_nport_filing, SecClient},
+};
 use std::error::Error;
 
 #[tokio::main]

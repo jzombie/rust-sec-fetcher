@@ -1,9 +1,9 @@
-use std::fs;
-use std::io::Write;
-use tempfile::tempdir;
-use std::path::PathBuf;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::utils::set_interactive_mode_override;
+use std::fs;
+use std::io::Write;
+use std::path::PathBuf;
+use tempfile::tempdir;
 
 /// Helper function to create a temporary config file
 fn create_temp_config(contents: &str) -> (tempfile::TempDir, PathBuf) {
@@ -15,7 +15,6 @@ fn create_temp_config(contents: &str) -> (tempfile::TempDir, PathBuf) {
 
     (dir, path) // Return both the directory and path
 }
-
 
 #[test]
 fn test_fails_if_no_email_available() {
@@ -31,7 +30,6 @@ fn test_fails_if_no_email_available() {
 
     set_interactive_mode_override(None);
 }
-
 
 #[test]
 fn test_load_custom_config() {
@@ -61,7 +59,7 @@ fn test_load_custom_config() {
 fn test_load_non_existent_config() {
     let config_path = PathBuf::from("non_existent_config.toml");
     let result = ConfigManager::from_config(Some(config_path));
-    
+
     assert!(result.is_err());
 }
 
@@ -79,7 +77,10 @@ fn test_fails_on_invalid_key() {
 
     let result = ConfigManager::from_config(Some(config_path));
 
-    assert!(result.is_err(), "Expected an error due to an invalid key, but got Ok()");
+    assert!(
+        result.is_err(),
+        "Expected an error due to an invalid key, but got Ok()"
+    );
 
     let error_message = result.unwrap_err().to_string();
 

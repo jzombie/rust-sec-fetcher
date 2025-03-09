@@ -1,5 +1,5 @@
+use crate::models::{AccessionNumber, Cik};
 use crate::network::SecClient;
-use crate::models::{Cik, AccessionNumber};
 use chrono::NaiveDate;
 use serde_json::Value;
 use std::error::Error;
@@ -41,7 +41,8 @@ impl CikSubmission {
     pub fn as_edgar_archive_url(&self) -> String {
         format!(
             "https://www.sec.gov/Archives/edgar/data/{}/{}/",
-            self.cik.to_string(), self.accession_number.to_string()
+            self.cik.to_string(),
+            self.accession_number.to_string()
         )
     }
 }
@@ -52,7 +53,10 @@ pub async fn fetch_cik_submissions(
     cik: Cik,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
     // TODO: Migrate to `cik.get_submissions_url``
-    let url = format!("https://data.sec.gov/submissions/CIK{}.json", cik.to_string());
+    let url = format!(
+        "https://data.sec.gov/submissions/CIK{}.json",
+        cik.to_string()
+    );
     let data: Value = sec_client.fetch_json(&url).await?;
 
     // TODO: Move the following into `parsers`

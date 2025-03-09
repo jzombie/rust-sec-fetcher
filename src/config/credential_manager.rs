@@ -1,7 +1,7 @@
+use crate::utils::is_interactive_mode;
 use keyring::Entry;
 use std::error::Error;
 use std::io::{self, Write};
-use crate::utils::is_interactive_mode;
 
 /// Service name used for keyring storage
 const SERVICE: &str = env!("CARGO_PKG_NAME");

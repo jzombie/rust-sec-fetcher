@@ -1,8 +1,7 @@
-use std::error::Error;
 use mockito::Server;
 use sec_fetcher::config::{AppConfig, ConfigManager};
 use sec_fetcher::network::{SecClient, SecClientDataExt};
-
+use std::error::Error;
 
 #[test]
 fn test_user_agent() {

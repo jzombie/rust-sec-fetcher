@@ -1,11 +1,11 @@
 use csv::ReaderBuilder;
 use sec_fetcher::accessors::get_cik_by_ticker_symbol;
+use sec_fetcher::config::ConfigManager;
+use sec_fetcher::models::Cik;
 use sec_fetcher::network::{
     fetch_cik_submissions, fetch_investment_company_series_and_class_dataset, fetch_sec_tickers,
     CikSubmission, SecClient,
 };
-use sec_fetcher::config::ConfigManager;
-use sec_fetcher::models::Cik;
 use std::env;
 use std::error::Error;
 use std::io::Cursor;
@@ -30,7 +30,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let tickers_df = fetch_sec_tickers(&client).await?;
 
     if let Ok(cik) = get_cik_by_ticker_symbol(&tickers_df, ticker_symbol) {
-        println!("Ticker: {}, CIK: {} (reg. stocks)", ticker_symbol, cik.to_string());
+        println!(
+            "Ticker: {}, CIK: {} (reg. stocks)",
+            ticker_symbol,
+            cik.to_string()
+        );
         result_cik = Some(cik);
     } else {
         // If not found, try searching in the investment company dataset
@@ -54,7 +58,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         for result in reader.records() {
             let record = result?;
             if record.get(ticker_index) == Some(ticker_symbol.as_str()) {
-                if let Some(cik_str) = record.get(cik_index) {    
+                if let Some(cik_str) = record.get(cik_index) {
                     println!("Ticker: {}, CIK: {} (fund)", ticker_symbol, cik_str);
 
                     let cik = Cik::from_str(cik_str)?;

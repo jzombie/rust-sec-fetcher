@@ -15,7 +15,7 @@ use crate::models::AccessionNumber;
 /// # Example:
 /// ```rust
 /// use sec_fetcher::models::Cik;
-/// 
+///
 /// let cik = Cik { value: 320193 };
 /// assert_eq!(cik.to_string(), "0000320193");
 /// ```
@@ -60,7 +60,7 @@ impl Cik {
     /// # Example:
     /// ```rust
     /// use sec_fetcher::models::{AccessionNumber, Cik};
-    /// 
+    ///
     /// let accession = AccessionNumber::from_str("0001234567-23-000045").unwrap();
     /// let cik = Cik::from_accession_number(&accession);
     /// assert_eq!(cik.to_u64(), accession.cik.to_u64());

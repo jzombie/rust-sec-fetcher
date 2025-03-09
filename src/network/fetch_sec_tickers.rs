@@ -1,5 +1,5 @@
-use crate::network::SecClient;
 use crate::models::Cik;
+use crate::network::SecClient;
 use polars::prelude::*;
 use std::error::Error;
 

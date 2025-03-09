@@ -1,12 +1,11 @@
-use std::env;
-use serde::{Serialize, Deserialize};
-use serde_json::to_string_pretty;
-use std::path::PathBuf;
 use http_cache_reqwest::CacheMode;
 use merge::Merge;
-use schemars::{JsonSchema, schema_for};
 use schemars::schema::{Schema, SchemaObject, SingleOrVec};
-
+use schemars::{schema_for, JsonSchema};
+use serde::{Deserialize, Serialize};
+use serde_json::to_string_pretty;
+use std::env;
+use std::path::PathBuf;
 
 /// Always replace `Some(value)` with `Some(new_value)`
 fn overwrite_option<T>(base: &mut Option<T>, new: Option<T>) {
@@ -16,7 +15,7 @@ fn overwrite_option<T>(base: &mut Option<T>, new: Option<T>) {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Merge, JsonSchema)]
-#[serde(deny_unknown_fields)]  // This ensures unknown keys cause an error
+#[serde(deny_unknown_fields)] // This ensures unknown keys cause an error
 pub struct AppConfig {
     #[merge(strategy = overwrite_option)] // Always replace with new value
     pub email: Option<String>,
@@ -35,7 +34,6 @@ pub struct AppConfig {
 
     #[merge(strategy = overwrite_option)]
     pub http_cache_mode: Option<String>,
-
     // TODO: Add configs for local data cache
 }
 
@@ -53,7 +51,7 @@ impl Default for AppConfig {
             min_delay_ms: Some(1000),
             max_retries: Some(5),
             http_cache_dir: Some(temp_cache_dir.to_string_lossy().into_owned()),
-            http_cache_mode: None
+            http_cache_mode: None,
         }
     }
 }
@@ -64,8 +62,8 @@ impl AppConfig {
     }
 
     /// Returns a dynamically generated list of valid keys with their types
-     /// Returns a dynamically generated list of valid keys with their types
-     pub fn get_valid_keys() -> Vec<(String, String)> {
+    /// Returns a dynamically generated list of valid keys with their types
+    pub fn get_valid_keys() -> Vec<(String, String)> {
         let schema = schema_for!(AppConfig);
 
         schema
@@ -84,12 +82,18 @@ impl AppConfig {
 
     /// Extracts the expected type of a field from its schema representation.
     fn extract_type_name(schema: &Schema) -> String {
-        if let Schema::Object(SchemaObject { instance_type: Some(types), .. }) = schema {
+        if let Schema::Object(SchemaObject {
+            instance_type: Some(types),
+            ..
+        }) = schema
+        {
             match types {
-                SingleOrVec::Single(t) => format!("{:?}", t),  // Single type
-                SingleOrVec::Vec(vec) => vec.iter()
+                SingleOrVec::Single(t) => format!("{:?}", t), // Single type
+                SingleOrVec::Vec(vec) => vec
+                    .iter()
                     .map(|t| format!("{:?}", t))
-                    .collect::<Vec<_>>().join(" | "), // Multiple types
+                    .collect::<Vec<_>>()
+                    .join(" | "), // Multiple types
             }
         } else {
             "Unknown".to_string()
@@ -115,19 +119,17 @@ impl AppConfig {
     // https://docs.rs/http-cache/0.20.1/http_cache/enum.CacheMode.html
     pub fn get_http_cache_mode(&self) -> Result<CacheMode, Box<dyn std::error::Error>> {
         let cache_mode = match &self.http_cache_mode {
-            Some(cache_mode) => {
-                match cache_mode.as_str() {
-                    "Default" => CacheMode::Default,
-                    "NoStore" => CacheMode::NoStore,
-                    "Reload" => CacheMode::Reload,
-                    "NoCache" => CacheMode::NoCache,
-                    "ForceCache" => CacheMode::ForceCache,
-                    "OnlyIfCached" => CacheMode::OnlyIfCached,
-                    "IgnoreRules" => CacheMode::IgnoreRules,
-                    _ => return Err(format!("Unhandled cache mode: {}", cache_mode).into())
-                }
-            }
-            _ => CacheMode::Default
+            Some(cache_mode) => match cache_mode.as_str() {
+                "Default" => CacheMode::Default,
+                "NoStore" => CacheMode::NoStore,
+                "Reload" => CacheMode::Reload,
+                "NoCache" => CacheMode::NoCache,
+                "ForceCache" => CacheMode::ForceCache,
+                "OnlyIfCached" => CacheMode::OnlyIfCached,
+                "IgnoreRules" => CacheMode::IgnoreRules,
+                _ => return Err(format!("Unhandled cache mode: {}", cache_mode).into()),
+            },
+            _ => CacheMode::Default,
         };
 
         Ok(cache_mode)
