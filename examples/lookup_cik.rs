@@ -1,5 +1,5 @@
 use csv::ReaderBuilder;
-use sec_fetcher::accessors::get_cik_by_ticker_symbol;
+use sec_fetcher::accessors::get_company_cik_by_ticker_symbol;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::Cik;
 use sec_fetcher::network::{
@@ -29,7 +29,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // First, try the primary search method
     let tickers_df = fetch_sec_tickers(&client).await?;
 
-    if let Ok(cik) = get_cik_by_ticker_symbol(&tickers_df, ticker_symbol) {
+    if let Ok(cik) = get_company_cik_by_ticker_symbol(&tickers_df, ticker_symbol) {
         println!(
             "Ticker: {}, CIK: {} (reg. stocks)",
             ticker_symbol,
