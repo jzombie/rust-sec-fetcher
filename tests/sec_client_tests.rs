@@ -111,32 +111,37 @@ async fn test_fetch_json_with_retry_failure() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-// #[tokio::test]
-// async fn test_fetch_json_with_retry_backoff() -> Result<(), Box<dyn Error>> {
-//     let mut server = Server::new_async().await;
+#[tokio::test]
+async fn test_fetch_json_with_retry_backoff() -> Result<(), Box<dyn Error>> {
+    let mut server = Server::new_async().await;
 
-//     let _mock_fail = server
-//         .mock("GET", "/files/company_tickers.json")
-//         .with_status(500)
-//         .expect(1)
-//         .create_async()
-//         .await;
+    let _mock_fail = server
+        .mock("GET", "/files/company_tickers.json")
+        .with_status(500)
+        .expect(1)
+        .create_async()
+        .await;
 
-//     let _mock_success = server
-//         .mock("GET", "/files/company_tickers.json")
-//         .with_status(200)
-//         .with_header("Content-Type", "application/json")
-//         .with_body(r#"{"AAPL": {"cik_str": 320193, "ticker": "AAPL", "title": "Apple Inc"}}"#)
-//         .expect(1)
-//         .create_async()
-//         .await;
+    let _mock_success = server
+        .mock("GET", "/files/company_tickers.json")
+        .with_status(200)
+        .with_header("Content-Type", "application/json")
+        .with_body(r#"{"AAPL": {"cik_str": 320193, "ticker": "AAPL", "title": "Apple Inc"}}"#)
+        .expect(1)
+        .create_async()
+        .await;
 
-//     let client = SecClient::new("test@example.com", 1, 500, Some(2));
+    let mut app_config = AppConfig::default();
+    app_config.email = Some("test@example.com".into());
+    app_config.max_retries = Some(2);
+    let config_manager = ConfigManager::from_app_config(&app_config);
 
-//     let result = client
-//         .fetch_json(&format!("{}/files/company_tickers.json", server.url()))
-//         .await?;
+    let client = SecClient::from_config_manager(&config_manager).unwrap();
 
-//     assert_eq!(result["AAPL"]["ticker"].as_str(), Some("AAPL"));
-//     Ok(())
-// }
+    let result = client
+        .fetch_json(&format!("{}/files/company_tickers.json", server.url()))
+        .await?;
+
+    assert_eq!(result["AAPL"]["ticker"].as_str(), Some("AAPL"));
+    Ok(())
+}
