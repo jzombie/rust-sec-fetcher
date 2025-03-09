@@ -86,8 +86,10 @@ impl AppConfig {
     fn extract_type_name(schema: &Schema) -> String {
         if let Schema::Object(SchemaObject { instance_type: Some(types), .. }) = schema {
             match types {
-                SingleOrVec::Single(t) => format!("{:?}", t),  // ✅ Single type
-                SingleOrVec::Vec(vec) => vec.iter().map(|t| format!("{:?}", t)).collect::<Vec<_>>().join(" | "), // ✅ Multiple types
+                SingleOrVec::Single(t) => format!("{:?}", t),  // Single type
+                SingleOrVec::Vec(vec) => vec.iter()
+                    .map(|t| format!("{:?}", t))
+                    .collect::<Vec<_>>().join(" | "), // Multiple types
             }
         } else {
             "Unknown".to_string()
