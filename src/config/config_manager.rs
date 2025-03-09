@@ -65,6 +65,12 @@ impl ConfigManager {
         Ok(Self { config: settings })
     }
 
+    pub fn from_app_config(app_config: &AppConfig) -> Self {
+        Self {
+            config: app_config.clone()
+        }
+    }
+
     /// Retrieves a reference to the configuration.
     pub fn get_config(&self) -> &AppConfig {
         &self.config
