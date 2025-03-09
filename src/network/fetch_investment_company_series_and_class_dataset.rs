@@ -1,56 +1,9 @@
 use csv::ReaderBuilder;
 use std::io::Cursor;
 use crate::network::SecClient;
+use crate::models::InvestmentCompany;
+use crate::parsers::parse_investment_companies_csv;
 use std::error::Error;
-use serde::Deserialize;
-
-#[derive(Debug, Deserialize)]
-pub struct InvestmentCompany {
-    #[serde(rename = "Reporting File Number")]
-    pub reporting_file_number: Option<String>,
-
-    #[serde(rename = "CIK Number")]
-    pub cik_number: Option<String>,
-
-    #[serde(rename = "Entity Name")]
-    pub entity_name: Option<String>,
-
-    #[serde(rename = "Entity Org Type")]
-    pub entity_org_type: Option<String>,
-
-    #[serde(rename = "Series ID")]
-    pub series_id: Option<String>,
-
-    #[serde(rename = "Series Name")]
-    pub series_name: Option<String>,
-
-    #[serde(rename = "Class ID")]
-    pub class_id: Option<String>,
-
-    #[serde(rename = "Class Name")]
-    pub class_name: Option<String>,
-
-    #[serde(rename = "Class Ticker")]
-    pub class_ticker: Option<String>,
-
-    #[serde(rename = "Address_1")]
-    pub address_1: Option<String>,
-
-    #[serde(rename = "Address_2")]
-    pub address_2: Option<String>,
-
-    #[serde(rename = "City")]
-    pub city: Option<String>,
-
-    #[serde(rename = "State")]
-    pub state: Option<String>,
-
-    #[serde(rename = "Zip Code")]
-    pub zip_code: Option<String>,
-}
-
-
-// TODO: Update the return type
 
 /// Fetches the **Investment Company Series and Class Report** from the SEC's dataset.
 ///
@@ -71,7 +24,7 @@ pub struct InvestmentCompany {
 ///
 /// # Returns
 /// Returns a `Result<Vec<u8>, Box<dyn Error>>`, where:
-/// - `Ok(Vec<u8>)` contains the **raw CSV data** as bytes.
+/// - `Ok(Vec<InvestmentCompany>)` contains a list of parsed investment companies.
 /// - `Err(Box<dyn Error>)` if the request fails.
 ///
 /// # Reference
@@ -90,17 +43,7 @@ pub async fn fetch_investment_company_series_and_class_dataset(
         .await?;
     let byte_array = response.bytes().await?;
 
-    let cursor = Cursor::new(&byte_array);
-    let mut reader = ReaderBuilder::new().from_reader(cursor);
-
-    let mut records = Vec::new();
-
-    for result in reader.deserialize() {
-        let record: InvestmentCompany = result?;
-        records.push(record);
-    }
-
-    Ok(records)
+    parse_investment_companies_csv(byte_array)
 } 
 
 
