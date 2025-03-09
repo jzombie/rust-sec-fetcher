@@ -3,6 +3,7 @@ use crate::network::SecClient;
 use crate::parsers::parse_nport_xml;
 use std::error::Error;
 
+// TODO: Include expense ratios!
 pub async fn fetch_nport_filing(
     sec_client: &SecClient,
     cik: Cik,
