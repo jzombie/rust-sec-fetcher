@@ -10,9 +10,6 @@ pub use fetch_us_gaap_fundamentals::{fetch_us_gaap_fundamentals, TickerFundament
 mod fetch_investment_company_series_and_class_dataset;
 pub use fetch_investment_company_series_and_class_dataset::fetch_investment_company_series_and_class_dataset;
 
-mod credential_manager;
-pub use credential_manager::{CredentialManager, CredentialProvider};
-
 mod fetch_cik_submissions;
 pub use fetch_cik_submissions::{fetch_cik_submissions, CikSubmission};
 

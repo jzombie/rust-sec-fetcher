@@ -1,4 +1,4 @@
-use sec_fetcher::models::{Cik, CikError, AccessionNumber};
+use sec_fetcher::models::{AccessionNumber, Cik, CikError};
 
 #[test]
 fn test_cik_to_string() {
@@ -16,15 +16,27 @@ fn test_cik_from_str() {
 
 #[test]
 fn test_cik_from_str_invalid() {
-    assert!(matches!(Cik::from_str("invalid"), Err(CikError::ParseError(_))));
-    assert!(matches!(Cik::from_str("12345678901"), Err(CikError::InvalidLength))); // More than 10 digits
+    assert!(matches!(
+        Cik::from_str("invalid"),
+        Err(CikError::ParseError(_))
+    ));
+    assert!(matches!(
+        Cik::from_str("12345678901"),
+        Err(CikError::InvalidLength)
+    )); // More than 10 digits
     assert!(matches!(Cik::from_str(""), Err(CikError::ParseError(_)))); // Empty string
-    assert!(matches!(Cik::from_str(" 12345"), Err(CikError::ParseError(_)))); // Leading space
+    assert!(matches!(
+        Cik::from_str(" 12345"),
+        Err(CikError::ParseError(_))
+    )); // Leading space
 }
 
 #[test]
 fn test_cik_from_u64_invalid() {
-    assert!(matches!(Cik::from_u64(10000000000), Err(CikError::InvalidLength))); // More than 10 digits
+    assert!(matches!(
+        Cik::from_u64(10000000000),
+        Err(CikError::InvalidLength)
+    )); // More than 10 digits
 }
 
 #[test]
@@ -34,10 +46,10 @@ fn test_from_accession_number() {
         let cik = Cik::from_accession_number(&accession);
         assert_eq!(accession.cik.to_u64(), cik.to_u64());
     }
- 
+
     {
         let accession = AccessionNumber::from_str("0009876543-99-123456").unwrap();
         let cik = Cik::from_accession_number(&accession);
-        assert_eq!(accession.cik.to_u64(), cik.to_u64());        
+        assert_eq!(accession.cik.to_u64(), cik.to_u64());
     }
 }

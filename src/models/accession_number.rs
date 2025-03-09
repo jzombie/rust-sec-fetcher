@@ -14,7 +14,7 @@ use crate::models::{Cik, CikError};
 /// # Example:
 /// ```rust
 /// use sec_fetcher::models::{AccessionNumber, Cik};
-/// 
+///
 /// let accession_number = AccessionNumber {
 ///     cik: Cik { value: 1234567890 },
 ///     year: 24,
@@ -34,9 +34,9 @@ use crate::models::{Cik, CikError};
 
 #[derive(Debug, Clone)]
 pub struct AccessionNumber {
-    pub cik: Cik,       // First 10 digits (zero-padded)
-    pub year: u16,      // Next 2 digits (filing year)
-    pub sequence: u32,  // Last 6 digits (filing sequence number)
+    pub cik: Cik,      // First 10 digits (zero-padded)
+    pub year: u16,     // Next 2 digits (filing year)
+    pub sequence: u32, // Last 6 digits (filing sequence number)
 }
 
 #[derive(Debug)]
@@ -46,12 +46,16 @@ pub enum AccessionNumberError {
     CikError(CikError),
 }
 
-
 impl std::fmt::Display for AccessionNumberError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            AccessionNumberError::InvalidLength => write!(f, "Accession number must be 18 digits (XXXXXXXXXX-YY-NNNNNN)"),
-            AccessionNumberError::ParseError(e) => write!(f, "Failed to parse Accession Number: {}", e),
+            AccessionNumberError::InvalidLength => write!(
+                f,
+                "Accession number must be 18 digits (XXXXXXXXXX-YY-NNNNNN)"
+            ),
+            AccessionNumberError::ParseError(e) => {
+                write!(f, "Failed to parse Accession Number: {}", e)
+            }
             AccessionNumberError::CikError(e) => write!(f, "CIK Error: {}", e), // Display `CikError`
         }
     }
@@ -71,7 +75,6 @@ impl From<CikError> for AccessionNumberError {
     }
 }
 
-
 impl AccessionNumber {
     /// Parses an **Accession Number** string (with or without dashes).
     ///
@@ -90,12 +93,12 @@ impl AccessionNumber {
         if clean_str.len() != 18 {
             return Err(AccessionNumberError::InvalidLength);
         }
-    
+
         // Extract fields based on fixed positions
         let cik_part = &clean_str[0..10];
         let year_part = &clean_str[10..12];
         let sequence_part = &clean_str[12..18];
-    
+
         // Ensure fields contain only digits before parsing
         if !cik_part.chars().all(|c| c.is_ascii_digit())
             || !year_part.chars().all(|c| c.is_ascii_digit())
@@ -105,17 +108,20 @@ impl AccessionNumber {
                 "Non-numeric character found".parse::<u64>().unwrap_err(),
             ));
         }
-    
+
         // Parse fields into numbers
         let cik_u64 = cik_part.parse::<u64>()?;
         let cik = Cik::from_u64(cik_u64).map_err(AccessionNumberError::from)?;
 
         let year = year_part.parse::<u16>()?;
         let sequence = sequence_part.parse::<u32>()?;
-    
-        Ok(Self { cik, year, sequence })
+
+        Ok(Self {
+            cik,
+            year,
+            sequence,
+        })
     }
-    
 
     /// Creates an **Accession Number** from numeric components.
     ///
@@ -125,7 +131,11 @@ impl AccessionNumber {
     ///
     /// # Errors
     /// - Returns `AccessionNumberError::InvalidLength` if any field exceeds its expected length.
-    pub fn from_parts(cik_u64: u64, year: u16, sequence: u32) -> Result<Self, AccessionNumberError> {
+    pub fn from_parts(
+        cik_u64: u64,
+        year: u16,
+        sequence: u32,
+    ) -> Result<Self, AccessionNumberError> {
         if cik_u64 > 9_999_999_999 {
             return Err(AccessionNumberError::InvalidLength);
         }
@@ -138,14 +148,23 @@ impl AccessionNumber {
 
         let cik = Cik::from_u64(cik_u64).map_err(AccessionNumberError::from)?;
 
-        Ok(Self { cik, year, sequence })
+        Ok(Self {
+            cik,
+            year,
+            sequence,
+        })
     }
 
     /// Converts the Accession Number to its **standard dash-separated format**.
     ///
     /// - Example Output: `"0001234567-23-000045"`
     pub fn to_string(&self) -> String {
-        format!("{:010}-{:02}-{:06}", self.cik.to_string(), self.year, self.sequence)
+        format!(
+            "{:010}-{:02}-{:06}",
+            self.cik.to_string(),
+            self.year,
+            self.sequence
+        )
     }
 
     /// Returns the Accession Number as a **plain numeric string** (without dashes).
@@ -153,11 +172,16 @@ impl AccessionNumber {
     /// # Example:
     /// ```rust
     /// use sec_fetcher::models::AccessionNumber;
-    /// 
+    ///
     /// let accession = AccessionNumber::from_str("0001234567-23-000045").unwrap();
     /// assert_eq!(accession.to_unformatted_string(), "000123456723000045");
     /// ```
     pub fn to_unformatted_string(&self) -> String {
-        format!("{:010}{:02}{:06}", self.cik.to_string(), self.year, self.sequence)
+        format!(
+            "{:010}{:02}{:06}",
+            self.cik.to_string(),
+            self.year,
+            self.sequence
+        )
     }
 }

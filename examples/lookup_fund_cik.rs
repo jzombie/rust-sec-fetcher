@@ -1,8 +1,6 @@
 use csv::ReaderBuilder;
-use sec_fetcher::network::{
-    fetch_investment_company_series_and_class_dataset, CredentialManager, CredentialProvider,
-    SecClient,
-};
+use sec_fetcher::config::ConfigManager;
+use sec_fetcher::network::{fetch_investment_company_series_and_class_dataset, SecClient};
 use std::error::Error;
 use std::io::{self, Cursor, Write};
 use tokio;
@@ -19,8 +17,8 @@ fn prompt_user(prompt: &str) -> String {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let credential_manager = CredentialManager::from_prompt()?;
-    let client = SecClient::from_credential_manager(&credential_manager, 1, 1000, Some(5))?;
+    let config_manager = ConfigManager::load()?;
+    let client = SecClient::from_config_manager(&config_manager)?;
 
     // Fetch CSV byte array
     let byte_array = fetch_investment_company_series_and_class_dataset(&client, 2024).await?;

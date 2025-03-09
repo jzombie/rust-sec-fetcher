@@ -1,7 +1,7 @@
-use polars::prelude::*;
-use std::error::Error;
 use crate::models::Cik;
 use crate::network::SecTickersDataFrame;
+use polars::prelude::*;
+use std::error::Error;
 
 // TODO: Refactor to optionally work off of funding data source as well
 // (reference `lookup_cik.rs` example)

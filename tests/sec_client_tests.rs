@@ -1,10 +1,15 @@
 use mockito::Server;
+use sec_fetcher::config::{AppConfig, ConfigManager};
 use sec_fetcher::network::{SecClient, SecClientDataExt};
 use std::error::Error;
 
 #[test]
 fn test_user_agent() {
-    let client = SecClient::new("test@example.com", 1, 1000, None);
+    let mut app_config = AppConfig::default();
+    app_config.email = Some("test@example.com".into());
+    let config_manager = ConfigManager::from_app_config(&app_config);
+
+    let client = SecClient::from_config_manager(&config_manager).unwrap();
 
     assert_eq!(
         client.get_user_agent(),
@@ -18,8 +23,11 @@ fn test_user_agent() {
 #[test]
 #[should_panic(expected = "Invalid email format")]
 fn test_invalid_email_panic() {
-    // Assuming SecClient panics if the email format is invalid
-    let client = SecClient::new("invalid-email", 1, 1000, None);
+    let mut app_config = AppConfig::default();
+    app_config.email = Some("invalid-email".into());
+    let config_manager = ConfigManager::from_app_config(&app_config);
+
+    let client = SecClient::from_config_manager(&config_manager).unwrap();
 
     client.get_user_agent();
 }
@@ -36,7 +44,11 @@ async fn test_fetch_json_without_retry_success() -> Result<(), Box<dyn Error>> {
         .create_async()
         .await;
 
-    let client = SecClient::new("test@example.com", 1, 1000, None);
+    let mut app_config = AppConfig::default();
+    app_config.email = Some("test@example.com".into());
+    let config_manager = ConfigManager::from_app_config(&app_config);
+
+    let client = SecClient::from_config_manager(&config_manager).unwrap();
 
     let result = client
         .fetch_json(&format!("{}/files/company_tickers.json", server.url()))
@@ -58,7 +70,11 @@ async fn test_fetch_json_with_retry_success() -> Result<(), Box<dyn Error>> {
         .create_async()
         .await;
 
-    let client = SecClient::new("test@example.com", 1, 1000, Some(3));
+    let mut app_config = AppConfig::default();
+    app_config.email = Some("test@example.com".into());
+    let config_manager = ConfigManager::from_app_config(&app_config);
+
+    let client = SecClient::from_config_manager(&config_manager).unwrap();
 
     let result = client
         .fetch_json(&format!("{}/files/company_tickers.json", server.url()))
@@ -79,7 +95,12 @@ async fn test_fetch_json_with_retry_failure() -> Result<(), Box<dyn Error>> {
         .create_async()
         .await;
 
-    let client = SecClient::new("test@example.com", 1, 500, Some(2));
+    let mut app_config = AppConfig::default();
+    app_config.email = Some("test@example.com".into());
+    app_config.max_retries = Some(2);
+    let config_manager = ConfigManager::from_app_config(&app_config);
+
+    let client = SecClient::from_config_manager(&config_manager).unwrap();
 
     let result = client
         .fetch_json(&format!("{}/files/company_tickers.json", server.url()))
@@ -109,7 +130,12 @@ async fn test_fetch_json_with_retry_backoff() -> Result<(), Box<dyn Error>> {
         .create_async()
         .await;
 
-    let client = SecClient::new("test@example.com", 1, 500, Some(2));
+    let mut app_config = AppConfig::default();
+    app_config.email = Some("test@example.com".into());
+    app_config.max_retries = Some(2);
+    let config_manager = ConfigManager::from_app_config(&app_config);
+
+    let client = SecClient::from_config_manager(&config_manager).unwrap();
 
     let result = client
         .fetch_json(&format!("{}/files/company_tickers.json", server.url()))

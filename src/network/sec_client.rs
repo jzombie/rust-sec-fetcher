@@ -1,7 +1,9 @@
-use crate::network::CredentialManager;
+use crate::config::ConfigManager;
 use email_address::EmailAddress;
+use http_cache_reqwest::{CACacheManager, Cache, HttpCache, HttpCacheOptions};
 use rand::Rng;
 use reqwest::Client;
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use serde_json::Value;
 use std::error::Error;
 use std::sync::Arc;
@@ -10,7 +12,7 @@ use tokio::time::{sleep, Duration};
 
 pub struct SecClient {
     email: String,
-    client: Client,
+    client: ClientWithMiddleware,
     semaphore: Arc<Semaphore>, // Limit concurrent requests
     min_delay: Duration,       // Enforce delay
     max_retries: Option<usize>,
@@ -44,38 +46,41 @@ pub trait SecClientDataExt {
 
 impl SecClient {
     /// Creates a new async SEC HTTP client with optional rate limiting
-    pub fn new(
-        email: &str,
-        max_concurrent: usize,
-        min_delay_ms: u64,
-        max_retries: Option<usize>,
-    ) -> Self {
-        SecClient {
-            email: email.to_string(),
-            client: Client::new(),
-            semaphore: Arc::new(Semaphore::new(max_concurrent)),
-            min_delay: Duration::from_millis(min_delay_ms),
-            max_retries,
-        }
-    }
-
-    pub fn from_credential_manager(
-        credential_manager: &CredentialManager,
-        max_concurrent: usize,
-        max_delay_ms: u64,
-        max_retries: Option<usize>,
+    pub fn from_config_manager(
+        config_manager: &ConfigManager,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let email = credential_manager.get_credential()?;
+        let config = &config_manager.get_config();
 
-        let instance = Self {
-            email,
-            client: Client::new(),
+        let email = config
+            .email
+            .as_ref()
+            .ok_or_else(|| "Missing required field: email".to_string())?; // Error if missing
+
+        let max_concurrent = config
+            .max_concurrent
+            .ok_or_else(|| "Missing required field: max_concurrent".to_string())?; // Error if missing
+
+        let min_delay = config
+            .min_delay_ms
+            .ok_or_else(|| "Missing required field: min_delay_ms".to_string())?; // Error if missing
+
+        let cache_client = ClientBuilder::new(Client::new())
+            .with(Cache(HttpCache {
+                mode: config.get_http_cache_mode()?,
+                manager: CACacheManager {
+                    path: config.get_http_cache_dir(),
+                },
+                options: HttpCacheOptions::default(),
+            }))
+            .build();
+
+        Ok(Self {
+            email: email.to_string(),
+            client: cache_client,
             semaphore: Arc::new(Semaphore::new(max_concurrent)),
-            min_delay: Duration::from_millis(max_delay_ms),
-            max_retries,
-        };
-
-        Ok(instance)
+            min_delay: Duration::from_millis(min_delay),
+            max_retries: config.max_retries,
+        })
     }
 
     pub async fn raw_request(
@@ -124,6 +129,7 @@ impl SecClientDataExt for SecClient {
         url: &str,
         headers: Option<Vec<(&str, &str)>>,
     ) -> Result<reqwest::Response, Box<dyn Error>> {
+        // FIXME: Determine if is cached before sleeping; subsequent requests could be made much faster
         let _permit = self.semaphore.acquire().await?;
         sleep(self.min_delay).await;
 

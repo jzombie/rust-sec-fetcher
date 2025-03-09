@@ -1,5 +1,5 @@
-use crate::network::SecClient;
 use crate::models::Cik;
+use crate::network::SecClient;
 use polars::prelude::*;
 use std::error::Error;
 
@@ -11,6 +11,8 @@ pub async fn fetch_sec_tickers(client: &SecClient) -> Result<SecTickersDataFrame
 
     let url = "https://www.sec.gov/files/company_tickers.json";
     let data = client.fetch_json(url).await?;
+
+    // TODO: Move the following into `parsers`
 
     let mut cik_raw_values = Vec::new();
     let mut cik_transformed_values = Vec::new();
