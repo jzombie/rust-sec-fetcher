@@ -1,5 +1,4 @@
-use csv::ReaderBuilder;
-use sec_fetcher::accessors::get_company_cik_by_ticker_symbol;
+use sec_fetcher::accessors::{get_company_cik_by_ticker_symbol, get_fund_cik_by_ticker_symbol};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::Cik;
 use sec_fetcher::network::{
@@ -8,7 +7,6 @@ use sec_fetcher::network::{
 };
 use std::env;
 use std::error::Error;
-use std::io::Cursor;
 use tokio;
 
 #[tokio::main]
@@ -42,14 +40,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         let investment_companies = fetch_investment_company_series_and_class_dataset(&client, 2024).await?;
 
-        for result in investment_companies.iter() {
-            if result.class_ticker == Some(ticker_symbol.clone()) {
-                if let Some(cik_str) = &result.cik_number {
-                    result_cik = Some(Cik::from_str(&cik_str).unwrap());
-                    break;
-                }
-            }
-        }
+        result_cik = Some(get_fund_cik_by_ticker_symbol(&investment_companies, ticker_symbol).unwrap());
     }
 
     if result_cik.is_none() {
