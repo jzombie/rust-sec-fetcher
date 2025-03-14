@@ -9,6 +9,7 @@ use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
 use tokio::time::{sleep, Duration};
+use crate::network::sec_client_cache::HashMapCache; 
 
 pub struct SecClient {
     email: String,
@@ -64,14 +65,18 @@ impl SecClient {
             .min_delay_ms
             .ok_or_else(|| "Missing required field: min_delay_ms".to_string())?; // Error if missing
 
+        // let cache_client = ClientBuilder::new(Client::new())
+        //     .with(Cache(HttpCache {
+        //         mode: config.get_http_cache_mode()?,
+        //         manager: CACacheManager {
+        //             path: config.get_http_cache_dir(),
+        //         },
+        //         options: HttpCacheOptions::default(),
+        //     }))
+        //     .build();
+
         let cache_client = ClientBuilder::new(Client::new())
-            .with(Cache(HttpCache {
-                mode: config.get_http_cache_mode()?,
-                manager: CACacheManager {
-                    path: config.get_http_cache_dir(),
-                },
-                options: HttpCacheOptions::default(),
-            }))
+            .with(HashMapCache::default()) // ✅ Swap out CACacheManager with HashMapCache
             .build();
 
         Ok(Self {
