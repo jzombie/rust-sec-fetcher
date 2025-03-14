@@ -1,6 +1,9 @@
 mod sec_client;
 pub use sec_client::{SecClient, SecClientDataExt};
 
+mod sec_client_cache;
+pub use sec_client_cache::HashMapCache;
+
 mod fetch_sec_tickers;
 pub use fetch_sec_tickers::{fetch_sec_tickers, SecTickersDataFrame};
 
