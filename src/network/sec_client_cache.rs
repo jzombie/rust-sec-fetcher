@@ -26,6 +26,10 @@ impl Middleware for HashMapCache {
         // Check if response is cached
         {
             let store = self.store.read().await;
+            
+            // TODO: Remove
+            // eprintln!("{:?}", store);
+
             if let Some((status, headers, body)) = store.get(&url) {
                 return Ok(build_response(*status, headers.clone(), body.clone()));
             }

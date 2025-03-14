@@ -14,6 +14,7 @@ use crate::network::sec_client_cache::HashMapCache;
 pub struct SecClient {
     email: String,
     client: ClientWithMiddleware,
+    cache: Arc<HashMapCache>,
     semaphore: Arc<Semaphore>, // Limit concurrent requests
     min_delay: Duration,       // Enforce delay
     max_retries: Option<usize>,
@@ -75,13 +76,16 @@ impl SecClient {
         //     }))
         //     .build();
 
+        let cache = Arc::new(HashMapCache::default()); // ✅ Create HashMapCache instance
+
         let cache_client = ClientBuilder::new(Client::new())
-            .with(HashMapCache::default()) // ✅ Swap out CACacheManager with HashMapCache
+            .with_arc(cache.clone()) // ✅ Correctly wrap HashMapCache inside Arc
             .build();
 
         Ok(Self {
             email: email.to_string(),
             client: cache_client,
+            cache: cache.clone(),
             semaphore: Arc::new(Semaphore::new(max_concurrent)),
             min_delay: Duration::from_millis(min_delay),
             max_retries: config.max_retries,
