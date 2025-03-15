@@ -2975,6 +2975,7 @@ name = "sec-fetcher"
 version = "0.1.0-alpha"
 dependencies = [
  "async-trait",
+ "bincode",
  "bytes",
  "chrono",
  "config",
