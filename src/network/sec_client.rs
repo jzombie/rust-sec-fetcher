@@ -56,19 +56,20 @@ impl SecClient {
         //     max_retries: app_config.max_retries,
         // };
 
-        
-        // Example: Custom Fixed Throttle Policy
-        let throttle_config = ThrottleConfig::Fixed {
-            fixed_delay_ms: min_delay,
-            max_concurrent: Some(max_concurrent),
-            max_retries: Some(5),
-        };
 
         // Convert config to policy
         // let policy = ThrottlePolicy::from(&throttle_config);
 
         // Create shared cache
         let cache = Arc::new(HashMapCache::default());
+
+        // Example: Custom Fixed Throttle Policy
+        let throttle_config = ThrottleConfig::Fixed {
+            fixed_delay_ms: min_delay,
+            max_concurrent: Some(max_concurrent),
+            // TODO: Make configurable
+            max_retries: Some(5),
+        };
 
         // Create throttle middleware with the custom policy
         let throttle_middleware = ThrottleBackoffMiddleware::from_config(&throttle_config, cache.clone());
