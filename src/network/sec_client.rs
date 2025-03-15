@@ -64,11 +64,12 @@ impl SecClient {
         let cache = Arc::new(HashMapCache::default());
 
         // Example: Custom Fixed Throttle Policy
-        let throttle_config = ThrottleConfig::Fixed {
-            fixed_delay_ms: min_delay,
+        let throttle_config = ThrottleConfig::Adaptive {
+            adaptive_base_delay_ms: min_delay,
             max_concurrent: Some(max_concurrent),
             // TODO: Make configurable
             max_retries: Some(5),
+            adaptive_jitter_ms: 100,
         };
 
         // Create throttle middleware with the custom policy
