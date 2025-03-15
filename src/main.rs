@@ -49,6 +49,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         }
                     }
                     Err(e) => {
+                        eprintln!("File creation error: {}", e);
                         error_log.insert(ticker.clone(), format!("File creation error: {}", e));
                     }
                 }

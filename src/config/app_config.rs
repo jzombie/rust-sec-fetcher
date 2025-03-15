@@ -40,9 +40,12 @@ pub struct AppConfig {
 impl Default for AppConfig {
     fn default() -> Self {
         let temp_cache_dir = {
-            let mut temp_cache = env::temp_dir();
-            temp_cache.push(format!("{}/cache", env!("CARGO_PKG_NAME")));
-            temp_cache
+            // TODO: Reuse?
+            // let mut temp_cache = env::temp_dir();
+            // temp_cache.push(format!("{}/cache", env!("CARGO_PKG_NAME")));
+            // temp_cache
+
+            PathBuf::from("data/tmp-cache")
         };
 
         Self {
@@ -61,7 +64,6 @@ impl AppConfig {
         to_string_pretty(self).unwrap_or_else(|_| "Failed to serialize config".to_string())
     }
 
-    /// Returns a dynamically generated list of valid keys with their types
     /// Returns a dynamically generated list of valid keys with their types
     pub fn get_valid_keys() -> Vec<(String, String)> {
         let schema = schema_for!(AppConfig);
@@ -115,6 +117,7 @@ impl AppConfig {
             .unwrap_or_default()
     }
 
+    // TODO: Remove if using new cache policy
     // TODO: Document
     // https://docs.rs/http-cache/0.20.1/http_cache/enum.CacheMode.html
     pub fn get_http_cache_mode(&self) -> Result<CacheMode, Box<dyn std::error::Error>> {
