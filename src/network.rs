@@ -4,6 +4,9 @@ pub use sec_client::{SecClient, SecClientDataExt};
 mod sec_client_cache;
 pub use sec_client_cache::HashMapCache;
 
+mod sec_client_throttle;
+pub use sec_client_throttle::ThrottleBackoffMiddleware;
+
 mod fetch_sec_tickers;
 pub use fetch_sec_tickers::{fetch_sec_tickers, SecTickersDataFrame};
 
