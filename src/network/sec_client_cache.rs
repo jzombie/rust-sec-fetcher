@@ -87,11 +87,14 @@ impl HashMapCache {
                     self.policy.default_ttl
                 };
 
-                let expected_expiration = cached.expiration_timestamp - ttl.as_millis() as u64;
+                let expected_expiration = cached.expiration_timestamp + ttl.as_millis() as u64;
 
                 // If expired, remove from cache
                 if now >= expected_expiration {
-                    eprintln!("Determined cache is expired. now - expected_expiration: {:?}", now - expected_expiration);
+                    // eprintln!("Determined cache is expired. now - expected_expiration: {:?}", now - expected_expiration);
+                    eprintln!("Cache expires at: {}", chrono::DateTime::from_timestamp_millis(expected_expiration as i64).unwrap());
+                    eprintln!("Expiration timestamp: {}", chrono::DateTime::from_timestamp_millis(cached.expiration_timestamp as i64).unwrap());
+                    eprintln!("Now: {}", chrono::DateTime::from_timestamp_millis(now as i64).unwrap());
 
                     // TODO: Uncomment
 
