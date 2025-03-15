@@ -12,17 +12,31 @@ use crate::network::HashMapCache;
 #[derive(Debug, Deserialize)]
 #[serde(tag = "policy", rename_all = "snake_case")]
 pub enum ThrottleConfig {
+    /// **Fixed Delay Throttling:**
+    /// - Applies a constant delay between requests.
+    /// - Ensures requests do not exceed a predefined rate.
+    /// - Useful when dealing with strict API rate limits.
     Fixed {
         fixed_delay_ms: u64,
         max_concurrent: Option<usize>,
         max_retries: Option<usize>,
     },
+
+    /// **Adaptive Delay Throttling:**
+    /// - Uses exponential backoff with added jitter to dynamically adjust delays.
+    /// - Helps avoid overloading the server while maximizing throughput.
+    /// - Suitable for APIs with rate limits that respond with 429 errors.
     Adaptive {
         adaptive_base_delay_ms: u64,
         adaptive_jitter_ms: u64,
         max_concurrent: Option<usize>,
         max_retries: Option<usize>,
     },
+
+    /// **No Throttling:**
+    /// - Does not enforce any delay between requests.
+    /// - Still limits max concurrent requests if specified.
+    /// - Can be useful when operating in a low-traffic environment.
     None {
         max_concurrent: Option<usize>,
         max_retries: Option<usize>,
