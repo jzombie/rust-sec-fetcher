@@ -10,13 +10,23 @@ use async_trait::async_trait;
 use crate::network::HashMapCache;
 
 #[derive(Debug, Deserialize)]
-pub struct ThrottleConfig {
-    pub policy: String,
-    pub fixed_delay_ms: Option<u64>,
-    pub adaptive_base_delay_ms: Option<u64>,
-    pub adaptive_jitter_ms: Option<u64>,
-    pub max_concurrent: Option<usize>,
-    pub max_retries: Option<usize>,
+#[serde(tag = "policy", rename_all = "snake_case")]
+pub enum ThrottleConfig {
+    Fixed {
+        fixed_delay_ms: u64,
+        max_concurrent: Option<usize>,
+        max_retries: Option<usize>,
+    },
+    Adaptive {
+        adaptive_base_delay_ms: u64,
+        adaptive_jitter_ms: u64,
+        max_concurrent: Option<usize>,
+        max_retries: Option<usize>,
+    },
+    None {
+        max_concurrent: Option<usize>,
+        max_retries: Option<usize>,
+    },
 }
 
 pub enum ThrottlePolicy {
@@ -25,29 +35,19 @@ pub enum ThrottlePolicy {
     NoThrottle,
 }
 
-impl TryFrom<ThrottleConfig> for ThrottlePolicy {
-    type Error = String;
-
-    fn try_from(config: ThrottleConfig) -> Result<Self, Self::Error> {
-        match config.policy.as_str() {
-            "fixed" => Ok(Self::FixedDelay(Duration::from_millis(
-                config.fixed_delay_ms.ok_or("Missing fixed_delay_ms")?,
-            ))),
-            "adaptive" => {
-                let base_delay = Duration::from_millis(
-                    config
-                        .adaptive_base_delay_ms
-                        .ok_or("Missing adaptive_base_delay_ms")?,
-                );
-                let jitter = Duration::from_millis(
-                    config
-                        .adaptive_jitter_ms
-                        .ok_or("Missing adaptive_jitter_ms")?,
-                );
-                Ok(Self::AdaptiveDelay { base_delay, jitter })
+impl From<&ThrottleConfig> for ThrottlePolicy {
+    fn from(config: &ThrottleConfig) -> Self {
+        match config {
+            ThrottleConfig::Fixed { fixed_delay_ms, .. } => {
+                Self::FixedDelay(Duration::from_millis(*fixed_delay_ms))
             }
-            "none" => Ok(Self::NoThrottle),
-            other => Err(format!("Invalid throttle policy: {}", other)),
+            ThrottleConfig::Adaptive { adaptive_base_delay_ms, adaptive_jitter_ms, .. } => {
+                Self::AdaptiveDelay {
+                    base_delay: Duration::from_millis(*adaptive_base_delay_ms),
+                    jitter: Duration::from_millis(*adaptive_jitter_ms),
+                }
+            }
+            ThrottleConfig::None { .. } => Self::NoThrottle,
         }
     }
 }
@@ -57,6 +57,29 @@ pub struct ThrottleBackoffMiddleware {
     pub policy: ThrottlePolicy,
     pub max_retries: usize,
     pub cache: Arc<HashMapCache>,
+}
+
+impl ThrottleBackoffMiddleware {
+    pub fn from_config(config: &ThrottleConfig, cache: Arc<HashMapCache>) -> Self {
+        let max_concurrent = match config {
+            ThrottleConfig::Fixed { max_concurrent, .. }
+            | ThrottleConfig::Adaptive { max_concurrent, .. }
+            | ThrottleConfig::None { max_concurrent, .. } => max_concurrent.unwrap_or(1),
+        };
+
+        let max_retries = match config {
+            ThrottleConfig::Fixed { max_retries, .. }
+            | ThrottleConfig::Adaptive { max_retries, .. }
+            | ThrottleConfig::None { max_retries, .. } => max_retries.unwrap_or(0),
+        };
+
+        Self {
+            semaphore: Arc::new(Semaphore::new(max_concurrent)),
+            policy: ThrottlePolicy::from(config),
+            max_retries,
+            cache,
+        }
+    }
 }
 
 #[async_trait]
@@ -76,12 +99,8 @@ impl Middleware for ThrottleBackoffMiddleware {
         let _permit = self.semaphore.acquire().await.map_err(|e| Error::Middleware(e.into()))?;
 
         match &self.policy {
-            ThrottlePolicy::FixedDelay(delay) => {
-                sleep(*delay).await;
-            }
-            ThrottlePolicy::AdaptiveDelay { base_delay, .. } => {
-                sleep(*base_delay).await;
-            }
+            ThrottlePolicy::FixedDelay(delay) => sleep(*delay).await,
+            ThrottlePolicy::AdaptiveDelay { base_delay, .. } => sleep(*base_delay).await,
             ThrottlePolicy::NoThrottle => {}
         }
 
@@ -89,7 +108,6 @@ impl Middleware for ThrottleBackoffMiddleware {
 
         loop {
             let req_clone = req.try_clone().expect("Request cloning failed");
-
             let result = next.clone().run(req_clone, extensions).await;
 
             match result {
@@ -100,10 +118,10 @@ impl Middleware for ThrottleBackoffMiddleware {
 
                     let backoff_duration = match &self.policy {
                         ThrottlePolicy::AdaptiveDelay { base_delay, jitter } => {
-                            let mut rng = rand::rng();
+                            let mut rng = rand::thread_rng();
                             Duration::from_millis(
                                 base_delay.as_millis() as u64 * 2u64.pow(attempt as u32)
-                                    + rng.random_range(0..=jitter.as_millis() as u64),
+                                    + rng.gen_range(0..=jitter.as_millis() as u64),
                             )
                         }
                         ThrottlePolicy::FixedDelay(delay) => *delay,
