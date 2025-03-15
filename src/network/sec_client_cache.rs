@@ -51,7 +51,7 @@ impl HashMapCache {
         }
     }
 
-    /// **Checks if a request URL is cached and still valid**
+    /// **Determines if a request URL is cached and still valid based on CachePolicy**
     pub async fn is_cached(&self, cache_key: &str) -> bool {
         let store = self.store.read().await;
         if let Some(raw_data) = store.get(cache_key) {
@@ -60,11 +60,39 @@ impl HashMapCache {
                     .duration_since(UNIX_EPOCH)
                     .expect("Time went backwards")
                     .as_millis() as u64;
-                return now < cached.expiration_timestamp; // Cache still valid
+
+                // Extract TTL based on the policy (either from headers or default)
+                let ttl = if self.policy.respect_headers {
+                    // Convert headers back to HeaderMap to extract TTL
+                    let mut headers = HeaderMap::new();
+                    for (k, v) in cached.headers.iter() {
+                        if let Ok(header_name) = k.parse::<http::HeaderName>() {
+                            if let Ok(header_value) = HeaderValue::from_bytes(v) {
+                                headers.insert(header_name, header_value);
+                            }
+                        }
+                    }
+                    Self::extract_ttl(&headers, &self.policy)
+                } else {
+                    self.policy.default_ttl
+                };
+
+                let expected_expiration = cached.expiration_timestamp - ttl.as_millis() as u64;
+
+                // If expired, remove from cache
+                if now >= expected_expiration {
+                    drop(store); // Release read lock before acquiring write lock
+                    let mut write_store = self.store.write().await;
+                    write_store.remove(cache_key);
+                    return false;
+                }
+
+                return true;
             }
         }
         false
     }
+
 
     /// **Generates a unique cache key based on method, URL, and important headers**
     fn generate_cache_key(req: &Request) -> String {
@@ -129,26 +157,21 @@ impl Middleware for HashMapCache {
         let cache_key = Self::generate_cache_key(&req);
 
         if req.method() == "GET" || req.method() == "HEAD" {
-            {
+            // **Use is_cached() to determine if the cache should be used**
+            if self.is_cached(&cache_key).await {
                 let store = self.store.read().await;
                 if let Some(raw_data) = store.get(&cache_key) {
                     if let Ok(cached) = bincode::deserialize::<CachedResponse>(raw_data) {
-                        let now = SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .expect("Time went backwards")
-                            .as_millis() as u64;
-                        if now < cached.expiration_timestamp {
-                            let mut headers = HeaderMap::new();
-                            for (k, v) in cached.headers {
-                                if let Ok(header_name) = k.parse::<http::HeaderName>() {
-                                    if let Ok(header_value) = HeaderValue::from_bytes(&v) {
-                                        headers.insert(header_name, header_value);
-                                    }
+                        let mut headers = HeaderMap::new();
+                        for (k, v) in cached.headers {
+                            if let Ok(header_name) = k.parse::<http::HeaderName>() {
+                                if let Ok(header_value) = HeaderValue::from_bytes(&v) {
+                                    headers.insert(header_name, header_value);
                                 }
                             }
-                            let status = StatusCode::from_u16(cached.status).unwrap_or(StatusCode::OK);
-                            return Ok(build_response(status, headers, Bytes::from(cached.body)));
                         }
+                        let status = StatusCode::from_u16(cached.status).unwrap_or(StatusCode::OK);
+                        return Ok(build_response(status, headers, Bytes::from(cached.body)));
                     }
                 }
             }
@@ -178,7 +201,6 @@ impl Middleware for HashMapCache {
                 store.insert(cache_key, serialized);
             }
 
-            // Use the cloned body for returning the response
             return Ok(build_response(status, headers, Bytes::from(body_clone)));
         }
 
