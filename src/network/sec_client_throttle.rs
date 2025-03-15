@@ -2,12 +2,12 @@ use serde::Deserialize;
 use rand::Rng;
 use reqwest::{Request, Response};
 use reqwest_middleware::{Middleware, Next, Error};
-use crate::network::HashMapCache;
 use http::Extensions;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
 use tokio::time::{sleep, Duration};
 use async_trait::async_trait;
+use crate::network::HashMapCache;
 
 #[derive(Debug, Deserialize)]
 pub struct ThrottleConfig {
@@ -53,10 +53,10 @@ impl TryFrom<ThrottleConfig> for ThrottlePolicy {
 }
 
 pub struct ThrottleBackoffMiddleware {
-    semaphore: Arc<Semaphore>,
-    policy: ThrottlePolicy,
-    max_retries: usize,
-    cache: Arc<HashMapCache>,
+    pub semaphore: Arc<Semaphore>,
+    pub policy: ThrottlePolicy,
+    pub max_retries: usize,
+    pub cache: Arc<HashMapCache>,
 }
 
 #[async_trait]
@@ -73,7 +73,7 @@ impl Middleware for ThrottleBackoffMiddleware {
             return next.run(req, extensions).await;
         }
 
-        let permit = self.semaphore.acquire().await.map_err(|e| Error::Middleware(e.into()))?;
+        let _permit = self.semaphore.acquire().await.map_err(|e| Error::Middleware(e.into()))?;
 
         match &self.policy {
             ThrottlePolicy::FixedDelay(delay) => {
@@ -86,6 +86,7 @@ impl Middleware for ThrottleBackoffMiddleware {
         }
 
         let mut attempt = 0;
+
         loop {
             let req_clone = req.try_clone().expect("Request cloning failed");
 
@@ -99,10 +100,10 @@ impl Middleware for ThrottleBackoffMiddleware {
 
                     let backoff_duration = match &self.policy {
                         ThrottlePolicy::AdaptiveDelay { base_delay, jitter } => {
+                            let mut rng = rand::thread_rng();
                             Duration::from_millis(
                                 base_delay.as_millis() as u64 * 2u64.pow(attempt as u32)
-                                    + rand::thread_rng()
-                                        .gen_range(0..=jitter.as_millis() as u64),
+                                    + rng.gen_range(0..=jitter.as_millis() as u64),
                             )
                         }
                         ThrottlePolicy::FixedDelay(delay) => *delay,
@@ -113,7 +114,7 @@ impl Middleware for ThrottleBackoffMiddleware {
                         "Retry {}/{} for URL {} after {} ms",
                         attempt + 1,
                         self.max_retries,
-                        req.url(),
+                        url,
                         backoff_duration.as_millis()
                     );
 
@@ -125,8 +126,6 @@ impl Middleware for ThrottleBackoffMiddleware {
                 }
             }
         }
-
-        drop(permit);
 
         next.run(req, extensions).await
     }
