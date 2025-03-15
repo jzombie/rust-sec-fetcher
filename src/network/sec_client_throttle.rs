@@ -150,7 +150,7 @@ impl Middleware for ThrottleBackoffMiddleware {
 
                     eprintln!(
                         "Retry {}/{} for URL {} after {} ms",
-                        attempt + 1,
+                        attempt,
                         self.max_retries,
                         url,
                         backoff_duration.as_millis()
