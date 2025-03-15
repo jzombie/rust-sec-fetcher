@@ -1,5 +1,5 @@
 mod sec_client;
-pub use sec_client::{SecClient, SecClientDataExt};
+pub use sec_client::SecClient;
 
 mod sec_client_cache;
 pub use sec_client_cache::HashMapCache;
