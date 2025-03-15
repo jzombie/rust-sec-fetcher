@@ -8,7 +8,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
+use std::path::PathBuf;
 use std::convert::TryFrom;
+use simd_r_drive::DataStore;
 use bincode; // Binary serialization
 use chrono::{DateTime, Utc}; // For parsing `Expires` headers
 
@@ -39,23 +41,29 @@ struct CachedResponse {
 
 #[derive(Clone)]
 pub struct HashMapCache {
-    store: Arc<RwLock<HashMap<String, Vec<u8>>>>, // Store raw binary
+    // store: Arc<RwLock<HashMap<String, Vec<u8>>>>, // Store raw binary
+    store: Arc<DataStore>,
     policy: CachePolicy, // Configurable policy
 }
 
 impl HashMapCache {
     pub fn new(policy: CachePolicy) -> Self {
         Self {
-            store: Arc::new(RwLock::new(HashMap::new())),
+            // store: Arc::new(RwLock::new(HashMap::new())),
+            // TODO: Don't hardcode props
+            store: Arc::new(DataStore::open(&PathBuf::from("data/temp-cache.bin")).unwrap()),
             policy,
         }
     }
 
     /// **Determines if a request URL is cached and still valid based on CachePolicy**
     pub async fn is_cached(&self, cache_key: &str) -> bool {
-        let store = self.store.read().await;
-        if let Some(raw_data) = store.get(cache_key) {
-            if let Ok(cached) = bincode::deserialize::<CachedResponse>(raw_data) {
+        let store = self.store.as_ref();
+        let cache_key_bytes = cache_key.as_bytes();
+
+        // let store = self.store.read().await;
+        if let Some(raw_data) = store.read(cache_key_bytes) {
+            if let Ok(cached) = bincode::deserialize::<CachedResponse>(raw_data.as_slice()) {
                 let now = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .expect("Time went backwards")
@@ -81,9 +89,10 @@ impl HashMapCache {
 
                 // If expired, remove from cache
                 if now >= expected_expiration {
-                    drop(store); // Release read lock before acquiring write lock
-                    let mut write_store = self.store.write().await;
-                    write_store.remove(cache_key);
+                    // drop(store); // Release read lock before acquiring write lock
+                    // let mut write_store = self.store.write()
+                    // write_store.remove(cache_key);
+                    store.delete_entry(cache_key_bytes);
                     return false;
                 }
 
@@ -156,12 +165,15 @@ impl Middleware for HashMapCache {
     ) -> Result<Response> {
         let cache_key = Self::generate_cache_key(&req);
 
+        let store = self.store.as_ref();
+        let cache_key_bytes = cache_key.as_bytes();
+
         if req.method() == "GET" || req.method() == "HEAD" {
             // **Use is_cached() to determine if the cache should be used**
             if self.is_cached(&cache_key).await {
-                let store = self.store.read().await;
-                if let Some(raw_data) = store.get(&cache_key) {
-                    if let Ok(cached) = bincode::deserialize::<CachedResponse>(raw_data) {
+                // let store = self.store.read().await;
+                if let Some(entry_handle) = store.read(&cache_key_bytes) {
+                    if let Ok(cached) = bincode::deserialize::<CachedResponse>(entry_handle.as_slice()) {
                         let mut headers = HeaderMap::new();
                         for (k, v) in cached.headers {
                             if let Ok(header_name) = k.parse::<http::HeaderName>() {
@@ -197,8 +209,13 @@ impl Middleware for HashMapCache {
             }).expect("Serialization failed");
 
             {
-                let mut store = self.store.write().await;
-                store.insert(cache_key, serialized);
+                // let mut store = self.store.write().await;
+                // store.insert(cache_key, serialized);
+
+                let store = self.store.as_ref();
+                let cache_key_bytes = cache_key.as_bytes();
+
+                store.write(cache_key_bytes, serialized.as_slice());
             }
 
             return Ok(build_response(status, headers, Bytes::from(body_clone)));
