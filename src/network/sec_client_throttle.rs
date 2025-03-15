@@ -73,6 +73,18 @@ impl Middleware for ThrottleBackoffMiddleware {
             return next.run(req, extensions).await;
         }
 
+        let permit = self.semaphore.acquire().await.map_err(|e| Error::Middleware(e.into()))?;
+
+        match &self.policy {
+            ThrottlePolicy::FixedDelay(delay) => {
+                sleep(*delay).await;
+            }
+            ThrottlePolicy::AdaptiveDelay { base_delay, .. } => {
+                sleep(*base_delay).await;
+            }
+            ThrottlePolicy::NoThrottle => {}
+        }
+
         let mut attempt = 0;
         loop {
             let req_clone = req.try_clone().expect("Request cloning failed");
@@ -113,6 +125,8 @@ impl Middleware for ThrottleBackoffMiddleware {
                 }
             }
         }
+
+        drop(permit);
 
         next.run(req, extensions).await
     }
