@@ -10,7 +10,7 @@ use std::sync::Arc;
 use tokio::sync::Semaphore;
 use tokio::time::{sleep, Duration};
 use crate::network::sec_client_cache::HashMapCache; 
-use crate::network::sec_client_throttle::{ThrottleBackoffMiddleware, ThrottlePolicy, ThrottleConfig};
+use crate::network::sec_client_throttle::{ThrottleBackoffMiddleware, ThrottlePolicy};
 
 pub struct SecClient {
     email: String,
@@ -64,16 +64,16 @@ impl SecClient {
         let cache = Arc::new(HashMapCache::default());
 
         // Example: Custom Fixed Throttle Policy
-        let throttle_config = ThrottleConfig::Adaptive {
-            adaptive_base_delay_ms: min_delay,
-            max_concurrent: Some(max_concurrent),
+        let throttle_policy = ThrottlePolicy {
+            base_delay_ms: min_delay,
+            max_concurrent,
             // TODO: Make configurable
-            max_retries: Some(5),
-            adaptive_jitter_ms: 100,
+            max_retries: 5,
+            adaptive_jitter_ms: 500,
         };
 
         // Create throttle middleware with the custom policy
-        let throttle_middleware = ThrottleBackoffMiddleware::from_config(&throttle_config, cache.clone());
+        let throttle_middleware = ThrottleBackoffMiddleware::new(throttle_policy, cache.clone());
 
         // Build client with both cache and throttle middleware
         let cache_client = ClientBuilder::new(Client::new())
