@@ -223,6 +223,7 @@ impl Middleware for HashMapCache {
                 expiration_timestamp,
             }).expect("Serialization failed");
 
+            // TODO: Prevent cache of non-success responses, or make it configurable?
             {
                 // let mut store = self.store.write().await;
                 // store.insert(cache_key, serialized);
