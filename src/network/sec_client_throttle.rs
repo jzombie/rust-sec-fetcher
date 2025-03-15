@@ -108,7 +108,7 @@ impl Middleware for ThrottleBackoffMiddleware {
 
         let cache_key = format!("{} {}", req.method(), &url);
 
-        if self.cache.is_cached(&cache_key).await {
+        if self.cache.is_cached(&req).await {
             eprintln!("Using cache for: {}", &cache_key);
 
             return next.run(req, extensions).await;

@@ -55,8 +55,11 @@ impl HashMapCache {
     }
 
     /// **Determines if a request URL is cached and still valid based on CachePolicy**
-    pub async fn is_cached(&self, cache_key: &str) -> bool {
+    // pub async fn is_cached(&self, method: &str, url: &str, headers: &HeaderMap) -> bool {
+    pub async fn is_cached(&self, req: &Request) -> bool {
         let store = self.store.as_ref();
+
+        let cache_key = self.generate_cache_key(req);
         let cache_key_bytes = cache_key.as_bytes();
 
         // let store = self.store.read().await;
@@ -109,13 +112,18 @@ impl HashMapCache {
 
 
     /// **Generates a unique cache key based on method, URL, and important headers**
-    fn generate_cache_key(req: &Request) -> String {
-        let method = req.method().as_str();
-        let url = req.url().to_string();
+    // fn generate_cache_key(method: &str, url: &str, headers: &HeaderMap) -> String {
+    fn generate_cache_key(&self, req: &Request) -> String {
+        let method = req.method();
+        let url = req.url().as_str();
+        let headers = req.headers();
+
+        // let method = req.method().as_str();
+        // let url = req.url().to_string();
 
         let relevant_headers = vec!["accept", "authorization"];
         let header_string = relevant_headers.iter()
-            .filter_map(|h| req.headers().get(*h))
+            .filter_map(|h| headers.get(*h))
             .map(|v| v.to_str().unwrap_or_default())
             .collect::<Vec<_>>()
             .join(",");
@@ -168,7 +176,7 @@ impl Middleware for HashMapCache {
         extensions: &mut Extensions,
         next: Next<'_>,
     ) -> Result<Response> {
-        let cache_key = Self::generate_cache_key(&req);
+        let cache_key = self.generate_cache_key(&req);
 
         eprintln!("Handle cache key: {}", cache_key);
 
@@ -177,7 +185,7 @@ impl Middleware for HashMapCache {
 
         if req.method() == "GET" || req.method() == "HEAD" {
             // **Use is_cached() to determine if the cache should be used**
-            if self.is_cached(&cache_key).await {
+            if self.is_cached(&req).await {
                 // let store = self.store.read().await;
                 if let Some(entry_handle) = store.read(&cache_key_bytes) {
                     if let Ok(cached) = bincode::deserialize::<CachedResponse>(entry_handle.as_slice()) {
