@@ -10,6 +10,7 @@ use std::sync::Arc;
 use tokio::sync::Semaphore;
 use tokio::time::{sleep, Duration};
 use crate::network::sec_client_cache::HashMapCache; 
+use crate::network::sec_client_throttle::{ThrottleBackoffMiddleware, ThrottlePolicy};
 
 pub struct SecClient {
     email: String,
@@ -78,8 +79,20 @@ impl SecClient {
 
         let cache = Arc::new(HashMapCache::default()); // ✅ Create HashMapCache instance
 
+        // let throttle_config = ThrottleConfig {
+        //     policy: app_config.throttle_policy.clone().unwrap_or("none".into()),
+        //     fixed_delay_ms: app_config.fixed_delay_ms,
+        //     adaptive_base_delay_ms: app_config.adaptive_base_delay_ms,
+        //     adaptive_jitter_ms: app_config.adaptive_jitter_ms,
+        //     max_concurrent: app_config.max_concurrent,
+        //     max_retries: app_config.max_retries,
+        // };
+        
+        // let policy = ThrottlePolicy::try_from(throttle_config)?;
+
         let cache_client = ClientBuilder::new(Client::new())
-            .with_arc(cache.clone()) // ✅ Correctly wrap HashMapCache inside Arc
+            .with_arc(cache.clone())                      // Cache middleware
+            // .with_arc(Arc::new(throttle_middleware))      // Throttle middleware (cache linked)
             .build();
 
         Ok(Self {
