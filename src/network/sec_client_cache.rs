@@ -24,7 +24,7 @@ pub struct CachePolicy {
 impl Default for CachePolicy {
     fn default() -> Self {
         Self {
-            default_ttl: Duration::from_secs(60), // Default 60s TTL
+            default_ttl: Duration::from_secs(60 * 60 * 24), // Default 1 day TTL
             respect_headers: true, // Use headers if available
         }
     }
@@ -62,8 +62,10 @@ impl HashMapCache {
         let cache_key_bytes = cache_key.as_bytes();
 
         // let store = self.store.read().await;
-        if let Some(raw_data) = store.read(cache_key_bytes) {
-            if let Ok(cached) = bincode::deserialize::<CachedResponse>(raw_data.as_slice()) {
+        if let Some(entry_handle) = store.read(cache_key_bytes) {
+            eprintln!("Entry handle: {:?}", entry_handle);
+
+            if let Ok(cached) = bincode::deserialize::<CachedResponse>(entry_handle.as_slice()) {
                 let now = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .expect("Time went backwards")
@@ -89,11 +91,13 @@ impl HashMapCache {
 
                 // If expired, remove from cache
                 if now >= expected_expiration {
-                    // drop(store); // Release read lock before acquiring write lock
-                    // let mut write_store = self.store.write()
-                    // write_store.remove(cache_key);
-                    store.delete_entry(cache_key_bytes);
-                    return false;
+                    eprintln!("Determined cache is expired. now - expected_expiration: {:?}", now - expected_expiration);
+
+                    // TODO: Uncomment
+
+                    // TODO: Rename API method to `delete`
+                    // store.delete_entry(cache_key_bytes).ok();
+                    // return false;
                 }
 
                 return true;
@@ -165,6 +169,8 @@ impl Middleware for HashMapCache {
     ) -> Result<Response> {
         let cache_key = Self::generate_cache_key(&req);
 
+        eprintln!("Handle cache key: {}", cache_key);
+
         let store = self.store.as_ref();
         let cache_key_bytes = cache_key.as_bytes();
 
@@ -213,9 +219,9 @@ impl Middleware for HashMapCache {
                 // store.insert(cache_key, serialized);
 
                 let store = self.store.as_ref();
-                let cache_key_bytes = cache_key.as_bytes();
 
-                store.write(cache_key_bytes, serialized.as_slice());
+                eprintln!("Writing cache with key: {}", cache_key);
+                store.write(cache_key_bytes, serialized.as_slice()).ok();
             }
 
             return Ok(build_response(status, headers, Bytes::from(body_clone)));

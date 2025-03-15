@@ -106,8 +106,14 @@ impl Middleware for ThrottleBackoffMiddleware {
     ) -> Result<Response, Error> {
         let url = req.url().to_string();
 
-        if self.cache.is_cached(&url).await {
+        let cache_key = format!("{} {}", req.method(), &url);
+
+        if self.cache.is_cached(&cache_key).await {
+            eprintln!("Using cache for: {}", &cache_key);
+
             return next.run(req, extensions).await;
+        } else {
+            eprintln!("No cache found for: {}", &cache_key);
         }
 
         let _permit = self.semaphore.acquire().await.map_err(|e| Error::Middleware(e.into()))?;
@@ -132,10 +138,10 @@ impl Middleware for ThrottleBackoffMiddleware {
 
                     let backoff_duration = match &self.policy {
                         ThrottlePolicy::AdaptiveDelay { base_delay, jitter } => {
-                            let mut rng = rand::thread_rng();
+                            let mut rng = rand::rng();
                             Duration::from_millis(
                                 base_delay.as_millis() as u64 * 2u64.pow(attempt as u32)
-                                    + rng.gen_range(0..=jitter.as_millis() as u64),
+                                    + rng.random_range(0..=jitter.as_millis() as u64),
                             )
                         }
                         ThrottlePolicy::FixedDelay(delay) => *delay,
