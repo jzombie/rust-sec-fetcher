@@ -10,32 +10,57 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use std::convert::TryFrom;
 use bincode; // Binary serialization
+use chrono::{DateTime, Utc}; // For parsing `Expires` headers
 
-const CACHE_TTL: Duration = Duration::from_secs(60); // Cache expires in 60 seconds
+/// **Cache policy struct: Controls TTL behavior**
+#[derive(Clone, Debug)]
+pub struct CachePolicy {
+    pub default_ttl: Duration, // Fallback TTL when headers are missing
+    pub respect_headers: bool, // Whether to extract TTL from response headers
+}
 
+impl Default for CachePolicy {
+    fn default() -> Self {
+        Self {
+            default_ttl: Duration::from_secs(60), // Default 60s TTL
+            respect_headers: true, // Use headers if available
+        }
+    }
+}
+
+/// **Struct to store cached responses**
 #[derive(Serialize, Deserialize)]
 struct CachedResponse {
     status: u16,
-    headers: Vec<(String, Vec<u8>)>, // Serialize headers as raw bytes
+    headers: Vec<(String, Vec<u8>)>, // Store headers as raw bytes
     body: Vec<u8>,
-    timestamp: u64, // Store time in epoch millis for cross-platform consistency
+    expiration_timestamp: u64, // Timestamp when cache expires
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct HashMapCache {
     store: Arc<RwLock<HashMap<String, Vec<u8>>>>, // Store raw binary
+    policy: CachePolicy, // Configurable policy
 }
 
 impl HashMapCache {
+    pub fn new(policy: CachePolicy) -> Self {
+        Self {
+            store: Arc::new(RwLock::new(HashMap::new())),
+            policy,
+        }
+    }
+
     /// **Checks if a request URL is cached and still valid**
     pub async fn is_cached(&self, cache_key: &str) -> bool {
         let store = self.store.read().await;
         if let Some(raw_data) = store.get(cache_key) {
             if let Ok(cached) = bincode::deserialize::<CachedResponse>(raw_data) {
-                if let Ok(elapsed) = SystemTime::now().duration_since(UNIX_EPOCH) {
-                    let cache_age = elapsed.as_millis() as u64 - cached.timestamp;
-                    return Duration::from_millis(cache_age) < CACHE_TTL;
-                }
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards")
+                    .as_millis() as u64;
+                return now < cached.expiration_timestamp; // Cache still valid
             }
         }
         false
@@ -55,6 +80,42 @@ impl HashMapCache {
 
         format!("{} {} {}", method, url, header_string)
     }
+
+    /// **Extracts TTL from headers if `respect_headers` is enabled**
+    fn extract_ttl(headers: &HeaderMap, policy: &CachePolicy) -> Duration {
+        if !policy.respect_headers {
+            return policy.default_ttl;
+        }
+
+        // Check `Cache-Control: max-age=N`
+        if let Some(cache_control) = headers.get("cache-control") {
+            if let Ok(cache_control) = cache_control.to_str() {
+                for directive in cache_control.split(',') {
+                    if let Some(max_age) = directive.trim().strip_prefix("max-age=") {
+                        if let Ok(seconds) = max_age.parse::<u64>() {
+                            return Duration::from_secs(seconds);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Check `Expires`
+        if let Some(expires) = headers.get("expires") {
+            if let Ok(expires) = expires.to_str() {
+                if let Ok(expiry_time) = DateTime::parse_from_rfc2822(expires) {
+                    if let Some(duration) = expiry_time.timestamp().checked_sub(Utc::now().timestamp()) {
+                        if duration > 0 {
+                            return Duration::from_secs(duration as u64);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Fallback to default TTL
+        policy.default_ttl
+    }
 }
 
 #[async_trait]
@@ -72,20 +133,21 @@ impl Middleware for HashMapCache {
                 let store = self.store.read().await;
                 if let Some(raw_data) = store.get(&cache_key) {
                     if let Ok(cached) = bincode::deserialize::<CachedResponse>(raw_data) {
-                        if let Ok(elapsed) = SystemTime::now().duration_since(UNIX_EPOCH) {
-                            let cache_age = elapsed.as_millis() as u64 - cached.timestamp;
-                            if Duration::from_millis(cache_age) < CACHE_TTL {
-                                let mut headers = HeaderMap::new();
-                                for (k, v) in cached.headers {
-                                    if let Ok(header_name) = k.parse::<http::HeaderName>() {
-                                        if let Ok(header_value) = HeaderValue::from_bytes(&v) {
-                                            headers.insert(header_name, header_value);
-                                        }
+                        let now = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .expect("Time went backwards")
+                            .as_millis() as u64;
+                        if now < cached.expiration_timestamp {
+                            let mut headers = HeaderMap::new();
+                            for (k, v) in cached.headers {
+                                if let Ok(header_name) = k.parse::<http::HeaderName>() {
+                                    if let Ok(header_value) = HeaderValue::from_bytes(&v) {
+                                        headers.insert(header_name, header_value);
                                     }
                                 }
-                                let status = StatusCode::from_u16(cached.status).unwrap_or(StatusCode::OK);
-                                return Ok(build_response(status, headers, Bytes::from(cached.body)));
                             }
+                            let status = StatusCode::from_u16(cached.status).unwrap_or(StatusCode::OK);
+                            return Ok(build_response(status, headers, Bytes::from(cached.body)));
                         }
                     }
                 }
@@ -96,10 +158,11 @@ impl Middleware for HashMapCache {
             let headers = response.headers().clone();
             let body = response.bytes().await?.to_vec();
             
-            let timestamp = SystemTime::now()
+            let ttl = Self::extract_ttl(&headers, &self.policy);
+            let expiration_timestamp = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards")
-                .as_millis() as u64;
+                .as_millis() as u64 + ttl.as_millis() as u64;
 
             let body_clone = body.clone(); // Fix: Clone before moving
 
@@ -107,7 +170,7 @@ impl Middleware for HashMapCache {
                 status: status.as_u16(),
                 headers: headers.iter().map(|(k, v)| (k.to_string(), v.as_bytes().to_vec())).collect(),
                 body, // Move the original body here
-                timestamp,
+                expiration_timestamp,
             }).expect("Serialization failed");
 
             {
@@ -120,6 +183,13 @@ impl Middleware for HashMapCache {
         }
 
         next.run(req, extensions).await
+    }
+}
+
+/// **Allow `HashMapCache::default()` to work**
+impl Default for HashMapCache {
+    fn default() -> Self {
+        Self::new(CachePolicy::default()) // Default instance
     }
 }
 
