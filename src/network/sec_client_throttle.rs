@@ -100,10 +100,10 @@ impl Middleware for ThrottleBackoffMiddleware {
 
                     let backoff_duration = match &self.policy {
                         ThrottlePolicy::AdaptiveDelay { base_delay, jitter } => {
-                            let mut rng = rand::thread_rng();
+                            let mut rng = rand::rng();
                             Duration::from_millis(
                                 base_delay.as_millis() as u64 * 2u64.pow(attempt as u32)
-                                    + rng.gen_range(0..=jitter.as_millis() as u64),
+                                    + rng.random_range(0..=jitter.as_millis() as u64),
                             )
                         }
                         ThrottlePolicy::FixedDelay(delay) => *delay,
