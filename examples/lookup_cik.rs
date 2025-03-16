@@ -1,8 +1,6 @@
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::network::{
-    fetch_cik_by_ticker_symbol,
-    fetch_cik_submissions,
-    CikSubmission, SecClient,
+    fetch_cik_by_ticker_symbol, fetch_cik_submissions, CikSubmission, SecClient,
 };
 use std::env;
 use std::error::Error;
@@ -21,7 +19,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;
 
-    let result_cik = fetch_cik_by_ticker_symbol(&client, ticker_symbol).await.ok();
+    let result_cik = fetch_cik_by_ticker_symbol(&client, ticker_symbol)
+        .await
+        .ok();
 
     if result_cik.is_none() {
         println!("No matching record found for ticker '{}'.", ticker_symbol);
