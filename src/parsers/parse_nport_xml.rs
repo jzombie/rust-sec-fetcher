@@ -1,7 +1,10 @@
 use crate::models::NportInvestment;
 use quick_xml::events::Event;
 use quick_xml::Reader;
+use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 use std::error::Error;
+use std::str::FromStr;
 
 pub fn parse_nport_xml(xml: &str) -> Result<Vec<NportInvestment>, Box<dyn Error>> {
     let mut reader = Reader::from_str(xml);
@@ -21,10 +24,10 @@ pub fn parse_nport_xml(xml: &str) -> Result<Vec<NportInvestment>, Box<dyn Error>
                         title: String::new(),
                         cusip: String::new(),
                         isin: String::new(),
-                        balance: String::new(),
+                        balance: dec!(0.0),
                         cur_cd: String::new(),
-                        val_usd: String::new(),
-                        pct_val: String::new(),
+                        val_usd: dec!(0.0),
+                        pct_val: dec!(0.0),
                         payoff_profile: String::new(),
                         asset_cat: String::new(),
                         issuer_cat: String::new(),
@@ -57,10 +60,18 @@ pub fn parse_nport_xml(xml: &str) -> Result<Vec<NportInvestment>, Box<dyn Error>
                             "lei" => investment.lei = value,
                             "title" => investment.title = value,
                             "cusip" => investment.cusip = value,
-                            "balance" => investment.balance = value,
+                            "balance" => {
+                                investment.balance =
+                                    Decimal::from_str(&value).unwrap_or_default().round_dp(2)
+                            }
                             "curCd" => investment.cur_cd = value,
-                            "valUSD" => investment.val_usd = value,
-                            "pctVal" => investment.pct_val = value,
+                            "valUSD" => {
+                                investment.val_usd =
+                                    Decimal::from_str(&value).unwrap_or_default().round_dp(2)
+                            }
+                            "pctVal" => {
+                                investment.pct_val = Decimal::from_str(&value).unwrap_or_default()
+                            }
                             "payoffProfile" => investment.payoff_profile = value,
                             "assetCat" => investment.asset_cat = value,
                             "issuerCat" => investment.issuer_cat = value,
