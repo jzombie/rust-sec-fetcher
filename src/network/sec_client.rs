@@ -1,16 +1,11 @@
 use crate::config::ConfigManager;
 use email_address::EmailAddress;
-use http_cache_reqwest::{CACacheManager, Cache, HttpCache, HttpCacheOptions};
-use rand::Rng;
 use reqwest::Client;
+use reqwest_drive::{init_cache_with_throttle, CachePolicy, ThrottlePolicy};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use serde_json::Value;
 use std::error::Error;
-use std::sync::Arc;
-use tokio::sync::Semaphore;
-use tokio::time::{sleep, Duration};
-use crate::network::sec_client_cache::HashMapCache; 
-use crate::network::sec_client_throttle::{ThrottleBackoffMiddleware, ThrottlePolicy};
+use tokio::time::Duration;
 
 pub struct SecClient {
     email: String,
@@ -37,31 +32,11 @@ impl SecClient {
             .min_delay_ms
             .ok_or_else(|| "Missing required field: min_delay_ms".to_string())?; // Error if missing
 
-        // let cache_client = ClientBuilder::new(Client::new())
-        //     .with(Cache(HttpCache {
-        //         mode: config.get_http_cache_mode()?,
-        //         manager: CACacheManager {
-        //             path: config.get_http_cache_dir(),
-        //         },
-        //         options: HttpCacheOptions::default(),
-        //     }))
-        //     .build();
-
-        // let throttle_config = ThrottleConfig {
-        //     policy: app_config.throttle_policy.clone().unwrap_or("none".into()),
-        //     fixed_delay_ms: app_config.fixed_delay_ms,
-        //     adaptive_base_delay_ms: app_config.adaptive_base_delay_ms,
-        //     adaptive_jitter_ms: app_config.adaptive_jitter_ms,
-        //     max_concurrent: app_config.max_concurrent,
-        //     max_retries: app_config.max_retries,
-        // };
-
-
-        // Convert config to policy
-        // let policy = ThrottlePolicy::from(&throttle_config);
-
-        // Create shared cache
-        let cache = Arc::new(HashMapCache::default());
+        let cache_policy = CachePolicy {
+            default_ttl: Duration::from_secs(60 * 60 * 24 * 7), // 1 week,
+            respect_headers: false,
+            cache_status_override: None,
+        };
 
         // Example: Custom Fixed Throttle Policy
         let throttle_policy = ThrottlePolicy {
@@ -72,13 +47,16 @@ impl SecClient {
             adaptive_jitter_ms: 500,
         };
 
-        // Create throttle middleware with the custom policy
-        let throttle_middleware = ThrottleBackoffMiddleware::new(throttle_policy, cache.clone());
+        let (cache, throttle) = init_cache_with_throttle(
+            &config_manager.get_config().get_http_cache_storage_bin(),
+            cache_policy,
+            throttle_policy,
+        );
 
         // Build client with both cache and throttle middleware
         let cache_client = ClientBuilder::new(Client::new())
-            .with_arc(cache.clone())                      // Cache middleware
-            .with_arc(Arc::new(throttle_middleware))      // Throttle middleware (cache linked)
+            .with_arc(cache) // Cache middleware
+            .with_arc(throttle) // Throttle middleware (cache linked)
             .build();
 
         Ok(Self {
@@ -128,16 +106,11 @@ impl SecClient {
         Ok(response)
     }
 
-
-
     // TODO: Add optional headers
     /// Asynchronously fetches JSON data from a given SEC URL with rate limiting
     pub async fn fetch_json(&self, url: &str) -> Result<Value, Box<dyn Error>> {
-        let response = self
-            .raw_request(reqwest::Method::GET, url, None)
-            .await?;
+        let response = self.raw_request(reqwest::Method::GET, url, None).await?;
         let json = response.json().await?;
         Ok(json)
     }
-
 }

@@ -13,9 +13,7 @@ fn main() {
     let config = config_manager.get_config();
     print!("{}\n", config.pretty_print());
 
-    let cache_mode = config.get_http_cache_mode();
-    let cache_dir = config.get_http_cache_dir();
+    let http_cache_storage_bin = config.get_http_cache_storage_bin();
 
-    println!("Cache mode: {:?}", cache_mode);
-    println!("Cache dir: {:?}", cache_dir);
+    println!("HTTP Cache storage bin: {:?}", http_cache_storage_bin);
 }

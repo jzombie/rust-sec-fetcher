@@ -1,12 +1,6 @@
 mod sec_client;
 pub use sec_client::SecClient;
 
-mod sec_client_cache;
-pub use sec_client_cache::HashMapCache;
-
-mod sec_client_throttle;
-pub use sec_client_throttle::{ThrottleBackoffMiddleware, ThrottlePolicy};
-
 mod fetch_company_tickers;
 pub use fetch_company_tickers::{fetch_company_tickers, CompanyTickersDataFrame};
 

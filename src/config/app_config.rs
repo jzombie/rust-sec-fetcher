@@ -1,10 +1,8 @@
-use http_cache_reqwest::CacheMode;
 use merge::Merge;
 use schemars::schema::{Schema, SchemaObject, SingleOrVec};
 use schemars::{schema_for, JsonSchema};
 use serde::{Deserialize, Serialize};
 use serde_json::to_string_pretty;
-use std::env;
 use std::path::PathBuf;
 
 /// Always replace `Some(value)` with `Some(new_value)`
@@ -30,22 +28,19 @@ pub struct AppConfig {
     pub max_retries: Option<usize>,
 
     #[merge(strategy = overwrite_option)]
-    pub http_cache_dir: Option<String>,
-
-    #[merge(strategy = overwrite_option)]
-    pub http_cache_mode: Option<String>,
-    // TODO: Add configs for local data cache
+    pub http_cache_storage_bin: Option<String>,
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
         let temp_cache_dir = {
-            // TODO: Reuse?
+            // TODO: Use temp
             // let mut temp_cache = env::temp_dir();
-            // temp_cache.push(format!("{}/cache", env!("CARGO_PKG_NAME")));
+            // temp_cache.push(format!("{}/http_storage_cache.bin", env!("CARGO_PKG_NAME")));
             // temp_cache
 
-            PathBuf::from("data/tmp-cache")
+            // TODO: Remove
+            PathBuf::from("data/http_storage_cache.bin")
         };
 
         Self {
@@ -53,8 +48,7 @@ impl Default for AppConfig {
             max_concurrent: Some(1),
             min_delay_ms: Some(1000),
             max_retries: Some(5),
-            http_cache_dir: Some(temp_cache_dir.to_string_lossy().into_owned()),
-            http_cache_mode: None,
+            http_cache_storage_bin: Some(temp_cache_dir.to_string_lossy().into_owned()),
         }
     }
 }
@@ -110,8 +104,8 @@ impl AppConfig {
     ///
     /// # Returns
     /// - `PathBuf` pointing to the cache directory.
-    pub fn get_http_cache_dir(&self) -> PathBuf {
-        self.http_cache_dir
+    pub fn get_http_cache_storage_bin(&self) -> PathBuf {
+        self.http_cache_storage_bin
             .as_ref()
             .map(PathBuf::from)
             .unwrap_or_default()
@@ -120,21 +114,21 @@ impl AppConfig {
     // TODO: Remove if using new cache policy
     // TODO: Document
     // https://docs.rs/http-cache/0.20.1/http_cache/enum.CacheMode.html
-    pub fn get_http_cache_mode(&self) -> Result<CacheMode, Box<dyn std::error::Error>> {
-        let cache_mode = match &self.http_cache_mode {
-            Some(cache_mode) => match cache_mode.as_str() {
-                "Default" => CacheMode::Default,
-                "NoStore" => CacheMode::NoStore,
-                "Reload" => CacheMode::Reload,
-                "NoCache" => CacheMode::NoCache,
-                "ForceCache" => CacheMode::ForceCache,
-                "OnlyIfCached" => CacheMode::OnlyIfCached,
-                "IgnoreRules" => CacheMode::IgnoreRules,
-                _ => return Err(format!("Unhandled cache mode: {}", cache_mode).into()),
-            },
-            _ => CacheMode::Default,
-        };
+    // pub fn get_http_cache_mode(&self) -> Result<CacheMode, Box<dyn std::error::Error>> {
+    //     let cache_mode = match &self.http_cache_mode {
+    //         Some(cache_mode) => match cache_mode.as_str() {
+    //             "Default" => CacheMode::Default,
+    //             "NoStore" => CacheMode::NoStore,
+    //             "Reload" => CacheMode::Reload,
+    //             "NoCache" => CacheMode::NoCache,
+    //             "ForceCache" => CacheMode::ForceCache,
+    //             "OnlyIfCached" => CacheMode::OnlyIfCached,
+    //             "IgnoreRules" => CacheMode::IgnoreRules,
+    //             _ => return Err(format!("Unhandled cache mode: {}", cache_mode).into()),
+    //         },
+    //         _ => CacheMode::Default,
+    //     };
 
-        Ok(cache_mode)
-    }
+    //     Ok(cache_mode)
+    // }
 }
