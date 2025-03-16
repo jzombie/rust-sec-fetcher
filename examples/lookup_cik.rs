@@ -1,8 +1,7 @@
-use sec_fetcher::accessors::{get_company_cik_by_ticker_symbol, get_fund_cik_by_ticker_symbol};
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::models::Cik;
 use sec_fetcher::network::{
-    fetch_cik_submissions, fetch_investment_company_series_and_class_dataset, fetch_company_tickers,
+    fetch_cik_by_ticker_symbol,
+    fetch_cik_submissions,
     CikSubmission, SecClient,
 };
 use std::env;
@@ -22,26 +21,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;
 
-    let mut result_cik: Option<Cik> = None;
-
-    // First, try the primary search method
-    let tickers_df = fetch_company_tickers(&client).await?;
-
-    if let Ok(cik) = get_company_cik_by_ticker_symbol(&tickers_df, ticker_symbol) {
-        println!(
-            "Ticker: {}, CIK: {} (reg. stocks)",
-            ticker_symbol,
-            cik.to_string()
-        );
-        result_cik = Some(cik);
-    } else {
-        // If not found, try searching in the investment company dataset
-        println!("No match found in primary search. Searching in investment company dataset...");
-
-        let investment_companies = fetch_investment_company_series_and_class_dataset(&client, 2024).await?;
-
-        result_cik = Some(get_fund_cik_by_ticker_symbol(&investment_companies, ticker_symbol).unwrap());
-    }
+    let result_cik = fetch_cik_by_ticker_symbol(&client, ticker_symbol).await.ok();
 
     if result_cik.is_none() {
         println!("No matching record found for ticker '{}'.", ticker_symbol);
