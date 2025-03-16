@@ -2,7 +2,7 @@ use sec_fetcher::accessors::{get_company_cik_by_ticker_symbol, get_fund_cik_by_t
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::Cik;
 use sec_fetcher::network::{
-    fetch_cik_submissions, fetch_investment_company_series_and_class_dataset, fetch_sec_tickers,
+    fetch_cik_submissions, fetch_investment_company_series_and_class_dataset, fetch_company_tickers,
     CikSubmission, SecClient,
 };
 use std::env;
@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut result_cik: Option<Cik> = None;
 
     // First, try the primary search method
-    let tickers_df = fetch_sec_tickers(&client).await?;
+    let tickers_df = fetch_company_tickers(&client).await?;
 
     if let Ok(cik) = get_company_cik_by_ticker_symbol(&tickers_df, ticker_symbol) {
         println!(

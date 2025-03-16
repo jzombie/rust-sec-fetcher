@@ -7,8 +7,8 @@ pub use sec_client_cache::HashMapCache;
 mod sec_client_throttle;
 pub use sec_client_throttle::{ThrottleBackoffMiddleware, ThrottlePolicy};
 
-mod fetch_sec_tickers;
-pub use fetch_sec_tickers::{fetch_sec_tickers, SecTickersDataFrame};
+mod fetch_company_tickers;
+pub use fetch_company_tickers::{fetch_company_tickers, CompanyTickersDataFrame};
 
 mod fetch_us_gaap_fundamentals;
 pub use fetch_us_gaap_fundamentals::{fetch_us_gaap_fundamentals, TickerFundamentalsDataFrame};

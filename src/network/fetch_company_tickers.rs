@@ -3,10 +3,10 @@ use crate::network::SecClient;
 use polars::prelude::*;
 use std::error::Error;
 
-pub type SecTickersDataFrame = DataFrame;
+pub type CompanyTickersDataFrame = DataFrame;
 
-// TODO: Rename to `fetch_company_tickers` and make distinction how these are not fund tickers
-pub async fn fetch_sec_tickers(client: &SecClient) -> Result<SecTickersDataFrame, Box<dyn Error>> {
+// TODO: Make distinction how these are not fund tickers
+pub async fn fetch_company_tickers(client: &SecClient) -> Result<CompanyTickersDataFrame, Box<dyn Error>> {
     // TODO: Also incorporate: https://www.sec.gov/include/ticker.txt
 
     let url = "https://www.sec.gov/files/company_tickers.json";
