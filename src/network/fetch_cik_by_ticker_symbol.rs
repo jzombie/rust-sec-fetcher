@@ -4,7 +4,7 @@ use crate::network::fetch_company_tickers;
 use crate::network::fetch_investment_company_series_and_class_dataset;
 use crate::network::SecClient;
 
-use crate::accessors::get_company_cik_by_ticker_symbol;
+use crate::df_accessors::get_company_cik_by_ticker_symbol;
 use crate::models::InvestmentCompany;
 
 use crate::models::Cik;

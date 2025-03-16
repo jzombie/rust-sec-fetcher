@@ -1,6 +1,6 @@
 use csv::ReaderBuilder;
-use sec_fetcher::accessors::get_company_cik_by_ticker_symbol;
 use sec_fetcher::config::ConfigManager;
+use sec_fetcher::df_accessors::get_company_cik_by_ticker_symbol;
 use sec_fetcher::models::Cik;
 use sec_fetcher::network::{
     fetch_cik_submissions, fetch_company_tickers,

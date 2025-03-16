@@ -1,5 +1,5 @@
-use crate::accessors::get_company_cik_by_ticker_symbol;
-use crate::network::{SecClient, CompanyTickersDataFrame};
+use crate::df_accessors::get_company_cik_by_ticker_symbol;
+use crate::network::{CompanyTickersDataFrame, SecClient};
 use crate::parsers::parse_us_gaap_fundamentals;
 use polars::prelude::*;
 use serde_json::Value;
