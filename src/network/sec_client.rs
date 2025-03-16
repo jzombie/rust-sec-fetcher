@@ -9,7 +9,7 @@ use tokio::time::Duration;
 
 pub struct SecClient {
     email: String,
-    client: ClientWithMiddleware,
+    http_client: ClientWithMiddleware,
 }
 
 impl SecClient {
@@ -65,7 +65,7 @@ impl SecClient {
 
         Ok(Self {
             email: email.to_string(),
-            client: cache_client,
+            http_client: cache_client,
         })
     }
 
@@ -95,7 +95,7 @@ impl SecClient {
         headers: Option<Vec<(&str, &str)>>,
     ) -> Result<reqwest::Response, Box<dyn Error>> {
         let mut request_builder = self
-            .client
+            .http_client
             .request(method, url)
             .header("User-Agent", self.get_user_agent());
 
