@@ -32,6 +32,10 @@ impl SecClient {
             .min_delay_ms
             .ok_or_else(|| "Missing required field: min_delay_ms".to_string())?; // Error if missing
 
+        let max_retries = config
+            .max_retries
+            .ok_or_else(|| "Missing required field: max_retries".to_string())?; // Error if missing
+
         let cache_policy = CachePolicy {
             default_ttl: Duration::from_secs(60 * 60 * 24 * 7), // 1 week,
             respect_headers: false,
@@ -42,8 +46,8 @@ impl SecClient {
         let throttle_policy = ThrottlePolicy {
             base_delay_ms: min_delay,
             max_concurrent,
+            max_retries,
             // TODO: Make configurable
-            max_retries: 5,
             adaptive_jitter_ms: 500,
         };
 
