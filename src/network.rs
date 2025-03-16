@@ -14,7 +14,7 @@ mod fetch_cik_by_ticker_symbol;
 pub use fetch_cik_by_ticker_symbol::fetch_cik_by_ticker_symbol;
 
 mod fetch_cik_submissions;
-pub use fetch_cik_submissions::{fetch_cik_submissions, CikSubmission};
+pub use fetch_cik_submissions::fetch_cik_submissions;
 
 mod fetch_nport_filing;
 pub use fetch_nport_filing::fetch_nport_filing_by_cik_and_accession_number;

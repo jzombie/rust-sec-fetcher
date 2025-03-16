@@ -4,6 +4,9 @@ pub use accession_number::{AccessionNumber, AccessionNumberError};
 mod cik;
 pub use cik::{Cik, CikError};
 
+mod cik_submission;
+pub use cik_submission::CikSubmission;
+
 mod investment_company;
 pub use investment_company::InvestmentCompany;
 

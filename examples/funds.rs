@@ -1,14 +1,6 @@
-use csv::ReaderBuilder;
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::df_accessors::get_company_cik_by_ticker_symbol;
-use sec_fetcher::models::Cik;
-use sec_fetcher::network::{
-    fetch_cik_submissions, fetch_company_tickers,
-    fetch_investment_company_series_and_class_dataset, CikSubmission, SecClient,
-};
-use std::env;
+use sec_fetcher::network::{fetch_investment_company_series_and_class_dataset, SecClient};
 use std::error::Error;
-use std::io::Cursor;
 use tokio;
 
 #[tokio::main]
