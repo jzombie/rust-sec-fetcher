@@ -1,6 +1,5 @@
 use rust_decimal::Decimal;
 
-// TODO: Use numeric values where possible
 // TODO: Document NPORT, etc.
 
 #[derive(Debug)]
@@ -18,4 +17,11 @@ pub struct NportInvestment {
     pub asset_cat: String,
     pub issuer_cat: String,
     pub inv_country: String,
+}
+
+impl NportInvestment {
+    /// Sorts a list of investments by `pct_val` in descending order.
+    pub fn sort_by_pct_val_desc(investments: &mut Vec<NportInvestment>) {
+        investments.sort_by(|a, b| b.pct_val.cmp(&a.pct_val));
+    }
 }

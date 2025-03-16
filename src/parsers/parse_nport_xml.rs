@@ -93,5 +93,7 @@ pub fn parse_nport_xml(xml: &str) -> Result<Vec<NportInvestment>, Box<dyn Error>
         }
     }
 
+    NportInvestment::sort_by_pct_val_desc(&mut investments);
+
     Ok(investments)
 }
