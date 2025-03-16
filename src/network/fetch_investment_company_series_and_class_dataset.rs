@@ -1,7 +1,5 @@
-use csv::ReaderBuilder;
-use std::io::Cursor;
-use crate::network::SecClient;
 use crate::models::InvestmentCompany;
+use crate::network::SecClient;
 use crate::parsers::parse_investment_companies_csv;
 use std::error::Error;
 
@@ -44,8 +42,7 @@ pub async fn fetch_investment_company_series_and_class_dataset(
     let byte_array = response.bytes().await?;
 
     parse_investment_companies_csv(byte_array)
-} 
-
+}
 
 // pub async fn fetch_investment_company_series_and_class_dataset(
 //     sec_client: &SecClient,
@@ -62,7 +59,7 @@ pub async fn fetch_investment_company_series_and_class_dataset(
 //     let byte_array = response.bytes().await?;
 
 //     // TODO: Move to `parsers`
-    
+
 //     let cursor = Cursor::new(&byte_array);
 //     let mut reader = ReaderBuilder::new().from_reader(cursor);
 
