@@ -18,10 +18,9 @@ pub struct ThrottlePolicy {
 }
 
 pub struct ThrottleBackoffMiddleware {
-    // TODO: Do these need to be public?
-    pub semaphore: Arc<Semaphore>,
-    pub policy: ThrottlePolicy,
-    pub cache: Arc<HashMapCache>,
+    semaphore: Arc<Semaphore>,
+    policy: ThrottlePolicy,
+    cache: Arc<HashMapCache>,
 }
 
 impl ThrottleBackoffMiddleware {

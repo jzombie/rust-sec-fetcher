@@ -3,6 +3,8 @@ use keyring::Entry;
 use std::error::Error;
 use std::io::{self, Write};
 
+// TODO: Add option to get components directly from `SIMD R Drive`?
+
 /// Service name used for keyring storage
 const SERVICE: &str = env!("CARGO_PKG_NAME");
 
