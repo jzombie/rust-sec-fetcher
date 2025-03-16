@@ -1,7 +1,7 @@
 use polars::prelude::{CsvWriter, SerWriter};
 use sec_fetcher::{
     config::ConfigManager,
-    network::{fetch_sec_tickers, fetch_us_gaap_fundamentals, SecClient},
+    network::{fetch_company_tickers, fetch_us_gaap_fundamentals, SecClient},
 };
 use std::collections::HashMap;
 use std::error::Error;
@@ -14,7 +14,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let client = SecClient::from_config_manager(&config_manager)?;
 
-    let tickers_df = fetch_sec_tickers(&client).await?;
+    let tickers_df = fetch_company_tickers(&client).await?;
     println!("Total records: {}", tickers_df.height());
     println!("{}", tickers_df.head(Some(60)));
 
@@ -49,6 +49,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         }
                     }
                     Err(e) => {
+                        eprintln!("File creation error: {}", e);
                         error_log.insert(ticker.clone(), format!("File creation error: {}", e));
                     }
                 }
