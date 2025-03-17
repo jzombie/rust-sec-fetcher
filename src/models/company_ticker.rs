@@ -22,6 +22,7 @@ pub struct CompanyTicker {
 //  ---- WMB: Investment 145: NportInvestment { company_ticker: None, name: "Williams Cos Inc/The", lei: "D71FAKCBLFS2O0RBPG08", title: "Williams Cos Inc/The",
 //  ---- DHI: Investment 218: NportInvestment { company_ticker: None, name: "DR Horton Inc", lei: "529900ZIUEYVSB8QDD25", title: "DR Horton Inc", cusip: "23331A109", isin: "US23331A1097",
 //  ---- LYB: Investment 367: NportInvestment { company_ticker: None, name: "LyondellBasell Industries NV", lei: "BN6WCCZ8OVP3ITUUVN49", title: "LyondellBasell Industries NV",
+//  ---- KEY: Investment 390: NportInvestment { company_ticker: None, name: "KeyCorp", lei: "RKPI3RZGV1V1FJTH5T61", title: "KeyCorp",
 
 const TOKEN_MATCH_THRESHOLD: f64 = 0.6; // At least 60% of tokens must match
 const EXACT_MATCH_BOOST: f64 = 10.0;
