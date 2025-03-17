@@ -1,5 +1,5 @@
 use crate::models::Cik;
-use crate::network::SecTickersDataFrame;
+use crate::network::CompanyTickersDataFrame;
 use polars::prelude::*;
 use std::error::Error;
 
@@ -32,8 +32,8 @@ use std::error::Error;
 /// # Errors
 /// - Returns an **error** if the dataset does not contain the given ticker,
 ///   or if the data is incorrectly formatted.
-pub fn get_cik_by_ticker_symbol(
-    df_tickers: &SecTickersDataFrame,
+pub fn get_company_cik_by_ticker_symbol(
+    df_tickers: &CompanyTickersDataFrame,
     ticker_symbol: &str,
 ) -> Result<Cik, Box<dyn Error>> {
     let ticker_series = df_tickers.column("ticker")?;

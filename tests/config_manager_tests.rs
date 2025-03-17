@@ -86,8 +86,7 @@ fn test_fails_on_invalid_key() {
 
     assert!(error_message.contains("Valid configuration keys are:"));
     assert!(error_message.contains("email (String | Null)"));
-    assert!(error_message.contains("http_cache_dir (String | Null)"));
-    assert!(error_message.contains("http_cache_mode (String | Null)"));
+    assert!(error_message.contains("http_cache_storage_bin (String | Null)"));
     assert!(error_message.contains("max_concurrent (Integer | Null)"));
     assert!(error_message.contains("max_retries (Integer | Null)"));
     assert!(error_message.contains("min_delay_ms (Integer | Null)"));

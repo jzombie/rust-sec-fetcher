@@ -1,6 +1,6 @@
 use mockito::Server;
 use sec_fetcher::config::{AppConfig, ConfigManager};
-use sec_fetcher::network::{SecClient, SecClientDataExt};
+use sec_fetcher::network::SecClient;
 use std::error::Error;
 
 #[test]

@@ -1,14 +1,8 @@
-use csv::ReaderBuilder;
-use sec_fetcher::accessors::get_cik_by_ticker_symbol;
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::models::Cik;
-use sec_fetcher::network::{
-    fetch_cik_submissions, fetch_investment_company_series_and_class_dataset, fetch_sec_tickers,
-    CikSubmission, SecClient,
-};
+use sec_fetcher::models::CikSubmission;
+use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_cik_submissions, SecClient};
 use std::env;
 use std::error::Error;
-use std::io::Cursor;
 use tokio;
 
 #[tokio::main]
@@ -24,49 +18,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;
 
-    let mut result_cik: Option<Cik> = None;
-
-    // First, try the primary search method
-    let tickers_df = fetch_sec_tickers(&client).await?;
-
-    if let Ok(cik) = get_cik_by_ticker_symbol(&tickers_df, ticker_symbol) {
-        println!(
-            "Ticker: {}, CIK: {} (reg. stocks)",
-            ticker_symbol,
-            cik.to_string()
-        );
-        result_cik = Some(cik);
-    } else {
-        // If not found, try searching in the investment company dataset
-        println!("No match found in primary search. Searching in investment company dataset...");
-
-        let byte_array = fetch_investment_company_series_and_class_dataset(&client, 2024).await?;
-        let cursor = Cursor::new(&byte_array);
-        let mut reader = ReaderBuilder::new().from_reader(cursor);
-
-        // Extract headers first
-        let headers = reader.headers()?.clone();
-        let ticker_index = headers
-            .iter()
-            .position(|h| h == "Class Ticker")
-            .ok_or("Column 'Class Ticker' not found")?;
-        let cik_index = headers
-            .iter()
-            .position(|h| h == "CIK Number")
-            .ok_or("Column 'CIK Number' not found")?;
-
-        for result in reader.records() {
-            let record = result?;
-            if record.get(ticker_index) == Some(ticker_symbol.as_str()) {
-                if let Some(cik_str) = record.get(cik_index) {
-                    println!("Ticker: {}, CIK: {} (fund)", ticker_symbol, cik_str);
-
-                    let cik = Cik::from_str(cik_str)?;
-                    result_cik = Some(cik);
-                }
-            }
-        }
-    }
+    let result_cik = fetch_cik_by_ticker_symbol(&client, ticker_symbol)
+        .await
+        .ok();
 
     if result_cik.is_none() {
         println!("No matching record found for ticker '{}'.", ticker_symbol);

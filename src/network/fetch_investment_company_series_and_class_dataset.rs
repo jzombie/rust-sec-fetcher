@@ -1,7 +1,7 @@
+use crate::models::InvestmentCompany;
 use crate::network::SecClient;
+use crate::parsers::parse_investment_companies_csv;
 use std::error::Error;
-
-// TODO: Fetch as dataframe or vector of structs
 
 /// Fetches the **Investment Company Series and Class Report** from the SEC's dataset.
 ///
@@ -22,7 +22,7 @@ use std::error::Error;
 ///
 /// # Returns
 /// Returns a `Result<Vec<u8>, Box<dyn Error>>`, where:
-/// - `Ok(Vec<u8>)` contains the **raw CSV data** as bytes.
+/// - `Ok(Vec<InvestmentCompany>)` contains a list of parsed investment companies.
 /// - `Err(Box<dyn Error>)` if the request fails.
 ///
 /// # Reference
@@ -30,7 +30,7 @@ use std::error::Error;
 pub async fn fetch_investment_company_series_and_class_dataset(
     sec_client: &SecClient,
     year: usize,
-) -> Result<Vec<u8>, Box<dyn Error>> {
+) -> Result<Vec<InvestmentCompany>, Box<dyn Error>> {
     let url = format!(
         "https://www.sec.gov/files/investment/data/other/investment-company-series-and-class-information/investment-company-series-class-{}.csv",
         year
@@ -39,6 +39,78 @@ pub async fn fetch_investment_company_series_and_class_dataset(
     let response = sec_client
         .raw_request(reqwest::Method::GET, &url, None)
         .await?;
-    let bytes = response.bytes().await?;
-    Ok(bytes.to_vec())
+    let byte_array = response.bytes().await?;
+
+    parse_investment_companies_csv(byte_array)
 }
+
+// pub async fn fetch_investment_company_series_and_class_dataset(
+//     sec_client: &SecClient,
+//     year: usize,
+// ) -> Result<Vec<u8>, Box<dyn Error>> {
+//     let url = format!(
+//         "https://www.sec.gov/files/investment/data/other/investment-company-series-and-class-information/investment-company-series-class-{}.csv",
+//         year
+//     );
+
+//     let response = sec_client
+//         .raw_request(reqwest::Method::GET, &url, None)
+//         .await?;
+//     let byte_array = response.bytes().await?;
+
+//     // TODO: Move to `parsers`
+
+//     let cursor = Cursor::new(&byte_array);
+//     let mut reader = ReaderBuilder::new().from_reader(cursor);
+
+//     // Extract headers first
+//     let headers = reader.headers()?.clone();
+
+//     // let ticker_index = headers
+//     //     .iter()
+//     //     .position(|h| h == "Class Ticker")
+//     //     .ok_or("Column 'Class Ticker' not found")?;
+//     // let cik_index = headers
+//     //     .iter()
+//     //     .position(|h| h == "CIK Number")
+//     //     .ok_or("Column 'CIK Number' not found")?;
+
+//     for result in reader.records() {
+//         let record = result?;
+
+//         for (col, header) in headers.iter().enumerate() {
+//             record.get(col);
+//         }
+
+//         // TODO: Remove
+//         println!("{:?}", record);
+
+//         // if record.get(ticker_index) == Some(ticker_symbol.as_str()) {
+//         //     if let Some(cik_str) = record.get(cik_index) {
+//         //         println!("Ticker: {}, CIK: {} (fund)", ticker_symbol, cik_str);
+
+//         //         let cik = Cik::from_str(cik_str)?;
+//         //         result_cik = Some(cik);
+//         //     }
+//         // }
+//     }
+
+//     // TODO: Remove
+//     Ok(vec![])
+
+//     // Reporting File Number
+//     // CIK Number
+//     // Entity Name
+//     // Entity Org Type
+//     // Series ID
+//     // Series Name
+//     // Class ID
+//     // Class Name
+//     // Class Ticker
+//     // Address_1
+//     // Address_2
+//     // City
+//     // State
+//     // Zip Code
+
+// }
