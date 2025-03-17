@@ -31,6 +31,7 @@ const EXACT_MATCH_BOOST: f64 = 10.0;
 const COMMON_STOCK_BOOST: f64 = 2.0;
 const PREFERRED_STOCK_PENALTY: f64 = -3.0;
 const CIK_FREQUENCY_BOOST: f64 = 2.0;
+const TICKER_SYMBOL_LENGTH_PENALTY: f64 = -1.0;
 
 impl CompanyTicker {
     // TODO: Rename to `from_fuzzy_matched_name`?
@@ -76,6 +77,8 @@ impl CompanyTicker {
                 score += COMMON_STOCK_BOOST;
             }
 
+            score += TICKER_SYMBOL_LENGTH_PENALTY * company.ticker_symbol.len() as f64;
+
             *cik_counts.entry(cik).or_insert(0) += 1;
             candidates.push((company, score));
         }
@@ -95,17 +98,27 @@ impl CompanyTicker {
     }
 
     // TODO: Vectorize
-    // TODO: Use some common replacements
-    //  - Company / CO
-    //  - Companies / Cos
     /// **Tokenize text into uppercase words (alphanumeric only)**
     pub fn tokenize_company_name(text: &str) -> Vec<String> {
+        // Define common replacements
+        let replacements: HashMap<&str, &str> = [("COMPANY", "CO"), ("COMPANIES", "COS")]
+            .iter()
+            .cloned()
+            .collect();
+
         text.chars()
             .map(|c| if c.is_alphanumeric() { c } else { ' ' }) // Replace non-alphanums with space
             .collect::<String>()
             .split_whitespace() // Split into words
-            .map(|word| word.to_uppercase()) // Convert to uppercase
-            .collect::<Vec<String>>() // Preserve order
+            .map(|word| {
+                let upper = word.to_uppercase();
+                replacements
+                    .get(upper.as_str())
+                    .cloned()
+                    .unwrap_or(&upper)
+                    .to_string()
+            }) // Convert to uppercase and apply replacements
+            .collect()
     }
 
     /*
