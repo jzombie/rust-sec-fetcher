@@ -5,8 +5,13 @@ use std::error::Error;
 
 pub type CompanyTickersDataFrame = DataFrame;
 
+// TODO: Use struct instead of a dataframe and add a `best_match_cik` method,
+// based on string similarity for the purpose of mapping LEI (on `NPORT` filings) to CIK
+
 // TODO: Make distinction how these are not fund tickers
-pub async fn fetch_company_tickers(client: &SecClient) -> Result<CompanyTickersDataFrame, Box<dyn Error>> {
+pub async fn fetch_company_tickers(
+    client: &SecClient,
+) -> Result<CompanyTickersDataFrame, Box<dyn Error>> {
     // TODO: Also incorporate: https://www.sec.gov/include/ticker.txt
 
     let url = "https://www.sec.gov/files/company_tickers.json";
