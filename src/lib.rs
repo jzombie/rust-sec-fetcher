@@ -1,5 +1,5 @@
+pub mod accessors;
 pub mod config;
-pub mod df_accessors;
 pub mod enums;
 pub mod fs;
 pub mod models;
