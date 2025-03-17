@@ -23,6 +23,8 @@ pub struct CompanyTicker {
 //  ---- DHI: Investment 218: NportInvestment { company_ticker: None, name: "DR Horton Inc", lei: "529900ZIUEYVSB8QDD25", title: "DR Horton Inc", cusip: "23331A109", isin: "US23331A1097",
 //  ---- LYB: Investment 367: NportInvestment { company_ticker: None, name: "LyondellBasell Industries NV", lei: "BN6WCCZ8OVP3ITUUVN49", title: "LyondellBasell Industries NV",
 //  ---- KEY: Investment 390: NportInvestment { company_ticker: None, name: "KeyCorp", lei: "RKPI3RZGV1V1FJTH5T61", title: "KeyCorp",
+//  ---- DPZ: Investment 424: NportInvestment { company_ticker: None, name: "Domino's Pizza Inc", lei: "25490005ZWM1IF9UXU57", title: "Domino's Pizza Inc",
+//  ---- CPB: Investment 483: NportInvestment { company_ticker: None, name: "The Campbell's Company", lei: "5493007JDSMX8Z5Z1902", title: "The Campbell's Company", cusip: "134429109",
 
 const TOKEN_MATCH_THRESHOLD: f64 = 0.6; // At least 60% of tokens must match
 const EXACT_MATCH_BOOST: f64 = 10.0;
