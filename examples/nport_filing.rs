@@ -1,5 +1,6 @@
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::network::{fetch_nport_filing_by_ticker_symbol, SecClient};
+use sec_fetcher::utils::VecExtensions;
 use std::env;
 use std::error::Error;
 
@@ -20,7 +21,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await
         .unwrap();
 
-    for (i, investment) in investments.iter().enumerate() {
+    for (i, investment) in investments.head(510).iter().enumerate() {
         println!("Investment {}: {:?}", i + 1, investment);
     }
 

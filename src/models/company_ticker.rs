@@ -19,6 +19,8 @@ pub struct CompanyTicker {
 //  ---- HSY: Investment 4522: NportInvestment { company_ticker: None, name: "HERSHEY COMPANY", lei: "21X2CX66SU2BR6QTAD08", title: "Hershey Co/The", cusip: "427866AX6",
 //  ---- PGR: Investment 4391: NportInvestment { company_ticker: None, name: "PROGRESSIVE CORP", lei: "529900TACNVLY9DCR586", title: "Progressive Corp/The",
 //  ---- [subsidiary; probably ok] DE: Investment 4814: NportInvestment { company_ticker: None, name: "JOHN DEERE CAPITAL CORP", lei: "E0KSF7PFQ210NWI8Z391", title: "John Deere Capital Corp",
+// ---- [Incorrect stock symbol for PNC] PNC: Investment 109: NportInvestment { company_ticker: Some(CompanyTicker { cik: Cik { value: 1393612 }, ticker_symbol: "DFS", company_name: "Discover Financial Services" }), name: "PNC FINANCIAL SERVICES",
+// ---- PCG: Investment 487: NportInvestment { company_ticker: None, name: "PACIFIC GAS & ELECTRIC", lei: "1HNPXZSMMB7HMBMVBS46", title: "Pacific Gas and Electric Co"
 
 // - Container: SPY
 //  ---- LOW: Investment 67: NportInvestment { company_ticker: None, name: "Lowe's Cos Inc", lei: "WAFCR4OKGSC504WU3E95", title: "Lowe's Cos Inc", cu
@@ -32,6 +34,7 @@ pub struct CompanyTicker {
 //  ---- JNJ: Investment 22: NportInvestment { company_ticker: None, name: "Johnson & Johnson", lei: "549300G0CFPGEF6X2043", title: "Johnson & Johnson",
 
 const TOKEN_MATCH_THRESHOLD: f64 = 0.6; // At least 60% of tokens must match
+const TICKER_SYMBOL_MATCH_BOOST: f64 = 2.0;
 const EXACT_MATCH_BOOST: f64 = 10.0;
 const COMMON_STOCK_BOOST: f64 = 2.0;
 const PREFERRED_STOCK_PENALTY: f64 = -3.0;
@@ -44,6 +47,8 @@ impl CompanyTicker {
         company_tickers: &[CompanyTicker],
         query: &str,
     ) -> Option<CompanyTicker> {
+        // TODO: Lookup in persistent cache before further processing
+
         let query_tokens = Self::tokenize_company_name(query);
 
         let mut cik_counts = HashMap::new();
@@ -51,6 +56,7 @@ impl CompanyTicker {
 
         for company in company_tickers {
             let cik = company.cik.value;
+            let ticker_symbol = &company.ticker_symbol;
             let title_tokens = Self::tokenize_company_name(&company.company_name);
 
             let query_freq = Self::token_frequencies(&query_tokens);
@@ -79,6 +85,11 @@ impl CompanyTicker {
             if query_tokens == title_tokens {
                 score += EXACT_MATCH_BOOST;
             }
+
+            if query_tokens.contains(&ticker_symbol) {
+                score += TICKER_SYMBOL_MATCH_BOOST;
+            }
+
             // if company.ticker_symbol.len() <= 4 {
             //     score += COMMON_STOCK_BOOST;
             // } else if company.ticker_symbol.contains('-') {
@@ -131,7 +142,11 @@ impl CompanyTicker {
             .replace("COMPANY", "CO")
             .replace("COMPANIES", "COS")
             .replace("BANCORPORATION", "BANK BANCORP")
-            .replace("NATIONAL ASSOCIATION", "NA");
+            .replace("NATIONAL ASSOCIATION", "NA")
+            //
+            // Specific patch for `PNC FINANCIAL SERVICES GROUP, INC.`
+            .replace("GROUP, INC.", "")
+            .replace("PG&E", "PACIFIC GAS AND ELECTRIC CO");
 
         let mut cleaned = Vec::with_capacity(preprocessed.len());
 
