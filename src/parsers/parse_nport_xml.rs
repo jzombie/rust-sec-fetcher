@@ -6,6 +6,9 @@ use rust_decimal_macros::dec;
 use std::error::Error;
 use std::str::FromStr;
 
+// TODO: Look out for seemingly duplicates such as this. The CUSIP nad ISIN are different, however (as well as the values).
+// Investment 4308: NportInvestment { company_ticker: None, name: "PROLOGIS LP", lei: "GL16H1DHB0QSHP25F723", title: "Prologis LP", cusip: "74340XCH2", isin: "US74340XCH26", balance: 724000.00, cur_cd: "USD", val_usd: 713480.28, pct_val: 0.007357911161, payoff_profile: "Long", asset_cat: "DBT", issuer_cat: "", inv_country: "US" }
+// Investment 4354: NportInvestment { company_ticker: None, name: "PROLOGIS LP", lei: "GL16H1DHB0QSHP25F723", title: "Prologis LP", cusip: "74340XBK6", isin: "US74340XBK63", balance: 649000.00, cur_cd: "USD", val_usd: 635299.61, pct_val: 0.006551657028, payoff_profile: "Long", asset_cat: "DBT", issuer_cat: "", inv_country: "US" }
 pub fn parse_nport_xml(
     xml: &str,
     company_tickers: &[CompanyTicker],
