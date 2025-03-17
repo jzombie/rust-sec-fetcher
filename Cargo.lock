@@ -2960,9 +2960,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest-drive"
-version = "0.1.0-alpha"
+version = "0.1.0-alpha.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b278064fb269f07de36c89a1f598760b02ffe0fd7a46e877fcbbe86f11b6e4bb"
+checksum = "18bb2da8019c5cca09389fd70dbc53f50cd8f645e3632311154ce2a909791881"
 dependencies = [
  "async-trait",
  "bincode",
@@ -3234,7 +3234,6 @@ dependencies = [
  "rayon",
  "reqwest",
  "reqwest-drive",
- "reqwest-middleware",
  "rust_decimal",
  "rust_decimal_macros",
  "schemars",

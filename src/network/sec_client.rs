@@ -1,8 +1,9 @@
 use crate::config::ConfigManager;
 use email_address::EmailAddress;
-use reqwest::Client;
-use reqwest_drive::{init_cache_with_throttle, CachePolicy, ThrottlePolicy};
-use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use reqwest;
+use reqwest_drive::{
+    init_client_with_cache_and_throttle, CachePolicy, ClientWithMiddleware, ThrottlePolicy,
+};
 use serde_json::Value;
 use std::error::Error;
 use tokio::time::Duration;
@@ -51,17 +52,23 @@ impl SecClient {
             adaptive_jitter_ms: 500,
         };
 
-        let (cache, throttle) = init_cache_with_throttle(
+        // let (cache, throttle) = init_cache_with_throttle(
+        //     &config_manager.get_config().get_http_cache_storage_bin(),
+        //     cache_policy,
+        //     throttle_policy,
+        // );
+
+        // // Build client with both cache and throttle middleware
+        // let cache_client = ClientBuilder::new(Client::new())
+        //     .with_arc(cache) // Cache middleware
+        //     .with_arc(throttle) // Throttle middleware (cache linked)
+        //     .build();
+
+        let cache_client = init_client_with_cache_and_throttle(
             &config_manager.get_config().get_http_cache_storage_bin(),
             cache_policy,
             throttle_policy,
         );
-
-        // Build client with both cache and throttle middleware
-        let cache_client = ClientBuilder::new(Client::new())
-            .with_arc(cache) // Cache middleware
-            .with_arc(throttle) // Throttle middleware (cache linked)
-            .build();
 
         Ok(Self {
             email: email.to_string(),
@@ -113,7 +120,7 @@ impl SecClient {
     // TODO: Add optional headers
     /// Asynchronously fetches JSON data from a given SEC URL with rate limiting
     pub async fn fetch_json(&self, url: &str) -> Result<Value, Box<dyn Error>> {
-        let response = self.raw_request(reqwest::Method::GET, url, None).await?;
+        let response: reqwest::Response = self.raw_request(reqwest::Method::GET, url, None).await?;
         let json = response.json().await?;
         Ok(json)
     }
