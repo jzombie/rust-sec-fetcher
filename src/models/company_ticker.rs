@@ -107,9 +107,24 @@ impl CompanyTicker {
             .collect();
 
         text.chars()
-            .map(|c| if c.is_alphanumeric() { c } else { ' ' }) // Replace non-alphanums with space
+            .scan(None, |last, c| {
+                // Remove possessives (apostrophe followed by 's' or standalone apostrophe)
+                if c == '\'' {
+                    *last = Some(c);
+                    return Some(None);
+                }
+                if let Some('\'') = *last {
+                    if c == 'S' || c == 's' {
+                        *last = None;
+                        return Some(None); // Skip both apostrophe and 's'
+                    }
+                }
+                *last = None;
+                Some(Some(if c.is_alphanumeric() { c } else { ' ' }))
+            })
+            .flatten() // Remove None values (filtered possessives)
             .collect::<String>()
-            .split_whitespace() // Split into words
+            .split_whitespace()
             .map(|word| {
                 let upper = word.to_uppercase();
                 replacements
@@ -117,7 +132,7 @@ impl CompanyTicker {
                     .cloned()
                     .unwrap_or(&upper)
                     .to_string()
-            }) // Convert to uppercase and apply replacements
+            })
             .collect()
     }
 
