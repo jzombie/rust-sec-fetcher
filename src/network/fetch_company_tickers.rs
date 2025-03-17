@@ -59,8 +59,8 @@ pub async fn fetch_company_tickers(
 ) -> Result<CompanyTickersDataFrame, Box<dyn Error>> {
     // TODO: Also incorporate: https://www.sec.gov/include/ticker.txt
 
-    let url = "https://www.sec.gov/files/company_tickers.json";
-    let data = client.fetch_json(url).await?;
+    let company_tickers_url = "https://www.sec.gov/files/company_tickers.json";
+    let company_tickers_data = client.fetch_json(company_tickers_url).await?;
 
     // TODO: Move the following into `parsers`
 
@@ -69,7 +69,7 @@ pub async fn fetch_company_tickers(
     let mut ticker_values = Vec::new();
     let mut title_values = Vec::new();
 
-    if let Some(ticker_map) = data.as_object() {
+    if let Some(ticker_map) = company_tickers_data.as_object() {
         for (_, ticker_info) in ticker_map.iter() {
             let cik_u64 = ticker_info["cik_str"].as_u64().unwrap_or_default();
 
