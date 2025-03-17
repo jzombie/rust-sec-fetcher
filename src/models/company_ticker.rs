@@ -125,14 +125,17 @@ impl CompanyTicker {
             return tokens.clone();
         }
 
+        // **Manual Removal Before Normalization**
+        let preprocessed = text.replace("/NEW/", "");
+
         let replacements: HashMap<&str, &str> = [("COMPANY", "CO"), ("COMPANIES", "COS")]
             .iter()
             .cloned()
             .collect();
 
-        let mut cleaned = Vec::with_capacity(text.len());
+        let mut cleaned = Vec::with_capacity(preprocessed.len());
 
-        for &b in text.as_bytes() {
+        for &b in preprocessed.as_bytes() {
             if b == b'\'' {
                 continue; // Remove apostrophes
             }
