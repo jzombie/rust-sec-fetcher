@@ -16,6 +16,13 @@ pub struct CompanyTicker {
 //  ---- PGR: Investment 4391: NportInvestment { company_ticker: None, name: "PROGRESSIVE CORP", lei: "529900TACNVLY9DCR586", title: "Progressive Corp/The",
 //  ---- [subsidiary; probably ok] DE: Investment 4814: NportInvestment { company_ticker: None, name: "JOHN DEERE CAPITAL CORP", lei: "E0KSF7PFQ210NWI8Z391", title: "John Deere Capital Corp",
 
+// - Container: SPY
+//  ---- LOW: Investment 67: NportInvestment { company_ticker: None, name: "Lowe's Cos Inc", lei: "WAFCR4OKGSC504WU3E95", title: "Lowe's Cos Inc", cu
+//  ---- TJX: Investment 69: NportInvestment { company_ticker: None, name: "TJX Cos Inc/The", lei: "V167QI9I69W364E2DY52", title: "TJX Cos Inc/The",
+//  ---- WMB: Investment 145: NportInvestment { company_ticker: None, name: "Williams Cos Inc/The", lei: "D71FAKCBLFS2O0RBPG08", title: "Williams Cos Inc/The",
+//  ---- DHI: Investment 218: NportInvestment { company_ticker: None, name: "DR Horton Inc", lei: "529900ZIUEYVSB8QDD25", title: "DR Horton Inc", cusip: "23331A109", isin: "US23331A1097",
+//  ---- LYB: Investment 367: NportInvestment { company_ticker: None, name: "LyondellBasell Industries NV", lei: "BN6WCCZ8OVP3ITUUVN49", title: "LyondellBasell Industries NV",
+
 const TOKEN_MATCH_THRESHOLD: f64 = 0.6; // At least 60% of tokens must match
 const EXACT_MATCH_BOOST: f64 = 10.0;
 const COMMON_STOCK_BOOST: f64 = 2.0;
@@ -81,6 +88,9 @@ impl CompanyTicker {
 }
 
 // TODO: Vectorize
+// TODO: Use some common replacements
+//  - Company / CO
+//  - Companies / Cos
 /// **Tokenize text into uppercase words (alphanumeric only)**
 fn tokenize_text(text: &str) -> HashSet<String> {
     text.chars()
