@@ -25,6 +25,7 @@ pub struct CompanyTicker {
 //  ---- KEY: Investment 390: NportInvestment { company_ticker: None, name: "KeyCorp", lei: "RKPI3RZGV1V1FJTH5T61", title: "KeyCorp",
 //  ---- DPZ: Investment 424: NportInvestment { company_ticker: None, name: "Domino's Pizza Inc", lei: "25490005ZWM1IF9UXU57", title: "Domino's Pizza Inc",
 //  ---- CPB: Investment 483: NportInvestment { company_ticker: None, name: "The Campbell's Company", lei: "5493007JDSMX8Z5Z1902", title: "The Campbell's Company", cusip: "134429109",
+//  ---- JNJ: Investment 22: NportInvestment { company_ticker: None, name: "Johnson & Johnson", lei: "549300G0CFPGEF6X2043", title: "Johnson & Johnson",
 
 const TOKEN_MATCH_THRESHOLD: f64 = 0.6; // At least 60% of tokens must match
 const EXACT_MATCH_BOOST: f64 = 10.0;
@@ -97,33 +98,30 @@ impl CompanyTicker {
             .map(|(company, _)| company.clone())
     }
 
-    // TODO: Vectorize
-    /// **Tokenize text into uppercase words (alphanumeric only)**
+    /// **Tokenize text into uppercase words (alphanumeric only) using SIMD**
     pub fn tokenize_company_name(text: &str) -> Vec<String> {
-        // Define common replacements
         let replacements: HashMap<&str, &str> = [("COMPANY", "CO"), ("COMPANIES", "COS")]
             .iter()
             .cloned()
             .collect();
 
-        text.chars()
-            .scan(None, |last, c| {
-                // Remove possessives (apostrophe followed by 's' or standalone apostrophe)
-                if c == '\'' {
-                    *last = Some(c);
-                    return Some(None);
-                }
-                if let Some('\'') = *last {
-                    if c == 'S' || c == 's' {
-                        *last = None;
-                        return Some(None); // Skip both apostrophe and 's'
-                    }
-                }
-                *last = None;
-                Some(Some(if c.is_alphanumeric() { c } else { ' ' }))
-            })
-            .flatten() // Remove None values (filtered possessives)
-            .collect::<String>()
+        let mut cleaned = Vec::with_capacity(text.len());
+
+        for &b in text.as_bytes() {
+            if b == b'\'' {
+                continue; // Just remove the apostrophe, keep everything else
+            }
+            cleaned.push(if b.is_ascii_alphanumeric() {
+                b.to_ascii_uppercase()
+            } else {
+                b' ' // Replace non-alphanumeric characters with spaces
+            });
+        }
+
+        let normalized = String::from_utf8(cleaned).unwrap();
+
+        // Tokenize and apply replacements
+        normalized
             .split_whitespace()
             .map(|word| {
                 let upper = word.to_uppercase();
@@ -135,6 +133,45 @@ impl CompanyTicker {
             })
             .collect()
     }
+
+    // TODO: Vectorize
+    // **Tokenize text into uppercase words (alphanumeric only)**
+    // pub fn tokenize_company_name(text: &str) -> Vec<String> {
+    //     // Define common replacements
+    //     let replacements: HashMap<&str, &str> = [("COMPANY", "CO"), ("COMPANIES", "COS")]
+    //         .iter()
+    //         .cloned()
+    //         .collect();
+
+    //     text.chars()
+    //         .scan(None, |last, c| {
+    //             // Remove possessives (apostrophe followed by 's' or standalone apostrophe)
+    //             if c == '\'' {
+    //                 *last = Some(c);
+    //                 return Some(None);
+    //             }
+    //             if let Some('\'') = *last {
+    //                 if c == 'S' || c == 's' {
+    //                     *last = None;
+    //                     return Some(None); // Skip both apostrophe and 's'
+    //                 }
+    //             }
+    //             *last = None;
+    //             Some(Some(if c.is_alphanumeric() { c } else { ' ' }))
+    //         })
+    //         .flatten() // Remove None values (filtered possessives)
+    //         .collect::<String>()
+    //         .split_whitespace()
+    //         .map(|word| {
+    //             let upper = word.to_uppercase();
+    //             replacements
+    //                 .get(upper.as_str())
+    //                 .cloned()
+    //                 .unwrap_or(&upper)
+    //                 .to_string()
+    //         })
+    //         .collect()
+    // }
 
     /*
     use std::collections::HashSet;
