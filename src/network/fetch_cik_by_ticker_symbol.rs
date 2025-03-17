@@ -4,7 +4,6 @@ use crate::network::fetch_company_tickers;
 use crate::network::fetch_investment_company_series_and_class_dataset;
 use crate::network::SecClient;
 
-use crate::accessors::get_company_cik_by_ticker_symbol;
 use crate::models::InvestmentCompany;
 
 use crate::models::Cik;
@@ -15,7 +14,7 @@ pub async fn fetch_cik_by_ticker_symbol(
 ) -> Result<Cik, Box<dyn Error>> {
     // First, look at companies
     let tickers_df = fetch_company_tickers(&sec_client).await?;
-    if let Ok(company_cik) = get_company_cik_by_ticker_symbol(&tickers_df, ticker_symbol) {
+    if let Ok(company_cik) = Cik::get_company_cik_by_ticker_symbol(&tickers_df, ticker_symbol) {
         return Ok(company_cik);
     }
 

@@ -1,5 +1,4 @@
-use crate::accessors::get_company_cik_by_ticker_symbol;
-use crate::models::CompanyTicker;
+use crate::models::{Cik, CompanyTicker};
 use crate::network::SecClient;
 use crate::parsers::parse_us_gaap_fundamentals;
 use polars::prelude::*;
@@ -15,7 +14,7 @@ pub async fn fetch_us_gaap_fundamentals(
     ticker_symbol: &str,
 ) -> Result<TickerFundamentalsDataFrame, Box<dyn Error>> {
     // Get the formatted CIK for the ticker
-    let cik = get_company_cik_by_ticker_symbol(company_tickers, ticker_symbol)?;
+    let cik = Cik::get_company_cik_by_ticker_symbol(company_tickers, ticker_symbol)?;
 
     let url = format!(
         "https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json",
