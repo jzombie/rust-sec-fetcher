@@ -1,4 +1,4 @@
-use crate::models::NportInvestment;
+use crate::models::{CompanyTicker, NportInvestment};
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use rust_decimal::Decimal;
@@ -6,7 +6,10 @@ use rust_decimal_macros::dec;
 use std::error::Error;
 use std::str::FromStr;
 
-pub fn parse_nport_xml(xml: &str) -> Result<Vec<NportInvestment>, Box<dyn Error>> {
+pub fn parse_nport_xml(
+    xml: &str,
+    company_tickers: &[CompanyTicker],
+) -> Result<Vec<NportInvestment>, Box<dyn Error>> {
     let mut reader = Reader::from_str(xml);
 
     let mut investments = Vec::new();
@@ -19,6 +22,7 @@ pub fn parse_nport_xml(xml: &str) -> Result<Vec<NportInvestment>, Box<dyn Error>
                 let tag = std::str::from_utf8(e.name().as_ref())?.to_string();
                 if tag == "invstOrSec" {
                     current_investment = Some(NportInvestment {
+                        company_ticker: None, // TODO: Implement
                         name: String::new(),
                         lei: String::new(),
                         title: String::new(),

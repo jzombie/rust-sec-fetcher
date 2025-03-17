@@ -116,7 +116,7 @@ impl Cik {
     ///
     ///
     /// # Arguments
-    /// - `company_tickers` - A slice of `CompanyTicker` instances.
+    /// - `company_tickers` - A slice of `CompanyTicker` structs.
     /// - `ticker_symbol` - A **stock ticker symbol** (case-sensitive) as a `&str`.
     ///
     /// # Returns
@@ -154,19 +154,19 @@ impl Cik {
     /// - CIK frequency boosts score.
     ///
     /// # Arguments
-    /// - `companies`: Slice of `CompanyTicker` structs.
+    /// - `company_tickers`: Slice of `CompanyTicker` structs.
     /// - `query`: The company name to search for.
     ///
     /// # Returns
     /// - `Some(Cik)`: Best matching CIK.
     /// - `None`: If no suitable match is found.
-    pub fn get_cik_by_company_name(companies: &[CompanyTicker], query: &str) -> Option<Cik> {
-        let mut cik_counts: HashMap<u64, usize> = HashMap::with_capacity(companies.len());
+    pub fn get_cik_by_company_name(company_tickers: &[CompanyTicker], query: &str) -> Option<Cik> {
+        let mut cik_counts: HashMap<u64, usize> = HashMap::with_capacity(company_tickers.len());
         let mut candidates: Vec<(u64, &str, Box<str>, f64)> = Vec::new(); // (CIK, ticker, title, score)
 
         let query_lower = query.to_lowercase();
 
-        for company in companies {
+        for company in company_tickers {
             let cik = company.cik.value; // Extract raw u64
             let ticker = company.ticker_symbol.as_str();
             let title = company.company_name.to_lowercase();

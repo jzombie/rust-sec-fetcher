@@ -1,9 +1,11 @@
+use crate::models::CompanyTicker;
 use rust_decimal::Decimal;
 
 // TODO: Document NPORT, etc.
 
 #[derive(Debug)]
 pub struct NportInvestment {
+    pub company_ticker: Option<CompanyTicker>,
     pub name: String,
     pub lei: String, // Legal Entity Identifier
     pub title: String,
