@@ -1,5 +1,9 @@
 use crate::models::Cik;
-use std::collections::{HashMap, HashSet};
+use dashmap::DashMap;
+use std::collections::HashMap;
+use std::sync::LazyLock;
+
+static TOKEN_CACHE: LazyLock<DashMap<String, Vec<String>>> = LazyLock::new(DashMap::new);
 
 #[derive(Debug, Clone)]
 pub struct CompanyTicker {
@@ -117,6 +121,11 @@ impl CompanyTicker {
 
     /// **Tokenize text into uppercase words (alphanumeric only) using SIMD**
     pub fn tokenize_company_name(text: &str) -> Vec<String> {
+        // Check if already cached
+        if let Some(tokens) = TOKEN_CACHE.get(text) {
+            return tokens.clone();
+        }
+
         let replacements: HashMap<&str, &str> = [("COMPANY", "CO"), ("COMPANIES", "COS")]
             .iter()
             .cloned()
@@ -137,14 +146,15 @@ impl CompanyTicker {
 
         let normalized = String::from_utf8(cleaned).unwrap();
 
-        // Tokenize and apply replacements (avoiding redundant .to_uppercase())
-        normalized
+        let tokens: Vec<String> = normalized
             .split_whitespace()
-            .map(|word| {
-                // Words are already uppercase, no need to convert again
-                replacements.get(word).cloned().unwrap_or(word).to_string()
-            })
-            .collect()
+            .map(|word| replacements.get(word).cloned().unwrap_or(word).to_string())
+            .collect();
+
+        // Store in cache
+        TOKEN_CACHE.insert(text.to_string(), tokens.clone());
+
+        tokens
     }
 
     // TODO: Vectorize
