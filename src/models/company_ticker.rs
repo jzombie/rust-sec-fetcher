@@ -49,11 +49,19 @@ impl CompanyTicker {
             let cik = company.cik.value;
             let title_tokens = Self::tokenize_company_name(&company.company_name);
 
-            let query_set: HashSet<_> = query_tokens.iter().collect();
-            let title_set: HashSet<_> = title_tokens.iter().collect();
+            let query_freq = Self::token_frequencies(&query_tokens);
+            let title_freq = Self::token_frequencies(&title_tokens);
 
-            // **Step 1: Compute Token Overlap Percentage**
-            let intersection_size = query_set.intersection(&title_set).count();
+            // **Compute Weighted Token Overlap**
+            let intersection_size: usize = query_freq
+                .iter()
+                .filter_map(|(token, &query_count)| {
+                    title_freq
+                        .get(*token)
+                        .map(|&title_count| query_count.min(title_count))
+                })
+                .sum();
+
             let total_size = query_tokens.len().max(title_tokens.len());
 
             let match_score = (intersection_size as f64) / (total_size as f64);
@@ -96,6 +104,15 @@ impl CompanyTicker {
             .into_iter()
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
             .map(|(company, _)| company.clone())
+    }
+
+    /// Converts a vector of tokens into a frequency map
+    fn token_frequencies(tokens: &[String]) -> HashMap<&String, usize> {
+        let mut map = HashMap::new();
+        for token in tokens {
+            *map.entry(token).or_insert(0) += 1;
+        }
+        map
     }
 
     /// **Tokenize text into uppercase words (alphanumeric only) using SIMD**
