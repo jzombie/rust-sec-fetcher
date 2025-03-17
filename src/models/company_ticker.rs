@@ -1,11 +1,21 @@
 use crate::models::Cik;
+use bincode;
 use dashmap::DashMap;
+use serde::{Deserialize, Serialize};
+use simd_r_drive::DataStore;
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::LazyLock;
 
 static TOKEN_CACHE: LazyLock<DashMap<String, Vec<String>>> = LazyLock::new(DashMap::new);
 
-#[derive(Debug, Clone)]
+// TODO: Refactor
+static SIMD_R_DRIVE_CACHE: LazyLock<DataStore> = LazyLock::new(|| {
+    DataStore::open(Path::new("data/temp_company_ticker_map.bin"))
+        .unwrap_or_else(|err| panic!("Failed to open datastore: {}", err))
+});
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompanyTicker {
     pub cik: Cik,
     pub ticker_symbol: String,
@@ -47,7 +57,12 @@ impl CompanyTicker {
         company_tickers: &[CompanyTicker],
         query: &str,
     ) -> Option<CompanyTicker> {
-        // TODO: Lookup in persistent cache before further processing
+        let query_as_bytes = query.as_bytes();
+
+        // TODO: Refactor cache handling
+        if let Some(entry_handle) = SIMD_R_DRIVE_CACHE.read(query_as_bytes) {
+            return Some(bincode::deserialize(&entry_handle.as_slice()).unwrap());
+        }
 
         let query_tokens = Self::tokenize_company_name(query);
 
@@ -115,10 +130,17 @@ impl CompanyTicker {
         }
 
         // **Step 3: Return best match**
-        candidates
+        let best_match = candidates
             .into_iter()
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
-            .map(|(company, _)| company.clone())
+            .map(|(company, _)| company.clone());
+
+        // TODO: Refactor cache handling
+        if let Some(best_match) = &best_match {
+            SIMD_R_DRIVE_CACHE.write(query_as_bytes, &bincode::serialize(&best_match).unwrap());
+        }
+
+        best_match
     }
 
     /// Converts a vector of tokens into a frequency map

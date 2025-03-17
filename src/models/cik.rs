@@ -1,3 +1,6 @@
+use serde::Deserialize;
+use serde::Serialize;
+
 use crate::models::AccessionNumber;
 use crate::models::CompanyTicker;
 
@@ -29,7 +32,7 @@ use std::error::Error;
 ///
 /// # Reference:
 /// - [SEC CIK Lookup](https://www.sec.gov/edgar/searchedgar/cik)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Cik {
     pub value: u64,
 }
