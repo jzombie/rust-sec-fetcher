@@ -24,10 +24,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
         CompanyTicker::tokenize_company_name(search_string)
     );
 
-    // let config_manager = ConfigManager::load()?;
-    // let client = SecClient::from_config_manager(&config_manager)?;
+    let config_manager = ConfigManager::load()?;
+    let client = SecClient::from_config_manager(&config_manager)?;
 
-    // let company_tickers = fetch_company_tickers(&client).await.unwrap();
+    let company_tickers = fetch_company_tickers(&client).await.unwrap();
+
+    let fuzzy_matched = CompanyTicker::get_by_fuzzy_matched_name(&company_tickers, search_string);
+
+    println!("Fuzzy matched: {:?}", fuzzy_matched);
 
     Ok(())
 }

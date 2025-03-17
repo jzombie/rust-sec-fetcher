@@ -47,11 +47,15 @@ impl CompanyTicker {
             let cik = company.cik.value;
             let title_tokens = Self::tokenize_company_name(&company.company_name);
 
+            let query_set: HashSet<_> = query_tokens.iter().collect();
+            let title_set: HashSet<_> = title_tokens.iter().collect();
+
             // **Step 1: Compute Token Overlap Percentage**
-            let intersection_size = query_tokens.intersection(&title_tokens).count();
+            let intersection_size = query_set.intersection(&title_set).count();
             let total_size = query_tokens.len().max(title_tokens.len());
 
             let match_score = (intersection_size as f64) / (total_size as f64);
+
             if match_score < TOKEN_MATCH_THRESHOLD {
                 continue; // Skip weak matches
             }
@@ -95,13 +99,13 @@ impl CompanyTicker {
     //  - Company / CO
     //  - Companies / Cos
     /// **Tokenize text into uppercase words (alphanumeric only)**
-    pub fn tokenize_company_name(text: &str) -> HashSet<String> {
+    pub fn tokenize_company_name(text: &str) -> Vec<String> {
         text.chars()
             .map(|c| if c.is_alphanumeric() { c } else { ' ' }) // Replace non-alphanums with space
             .collect::<String>()
-            .split_whitespace() // Now safely split by actual words
-            .map(|word| word.to_uppercase()) // Convert to uppercase for case-insensitive matching
-            .collect()
+            .split_whitespace() // Split into words
+            .map(|word| word.to_uppercase()) // Convert to uppercase
+            .collect::<Vec<String>>() // Preserve order
     }
 
     /*
