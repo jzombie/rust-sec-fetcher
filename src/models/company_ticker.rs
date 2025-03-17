@@ -109,27 +109,23 @@ impl CompanyTicker {
 
         for &b in text.as_bytes() {
             if b == b'\'' {
-                continue; // Just remove the apostrophe, keep everything else
+                continue; // Just remove apostrophes
             }
             cleaned.push(if b.is_ascii_alphanumeric() {
                 b.to_ascii_uppercase()
             } else {
-                b' ' // Replace non-alphanumeric characters with spaces
+                b' ' // Replace other non-alphanum with space
             });
         }
 
         let normalized = String::from_utf8(cleaned).unwrap();
 
-        // Tokenize and apply replacements
+        // Tokenize and apply replacements (avoiding redundant .to_uppercase())
         normalized
             .split_whitespace()
             .map(|word| {
-                let upper = word.to_uppercase();
-                replacements
-                    .get(upper.as_str())
-                    .cloned()
-                    .unwrap_or(&upper)
-                    .to_string()
+                // Words are already uppercase, no need to convert again
+                replacements.get(word).cloned().unwrap_or(word).to_string()
             })
             .collect()
     }
