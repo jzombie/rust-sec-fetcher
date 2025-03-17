@@ -1,9 +1,12 @@
 use crate::models::CompanyTicker;
 use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 
 // TODO: Document NPORT, etc.
 
-#[derive(Debug)]
+#[serde_as]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct NportInvestment {
     pub company_ticker: Option<CompanyTicker>,
     pub name: String,
@@ -11,10 +14,18 @@ pub struct NportInvestment {
     pub title: String,
     pub cusip: String, // Committee on Uniform Securities Identification Procedures
     pub isin: String,  // International Securities Identification Number
+
+    #[serde_as(as = "DisplayFromStr")]
     pub balance: Decimal,
+
     pub cur_cd: String,
+
+    #[serde_as(as = "DisplayFromStr")]
     pub val_usd: Decimal,
+
+    #[serde_as(as = "DisplayFromStr")]
     pub pct_val: Decimal,
+
     pub payoff_profile: String,
     pub asset_cat: String,
     pub issuer_cat: String,
