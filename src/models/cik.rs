@@ -174,6 +174,7 @@ impl Cik {
             // Compute Jaro-Winkler similarity (range: 0.0 - 1.0)
             let similarity = jaro_winkler(&query_lower, &title);
 
+            // TODO: Move scoring to constants
             // Only consider if similarity > 0.7 (adjust threshold as needed)
             if similarity > 0.7 {
                 let mut score = similarity * 10.0; // Convert to a weighted score
