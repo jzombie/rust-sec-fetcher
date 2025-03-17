@@ -121,7 +121,6 @@ impl CompanyTicker {
 
     /// **Tokenize text into uppercase words (alphanumeric only) using SIMD**
     pub fn tokenize_company_name(text: &str) -> Vec<String> {
-        // Check if already cached
         if let Some(tokens) = TOKEN_CACHE.get(text) {
             return tokens.clone();
         }
@@ -135,25 +134,40 @@ impl CompanyTicker {
 
         for &b in text.as_bytes() {
             if b == b'\'' {
-                continue; // Just remove apostrophes
+                continue; // Remove apostrophes
             }
             cleaned.push(if b.is_ascii_alphanumeric() {
                 b.to_ascii_uppercase()
             } else {
-                b' ' // Replace other non-alphanum with space
+                b' ' // Replace non-alphanumeric with space
             });
         }
 
         let normalized = String::from_utf8(cleaned).unwrap();
+        let mut tokens: Vec<String> = Vec::new();
+        let mut single_letter_buffer = String::new();
 
-        let tokens: Vec<String> = normalized
-            .split_whitespace()
-            .map(|word| replacements.get(word).cloned().unwrap_or(word).to_string())
-            .collect();
+        for word in normalized.split_whitespace() {
+            let upper = replacements.get(word).cloned().unwrap_or(word).to_string();
 
-        // Store in cache
+            // Join single-letter words together
+            if upper.len() == 1 {
+                single_letter_buffer.push_str(&upper);
+            } else {
+                if !single_letter_buffer.is_empty() {
+                    tokens.push(single_letter_buffer.clone());
+                    single_letter_buffer.clear();
+                }
+                tokens.push(upper);
+            }
+        }
+
+        // If any single letters remain in the buffer, push them
+        if !single_letter_buffer.is_empty() {
+            tokens.push(single_letter_buffer);
+        }
+
         TOKEN_CACHE.insert(text.to_string(), tokens.clone());
-
         tokens
     }
 
