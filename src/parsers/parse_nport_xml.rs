@@ -22,7 +22,7 @@ pub fn parse_nport_xml(
                 let tag = std::str::from_utf8(e.name().as_ref())?.to_string();
                 if tag == "invstOrSec" {
                     current_investment = Some(NportInvestment {
-                        company_ticker: None, // TODO: Implement
+                        company_ticker: None,
                         name: String::new(),
                         lei: String::new(),
                         title: String::new(),
@@ -60,9 +60,26 @@ pub fn parse_nport_xml(
                     // Only update if value is not empty (ignores whitespace-only nodes)
                     if !value.is_empty() {
                         match current_tag.as_str() {
-                            "name" => investment.name = value,
+                            "name" => {
+                                investment.company_ticker =
+                                    CompanyTicker::get_by_fuzzy_matched_name(
+                                        company_tickers,
+                                        &value,
+                                    );
+                                investment.name = value;
+                            }
                             "lei" => investment.lei = value,
-                            "title" => investment.title = value,
+                            "title" => {
+                                if investment.company_ticker.is_none() {
+                                    investment.company_ticker =
+                                        CompanyTicker::get_by_fuzzy_matched_name(
+                                            company_tickers,
+                                            &value,
+                                        );
+                                }
+
+                                investment.title = value;
+                            }
                             "cusip" => investment.cusip = value,
                             "balance" => {
                                 investment.balance =

@@ -3239,7 +3239,6 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
- "strsim",
  "strum",
  "strum_macros 0.27.1",
  "tempfile",
