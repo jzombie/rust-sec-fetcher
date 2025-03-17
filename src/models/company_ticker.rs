@@ -8,6 +8,12 @@ pub struct CompanyTicker {
     pub company_name: String,
 }
 
+// TODO: Add unit tests for (at least)
+//  - Container: SPYV
+//  ---- ZION:  Investment 4347: NportInvestment { company_ticker: None, name: "ZIONS BANCORP NA"
+//  ---- SHW: Investment 4551: NportInvestment { company_ticker: Some(CompanyTicker { cik: Cik { value: 89800 }, ticker_symbol: "SHW", company_name: "SHERWIN WILLIAMS CO" }),
+//  ---- HSY: Investment 4522: NportInvestment { company_ticker: None, name: "HERSHEY COMPANY", lei: "21X2CX66SU2BR6QTAD08", title: "Hershey Co/The", cusip: "427866AX6",
+
 impl CompanyTicker {
     pub fn get_by_fuzzy_matched_name(
         company_tickers: &[CompanyTicker],
@@ -18,12 +24,25 @@ impl CompanyTicker {
 
         let query_lower = query.to_lowercase();
 
+        let normalized_query = normalize_text(&query_lower);
+
+        // if normalize_text(&query_lower) == normalize_text(&title) {
+        //     // Count occurrences of CIK
+        //     *cik_counts.entry(cik).or_insert(0) += 1;
+
+        //     candidates.push((company, 1.0));
+        // }
+
         for company in company_tickers {
             let cik = company.cik.value; // Extract raw u64
-            let ticker = company.ticker_symbol.as_str();
-            let title = company.company_name.to_lowercase();
+                                         // let ticker = company.ticker_symbol.as_str();
+            let title_lower = company.company_name.to_lowercase();
 
-            if query_lower == title {
+            // let normalized_title = normalize_text(text)
+
+            let normalized_title = normalize_text(&title_lower);
+
+            if normalized_query == normalized_title {
                 // Count occurrences of CIK
                 *cik_counts.entry(cik).or_insert(0) += 1;
 
@@ -67,4 +86,21 @@ impl CompanyTicker {
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
             .map(|(company, _)| (*company).clone())
     }
+}
+
+fn normalize_text(text: &str) -> String {
+    let mut cleaned = String::with_capacity(text.len()); // Preallocate for speed
+    let mut last_was_space = false;
+
+    for c in text.chars() {
+        if c.is_alphanumeric() {
+            cleaned.push(c.to_ascii_lowercase());
+            last_was_space = false;
+        } else if !last_was_space {
+            cleaned.push(' '); // Add a single space for non-alphanumeric
+            last_was_space = true;
+        }
+    }
+
+    cleaned.trim().to_string() // Trim trailing space
 }
