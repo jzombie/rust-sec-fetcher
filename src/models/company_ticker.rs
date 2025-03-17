@@ -126,12 +126,12 @@ impl CompanyTicker {
         }
 
         // **Manual Removal Before Normalization**
-        let preprocessed = text.replace("/NEW/", "");
-
-        let replacements: HashMap<&str, &str> = [("COMPANY", "CO"), ("COMPANIES", "COS")]
-            .iter()
-            .cloned()
-            .collect();
+        let preprocessed = text
+            .replace("/NEW/", "")
+            .replace("COMPANY", "CO")
+            .replace("COMPANIES", "COS")
+            .replace("BANCORPORATION", "BANK BANCORP")
+            .replace("NATIONAL ASSOCIATION", "NA");
 
         let mut cleaned = Vec::with_capacity(preprocessed.len());
 
@@ -151,7 +151,7 @@ impl CompanyTicker {
         let mut single_letter_buffer = String::new();
 
         for word in normalized.split_whitespace() {
-            let upper = replacements.get(word).cloned().unwrap_or(word).to_string();
+            let upper = word.to_string();
 
             // Join single-letter words together
             if upper.len() == 1 {
