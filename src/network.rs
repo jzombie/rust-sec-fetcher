@@ -17,4 +17,6 @@ mod fetch_cik_submissions;
 pub use fetch_cik_submissions::fetch_cik_submissions;
 
 mod fetch_nport_filing;
-pub use fetch_nport_filing::fetch_nport_filing_by_cik_and_accession_number;
+pub use fetch_nport_filing::{
+    fetch_nport_filing_by_cik_and_accession_number, fetch_nport_filing_by_ticker_symbol,
+};
