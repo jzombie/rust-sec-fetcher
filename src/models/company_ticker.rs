@@ -33,18 +33,19 @@ const PREFERRED_STOCK_PENALTY: f64 = -3.0;
 const CIK_FREQUENCY_BOOST: f64 = 2.0;
 
 impl CompanyTicker {
+    // TODO: Rename to `from_fuzzy_matched_name`?
     pub fn get_by_fuzzy_matched_name(
         company_tickers: &[CompanyTicker],
         query: &str,
     ) -> Option<CompanyTicker> {
-        let query_tokens = tokenize_text(query);
+        let query_tokens = Self::tokenize_company_name(query);
 
         let mut cik_counts = HashMap::new();
         let mut candidates = Vec::new();
 
         for company in company_tickers {
             let cik = company.cik.value;
-            let title_tokens = tokenize_text(&company.company_name);
+            let title_tokens = Self::tokenize_company_name(&company.company_name);
 
             // **Step 1: Compute Token Overlap Percentage**
             let intersection_size = query_tokens.intersection(&title_tokens).count();
@@ -88,58 +89,58 @@ impl CompanyTicker {
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
             .map(|(company, _)| company.clone())
     }
-}
 
-// TODO: Vectorize
-// TODO: Use some common replacements
-//  - Company / CO
-//  - Companies / Cos
-/// **Tokenize text into uppercase words (alphanumeric only)**
-fn tokenize_text(text: &str) -> HashSet<String> {
-    text.chars()
-        .map(|c| if c.is_alphanumeric() { c } else { ' ' }) // Replace non-alphanums with space
-        .collect::<String>()
-        .split_whitespace() // Now safely split by actual words
-        .map(|word| word.to_uppercase()) // Convert to uppercase for case-insensitive matching
-        .collect()
-}
-
-/*
-use std::collections::HashSet;
-use std::simd::{u8x16, SimdPartialEq};
-
-/// **Tokenize text into uppercase words (alphanumeric only) using SIMD**
-fn tokenize_text_simd(text: &str) -> HashSet<String> {
-    let mut cleaned = String::with_capacity(text.len());
-
-    // Process in chunks of 16 bytes using SIMD
-    let bytes = text.as_bytes();
-    let mut i = 0;
-    while i + 16 <= bytes.len() {
-        let chunk = u8x16::from_slice(&bytes[i..i + 16]);
-
-        // Create a mask for alphanumeric characters (0-9, A-Z, a-z)
-        let is_alnum = (chunk.ge(u8x16::splat(b'0')) & chunk.le(u8x16::splat(b'9')))
-            | (chunk.ge(u8x16::splat(b'A')) & chunk.le(u8x16::splat(b'Z')))
-            | (chunk.ge(u8x16::splat(b'a')) & chunk.le(u8x16::splat(b'z')));
-
-        // Replace non-alphanumeric bytes with spaces
-        let filtered_chunk = is_alnum.select(chunk, u8x16::splat(b' '));
-        cleaned.push_str(&String::from_utf8_lossy(filtered_chunk.as_array()));
-
-        i += 16;
+    // TODO: Vectorize
+    // TODO: Use some common replacements
+    //  - Company / CO
+    //  - Companies / Cos
+    /// **Tokenize text into uppercase words (alphanumeric only)**
+    pub fn tokenize_company_name(text: &str) -> HashSet<String> {
+        text.chars()
+            .map(|c| if c.is_alphanumeric() { c } else { ' ' }) // Replace non-alphanums with space
+            .collect::<String>()
+            .split_whitespace() // Now safely split by actual words
+            .map(|word| word.to_uppercase()) // Convert to uppercase for case-insensitive matching
+            .collect()
     }
 
-    // Process remaining bytes
-    for &b in &bytes[i..] {
-        cleaned.push(if b.is_ascii_alphanumeric() { b as char } else { ' ' });
+    /*
+    use std::collections::HashSet;
+    use std::simd::{u8x16, SimdPartialEq};
+
+    /// **Tokenize text into uppercase words (alphanumeric only) using SIMD**
+    fn tokenize_text_simd(text: &str) -> HashSet<String> {
+        let mut cleaned = String::with_capacity(text.len());
+
+        // Process in chunks of 16 bytes using SIMD
+        let bytes = text.as_bytes();
+        let mut i = 0;
+        while i + 16 <= bytes.len() {
+            let chunk = u8x16::from_slice(&bytes[i..i + 16]);
+
+            // Create a mask for alphanumeric characters (0-9, A-Z, a-z)
+            let is_alnum = (chunk.ge(u8x16::splat(b'0')) & chunk.le(u8x16::splat(b'9')))
+                | (chunk.ge(u8x16::splat(b'A')) & chunk.le(u8x16::splat(b'Z')))
+                | (chunk.ge(u8x16::splat(b'a')) & chunk.le(u8x16::splat(b'z')));
+
+            // Replace non-alphanumeric bytes with spaces
+            let filtered_chunk = is_alnum.select(chunk, u8x16::splat(b' '));
+            cleaned.push_str(&String::from_utf8_lossy(filtered_chunk.as_array()));
+
+            i += 16;
+        }
+
+        // Process remaining bytes
+        for &b in &bytes[i..] {
+            cleaned.push(if b.is_ascii_alphanumeric() { b as char } else { ' ' });
+        }
+
+        // Tokenize by whitespace and convert to uppercase
+        cleaned
+            .split_whitespace()
+            .map(|word| word.to_ascii_uppercase())
+            .collect()
     }
 
-    // Tokenize by whitespace and convert to uppercase
-    cleaned
-        .split_whitespace()
-        .map(|word| word.to_ascii_uppercase())
-        .collect()
+    */
 }
-
-*/
