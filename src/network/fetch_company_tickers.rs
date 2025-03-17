@@ -7,6 +7,7 @@ pub type CompanyTickersDataFrame = DataFrame;
 
 // TODO: Use struct instead of a dataframe and add a `best_match_cik` method,
 // based on string similarity for the purpose of mapping LEI (on `NPORT` filings) to CIK
+// A good query to test this with is "Morgan Stanley".
 /*
 fn best_match_cik(json_data: &str, query: &str) -> Option<u64> {
     let data: Value = serde_json::from_str(json_data).ok()?;
