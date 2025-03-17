@@ -2,7 +2,7 @@ mod sec_client;
 pub use sec_client::SecClient;
 
 mod fetch_company_tickers;
-pub use fetch_company_tickers::{fetch_company_tickers, CompanyTickersDataFrame};
+pub use fetch_company_tickers::fetch_company_tickers;
 
 mod fetch_us_gaap_fundamentals;
 pub use fetch_us_gaap_fundamentals::{fetch_us_gaap_fundamentals, TickerFundamentalsDataFrame};
