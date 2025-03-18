@@ -59,9 +59,7 @@ impl CompanyTicker {
     ) -> Option<CompanyTicker> {
         let query_as_bytes = query.as_bytes();
 
-        // TODO: Refactor cache handling
-        // TODO: Refactor directly into SIMD R DRIVE
-        if let Some(cached) = SIMD_R_DRIVE_CACHE.read_option::<CompanyTicker>(query_as_bytes) {
+        if let Ok(cached) = SIMD_R_DRIVE_CACHE.read_option::<CompanyTicker>(query_as_bytes) {
             return cached;
         }
 

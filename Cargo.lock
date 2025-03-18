@@ -3531,9 +3531,9 @@ dependencies = [
 
 [[package]]
 name = "simd-r-drive-extensions"
-version = "0.3.0-alpha"
+version = "0.4.0-alpha.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a5217aa628b4bcb131ce9639d27169d96ee85823355e7a0574b3bd4251557f6"
+checksum = "c6af74341323cf82f69883edc78e0bb033cc3c6199a6bee26e907f98b057f908"
 dependencies = [
  "bincode",
  "serde",
