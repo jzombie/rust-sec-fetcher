@@ -3050,9 +3050,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest-drive"
-version = "0.1.0-alpha.4"
+version = "0.1.0-alpha.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18bb2da8019c5cca09389fd70dbc53f50cd8f645e3632311154ce2a909791881"
+checksum = "ea0bf172f83f3908523fcbbd5655ead17a131425223826d0ab61254dbf91d667"
 dependencies = [
  "async-trait",
  "bincode",
@@ -3333,6 +3333,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "simd-r-drive",
+ "simd-r-drive-extensions",
  "strum",
  "strum_macros 0.27.1",
  "tempfile",
@@ -3515,9 +3516,9 @@ dependencies = [
 
 [[package]]
 name = "simd-r-drive"
-version = "0.2.0-alpha.3"
+version = "0.3.0-alpha"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9e5ab89cdd91bc621335e2145ee407ca5c6f381aef545abaa2954cc73370451"
+checksum = "e29a4bfbeeb0c5685ee8b360811e36823e733c1bf63ba2a4627ae98ffff2e677"
 dependencies = [
  "clap",
  "crc32fast",
@@ -3526,6 +3527,17 @@ dependencies = [
  "log",
  "memmap2",
  "xxhash-rust",
+]
+
+[[package]]
+name = "simd-r-drive-extensions"
+version = "0.3.0-alpha"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a5217aa628b4bcb131ce9639d27169d96ee85823355e7a0574b3bd4251557f6"
+dependencies = [
+ "bincode",
+ "serde",
+ "simd-r-drive",
 ]
 
 [[package]]
