@@ -1,20 +1,10 @@
 use crate::models::{CompanyTicker, NportInvestment};
-use bincode;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
-use simd_r_drive::DataStore;
 use std::error::Error;
-use std::path::Path;
 use std::str::FromStr;
-use std::sync::LazyLock;
-
-// TODO: Refactor
-static SIMD_R_DRIVE_XML_CACHE: LazyLock<DataStore> = LazyLock::new(|| {
-    DataStore::open(Path::new("data/temp_nport_xml_cache.bin"))
-        .unwrap_or_else(|err| panic!("Failed to open datastore: {}", err))
-});
 
 // TODO: Look out for seemingly duplicates such as this. The CUSIP nad ISIN are different, however (as well as the values).
 // Investment 4308: NportInvestment { company_ticker: None, name: "PROLOGIS LP", lei: "GL16H1DHB0QSHP25F723", title: "Prologis LP", cusip: "74340XCH2", isin: "US74340XCH26", balance: 724000.00, cur_cd: "USD", val_usd: 713480.28, pct_val: 0.007357911161, payoff_profile: "Long", asset_cat: "DBT", issuer_cat: "", inv_country: "US" }
@@ -23,11 +13,6 @@ pub fn parse_nport_xml(
     xml: &str,
     company_tickers: &[CompanyTicker],
 ) -> Result<Vec<NportInvestment>, Box<dyn Error>> {
-    let xml_as_bytes = xml.as_bytes();
-    if let Some(entry_handle) = SIMD_R_DRIVE_XML_CACHE.read(xml_as_bytes) {
-        return Ok(bincode::deserialize(&entry_handle.as_slice()).unwrap());
-    }
-
     let mut reader = Reader::from_str(xml);
 
     let mut investments = Vec::new();
@@ -79,22 +64,24 @@ pub fn parse_nport_xml(
                     if !value.is_empty() {
                         match current_tag.as_str() {
                             "name" => {
-                                investment.company_ticker =
-                                    CompanyTicker::get_by_fuzzy_matched_name(
-                                        company_tickers,
-                                        &value,
-                                    );
+                                // TODO: Re-add?
+                                // investment.company_ticker =
+                                // CompanyTicker::get_by_fuzzy_matched_name(
+                                //     company_tickers,
+                                //     &value,
+                                // );
                                 investment.name = value;
                             }
                             "lei" => investment.lei = value,
                             "title" => {
-                                if investment.company_ticker.is_none() {
-                                    investment.company_ticker =
-                                        CompanyTicker::get_by_fuzzy_matched_name(
-                                            company_tickers,
-                                            &value,
-                                        );
-                                }
+                                // TODO: Re-add?
+                                // if investment.company_ticker.is_none() {
+                                // investment.company_ticker =
+                                //     CompanyTicker::get_by_fuzzy_matched_name(
+                                //         company_tickers,
+                                //         &value,
+                                //     );
+                                // }
 
                                 investment.title = value;
                             }
@@ -134,7 +121,15 @@ pub fn parse_nport_xml(
 
     NportInvestment::sort_by_pct_val_desc(&mut investments);
 
-    SIMD_R_DRIVE_XML_CACHE.write(xml_as_bytes, &bincode::serialize(&investments).unwrap());
+    for (i, investment) in investments.iter_mut().enumerate() {
+        println!("{}, Investment name: {}", i, investment.name);
+
+        let company_ticker =
+            CompanyTicker::get_by_fuzzy_matched_name(&company_tickers, &investment.title);
+        // println!("Company ticker: {:?}", company_ticker);
+
+        investment.company_ticker = company_ticker;
+    }
 
     Ok(investments)
 }
