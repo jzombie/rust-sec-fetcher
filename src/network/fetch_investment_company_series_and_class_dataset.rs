@@ -2,7 +2,65 @@ use crate::models::InvestmentCompany;
 use crate::network::SecClient;
 use crate::parsers::parse_investment_companies_csv;
 use chrono::{Datelike, Utc};
+use simd_r_drive::DataStore;
+use simd_r_drive_extensions::StorageCacheExt;
 use std::error::Error;
+use std::path::Path;
+use std::sync::LazyLock;
+
+// TODO: Refactor
+static SIMD_R_DRIVE_TTL_CACHE: LazyLock<DataStore> = LazyLock::new(|| {
+    DataStore::open(Path::new("data/temp_ttl.bin"))
+        .unwrap_or_else(|err| panic!("Failed to open datastore: {}", err))
+});
+
+/// Attempts to fetch the latest Investment Company Series and Class dataset,
+/// falling back to previous years if the request fails.
+///
+/// This function starts from the **current year** and attempts to fetch data.
+/// If the request fails (e.g., 404 error), it retries with the previous year,
+/// continuing until successful or reaching a reasonable fallback limit.
+///
+/// # Arguments
+/// - `sec_client` - A reference to an instance of `SecClient` used for HTTP requests.
+///
+/// # Returns
+/// Returns `Result<Vec<InvestmentCompany>, Box<dyn Error>>`, where:
+/// - `Ok(Vec<InvestmentCompany>)` contains the parsed investment companies.
+/// - `Err(Box<dyn Error>)` if all attempts fail.
+pub async fn fetch_investment_company_series_and_class_dataset(
+    sec_client: &SecClient,
+) -> Result<Vec<InvestmentCompany>, Box<dyn Error>> {
+    let (mut year, is_cached_year) =
+        match SIMD_R_DRIVE_TTL_CACHE.read_with_ttl::<usize>(b"latest_funds_year") {
+            Ok(Some(year)) => (year, true),
+            _ => (Utc::now().year() as usize, false),
+        };
+
+    let mut result = None;
+
+    while year >= 2024 {
+        match fetch_investment_company_series_and_class_dataset_for_year(year, sec_client).await {
+            Ok(data) => {
+                result = Some(data);
+                break;
+            }
+            Err(_) => year -= 1,
+        }
+    }
+
+    if !is_cached_year {
+        SIMD_R_DRIVE_TTL_CACHE
+            .write_with_ttl::<usize>(b"latest_funds_year", &year, 60 * 60 * 24 * 7)
+            .ok();
+    }
+
+    if result.is_none() {
+        return Err("Failed to fetch dataset from any available year.".into());
+    }
+
+    Ok(result.unwrap())
+}
 
 /// Fetches the Investment Company Series and Class dataset for a specific year.
 ///
@@ -42,39 +100,6 @@ pub async fn fetch_investment_company_series_and_class_dataset_for_year(
     let byte_array = response.bytes().await?;
 
     parse_investment_companies_csv(byte_array)
-}
-
-/// Attempts to fetch the latest Investment Company Series and Class dataset,
-/// falling back to previous years if the request fails.
-///
-/// This function starts from the **current year** and attempts to fetch data.
-/// If the request fails (e.g., 404 error), it retries with the previous year,
-/// continuing until successful or reaching a reasonable fallback limit.
-///
-/// # Arguments
-/// - `sec_client` - A reference to an instance of `SecClient` used for HTTP requests.
-///
-/// # Returns
-/// Returns `Result<Vec<InvestmentCompany>, Box<dyn Error>>`, where:
-/// - `Ok(Vec<InvestmentCompany>)` contains the parsed investment companies.
-/// - `Err(Box<dyn Error>)` if all attempts fail.
-pub async fn fetch_investment_company_series_and_class_dataset(
-    sec_client: &SecClient,
-) -> Result<Vec<InvestmentCompany>, Box<dyn Error>> {
-    let current_year = Utc::now().year() as usize;
-    let mut year = current_year;
-
-    while year >= 2024 {
-        match fetch_investment_company_series_and_class_dataset_for_year(year, sec_client).await {
-            Ok(data) => return Ok(data),
-            Err(_) => {
-                // Try previous year if the current year fails
-                year -= 1;
-            }
-        }
-    }
-
-    Err("Failed to fetch dataset from any available year.".into())
 }
 
 // pub async fn fetch_investment_company_series_and_class_dataset(
