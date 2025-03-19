@@ -1,4 +1,5 @@
 use crate::config::ConfigManager;
+use log::warn;
 use simd_r_drive::DataStore;
 use std::path::Path;
 use std::sync::{Arc, OnceLock};
@@ -9,18 +10,16 @@ pub struct Caches;
 
 impl Caches {
     /// Initializes the shared cache with a dynamic path from `ConfigManager`.
-    /// Should be called once before using `get_http_cache()`.
+    /// If already initialized, it logs a warning instead of erroring.
     pub fn init(config_manager: &ConfigManager) {
-        // Note: Subsequent calls are effectively no-ops. This is safe to call multiple times (for testing purposes),
-        // but they will not reinitialize the cache.
-        SIMD_R_DRIVE_HTTP_CACHE.get_or_init(|| {
-            let cache_path = &config_manager.get_config().get_http_cache_storage_bin();
+        let cache_path = &config_manager.get_config().get_http_cache_storage_bin(); // Fetch from config
 
-            let data_store = DataStore::open(Path::new(cache_path))
-                .unwrap_or_else(|err| panic!("Failed to open datastore: {}", err));
+        let data_store = DataStore::open(Path::new(&cache_path))
+            .unwrap_or_else(|err| panic!("Failed to open datastore: {}", err));
 
-            Arc::new(data_store)
-        });
+        if SIMD_R_DRIVE_HTTP_CACHE.set(Arc::new(data_store)).is_err() {
+            warn!("SIMD_R_DRIVE_HTTP_CACHE was already initialized. Ignoring reinitialization.");
+        }
     }
 
     /// Returns a reference to the shared `DataStore`. Panics if not initialized.

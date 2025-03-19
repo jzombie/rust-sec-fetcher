@@ -3317,6 +3317,7 @@ dependencies = [
  "indexmap 2.7.1",
  "itertools",
  "keyring",
+ "log",
  "merge",
  "mockito",
  "once_cell",
