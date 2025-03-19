@@ -24,7 +24,7 @@ pub async fn fetch_us_gaap_fundamentals(
     // TODO: Debug log
     println!("Using URL: {}", url);
 
-    let data: Value = client.fetch_json(&url).await?;
+    let data: Value = client.fetch_json(&url, None).await?;
 
     parse_us_gaap_fundamentals(data)
 }

@@ -45,7 +45,7 @@ pub async fn fetch_nport_filing_by_cik_and_accession_number(
     );
 
     let response = sec_client
-        .raw_request(reqwest::Method::GET, &url, None)
+        .raw_request(reqwest::Method::GET, &url, None, None)
         .await?;
     let xml_data = response.text().await?;
 

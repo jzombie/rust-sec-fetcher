@@ -18,12 +18,9 @@ pub async fn fetch_cik_by_ticker_symbol(
         return Ok(company_cik);
     }
 
-    // TODO: Determine dynammc year
-    let year = 2024;
-
     // Then, look at funds
     let investment_companies =
-        fetch_investment_company_series_and_class_dataset(&sec_client, year).await?;
+        fetch_investment_company_series_and_class_dataset(&sec_client).await?;
     let fund_cik =
         InvestmentCompany::get_fund_cik_by_ticker_symbol(&investment_companies, ticker_symbol)?;
 

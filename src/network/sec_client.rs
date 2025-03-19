@@ -6,11 +6,14 @@ use reqwest_drive::{
 };
 use serde_json::Value;
 use std::error::Error;
+use std::sync::Arc;
 use tokio::time::Duration;
 
 pub struct SecClient {
     email: String,
     http_client: ClientWithMiddleware,
+    cache_policy: Arc<CachePolicy>,
+    throttle_policy: Arc<ThrottlePolicy>,
 }
 
 impl SecClient {
@@ -37,20 +40,20 @@ impl SecClient {
             .max_retries
             .ok_or_else(|| "Missing required field: max_retries".to_string())?; // Error if missing
 
-        let cache_policy = CachePolicy {
+        let cache_policy = Arc::new(CachePolicy {
             default_ttl: Duration::from_secs(60 * 60 * 24 * 7), // 1 week,
             respect_headers: false,
             cache_status_override: None,
-        };
+        });
 
         // Example: Custom Fixed Throttle Policy
-        let throttle_policy = ThrottlePolicy {
+        let throttle_policy = Arc::new(ThrottlePolicy {
             base_delay_ms: min_delay,
             max_concurrent,
             max_retries,
             // TODO: Make configurable
             adaptive_jitter_ms: 500,
-        };
+        });
 
         // let (cache, throttle) = init_cache_with_throttle(
         //     &config_manager.get_config().get_http_cache_storage_bin(),
@@ -66,13 +69,15 @@ impl SecClient {
 
         let cache_client = init_client_with_cache_and_throttle(
             &config_manager.get_config().get_http_cache_storage_bin(),
-            cache_policy,
-            throttle_policy,
+            cache_policy.as_ref().clone(),
+            throttle_policy.as_ref().clone(),
         );
 
         Ok(Self {
             email: email.to_string(),
             http_client: cache_client,
+            cache_policy,
+            throttle_policy,
         })
     }
 
@@ -95,11 +100,42 @@ impl SecClient {
         )
     }
 
+    // pub async fn raw_request(
+    //     &self,
+    //     method: reqwest::Method,
+    //     url: &str,
+    //     headers: Option<Vec<(&str, &str)>>,
+    // ) -> Result<reqwest::Response, Box<dyn Error>> {
+    //     let mut request_builder = self
+    //         .http_client
+    //         .request(method, url)
+    //         .header("User-Agent", self.get_user_agent());
+
+    //     if let Some(hdrs) = headers {
+    //         for (key, value) in hdrs {
+    //             request_builder = request_builder.header(key, value);
+    //         }
+    //     }
+
+    //     let response = request_builder.send().await?;
+
+    //     Ok(response)
+    // }
+
+    pub fn get_cache_policy(&self) -> CachePolicy {
+        self.cache_policy.as_ref().clone()
+    }
+
+    pub fn get_throttle_policy(&self) -> ThrottlePolicy {
+        self.throttle_policy.as_ref().clone()
+    }
+
     pub async fn raw_request(
         &self,
         method: reqwest::Method,
         url: &str,
         headers: Option<Vec<(&str, &str)>>,
+        custom_throttle_policy: Option<ThrottlePolicy>, // Allow overriding throttle settings
     ) -> Result<reqwest::Response, Box<dyn Error>> {
         let mut request_builder = self
             .http_client
@@ -112,15 +148,25 @@ impl SecClient {
             }
         }
 
-        let response = request_builder.send().await?;
+        // Inject a custom throttle policy if provided
+        if let Some(policy) = custom_throttle_policy {
+            request_builder.extensions().insert(policy);
+        }
 
+        let response = request_builder.send().await?;
         Ok(response)
     }
 
     // TODO: Add optional headers
     /// Asynchronously fetches JSON data from a given SEC URL with rate limiting
-    pub async fn fetch_json(&self, url: &str) -> Result<Value, Box<dyn Error>> {
-        let response: reqwest::Response = self.raw_request(reqwest::Method::GET, url, None).await?;
+    pub async fn fetch_json(
+        &self,
+        url: &str,
+        custom_throttle_policy: Option<ThrottlePolicy>,
+    ) -> Result<Value, Box<dyn Error>> {
+        let response: reqwest::Response = self
+            .raw_request(reqwest::Method::GET, url, None, custom_throttle_policy)
+            .await?;
         let json = response.json().await?;
         Ok(json)
     }

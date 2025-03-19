@@ -9,7 +9,7 @@ pub async fn fetch_company_tickers(
     // TODO: Also incorporate: https://www.sec.gov/include/ticker.txt
 
     let company_tickers_url = "https://www.sec.gov/files/company_tickers.json";
-    let company_tickers_data = client.fetch_json(company_tickers_url).await?;
+    let company_tickers_data = client.fetch_json(company_tickers_url, None).await?;
 
     // TODO: Move the following into `parsers`
 
