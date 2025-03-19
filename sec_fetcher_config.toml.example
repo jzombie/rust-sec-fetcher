@@ -1,0 +1,7 @@
+# All of these are optional
+
+# email = "user@example.com"
+# max_concurrent = 4
+# min_delay_ms = 500
+# max_retries = 3
+# http_cache_storage_bin = "custom/path/to/cache.bin"

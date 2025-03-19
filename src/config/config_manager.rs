@@ -5,11 +5,15 @@ use dirs::config_dir;
 use merge::Merge;
 use std::error::Error;
 use std::path::PathBuf;
+use std::sync::LazyLock;
 
 #[derive(Debug)]
 pub struct ConfigManager {
     config: AppConfig,
 }
+
+static DEFAULT_CONFIG_PATH: LazyLock<String> =
+    LazyLock::new(|| format!("{}_config.toml", env!("CARGO_PKG_NAME").replace("-", "_")));
 
 impl ConfigManager {
     /// Loads configuration using the default path.
@@ -98,6 +102,6 @@ impl ConfigManager {
                 return path;
             }
         }
-        PathBuf::from("config.toml") // Fallback if no global config
+        PathBuf::from(&*DEFAULT_CONFIG_PATH)
     }
 }
