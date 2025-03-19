@@ -9,7 +9,7 @@ use std::sync::LazyLock;
 
 static TOKEN_CACHE: LazyLock<DashMap<String, Vec<String>>> = LazyLock::new(DashMap::new);
 
-// TODO: Refactor
+// TODO: Move to caches
 static SIMD_R_DRIVE_CACHE: LazyLock<DataStore> = LazyLock::new(|| {
     DataStore::open(Path::new("data/temp_company_ticker_map.bin"))
         .unwrap_or_else(|err| panic!("Failed to open datastore: {}", err))
