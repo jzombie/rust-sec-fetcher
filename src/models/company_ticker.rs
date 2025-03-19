@@ -1,19 +1,12 @@
 use crate::models::Cik;
+use crate::Caches;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
-use simd_r_drive::DataStore;
 use simd_r_drive_extensions::StorageOptionExt;
 use std::collections::HashMap;
-use std::path::Path;
 use std::sync::LazyLock;
 
 static TOKEN_CACHE: LazyLock<DashMap<String, Vec<String>>> = LazyLock::new(DashMap::new);
-
-// TODO: Move to caches
-static SIMD_R_DRIVE_CACHE: LazyLock<DataStore> = LazyLock::new(|| {
-    DataStore::open(Path::new("data/temp_company_ticker_map.bin"))
-        .unwrap_or_else(|err| panic!("Failed to open datastore: {}", err))
-});
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompanyTicker {
@@ -39,8 +32,10 @@ impl CompanyTicker {
     ) -> Option<CompanyTicker> {
         let query_as_bytes = query.as_bytes();
 
+        let company_ticker_cache = Caches::get_company_ticker_cache_store();
+
         if use_cache {
-            if let Ok(cached) = SIMD_R_DRIVE_CACHE.read_option::<CompanyTicker>(query_as_bytes) {
+            if let Ok(cached) = company_ticker_cache.read_option::<CompanyTicker>(query_as_bytes) {
                 return cached;
             }
         }
@@ -132,7 +127,7 @@ impl CompanyTicker {
         // SIMD_R_DRIVE_CACHE.write(query_as_bytes, &serialized);
 
         if use_cache {
-            SIMD_R_DRIVE_CACHE
+            company_ticker_cache
                 .write_option(query_as_bytes, best_match.as_ref())
                 .ok();
         }
