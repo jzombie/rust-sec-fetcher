@@ -125,7 +125,7 @@ pub fn parse_nport_xml(
         println!("{}, Investment name: {}", i, investment.name);
 
         let company_ticker =
-            CompanyTicker::get_by_fuzzy_matched_name(&company_tickers, &investment.title);
+            CompanyTicker::get_by_fuzzy_matched_name(&company_tickers, &investment.title, true);
         // println!("Company ticker: {:?}", company_ticker);
 
         investment.company_ticker = company_ticker;
