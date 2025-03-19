@@ -77,6 +77,30 @@ impl AppConfig {
     }
 
     /// Extracts the expected type of a field from its schema representation.
+    ///
+    /// This function is used to determine the expected data type of each field in the
+    /// `AppConfig` struct based on its JSON Schema definition. The type information
+    /// is extracted from the `Schema` object provided by `schemars`.
+    ///
+    /// # Arguments
+    /// - `schema`: A reference to a `Schema` object describing a field in `AppConfig`.
+    ///
+    /// # Returns
+    /// - A `String` representing the type name. If the schema specifies multiple possible
+    ///   types, they are joined with `|` (e.g., `"String | Null"`).
+    /// - If the type information is unavailable, `"Unknown"` is returned.
+    ///
+    /// # Example
+    /// Given the following schema for a field:
+    /// ```json
+    /// {
+    ///   "type": ["string", "null"]
+    /// }
+    /// ```
+    /// The function would return:
+    /// ```
+    /// "String | Null"
+    /// ```
     fn extract_type_name(schema: &Schema) -> String {
         if let Schema::Object(SchemaObject {
             instance_type: Some(types),
