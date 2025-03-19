@@ -50,8 +50,32 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let company_tickers = fetch_company_tickers(&client).await.unwrap();
 
+    // Override search string with company name if using direct symbol
+    let search_string = {
+        let exact_company_ticker = company_tickers.iter().find(|p| {
+            p.ticker_symbol.to_lowercase() == search_string.to_lowercase()
+                || p.company_name.to_lowercase() == search_string.to_lowercase()
+        });
+
+        // Make it easier to test by doing symbol lookup to get the company name
+        let search_string = match exact_company_ticker {
+            Some(ticker) => {
+                println!("Exact match: {:?}", ticker);
+
+                let company_name = ticker.company_name.to_string();
+
+                company_name
+            }
+            None => search_string.to_string(),
+        };
+
+        Box::new(search_string)
+    };
+
+    println!("Using search string: {}", search_string);
+
     let fuzzy_matched =
-        CompanyTicker::get_by_fuzzy_matched_name(&company_tickers, search_string, false);
+        CompanyTicker::get_by_fuzzy_matched_name(&company_tickers, &search_string, false);
 
     println!("Fuzzy matched: {:?}", fuzzy_matched);
 
