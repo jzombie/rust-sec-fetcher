@@ -56,7 +56,7 @@ impl ConfigManager {
                     error_message.into()
                 })?;
 
-        if user_settings.email.is_none() {
+        if settings.email.is_none() && user_settings.email.is_none() {
             if is_interactive_mode() {
                 let credential_manager = CredentialManager::from_prompt()?;
                 let email = credential_manager.get_credential().map_err(|err| {
