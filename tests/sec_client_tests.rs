@@ -51,7 +51,10 @@ async fn test_fetch_json_without_retry_success() -> Result<(), Box<dyn Error>> {
     let client = SecClient::from_config_manager(&config_manager).unwrap();
 
     let result = client
-        .fetch_json(&format!("{}/files/company_tickers.json", server.url()))
+        .fetch_json(
+            &format!("{}/files/company_tickers.json", server.url()),
+            None,
+        )
         .await?;
 
     assert_eq!(result["AAPL"]["ticker"].as_str(), Some("AAPL"));
@@ -77,7 +80,10 @@ async fn test_fetch_json_with_retry_success() -> Result<(), Box<dyn Error>> {
     let client = SecClient::from_config_manager(&config_manager).unwrap();
 
     let result = client
-        .fetch_json(&format!("{}/files/company_tickers.json", server.url()))
+        .fetch_json(
+            &format!("{}/files/company_tickers.json", server.url()),
+            None,
+        )
         .await?;
 
     assert_eq!(result["AAPL"]["ticker"].as_str(), Some("AAPL"));
@@ -103,7 +109,10 @@ async fn test_fetch_json_with_retry_failure() -> Result<(), Box<dyn Error>> {
     let client = SecClient::from_config_manager(&config_manager).unwrap();
 
     let result = client
-        .fetch_json(&format!("{}/files/company_tickers.json", server.url()))
+        .fetch_json(
+            &format!("{}/files/company_tickers.json", server.url()),
+            None,
+        )
         .await;
 
     assert!(result.is_err());
@@ -138,7 +147,10 @@ async fn test_fetch_json_with_retry_backoff() -> Result<(), Box<dyn Error>> {
     let client = SecClient::from_config_manager(&config_manager).unwrap();
 
     let result = client
-        .fetch_json(&format!("{}/files/company_tickers.json", server.url()))
+        .fetch_json(
+            &format!("{}/files/company_tickers.json", server.url()),
+            None,
+        )
         .await?;
 
     assert_eq!(result["AAPL"]["ticker"].as_str(), Some("AAPL"));
