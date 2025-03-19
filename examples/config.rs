@@ -14,8 +14,4 @@ fn main() {
 
     let config = config_manager.get_config();
     print!("{}\n", config.pretty_print());
-
-    let http_cache_storage_bin = config.get_http_cache_storage_bin();
-
-    println!("HTTP Cache storage bin: {:?}", http_cache_storage_bin);
 }
