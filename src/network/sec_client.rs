@@ -1,8 +1,10 @@
+use crate::caches::Caches;
 use crate::config::ConfigManager;
 use email_address::EmailAddress;
 use reqwest;
 use reqwest_drive::{
-    init_client_with_cache_and_throttle, CachePolicy, ClientWithMiddleware, ThrottlePolicy,
+    init_cache_with_drive_and_throttle, init_client_with_cache_and_throttle, CachePolicy,
+    ClientWithMiddleware, ThrottlePolicy,
 };
 use serde_json::Value;
 use std::error::Error;
@@ -67,11 +69,15 @@ impl SecClient {
         //     .with_arc(throttle) // Throttle middleware (cache linked)
         //     .build();
 
-        let cache_client = init_client_with_cache_and_throttle(
-            &config_manager.get_config().get_http_cache_storage_bin(),
+        let http_cache = Caches::get_http_cache_store();
+
+        let (drive_cache, throttle_cache) = init_cache_with_drive_and_throttle(
+            http_cache,
             cache_policy.as_ref().clone(),
             throttle_policy.as_ref().clone(),
         );
+
+        let cache_client = init_client_with_cache_and_throttle(drive_cache, throttle_cache);
 
         Ok(Self {
             email: email.to_string(),

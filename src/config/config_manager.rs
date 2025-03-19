@@ -1,5 +1,6 @@
 use crate::config::{AppConfig, CredentialManager, CredentialProvider};
 use crate::utils::is_interactive_mode;
+use crate::Caches;
 use config::{Config, File};
 use dirs::config_dir;
 use merge::Merge;
@@ -77,13 +78,25 @@ impl ConfigManager {
 
         settings.merge(user_settings);
 
-        Ok(Self { config: settings })
+        let instance = Self { config: settings };
+
+        instance.init_caches();
+
+        Ok(instance)
     }
 
     pub fn from_app_config(app_config: &AppConfig) -> Self {
-        Self {
+        let instance = Self {
             config: app_config.clone(),
-        }
+        };
+
+        instance.init_caches();
+
+        instance
+    }
+
+    fn init_caches(&self) {
+        Caches::init(self)
     }
 
     /// Retrieves a reference to the configuration.
