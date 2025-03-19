@@ -11,15 +11,16 @@ impl Caches {
     /// Initializes the shared cache with a dynamic path from `ConfigManager`.
     /// Should be called once before using `get_http_cache()`.
     pub fn init(config_manager: &ConfigManager) {
-        let cache_path = &config_manager.get_config().get_http_cache_storage_bin(); // Fetch from config
+        // Note: Subsequent calls are effectively no-ops. This is safe to call multiple times (for testing purposes),
+        // but they will not reinitialize the cache.
+        SIMD_R_DRIVE_HTTP_CACHE.get_or_init(|| {
+            let cache_path = &config_manager.get_config().get_http_cache_storage_bin();
 
-        let data_store = DataStore::open(Path::new(&cache_path))
-            .unwrap_or_else(|err| panic!("Failed to open datastore: {}", err));
+            let data_store = DataStore::open(Path::new(cache_path))
+                .unwrap_or_else(|err| panic!("Failed to open datastore: {}", err));
 
-        SIMD_R_DRIVE_HTTP_CACHE
-            .set(Arc::new(data_store))
-            .ok()
-            .expect("SIMD_R_DRIVE_HTTP_CACHE was already initialized");
+            Arc::new(data_store)
+        });
     }
 
     /// Returns a reference to the shared `DataStore`. Panics if not initialized.

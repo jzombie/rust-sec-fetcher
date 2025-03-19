@@ -98,7 +98,7 @@ impl AppConfig {
     /// }
     /// ```
     /// The function would return:
-    /// ```
+    /// ```plaintext
     /// "String | Null"
     /// ```
     fn extract_type_name(schema: &Schema) -> String {
