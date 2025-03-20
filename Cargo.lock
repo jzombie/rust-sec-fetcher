@@ -3314,6 +3314,7 @@ dependencies = [
  "dashmap",
  "dirs",
  "email_address",
+ "env_logger",
  "indexmap 2.7.1",
  "itertools",
  "keyring",
