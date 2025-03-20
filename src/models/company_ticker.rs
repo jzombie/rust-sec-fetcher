@@ -35,9 +35,10 @@ impl CompanyTicker {
         let company_ticker_cache = Caches::get_company_ticker_cache_store();
 
         if use_cache {
-            if let Ok(cached) = company_ticker_cache.read_with_ttl::<CompanyTicker>(query_as_bytes)
+            if let Ok(cached) =
+                company_ticker_cache.read_with_ttl::<Option<CompanyTicker>>(query_as_bytes)
             {
-                return cached;
+                return cached?;
             }
         }
 
