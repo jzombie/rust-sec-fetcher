@@ -58,66 +58,85 @@ fn preload_csv(csv_path: &str) -> Result<(), Box<dyn Error>> {
     let headers = reader.headers()?.clone();
     println!("CSV Headers: {:?}", headers);
 
-    // Collect all possible fundamental concepts mapped from the headers
+    let additional_fields = ["fy", "fp", "form", "filed", "accn"];
     let mut fundamental_concept_headers = HashSet::new();
+    let mut header_mapping = Vec::new();
 
-    for header in headers.iter() {
-        if let Some(mapped_concepts) = distill_us_gaap_fundamental_concepts(header) {
+    // Identify fundamental concept mappings and track column indices
+    for (index, header) in headers.iter().enumerate() {
+        if additional_fields.contains(&header) {
+            header_mapping.push((index, header.to_string())); // Include additional fields directly
+        } else if let Some(mapped_concepts) = distill_us_gaap_fundamental_concepts(header) {
             for concept in mapped_concepts {
                 fundamental_concept_headers.insert(concept.to_string());
+                header_mapping.push((index, concept.to_string()));
             }
         }
     }
 
-    // Map column names to their indices based on filtered headers
-    let header_indices: Vec<usize> = headers
-        .iter()
-        .enumerate()
-        .filter(|(_, h)| fundamental_concept_headers.contains(*h))
-        .map(|(i, _)| i)
-        .collect();
-
     println!(
-        "Filtered Headers: {:?}",
-        header_indices
-            .iter()
-            .map(|&i| headers.get(i).unwrap_or("UNKNOWN"))
-            .collect::<Vec<_>>()
+        "Fundamental Concept Headers: {:?}",
+        fundamental_concept_headers
     );
 
-    for result in reader.records().take(5) {
+    let mut writer = Writer::from_path("temp.csv")?;
+
+    // Write header row with mapped fundamental concepts + additional fields
+    writer.write_record(header_mapping.iter().map(|(_, name)| name))?;
+
+    // Write filtered records
+    for result in reader.records() {
         let record = result?;
-        let filtered_record: Vec<&str> = header_indices
+        let filtered_record: Vec<&str> = header_mapping
             .iter()
-            .map(|&i| record.get(i).unwrap_or(""))
+            .map(|(i, _)| record.get(*i).unwrap_or("")) // Ensure values are carried
             .collect();
-        println!("{:?}", filtered_record);
+        writer.write_record(&filtered_record)?;
     }
 
-    {
-        // Create CSV writer for output
-        let mut writer = Writer::from_path("temp.csv")?;
-
-        // Write header row
-        writer.write_record(
-            header_indices
-                .iter()
-                .map(|&i| headers.get(i).unwrap_or("UNKNOWN")),
-        )?;
-
-        // Write filtered rows
-        for result in reader.records() {
-            let record = result?;
-            let filtered_record: Vec<&str> = header_indices
-                .iter()
-                .map(|&i| record.get(i).unwrap_or(""))
-                .collect();
-            writer.write_record(&filtered_record)?;
-        }
-
-        writer.flush()?;
-        println!("Filtered data written to temp.csv");
-    }
+    writer.flush()?;
+    println!("Filtered data written to temp.csv");
 
     Ok(())
 }
+
+// fn preload_csv(csv_path: &str) -> Result<(), Box<dyn Error>> {
+//     let mut reader = Reader::from_path(csv_path)?;
+//     let headers = reader.headers()?.clone();
+
+//     let mut mapped_headers = Vec::new();
+//     let mut column_mapping = Vec::new();
+
+//     // Map CSV headers to FundamentalConcept using US GAAP mapping
+//     for (idx, header) in headers.iter().enumerate() {
+//         if let Some(mapped_concepts) = distill_us_gaap_fundamental_concepts(header) {
+//             for concept in mapped_concepts {
+//                 mapped_headers.push(concept.to_string());
+//                 column_mapping.push((idx, concept.to_string())); // Store mapping of index -> concept
+//             }
+//         }
+//     }
+
+//     println!("Mapped Fundamental Concepts: {:?}", mapped_headers);
+
+//     // Create CSV writer for output
+//     let mut writer = Writer::from_path("temp.csv")?;
+
+//     // Write header row with FundamentalConcept names
+//     writer.write_record(&mapped_headers)?;
+
+//     // Write filtered rows with mapped values
+//     for result in reader.records() {
+//         let record = result?;
+//         let mapped_values: Vec<&str> = column_mapping
+//             .iter()
+//             .map(|(i, _)| record.get(*i).unwrap_or("")) // Use mapped column indices
+//             .collect();
+//         writer.write_record(&mapped_values)?;
+//     }
+
+//     writer.flush()?;
+//     println!("Filtered data written to temp.csv");
+
+//     Ok(())
+// }
