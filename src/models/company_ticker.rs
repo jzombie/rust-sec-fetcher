@@ -30,6 +30,7 @@ const CIK_FREQUENCY_BOOST: f64 = 2.0;
 const TICKER_SYMBOL_LENGTH_PENALTY: f64 = -1.0;
 
 impl CompanyTicker {
+    // TODO: Move to parsers?
     // TODO: Rename to `from_fuzzy_matched_name`?
     pub fn get_by_fuzzy_matched_name(
         company_tickers: &[CompanyTicker],
@@ -129,8 +130,6 @@ impl CompanyTicker {
                 )
                 .ok();
         }
-
-        // }
 
         best_match
     }
