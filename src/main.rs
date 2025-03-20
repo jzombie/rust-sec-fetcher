@@ -10,7 +10,9 @@ use sec_fetcher::{
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
+use std::path::Path;
 use tokio;
+use tokio::fs::create_dir_all;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -34,12 +36,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 println!("{:?}", investment);
                 println!("");
             }
-            println!("Ticker symbol: {}", ticker_symbol);
 
+            // Get first letter and uppercase it
+            let first_letter = ticker_symbol.chars().next().unwrap().to_ascii_uppercase();
+            let dir_path = format!("data/fund-holdings/{}/", first_letter);
+
+            // Create directory if it doesn't exist
+            if !Path::new(&dir_path).exists() {
+                create_dir_all(&dir_path).await?;
+            }
+
+            println!("Ticker symbol: {}", ticker_symbol);
             println!("Total records: {}", latest_nport_filing.len());
 
-            latest_nport_filing
-                .write_to_csv(&format!("data/fund-holdings/{}.csv", ticker_symbol))?;
+            // Save CSV to categorized directory
+            let file_path = format!("{}/{}.csv", dir_path, ticker_symbol);
+            latest_nport_filing.write_to_csv(&file_path)?;
         }
     }
 
