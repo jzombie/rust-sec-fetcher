@@ -1,10 +1,13 @@
 use csv::Reader;
 use sec_fetcher::config::ConfigManager;
+use sec_fetcher::enums::FundamentalConcept;
 use sec_fetcher::network::{fetch_cik_by_ticker_symbol, SecClient};
+use std::collections::HashSet;
 use std::env;
 use std::error::Error;
 use std::fs;
 use std::path::Path;
+use strum::IntoEnumIterator;
 use tokio;
 
 #[tokio::main]
@@ -51,14 +54,37 @@ fn find_csv_for_ticker(directory: &str, ticker: &str) -> Option<String> {
 }
 
 fn preload_csv(csv_path: &str) -> Result<(), Box<dyn Error>> {
+    let fundamental_concepts: HashSet<String> = FundamentalConcept::iter()
+        .map(|concept| concept.to_string())
+        .collect();
+
     let mut reader = Reader::from_path(csv_path)?;
     let headers = reader.headers()?.clone();
     println!("CSV Headers: {:?}", headers);
 
+    // Map column names to their indices
+    let header_indices: Vec<usize> = headers
+        .iter()
+        .enumerate()
+        .filter(|(_, h)| fundamental_concepts.contains(*h))
+        .map(|(i, _)| i)
+        .collect();
+
+    println!(
+        "Filtered Headers: {:?}",
+        header_indices
+            .iter()
+            .map(|&i| headers.get(i).unwrap_or("UNKNOWN"))
+            .collect::<Vec<_>>()
+    );
+
     for result in reader.records().take(5) {
-        // Display first 5 records as a preview
         let record = result?;
-        println!("{:?}", record);
+        let filtered_record: Vec<&str> = header_indices
+            .iter()
+            .map(|&i| record.get(i).unwrap_or(""))
+            .collect();
+        println!("{:?}", filtered_record);
     }
 
     Ok(())
