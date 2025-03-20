@@ -2,7 +2,7 @@ use crate::models::Cik;
 use crate::Caches;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
-use simd_r_drive_extensions::StorageOptionExt;
+use simd_r_drive_extensions::{StorageCacheExt, StorageOptionExt};
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
@@ -35,7 +35,8 @@ impl CompanyTicker {
         let company_ticker_cache = Caches::get_company_ticker_cache_store();
 
         if use_cache {
-            if let Ok(cached) = company_ticker_cache.read_option::<CompanyTicker>(query_as_bytes) {
+            if let Ok(cached) = company_ticker_cache.read_with_ttl::<CompanyTicker>(query_as_bytes)
+            {
                 return cached;
             }
         }
@@ -128,7 +129,11 @@ impl CompanyTicker {
 
         if use_cache {
             company_ticker_cache
-                .write_option(query_as_bytes, best_match.as_ref())
+                .write_with_ttl::<Option<CompanyTicker>>(
+                    query_as_bytes,
+                    &best_match,
+                    60 * 60 * 24 * 7,
+                )
                 .ok();
         }
 
