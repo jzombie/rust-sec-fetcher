@@ -4,6 +4,7 @@ use crate::network::SecClient;
 use std::error::Error;
 
 // TODO: Make distinction how these are not fund tickers
+// TODO: Rename to `fetch_operating_company_tickers`? https://www.sec.gov/data-research/standard-taxonomies/operating-companies
 pub async fn fetch_company_tickers(sec_client: &SecClient) -> Result<Vec<Ticker>, Box<dyn Error>> {
     // TODO: Also incorporate: https://www.sec.gov/include/ticker.txt
 
