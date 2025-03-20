@@ -2,7 +2,7 @@ use crate::models::Cik;
 use crate::Caches;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
-use simd_r_drive_extensions::{StorageCacheExt, StorageOptionExt};
+use simd_r_drive_extensions::StorageCacheExt;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
