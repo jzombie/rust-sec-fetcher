@@ -4,11 +4,11 @@ use crate::network::SecClient;
 use std::error::Error;
 
 // TODO: Make distinction how these are not fund tickers
-pub async fn fetch_company_tickers(client: &SecClient) -> Result<Vec<Ticker>, Box<dyn Error>> {
+pub async fn fetch_company_tickers(sec_client: &SecClient) -> Result<Vec<Ticker>, Box<dyn Error>> {
     // TODO: Also incorporate: https://www.sec.gov/include/ticker.txt
 
     let company_tickers_url = "https://www.sec.gov/files/company_tickers.json";
-    let company_tickers_data = client.fetch_json(company_tickers_url, None).await?;
+    let company_tickers_data = sec_client.fetch_json(company_tickers_url, None).await?;
 
     // TODO: Move the following into `parsers`
 
