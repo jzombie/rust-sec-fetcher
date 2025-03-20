@@ -1,5 +1,5 @@
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::models::{CikSubmission, CompanyTicker};
+use sec_fetcher::models::{CikSubmission, Ticker};
 use sec_fetcher::network::{
     fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_company_tickers, SecClient,
 };
@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     println!(
         "Tokenized: {:?}",
-        CompanyTicker::tokenize_company_name(search_string)
+        Ticker::tokenize_company_name(search_string)
     );
 
     let config_manager = ConfigManager::load()?;
@@ -53,7 +53,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Override search string with company name if using direct symbol
     let search_string = {
         let exact_company_ticker = company_tickers.iter().find(|p| {
-            p.ticker_symbol.to_lowercase() == search_string.to_lowercase()
+            p.symbol.to_lowercase() == search_string.to_lowercase()
                 || p.company_name.to_lowercase() == search_string.to_lowercase()
         });
 
@@ -74,8 +74,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     println!("Using search string: {}", search_string);
 
-    let fuzzy_matched =
-        CompanyTicker::get_by_fuzzy_matched_name(&company_tickers, &search_string, false);
+    let fuzzy_matched = Ticker::get_by_fuzzy_matched_name(&company_tickers, &search_string, false);
 
     println!("Fuzzy matched: {:?}", fuzzy_matched);
 

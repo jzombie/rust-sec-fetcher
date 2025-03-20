@@ -13,8 +13,9 @@ pub async fn fetch_cik_by_ticker_symbol(
     ticker_symbol: &str,
 ) -> Result<Cik, Box<dyn Error>> {
     // First, look at companies
-    let tickers_df = fetch_company_tickers(&sec_client).await?;
-    if let Ok(company_cik) = Cik::get_company_cik_by_ticker_symbol(&tickers_df, ticker_symbol) {
+    let company_tickers = fetch_company_tickers(&sec_client).await?;
+    if let Ok(company_cik) = Cik::get_company_cik_by_ticker_symbol(&company_tickers, ticker_symbol)
+    {
         return Ok(company_cik);
     }
 

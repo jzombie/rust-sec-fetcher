@@ -1,4 +1,4 @@
-use crate::models::{Cik, CompanyTicker};
+use crate::models::{Cik, Ticker};
 use crate::network::SecClient;
 use crate::parsers::parse_us_gaap_fundamentals;
 use polars::prelude::*;
@@ -10,7 +10,7 @@ pub type TickerFundamentalsDataFrame = DataFrame;
 /// Fetches US-GAAP SEC fundamentals for a given ticker symbol
 pub async fn fetch_us_gaap_fundamentals(
     client: &SecClient,
-    company_tickers: &[CompanyTicker],
+    company_tickers: &[Ticker],
     ticker_symbol: &str,
 ) -> Result<TickerFundamentalsDataFrame, Box<dyn Error>> {
     // Get the formatted CIK for the ticker

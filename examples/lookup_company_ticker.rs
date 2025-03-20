@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let found = company_tickers
         .iter()
-        .find(|p| p.ticker_symbol == ticker_symbol.as_str());
+        .find(|p| p.symbol == ticker_symbol.as_str());
 
     println!("Located: {:?}", found);
 

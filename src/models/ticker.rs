@@ -1,3 +1,4 @@
+use crate::enums::TickerOrigin;
 use crate::models::Cik;
 use crate::Caches;
 use dashmap::DashMap;
@@ -15,10 +16,11 @@ static NAMESPACE_HASHER_FUZZY_MATCHER: LazyLock<Arc<NamespaceHasher>> = LazyLock
 });
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CompanyTicker {
+pub struct Ticker {
     pub cik: Cik,
-    pub ticker_symbol: String,
+    pub symbol: String,
     pub company_name: String,
+    pub origin: TickerOrigin,
 }
 
 const TOKEN_MATCH_THRESHOLD: f64 = 0.6; // At least 60% of tokens must match
@@ -29,21 +31,21 @@ const PREFERRED_STOCK_PENALTY: f64 = -3.0;
 const CIK_FREQUENCY_BOOST: f64 = 2.0;
 const TICKER_SYMBOL_LENGTH_PENALTY: f64 = -1.0;
 
-impl CompanyTicker {
+impl Ticker {
     // TODO: Move to parsers?
     // TODO: Rename to `from_fuzzy_matched_name`?
     pub fn get_by_fuzzy_matched_name(
-        company_tickers: &[CompanyTicker],
+        company_tickers: &[Ticker],
         query: &str,
         use_cache: bool,
-    ) -> Option<CompanyTicker> {
+    ) -> Option<Ticker> {
         let preprocessor_cache = Caches::get_preprocessor_cache();
         let namespace_hasher = &*NAMESPACE_HASHER_FUZZY_MATCHER;
         let namespaced_query = namespace_hasher.namespace(query.as_bytes());
 
         if use_cache {
             if let Ok(cached) =
-                preprocessor_cache.read_with_ttl::<Option<CompanyTicker>>(&namespaced_query)
+                preprocessor_cache.read_with_ttl::<Option<Ticker>>(&namespaced_query)
             {
                 return cached?;
             }
@@ -54,10 +56,10 @@ impl CompanyTicker {
         let mut cik_counts = HashMap::new();
         let mut candidates = Vec::new();
 
-        for company in company_tickers {
-            let cik = company.cik.value;
-            let ticker_symbol = &company.ticker_symbol;
-            let title_tokens = Self::tokenize_company_name(&company.company_name);
+        for ticker in company_tickers {
+            let cik = ticker.cik.value;
+            let ticker_symbol = &ticker.symbol;
+            let title_tokens = Self::tokenize_company_name(&ticker.company_name);
 
             let query_freq = Self::token_frequencies(&query_tokens);
             let title_freq = Self::token_frequencies(&title_tokens);
@@ -95,16 +97,16 @@ impl CompanyTicker {
             // } else if company.ticker_symbol.contains('-') {
             //     score += PREFERRED_STOCK_PENALTY;
             // }
-            if company.ticker_symbol.contains('-') {
+            if ticker.symbol.contains('-') {
                 score += PREFERRED_STOCK_PENALTY;
             } else {
                 score += COMMON_STOCK_BOOST;
             }
 
-            score += TICKER_SYMBOL_LENGTH_PENALTY * company.ticker_symbol.len() as f64;
+            score += TICKER_SYMBOL_LENGTH_PENALTY * ticker.symbol.len() as f64;
 
             *cik_counts.entry(cik).or_insert(0) += 1;
-            candidates.push((company, score));
+            candidates.push((ticker, score));
         }
 
         // **Step 2: Apply CIK Frequency Boost**
@@ -122,7 +124,7 @@ impl CompanyTicker {
 
         if use_cache {
             preprocessor_cache
-                .write_with_ttl::<Option<CompanyTicker>>(
+                .write_with_ttl::<Option<Ticker>>(
                     &namespaced_query,
                     &best_match,
                     // TODO: Don't hardcode `1 week` here

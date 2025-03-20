@@ -1,4 +1,4 @@
-use crate::models::{CompanyTicker, NportInvestment};
+use crate::models::{NportInvestment, Ticker};
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use rust_decimal::Decimal;
@@ -11,7 +11,7 @@ use std::str::FromStr;
 // Investment 4354: NportInvestment { company_ticker: None, name: "PROLOGIS LP", lei: "GL16H1DHB0QSHP25F723", title: "Prologis LP", cusip: "74340XBK6", isin: "US74340XBK63", balance: 649000.00, cur_cd: "USD", val_usd: 635299.61, pct_val: 0.006551657028, payoff_profile: "Long", asset_cat: "DBT", issuer_cat: "", inv_country: "US" }
 pub fn parse_nport_xml(
     xml: &str,
-    company_tickers: &[CompanyTicker],
+    company_tickers: &[Ticker],
 ) -> Result<Vec<NportInvestment>, Box<dyn Error>> {
     let mut reader = Reader::from_str(xml);
 
@@ -127,16 +127,11 @@ pub fn parse_nport_xml(
         // TODO: Remove
         // println!("{}, Investment name: {}", i, investment.name);
 
-        let company_ticker = match CompanyTicker::get_by_fuzzy_matched_name(
-            &company_tickers,
-            &investment.title,
-            true,
-        ) {
-            Some(company_ticker) => Some(company_ticker),
-            None => {
-                CompanyTicker::get_by_fuzzy_matched_name(&company_tickers, &investment.name, true)
-            }
-        };
+        let company_ticker =
+            match Ticker::get_by_fuzzy_matched_name(&company_tickers, &investment.title, true) {
+                Some(company_ticker) => Some(company_ticker),
+                None => Ticker::get_by_fuzzy_matched_name(&company_tickers, &investment.name, true),
+            };
 
         // investment.company_ticker = company_ticker;
         if let Some(company_ticker) = company_ticker {

@@ -1,4 +1,4 @@
-use crate::models::CompanyTicker;
+use crate::models::Ticker;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};

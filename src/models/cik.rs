@@ -2,7 +2,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::models::AccessionNumber;
-use crate::models::CompanyTicker;
+use crate::models::Ticker;
 
 use std::error::Error;
 
@@ -137,12 +137,12 @@ impl Cik {
     /// - Returns an **error** if the dataset does not contain the given ticker,
     ///   or if the data is incorrectly formatted.
     pub fn get_company_cik_by_ticker_symbol(
-        company_tickers: &[CompanyTicker],
+        company_tickers: &[Ticker],
         ticker_symbol: &str,
     ) -> Result<Cik, Box<dyn Error>> {
         company_tickers
             .iter()
-            .find(|pred| pred.ticker_symbol == ticker_symbol)
+            .find(|pred| pred.symbol == ticker_symbol)
             .map(|company_ticker| company_ticker.cik.clone())
             .ok_or_else(|| format!("Ticker symbol '{}' not found", ticker_symbol).into())
     }
