@@ -2,11 +2,13 @@ use crate::models::Cik;
 use crate::Caches;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
-use simd_r_drive_extensions::StorageCacheExt;
+use simd_r_drive_extensions::{NamespaceHasher, StorageCacheExt};
 use std::collections::HashMap;
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 
 static TOKEN_CACHE: LazyLock<DashMap<String, Vec<String>>> = LazyLock::new(DashMap::new);
+static NAMESPACE_HASHER: LazyLock<Arc<NamespaceHasher>> =
+    LazyLock::new(|| Arc::new(NamespaceHasher::new(b"company_ticker")));
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompanyTicker {
@@ -30,13 +32,14 @@ impl CompanyTicker {
         query: &str,
         use_cache: bool,
     ) -> Option<CompanyTicker> {
-        let query_as_bytes = query.as_bytes();
+        let namespace_hasher = &*NAMESPACE_HASHER;
+        let namespaced_query = namespace_hasher.namespace(query.as_bytes());
 
         let company_ticker_cache = Caches::get_company_ticker_cache_store();
 
         if use_cache {
             if let Ok(cached) =
-                company_ticker_cache.read_with_ttl::<Option<CompanyTicker>>(query_as_bytes)
+                company_ticker_cache.read_with_ttl::<Option<CompanyTicker>>(&namespaced_query)
             {
                 return cached?;
             }
@@ -131,7 +134,7 @@ impl CompanyTicker {
         if use_cache {
             company_ticker_cache
                 .write_with_ttl::<Option<CompanyTicker>>(
-                    query_as_bytes,
+                    &namespaced_query,
                     &best_match,
                     60 * 60 * 24 * 7,
                 )
