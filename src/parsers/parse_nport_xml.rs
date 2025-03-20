@@ -124,9 +124,16 @@ pub fn parse_nport_xml(
     for (i, investment) in investments.iter_mut().enumerate() {
         println!("{}, Investment name: {}", i, investment.name);
 
-        let company_ticker =
-            CompanyTicker::get_by_fuzzy_matched_name(&company_tickers, &investment.title, true);
-        // println!("Company ticker: {:?}", company_ticker);
+        let company_ticker = match CompanyTicker::get_by_fuzzy_matched_name(
+            &company_tickers,
+            &investment.title,
+            true,
+        ) {
+            Some(company_ticker) => Some(company_ticker),
+            None => {
+                CompanyTicker::get_by_fuzzy_matched_name(&company_tickers, &investment.name, true)
+            }
+        };
 
         investment.company_ticker = company_ticker;
     }

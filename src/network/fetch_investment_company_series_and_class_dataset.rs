@@ -8,7 +8,7 @@ use std::error::Error;
 use std::path::Path;
 use std::sync::LazyLock;
 
-// TODO: Refactor
+// TODO: Replace w/ common cache
 static SIMD_R_DRIVE_TTL_CACHE: LazyLock<DataStore> = LazyLock::new(|| {
     DataStore::open(Path::new("data/temp_ttl.bin"))
         .unwrap_or_else(|err| panic!("Failed to open datastore: {}", err))
