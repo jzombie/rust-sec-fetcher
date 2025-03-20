@@ -2,15 +2,17 @@ use crate::models::Cik;
 use crate::Caches;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
-use simd_r_drive_extensions::StorageCacheExt;
+use simd_r_drive_extensions::{NamespaceHasher, StorageCacheExt};
 use std::collections::HashMap;
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 
 static TOKEN_CACHE: LazyLock<DashMap<String, Vec<String>>> = LazyLock::new(DashMap::new);
 
-// TODO: Remove if opting to use a separate cache per namespace
-// static NAMESPACE_HASHER: LazyLock<Arc<NamespaceHasher>> =
-//     LazyLock::new(|| Arc::new(NamespaceHasher::new(b"company_ticker")));
+static NAMESPACE_HASHER_FUZZY_MATCHER: LazyLock<Arc<NamespaceHasher>> = LazyLock::new(|| {
+    Arc::new(NamespaceHasher::new(
+        b"CompanyTicker::get_by_fuzzy_matched_name",
+    ))
+});
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompanyTicker {
@@ -34,16 +36,13 @@ impl CompanyTicker {
         query: &str,
         use_cache: bool,
     ) -> Option<CompanyTicker> {
-        let query_as_bytes = query.as_bytes();
-
-        // let namespace_hasher = &*NAMESPACE_HASHER;
-        // let namespaced_query = namespace_hasher.namespace(query.as_bytes());
-
-        let company_ticker_cache = Caches::get_company_ticker_cache_store();
+        let preprocessor_cache = Caches::get_preprocessor_cache();
+        let namespace_hasher = &*NAMESPACE_HASHER_FUZZY_MATCHER;
+        let namespaced_query = namespace_hasher.namespace(query.as_bytes());
 
         if use_cache {
             if let Ok(cached) =
-                company_ticker_cache.read_with_ttl::<Option<CompanyTicker>>(&query_as_bytes)
+                preprocessor_cache.read_with_ttl::<Option<CompanyTicker>>(&namespaced_query)
             {
                 return cached?;
             }
@@ -120,25 +119,10 @@ impl CompanyTicker {
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
             .map(|(company, _)| company.clone());
 
-        // TODO: Refactor cache handling
-        // if let Some(best_match) = &best_match {
-        // SIMD_R_DRIVE_CACHE.write(
-        //     query_as_bytes,
-        //     &bincode::serialize(&best_match).unwrap_or_else(|_| TOMBSTONE_MARKER.to_vec()), // Handle serialization errors safely
-        // );
-
-        // TODO: Refactor directly into SIMD R DRIVE
-        // let serialized = match &best_match {
-        //     Some(value) => bincode::serialize(value).unwrap_or_else(|_| TOMBSTONE_MARKER.to_vec()),
-        //     None => TOMBSTONE_MARKER.to_vec(), // Explicitly store tombstone
-        // };
-
-        // SIMD_R_DRIVE_CACHE.write(query_as_bytes, &serialized);
-
         if use_cache {
-            company_ticker_cache
+            preprocessor_cache
                 .write_with_ttl::<Option<CompanyTicker>>(
-                    &query_as_bytes,
+                    &namespaced_query,
                     &best_match,
                     60 * 60 * 24 * 7,
                 )

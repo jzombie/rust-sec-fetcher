@@ -5,7 +5,7 @@ use std::path::Path;
 use std::sync::{Arc, OnceLock};
 
 static SIMD_R_DRIVE_HTTP_CACHE: OnceLock<Arc<DataStore>> = OnceLock::new();
-static SIMD_R_DRIVE_COMPANY_TICKER_CACHE: OnceLock<Arc<DataStore>> = OnceLock::new();
+static SIMD_R_DRIVE_PREPROCESSOR_CACHE: OnceLock<Arc<DataStore>> = OnceLock::new();
 
 pub struct Caches;
 
@@ -31,17 +31,17 @@ impl Caches {
 
         // Company ticker Cache
         {
-            let http_cache_path = cache_base_path.join("company_ticker_storage_cache.bin");
+            let http_cache_path = cache_base_path.join("preprocessor_cache.bin");
 
             let data_store = DataStore::open(Path::new(&http_cache_path))
                 .unwrap_or_else(|err| panic!("Failed to open datastore: {}", err));
 
-            if SIMD_R_DRIVE_COMPANY_TICKER_CACHE
+            if SIMD_R_DRIVE_PREPROCESSOR_CACHE
                 .set(Arc::new(data_store))
                 .is_err()
             {
                 warn!(
-                    "SIMD_R_DRIVE_COMPANY_TICKER_CACHE was already initialized. Ignoring reinitialization."
+                    "SIMD_R_DRIVE_PREPROCESSOR_CACHE was already initialized. Ignoring reinitialization."
                 );
             }
         }
@@ -56,10 +56,10 @@ impl Caches {
     }
 
     /// Returns a reference to the shared `DataStore`. Panics if not initialized.
-    pub fn get_company_ticker_cache_store() -> Arc<DataStore> {
-        SIMD_R_DRIVE_COMPANY_TICKER_CACHE
+    pub fn get_preprocessor_cache() -> Arc<DataStore> {
+        SIMD_R_DRIVE_PREPROCESSOR_CACHE
             .get()
-            .expect("SIMD_R_DRIVE_COMPANY_TICKER_CACHE is uninitialized. Call `Caches::init(config_manager)` first.")
+            .expect("SIMD_R_DRIVE_PREPROCESSOR_CACHE is uninitialized. Call `Caches::init(config_manager)` first.")
             .clone()
     }
 }

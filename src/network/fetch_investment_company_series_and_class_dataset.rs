@@ -1,17 +1,16 @@
 use crate::models::InvestmentCompany;
 use crate::network::SecClient;
 use crate::parsers::parse_investment_companies_csv;
+use crate::Caches;
 use chrono::{Datelike, Utc};
-use simd_r_drive::DataStore;
-use simd_r_drive_extensions::StorageCacheExt;
+use simd_r_drive_extensions::{NamespaceHasher, StorageCacheExt};
 use std::error::Error;
-use std::path::Path;
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 
-// TODO: Replace w/ common cache
-static SIMD_R_DRIVE_TTL_CACHE: LazyLock<DataStore> = LazyLock::new(|| {
-    DataStore::open(Path::new("data/temp_ttl.bin"))
-        .unwrap_or_else(|err| panic!("Failed to open datastore: {}", err))
+static NAMESPACE_HASHER_LATEST_FUNDS_YEAR: LazyLock<Arc<NamespaceHasher>> = LazyLock::new(|| {
+    Arc::new(NamespaceHasher::new(
+        b"network::fetch_investment_company_series_and_class_dataset",
+    ))
 });
 
 /// Attempts to fetch the latest Investment Company Series and Class dataset,
@@ -31,8 +30,12 @@ static SIMD_R_DRIVE_TTL_CACHE: LazyLock<DataStore> = LazyLock::new(|| {
 pub async fn fetch_investment_company_series_and_class_dataset(
     sec_client: &SecClient,
 ) -> Result<Vec<InvestmentCompany>, Box<dyn Error>> {
+    let preprocessor_cache = Caches::get_preprocessor_cache();
+    let namespace_hasher = &*NAMESPACE_HASHER_LATEST_FUNDS_YEAR;
+    let namespaced_query = namespace_hasher.namespace(b"latest_funds_year");
+
     let (mut year, is_cached_year) =
-        match SIMD_R_DRIVE_TTL_CACHE.read_with_ttl::<usize>(b"latest_funds_year") {
+        match preprocessor_cache.read_with_ttl::<usize>(&namespaced_query) {
             Ok(Some(year)) => (year, true),
             _ => (Utc::now().year() as usize, false),
         };
@@ -50,8 +53,8 @@ pub async fn fetch_investment_company_series_and_class_dataset(
     }
 
     if !is_cached_year {
-        SIMD_R_DRIVE_TTL_CACHE
-            .write_with_ttl::<usize>(b"latest_funds_year", &year, 60 * 60 * 24 * 7)
+        preprocessor_cache
+            .write_with_ttl::<usize>(&namespaced_query, &year, 60 * 60 * 24 * 7)
             .ok();
     }
 
