@@ -25,7 +25,9 @@ pub fn parse_nport_xml(
                 let tag = std::str::from_utf8(e.name().as_ref())?.to_string();
                 if tag == "invstOrSec" {
                     current_investment = Some(NportInvestment {
-                        company_ticker: None,
+                        // company_ticker: None,
+                        mapped_company_name: None,
+                        mapped_company_cik_number: None,
                         name: String::new(),
                         lei: String::new(),
                         title: String::new(),
@@ -136,7 +138,11 @@ pub fn parse_nport_xml(
             }
         };
 
-        investment.company_ticker = company_ticker;
+        // investment.company_ticker = company_ticker;
+        if let Some(company_ticker) = company_ticker {
+            investment.mapped_company_name = Some(company_ticker.company_name.clone());
+            investment.mapped_company_cik_number = Some(company_ticker.cik.to_string());
+        }
     }
 
     Ok(investments)
