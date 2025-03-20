@@ -27,10 +27,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             // println!("Latest NPORT filing: {:?}", latest_nport_filing);
             // println!("Ticker symbol: {}", ticker_symbol);
-            for investment in latest_nport_filing {
-                println!("{:?}", investment);
-                println!("");
-            }
+            // for investment in latest_nport_filing {
+            //     println!("{:?}", investment);
+            //     println!("");
+            // }
             println!("Ticker symbol: {}", ticker_symbol);
         }
     }

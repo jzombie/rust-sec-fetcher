@@ -122,7 +122,8 @@ pub fn parse_nport_xml(
     NportInvestment::sort_by_pct_val_desc(&mut investments);
 
     for (i, investment) in investments.iter_mut().enumerate() {
-        println!("{}, Investment name: {}", i, investment.name);
+        // TODO: Remove
+        // println!("{}, Investment name: {}", i, investment.name);
 
         let company_ticker = match CompanyTicker::get_by_fuzzy_matched_name(
             &company_tickers,
