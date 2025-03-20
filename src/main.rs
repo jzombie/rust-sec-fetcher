@@ -19,9 +19,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let client = SecClient::from_config_manager(&config_manager)?;
 
     let investment_companies = fetch_investment_company_series_and_class_dataset(&client).await?;
+    let total_investment_companies = investment_companies.len();
 
-    for fund in investment_companies {
-        if let Some(ticker_symbol) = fund.class_ticker {
+    for (i, fund) in investment_companies.iter().enumerate() {
+        println!("Processing: {} of {}", i, total_investment_companies);
+
+        if let Some(ticker_symbol) = &fund.class_ticker {
             let latest_nport_filing =
                 fetch_nport_filing_by_ticker_symbol(&client, &ticker_symbol).await?;
 
