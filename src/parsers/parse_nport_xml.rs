@@ -26,6 +26,7 @@ pub fn parse_nport_xml(
                 if tag == "invstOrSec" {
                     current_investment = Some(NportInvestment {
                         // company_ticker: None,
+                        mapped_ticker_symbol: None,
                         mapped_company_name: None,
                         mapped_company_cik_number: None,
                         name: String::new(),
@@ -135,6 +136,7 @@ pub fn parse_nport_xml(
 
         // investment.company_ticker = company_ticker;
         if let Some(company_ticker) = company_ticker {
+            investment.mapped_ticker_symbol = Some(company_ticker.symbol.clone());
             investment.mapped_company_name = Some(company_ticker.company_name.clone());
             investment.mapped_company_cik_number = Some(company_ticker.cik.to_string());
         }
