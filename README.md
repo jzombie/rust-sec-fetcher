@@ -125,7 +125,10 @@ Filings -> recent -> primary document -> NPORT-P -> accession number
 https://www.sec.gov/Archives/edgar/data/884394/000175272425043826/primary_doc.xml
 ```
 
-Funds will commonly have `ETF` in their name to designate they are indeed an ETF.
+### Parsing ETFs from Funds
+
+- Funds will commonly have `ETF` in their name to designate they are indeed an ETF.
+- Title may say "EXCHANGE-TRADED FUND"
 
 ---
 
