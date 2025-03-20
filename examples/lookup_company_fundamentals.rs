@@ -1,4 +1,4 @@
-use csv::Reader;
+use csv::{Reader, Writer};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::enums::FundamentalConcept;
 use sec_fetcher::network::{fetch_cik_by_ticker_symbol, SecClient};
@@ -85,6 +85,31 @@ fn preload_csv(csv_path: &str) -> Result<(), Box<dyn Error>> {
             .map(|&i| record.get(i).unwrap_or(""))
             .collect();
         println!("{:?}", filtered_record);
+    }
+
+    {
+        // Create CSV writer for output
+        let mut writer = Writer::from_path("temp.csv")?;
+
+        // Write header row
+        writer.write_record(
+            header_indices
+                .iter()
+                .map(|&i| headers.get(i).unwrap_or("UNKNOWN")),
+        )?;
+
+        // Write filtered rows
+        for result in reader.records() {
+            let record = result?;
+            let filtered_record: Vec<&str> = header_indices
+                .iter()
+                .map(|&i| record.get(i).unwrap_or(""))
+                .collect();
+            writer.write_record(&filtered_record)?;
+        }
+
+        writer.flush()?;
+        println!("Filtered data written to temp.csv");
     }
 
     Ok(())
