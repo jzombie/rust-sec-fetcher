@@ -1,7 +1,7 @@
 use csv::{Reader, Writer};
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::enums::FundamentalConcept;
 use sec_fetcher::network::{fetch_cik_by_ticker_symbol, SecClient};
+use sec_fetcher::transformers::distill_us_gaap_fundamental_concepts;
 use std::collections::HashSet;
 use std::env;
 use std::error::Error;
@@ -19,7 +19,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let ticker_symbol = &args[1].to_uppercase(); // Ensure uppercase for consistency
-    let csv_directory = "data/us-gaap/";
+    let csv_directory = "data/orig.us-gaap/";
 
     // Find the CSV file matching the ticker symbol
     let csv_file_path = find_csv_for_ticker(csv_directory, ticker_symbol);
@@ -54,19 +54,26 @@ fn find_csv_for_ticker(directory: &str, ticker: &str) -> Option<String> {
 }
 
 fn preload_csv(csv_path: &str) -> Result<(), Box<dyn Error>> {
-    let fundamental_concepts: HashSet<String> = FundamentalConcept::iter()
-        .map(|concept| concept.to_string())
-        .collect();
-
     let mut reader = Reader::from_path(csv_path)?;
     let headers = reader.headers()?.clone();
     println!("CSV Headers: {:?}", headers);
 
-    // Map column names to their indices
+    // Collect all possible fundamental concepts mapped from the headers
+    let mut fundamental_concept_headers = HashSet::new();
+
+    for header in headers.iter() {
+        if let Some(mapped_concepts) = distill_us_gaap_fundamental_concepts(header) {
+            for concept in mapped_concepts {
+                fundamental_concept_headers.insert(concept.to_string());
+            }
+        }
+    }
+
+    // Map column names to their indices based on filtered headers
     let header_indices: Vec<usize> = headers
         .iter()
         .enumerate()
-        .filter(|(_, h)| fundamental_concepts.contains(*h))
+        .filter(|(_, h)| fundamental_concept_headers.contains(*h))
         .map(|(i, _)| i)
         .collect();
 
