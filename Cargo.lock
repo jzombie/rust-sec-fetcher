@@ -3050,9 +3050,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest-drive"
-version = "0.1.0-alpha.8"
+version = "0.1.0-alpha.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6b5a2d9cd24e09d10f9ebdbfa02c043a8fb4d2f4966f690bf61098620755048"
+checksum = "6d095fdd86f611a8383ee45138c576c0d6dcd807e2e380664df3ee4621adf666"
 dependencies = [
  "async-trait",
  "bincode",
