@@ -24,13 +24,13 @@ The **11-sector classification** often used in financial markets and economic an
 The **SIC codes less than 1000** primarily cover **agriculture, forestry, fishing, and related services**. These industries typically fall under the **Materials** or **Consumer Staples** sectors, depending on their classification.
 
 ### **Mapping SIC Codes < 1000 to Sectors**
-| **SIC Code Range** | **Industry** | **Mapped Sector** |
-|--------------------|-------------|-------------------|
-| **0100-0199** | Agricultural Production – Crops | **Consumer Staples** |
-| **0200-0299** | Agricultural Production – Livestock | **Consumer Staples** |
-| **0700-0799** | Agricultural Services | **Industrials** |
-| **0800-0899** | Forestry | **Materials** |
-| **0900-0999** | Fishing, Hunting, and Trapping | **Consumer Staples** |
+| **SIC Code Range** | **Industry**                        | **Mapped Sector**    |
+|--------------------|-------------------------------------|----------------------|
+| **0100-0199**      | Agricultural Production – Crops     | **Consumer Staples** |
+| **0200-0299**      | Agricultural Production – Livestock | **Consumer Staples** |
+| **0700-0799**      | Agricultural Services               | **Industrials**      |
+| **0800-0899**      | Forestry                            | **Materials**        |
+| **0900-0999**      | Fishing, Hunting, and Trapping      | **Consumer Staples** |
 
 ### **Sector Justification**
 - **Consumer Staples**: Covers food-related agriculture (e.g., crops, livestock, and fisheries).
@@ -40,19 +40,19 @@ The **SIC codes less than 1000** primarily cover **agriculture, forestry, fishin
 Would you like a **complete SIC-to-sector mapping function** for automatic classification?
 
 ### **11 Common Sectors with SIC Mapping**
-| **Sector**                    | **SIC Code Range** |
-|--------------------------------|--------------------|
-| **Energy**                     | 1000-1499, 2900-2999, 4900-4999 |
-| **Materials**                  | 2800-2899, 3200-3299, 3300-3399 |
-| **Industrials**                | 1500-1799, 3400-3499, 3500-3599, 3700-3799 |
-| **Consumer Discretionary**      | 2300-2399, 2500-2599, 2700-2799, 3100-3199, 3900-3999, 5000-5099, 5600-5699, 5700-5799, 5900-5999 |
-| **Consumer Staples**           | 2000-2099, 2100-2199, 5400-5499, 5500-5599 |
-| **Health Care**                | 8000-8099 |
-| **Financials**                 | 6000-6799 |
-| **Information Technology**      | 3570-3579, 3600-3699, 7370-7379 |
-| **Telecommunication Services**  | 4800-4899 |
-| **Utilities**                  | 4900-4999 |
-| **Real Estate**                | 6500-6799 |
+| **Sector**                     | **SIC Code Range**                                                                                |
+|--------------------------------|---------------------------------------------------------------------------------------------------|
+| **Energy**                     | 1000-1499, 2900-2999, 4900-4999                                                                   |
+| **Materials**                  | 2800-2899, 3200-3299, 3300-3399                                                                   |
+| **Industrials**                | 1500-1799, 3400-3499, 3500-3599, 3700-3799                                                        |
+| **Consumer Discretionary**     | 2300-2399, 2500-2599, 2700-2799, 3100-3199, 3900-3999, 5000-5099, 5600-5699, 5700-5799, 5900-5999 |
+| **Consumer Staples**           | 2000-2099, 2100-2199, 5400-5499, 5500-5599                                                        |
+| **Health Care**                | 8000-8099                                                                                         |
+| **Financials**                 | 6000-6799                                                                                         |
+| **Information Technology**     | 3570-3579, 3600-3699, 7370-7379                                                                   |
+| **Telecommunication Services** | 4800-4899                                                                                         |
+| **Utilities**                  | 4900-4999                                                                                         |
+| **Real Estate**                | 6500-6799                                                                                         |
 
 ### **Notes on the Mapping**
 
@@ -125,6 +125,7 @@ Filings -> recent -> primary document -> NPORT-P -> accession number
 https://www.sec.gov/Archives/edgar/data/884394/000175272425043826/primary_doc.xml
 ```
 
+Funds will commonly have `ETF` in their name to designate they are indeed an ETF.
 
 ---
 
@@ -175,29 +176,29 @@ The Entity Name column will reflect these ETF providers.
 
 ### N-PORT Field Explanations:
 
-| **Field**            | **Meaning**  | **Possible Values** |
-|----------------------|-------------|----------------------|
-| `<name>`            | The name of the **issuing entity** (company, fund, etc.). | A string, typically the legal name of the company (e.g., `"Everest Group Ltd."`). |
-| `<lei>`             | **Legal Entity Identifier (LEI)** – a unique global identifier for legal entities engaged in financial transactions. | A 20-character alphanumeric string assigned to the company (e.g., `"549300N24XF2VV0B3570"`). |
-| `<title>`           | The security's title, usually the same as `<name>`. | A string, often the same as `<name>`. |
-| `<cusip>`           | **CUSIP (Committee on Uniform Securities Identification Procedures)** – a 9-character alphanumeric identifier for securities traded in the U.S. | A valid CUSIP or `"N/A"` if unavailable (e.g., `"N/A"`). |
-| `<identifiers>`     | A container for security identifiers such as **ISIN (International Securities Identification Number)**. | Contains one or more identifiers (e.g., `<isin value="BMG3223R1088"/>`). |
-| `<isin>` (Inside `<identifiers>`) | **ISIN (International Securities Identification Number)** – a unique identifier for a security, consisting of a 2-letter country code, a 9-character identifier, and a check digit. | A 12-character alphanumeric code (e.g., `"BMG3223R1088"`). |
-| `<balance>`         | The **quantity of the security held**. | A decimal number representing the number of shares or units (e.g., `"193.00000000"`). |
-| `<units>`           | The **unit type** of the holding. | `"NS"` (likely **Number of Shares**), or other unit types like `"Bonds"`, `"Contracts"`, etc. |
-| `<curCd>`           | The **currency code** of the security's valuation. | A 3-letter ISO 4217 currency code (e.g., `"USD"`). |
-| `<valUSD>`          | The **market value** of the holding in **USD**. | A decimal number representing the total value in USD (e.g., `"68632.73000000"`). |
-| `<pctVal>`          | The **percentage of total portfolio value** that this security represents. | A decimal number representing the percentage (e.g., `"0.039377694831"` for ~0.0394%). |
-| `<payoffProfile>`   | The **investment position type**. | `"Long"` (holding the asset expecting appreciation) or `"Short"` (betting on depreciation). |
-| `<assetCat>`        | The **asset class category** of the security. | `"EC"` (Equity), `"FI"` (Fixed Income), `"RE"` (Real Estate), `"HY"` (High Yield), `"CM"` (Commodities), etc. |
-| `<issuerCat>`       | The **issuer classification**. | `"CORP"` (Corporate), `"GOV"` (Government), `"MUNI"` (Municipal), etc. |
-| `<invCountry>`      | The **country of investment** or incorporation of the issuer. | A 2-letter country code (ISO 3166-1 alpha-2, e.g., `"BM"` for Bermuda). |
-| `<isRestrictedSec>` | Indicates if the security is **restricted** (not freely tradable). | `"Y"` (Yes, restricted) or `"N"` (No, freely tradable). |
-| `<fairValLevel>`    | **Fair Value Level** per **FASB ASC 820 (GAAP's Fair Value Hierarchy)**. | `1` (Market Price), `2` (Observable Inputs), `3` (Unobservable Inputs). |
-| `<securityLending>` | A container for security lending-related details. | Contains boolean fields for lending activity. |
-| `<isCashCollateral>` | Indicates if **cash collateral** is involved in a securities lending agreement. | `"Y"` (Yes) or `"N"` (No). |
-| `<isNonCashCollateral>` | Indicates if **non-cash collateral** is involved (e.g., securities, bonds). | `"Y"` (Yes) or `"N"` (No). |
-| `<isLoanByFund>`    | Indicates if the fund itself has **loaned out the security**. | `"Y"` (Yes, loaned) or `"N"` (No). |
+| **Field**                         | **Meaning**                                                                                                                                                                         | **Possible Values**                                                                                           |
+|-----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| `<name>`                          | The name of the **issuing entity** (company, fund, etc.).                                                                                                                           | A string, typically the legal name of the company (e.g., `"Everest Group Ltd."`).                             |
+| `<lei>`                           | **Legal Entity Identifier (LEI)** – a unique global identifier for legal entities engaged in financial transactions.                                                                | A 20-character alphanumeric string assigned to the company (e.g., `"549300N24XF2VV0B3570"`).                  |
+| `<title>`                         | The security's title, usually the same as `<name>`.                                                                                                                                 | A string, often the same as `<name>`.                                                                         |
+| `<cusip>`                         | **CUSIP (Committee on Uniform Securities Identification Procedures)** – a 9-character alphanumeric identifier for securities traded in the U.S.                                     | A valid CUSIP or `"N/A"` if unavailable (e.g., `"N/A"`).                                                      |
+| `<identifiers>`                   | A container for security identifiers such as **ISIN (International Securities Identification Number)**.                                                                             | Contains one or more identifiers (e.g., `<isin value="BMG3223R1088"/>`).                                      |
+| `<isin>` (Inside `<identifiers>`) | **ISIN (International Securities Identification Number)** – a unique identifier for a security, consisting of a 2-letter country code, a 9-character identifier, and a check digit. | A 12-character alphanumeric code (e.g., `"BMG3223R1088"`).                                                    |
+| `<balance>`                       | The **quantity of the security held**.                                                                                                                                              | A decimal number representing the number of shares or units (e.g., `"193.00000000"`).                         |
+| `<units>`                         | The **unit type** of the holding.                                                                                                                                                   | `"NS"` (likely **Number of Shares**), or other unit types like `"Bonds"`, `"Contracts"`, etc.                 |
+| `<curCd>`                         | The **currency code** of the security's valuation.                                                                                                                                  | A 3-letter ISO 4217 currency code (e.g., `"USD"`).                                                            |
+| `<valUSD>`                        | The **market value** of the holding in **USD**.                                                                                                                                     | A decimal number representing the total value in USD (e.g., `"68632.73000000"`).                              |
+| `<pctVal>`                        | The **percentage of total portfolio value** that this security represents.                                                                                                          | A decimal number representing the percentage (e.g., `"0.039377694831"` for ~0.0394%).                         |
+| `<payoffProfile>`                 | The **investment position type**.                                                                                                                                                   | `"Long"` (holding the asset expecting appreciation) or `"Short"` (betting on depreciation).                   |
+| `<assetCat>`                      | The **asset class category** of the security.                                                                                                                                       | `"EC"` (Equity), `"FI"` (Fixed Income), `"RE"` (Real Estate), `"HY"` (High Yield), `"CM"` (Commodities), etc. |
+| `<issuerCat>`                     | The **issuer classification**.                                                                                                                                                      | `"CORP"` (Corporate), `"GOV"` (Government), `"MUNI"` (Municipal), etc.                                        |
+| `<invCountry>`                    | The **country of investment** or incorporation of the issuer.                                                                                                                       | A 2-letter country code (ISO 3166-1 alpha-2, e.g., `"BM"` for Bermuda).                                       |
+| `<isRestrictedSec>`               | Indicates if the security is **restricted** (not freely tradable).                                                                                                                  | `"Y"` (Yes, restricted) or `"N"` (No, freely tradable).                                                       |
+| `<fairValLevel>`                  | **Fair Value Level** per **FASB ASC 820 (GAAP's Fair Value Hierarchy)**.                                                                                                            | `1` (Market Price), `2` (Observable Inputs), `3` (Unobservable Inputs).                                       |
+| `<securityLending>`               | A container for security lending-related details.                                                                                                                                   | Contains boolean fields for lending activity.                                                                 |
+| `<isCashCollateral>`              | Indicates if **cash collateral** is involved in a securities lending agreement.                                                                                                     | `"Y"` (Yes) or `"N"` (No).                                                                                    |
+| `<isNonCashCollateral>`           | Indicates if **non-cash collateral** is involved (e.g., securities, bonds).                                                                                                         | `"Y"` (Yes) or `"N"` (No).                                                                                    |
+| `<isLoanByFund>`                  | Indicates if the fund itself has **loaned out the security**.                                                                                                                       | `"Y"` (Yes, loaned) or `"N"` (No).                                                                            |
 
 
 ## TODO: Company information via latest 10-K
