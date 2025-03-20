@@ -8,7 +8,9 @@ use serde_with::{serde_as, DisplayFromStr};
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NportInvestment {
+    #[serde(default)] // Ensures empty string instead of omitting the column
     pub company_ticker: Option<CompanyTicker>,
+
     pub name: String,
     pub lei: String, // Legal Entity Identifier
     pub title: String,

@@ -27,11 +27,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             // println!("Latest NPORT filing: {:?}", latest_nport_filing);
             // println!("Ticker symbol: {}", ticker_symbol);
-            // for investment in latest_nport_filing {
+            // for investment in &latest_nport_filing {
             //     println!("{:?}", investment);
             //     println!("");
             // }
             println!("Ticker symbol: {}", ticker_symbol);
+
+            println!("Total records: {}", latest_nport_filing.len());
+
+            latest_nport_filing
+                .write_to_csv(&format!("data/fund-holdings/{}.csv", ticker_symbol))?;
         }
     }
 
