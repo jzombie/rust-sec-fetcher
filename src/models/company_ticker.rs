@@ -124,6 +124,7 @@ impl CompanyTicker {
                 .write_with_ttl::<Option<CompanyTicker>>(
                     &namespaced_query,
                     &best_match,
+                    // TODO: Don't hardcode `1 week` here
                     60 * 60 * 24 * 7,
                 )
                 .ok();

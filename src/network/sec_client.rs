@@ -43,6 +43,7 @@ impl SecClient {
             .ok_or_else(|| "Missing required field: max_retries".to_string())?; // Error if missing
 
         let cache_policy = Arc::new(CachePolicy {
+            // TODO: Don't hardcode `1 week` here
             default_ttl: Duration::from_secs(60 * 60 * 24 * 7), // 1 week,
             respect_headers: false,
             cache_status_override: None,
