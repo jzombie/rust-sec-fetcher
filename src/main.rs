@@ -51,6 +51,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             // Save CSV to categorized directory
             let file_path = format!("{}/{}.csv", dir_path, ticker_symbol);
+
+            // TODO: Handle errors
             latest_nport_filing.write_to_csv(&file_path)?;
         }
     }
