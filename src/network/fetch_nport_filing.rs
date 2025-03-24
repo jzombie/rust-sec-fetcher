@@ -1,5 +1,7 @@
 use crate::models::{AccessionNumber, Cik, CikSubmission, NportInvestment};
-use crate::network::{fetch_cik_by_ticker_symbol, fetch_cik_submissions, SecClient};
+use crate::network::{
+    fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_company_tickers, SecClient,
+};
 use crate::parsers::parse_nport_xml;
 use std::error::Error;
 
@@ -33,6 +35,8 @@ pub async fn fetch_nport_filing_by_cik_and_accession_number(
     cik: Cik,
     accession_number: AccessionNumber,
 ) -> Result<Vec<NportInvestment>, Box<dyn Error>> {
+    let company_tickers = fetch_company_tickers(&sec_client).await?;
+
     // TODO: Dedupe
     let url = format!(
         "https://www.sec.gov/Archives/edgar/data/{}/{}/primary_doc.xml",
@@ -41,9 +45,9 @@ pub async fn fetch_nport_filing_by_cik_and_accession_number(
     );
 
     let response = sec_client
-        .raw_request(reqwest::Method::GET, &url, None)
+        .raw_request(reqwest::Method::GET, &url, None, None)
         .await?;
     let xml_data = response.text().await?;
 
-    parse_nport_xml(&xml_data)
+    parse_nport_xml(&xml_data, &company_tickers)
 }

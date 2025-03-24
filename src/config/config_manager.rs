@@ -1,15 +1,20 @@
 use crate::config::{AppConfig, CredentialManager, CredentialProvider};
 use crate::utils::is_interactive_mode;
+use crate::Caches;
 use config::{Config, File};
 use dirs::config_dir;
 use merge::Merge;
 use std::error::Error;
 use std::path::PathBuf;
+use std::sync::LazyLock;
 
 #[derive(Debug)]
 pub struct ConfigManager {
     config: AppConfig,
 }
+
+static DEFAULT_CONFIG_PATH: LazyLock<String> =
+    LazyLock::new(|| format!("{}_config.toml", env!("CARGO_PKG_NAME").replace("-", "_")));
 
 impl ConfigManager {
     /// Loads configuration using the default path.
@@ -56,7 +61,7 @@ impl ConfigManager {
                     error_message.into()
                 })?;
 
-        if user_settings.email.is_none() {
+        if settings.email.is_none() && user_settings.email.is_none() {
             if is_interactive_mode() {
                 let credential_manager = CredentialManager::from_prompt()?;
                 let email = credential_manager.get_credential().map_err(|err| {
@@ -73,13 +78,25 @@ impl ConfigManager {
 
         settings.merge(user_settings);
 
-        Ok(Self { config: settings })
+        let instance = Self { config: settings };
+
+        instance.init_caches();
+
+        Ok(instance)
     }
 
     pub fn from_app_config(app_config: &AppConfig) -> Self {
-        Self {
+        let instance = Self {
             config: app_config.clone(),
-        }
+        };
+
+        instance.init_caches();
+
+        instance
+    }
+
+    fn init_caches(&self) {
+        Caches::init(self)
     }
 
     /// Retrieves a reference to the configuration.
@@ -98,6 +115,6 @@ impl ConfigManager {
                 return path;
             }
         }
-        PathBuf::from("config.toml") // Fallback if no global config
+        PathBuf::from(&*DEFAULT_CONFIG_PATH)
     }
 }

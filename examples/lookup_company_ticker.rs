@@ -1,8 +1,11 @@
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::network::{fetch_nport_filing_by_ticker_symbol, SecClient};
-use sec_fetcher::utils::VecExtensions;
+use sec_fetcher::models::CikSubmission;
+use sec_fetcher::network::{
+    fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_company_tickers, SecClient,
+};
 use std::env;
 use std::error::Error;
+use tokio;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -17,13 +20,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;
 
-    let investments = fetch_nport_filing_by_ticker_symbol(&client, ticker_symbol)
-        .await
-        .unwrap();
+    let company_tickers = fetch_company_tickers(&client).await.unwrap();
 
-    for (i, investment) in investments.head(510).iter().enumerate() {
-        println!("Investment {}: {:?}", i + 1, investment);
-    }
+    let found = company_tickers
+        .iter()
+        .find(|p| p.symbol == ticker_symbol.as_str());
+
+    println!("Located: {:?}", found);
 
     Ok(())
 }

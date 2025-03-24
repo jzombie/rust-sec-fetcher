@@ -1,2 +1,6 @@
 **/target
-/data
+**/data
+sec_fetcher_config.toml
+
+# Ensure all CSV files are ignored
+**.csv

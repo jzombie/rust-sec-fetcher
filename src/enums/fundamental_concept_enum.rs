@@ -1,7 +1,7 @@
 use std::cmp::{Eq, PartialEq};
-use strum_macros::{Display, EnumString};
+use strum_macros::{Display, EnumIter, EnumString};
 
-#[derive(Eq, PartialEq, Hash, Clone, EnumString, Display, Debug)]
+#[derive(Eq, PartialEq, Hash, Clone, EnumString, EnumIter, Display, Debug)]
 pub enum FundamentalConcept {
     Assets,
     BenefitsCostsExpenses,

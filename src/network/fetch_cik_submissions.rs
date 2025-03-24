@@ -13,7 +13,7 @@ pub async fn fetch_cik_submissions(
         "https://data.sec.gov/submissions/CIK{}.json",
         cik.to_string()
     );
-    let data: Value = sec_client.fetch_json(&url).await?;
+    let data: Value = sec_client.fetch_json(&url, None).await?;
 
     // TODO: Move the following into `parsers`
 

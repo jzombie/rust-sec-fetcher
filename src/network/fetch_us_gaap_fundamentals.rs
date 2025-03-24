@@ -1,5 +1,5 @@
-use crate::df_accessors::get_company_cik_by_ticker_symbol;
-use crate::network::{CompanyTickersDataFrame, SecClient};
+use crate::models::{Cik, Ticker};
+use crate::network::SecClient;
 use crate::parsers::parse_us_gaap_fundamentals;
 use polars::prelude::*;
 use serde_json::Value;
@@ -10,11 +10,11 @@ pub type TickerFundamentalsDataFrame = DataFrame;
 /// Fetches US-GAAP SEC fundamentals for a given ticker symbol
 pub async fn fetch_us_gaap_fundamentals(
     client: &SecClient,
-    df_tickers: &CompanyTickersDataFrame,
+    company_tickers: &[Ticker],
     ticker_symbol: &str,
 ) -> Result<TickerFundamentalsDataFrame, Box<dyn Error>> {
     // Get the formatted CIK for the ticker
-    let cik = get_company_cik_by_ticker_symbol(df_tickers, ticker_symbol)?;
+    let cik = Cik::get_company_cik_by_ticker_symbol(company_tickers, ticker_symbol)?;
 
     let url = format!(
         "https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json",
@@ -24,7 +24,7 @@ pub async fn fetch_us_gaap_fundamentals(
     // TODO: Debug log
     println!("Using URL: {}", url);
 
-    let data: Value = client.fetch_json(&url).await?;
+    let data: Value = client.fetch_json(&url, None).await?;
 
     parse_us_gaap_fundamentals(data)
 }
