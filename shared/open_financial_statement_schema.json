@@ -89,40 +89,64 @@
     "Diluted Earnings Per Share Excluding Extraordinary Items": 79,
     "Diluted Earnings Per Share Including Extraordinary Items": 80
   },
+  "Comprehensive Income": {
+    "Foreign Currency Translation Adjustment": 81,
+    "Unrealized Gain (Loss) on Available-for-Sale Securities": 82,
+    "Pension and Postretirement Benefit Adjustments": 83,
+    "Equity Method OCI Component": 84,
+    "Unrealized Derivative Gains (Losses)": 85,
+    "Other Comprehensive Income (Before Tax)": 86,
+    "Other Comprehensive Income (After Tax)": 87
+  },
+  "Equity Statement": {
+    "Net Income": 88,
+    "Preferred Dividends": 89,
+    "Dividends Declared - Common Stock": 90,
+    "Dividends Declared - Preferred Stock": 91,
+    "Issuance of Common Stock": 92,
+    "Repurchase of Common Stock": 93,
+    "Stock-Based Compensation": 94,
+    "Treasury Stock Activity": 95,
+    "Accumulated Other Comprehensive Income": 96,
+    "Noncontrolling Interest Changes": 97,
+    "Redeemable Noncontrolling Interest Adjustments": 98,
+    "Convertible Instrument Equity Adjustments": 99,
+    "Other Equity Adjustments": 100
+  },
   "Cash Flow": {
     "Operating Activities": {
-      "Depreciation": 81,
-      "Net Income/Starting Line": 82,
-      "Amortization": 83,
-      "Deferred Taxes": 84,
-      "Other Non-Cash Items": 85,
-      "Accounts Receivable": 86,
-      "Inventories": 87,
-      "Other Assets": 88,
-      "Accounts Payable": 89,
-      "Other Liabilities": 90
+      "Depreciation": 101,
+      "Net Income/Starting Line": 102,
+      "Amortization": 103,
+      "Deferred Taxes": 104,
+      "Other Non-Cash Items": 105,
+      "Accounts Receivable": 106,
+      "Inventories": 107,
+      "Other Assets": 108,
+      "Accounts Payable": 109,
+      "Other Liabilities": 110
     },
     "Investing": {
-      "Purchase of Fixed Assets": 91,
-      "Acquisition of Business": 92,
-      "Sale/Maturity of Investment": 93,
-      "Purchase of Investments": 94,
-      "Other Investing Cash Flow": 95
+      "Purchase of Fixed Assets": 111,
+      "Acquisition of Business": 112,
+      "Sale/Maturity of Investment": 113,
+      "Purchase of Investments": 114,
+      "Other Investing Cash Flow": 115
     },
     "Financing": {
-      "Other Financing Cash Flow": 96,
-      "Cash Dividends Paid - Common": 97,
-      "Sale/Issuance of Common": 98,
-      "Repurchase/Retirement of Common": 99,
-      "Common Stock, Net": 100,
-      "Short Term Debt Issued": 101,
-      "Short Term Debt, Net": 102,
-      "Long Term Debt Reduction": 103,
-      "Long Term Debt, Net": 104,
-      "Total Debt Reduction": 105
+      "Other Financing Cash Flow": 116,
+      "Cash Dividends Paid - Common": 117,
+      "Sale/Issuance of Common": 118,
+      "Repurchase/Retirement of Common": 119,
+      "Common Stock, Net": 120,
+      "Short Term Debt Issued": 121,
+      "Short Term Debt, Net": 122,
+      "Long Term Debt Reduction": 123,
+      "Long Term Debt, Net": 124,
+      "Total Debt Reduction": 125
     },
-    "Foreign Exchange Effects": 106,
-    "Cash Interest Paid": 107,
-    "Cash Taxes Paid": 108
+    "Foreign Exchange Effects": 126,
+    "Cash Interest Paid": 127,
+    "Cash Taxes Paid": 128
   }
 }
