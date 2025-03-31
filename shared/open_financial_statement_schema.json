@@ -45,6 +45,7 @@
     }
   },
   "Income Statement": {
+    "Revenue": 100,
     "Net Sales": 38,
     "Cost of Revenue": 39,
     "Selling/General/Admin Expenses": 40,
