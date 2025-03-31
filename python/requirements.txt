@@ -101,6 +101,7 @@ pytorch-lightning==2.5.1
 pytz==2025.1
 PyYAML==6.0.2
 pyzmq==26.3.0
+RapidFuzz==3.12.2
 referencing==0.36.2
 regex==2024.11.6
 requests==2.32.3
