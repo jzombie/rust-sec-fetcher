@@ -139,6 +139,7 @@
     "Financing": {
       "Other Financing Cash Flow": 118,
       "Cash Dividends Paid - Common": 119,
+      "Cash Dividends Paid - Preferred": 131,
       "Sale/Issuance of Common": 120,
       "Repurchase/Retirement of Common": 121,
       "Common Stock, Net": 122,
