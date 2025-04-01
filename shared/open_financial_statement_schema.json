@@ -145,6 +145,8 @@
       "Cash Dividends Paid - Preferred": 131,
       "Sale/Issuance of Common": 120,
       "Repurchase/Retirement of Common": 121,
+      "Repurchase/Retirement of Convertible Preferred": 135,
+      "Repurchase/Retirement of Non-Convertible Preferred": 136,
       "Common Stock, Net": 122,
       "Short Term Debt Issued": 123,
       "Short Term Debt, Net": 124,
