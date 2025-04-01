@@ -135,6 +135,7 @@
       "Acquisition of Business": 114,
       "Sale/Maturity of Investment": 115,
       "Purchase of Investments": 116,
+      "Purchase of Intangibles": 133,
       "Other Investing Cash Flow": 117
     },
     "Financing": {
