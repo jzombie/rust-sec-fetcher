@@ -24,7 +24,8 @@
       "Long Term Investments - Other": 19,
       "Notes Receivable - Long Term": 20,
       "Restricted Cash - Long Term": 21,
-      "Other Long Term Assets": 22
+      "Other Long Term Assets": 22,
+      "Total Assets": 138
     },
     "Liabilities": {
       "Accounts Payable": 23,
