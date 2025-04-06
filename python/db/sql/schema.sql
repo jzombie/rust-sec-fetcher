@@ -67,7 +67,7 @@ CREATE TABLE `us_gaap_balance_type` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
   UNIQUE KEY `balance_UNIQUE` (`balance`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -83,7 +83,7 @@ CREATE TABLE `us_gaap_period_type` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
   UNIQUE KEY `period_type_UNIQUE` (`period_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -99,7 +99,7 @@ CREATE TABLE `us_gaap_statement_type` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
   UNIQUE KEY `statement_type_UNIQUE` (`statement_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -116,7 +116,6 @@ CREATE TABLE `us_gaap_tag` (
   `period_type_id` int unsigned DEFAULT NULL,
   `label` text,
   `description` text,
-  `is_manually_mapped` tinyint unsigned NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
   UNIQUE KEY `name_UNIQUE` (`name`),
@@ -124,7 +123,7 @@ CREATE TABLE `us_gaap_tag` (
   KEY `fk_period_type_id_idx` (`period_type_id`),
   CONSTRAINT `fk_balance_type_id` FOREIGN KEY (`balance_type_id`) REFERENCES `us_gaap_balance_type` (`id`),
   CONSTRAINT `fk_period_type_id` FOREIGN KEY (`period_type_id`) REFERENCES `us_gaap_period_type` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2785 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -138,13 +137,14 @@ CREATE TABLE `us_gaap_tag_ofss_category` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `us_gaap_tag_id` int unsigned NOT NULL,
   `ofss_category_id` int unsigned NOT NULL,
+  `is_manually_mapped` tinyint unsigned NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
   KEY `fk_ofss_category_id_idx` (`ofss_category_id`),
   KEY `fk_us_gaap_tag_id_idx` (`us_gaap_tag_id`),
   CONSTRAINT `fk_ofss_category_id` FOREIGN KEY (`ofss_category_id`) REFERENCES `ofss_category` (`id`),
   CONSTRAINT `fk_us_gaap_tag_id` FOREIGN KEY (`us_gaap_tag_id`) REFERENCES `us_gaap_tag` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9107 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -158,13 +158,14 @@ CREATE TABLE `us_gaap_tag_statement_type` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `us_gaap_tag_id` int unsigned NOT NULL,
   `us_gaap_statement_type_id` int unsigned NOT NULL,
+  `is_manually_mapped` tinyint unsigned NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
   UNIQUE KEY `tag_statement_UNIQUE` (`us_gaap_tag_id`,`us_gaap_statement_type_id`),
   KEY `fk_statement_id_idx` (`us_gaap_statement_type_id`),
   CONSTRAINT `fk_statement_id` FOREIGN KEY (`us_gaap_statement_type_id`) REFERENCES `us_gaap_statement_type` (`id`),
   CONSTRAINT `fk_tag_id` FOREIGN KEY (`us_gaap_tag_id`) REFERENCES `us_gaap_tag` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9119 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -176,4 +177,4 @@ CREATE TABLE `us_gaap_tag_statement_type` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-04-06  8:13:13
+-- Dump completed on 2025-04-06  9:40:00
