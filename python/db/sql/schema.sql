@@ -16,6 +16,46 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `ofss_category`
+--
+
+DROP TABLE IF EXISTS `ofss_category`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ofss_category` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `parent_category_id` int unsigned DEFAULT NULL,
+  `category_name` varchar(45) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  UNIQUE KEY `category_parent_UNIQUE` (`parent_category_id`,`id`),
+  KEY `fk_parent_category_id_idx` (`parent_category_id`),
+  CONSTRAINT `fk_parent_category_id` FOREIGN KEY (`parent_category_id`) REFERENCES `ofss_category` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `ofss_item`
+--
+
+DROP TABLE IF EXISTS `ofss_item`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ofss_item` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `ofss_id` int NOT NULL,
+  `category_id` int unsigned NOT NULL,
+  `item_name` varchar(72) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  UNIQUE KEY `item_name_UNIQUE` (`item_name`),
+  UNIQUE KEY `ofss_id_UNIQUE` (`ofss_id`),
+  KEY `fk_category_id_idx` (`category_id`),
+  CONSTRAINT `fk_category_id` FOREIGN KEY (`category_id`) REFERENCES `ofss_category` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `us_gaap_balance_type`
 --
 
@@ -116,4 +156,4 @@ CREATE TABLE `us_gaap_tag_statement_type` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-04-05 19:27:29
+-- Dump completed on 2025-04-05 20:15:39
