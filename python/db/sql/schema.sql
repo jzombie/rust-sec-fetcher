@@ -24,34 +24,35 @@ DROP TABLE IF EXISTS `ofss_category`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `ofss_category` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `parent_category_id` int unsigned DEFAULT NULL,
-  `category_name` varchar(45) NOT NULL,
+  `group_id` int unsigned NOT NULL,
+  `ofss_id` int NOT NULL,
+  `category_name` varchar(72) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
-  UNIQUE KEY `category_parent_UNIQUE` (`parent_category_id`,`id`),
-  KEY `fk_parent_category_id_idx` (`parent_category_id`),
-  CONSTRAINT `fk_parent_category_id` FOREIGN KEY (`parent_category_id`) REFERENCES `ofss_category` (`id`)
+  UNIQUE KEY `ofss_id_UNIQUE` (`ofss_id`),
+  UNIQUE KEY `category_name_group_UNIQUE` (`category_name`,`group_id`),
+  KEY `fk_group_id_idx` (`group_id`),
+  CONSTRAINT `fk_group_id` FOREIGN KEY (`group_id`) REFERENCES `ofss_group` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `ofss_item`
+-- Table structure for table `ofss_group`
 --
 
-DROP TABLE IF EXISTS `ofss_item`;
+DROP TABLE IF EXISTS `ofss_group`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ofss_item` (
+CREATE TABLE `ofss_group` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `ofss_id` int NOT NULL,
-  `category_id` int unsigned NOT NULL,
-  `item_name` varchar(72) NOT NULL,
+  `parent_group_id` int unsigned DEFAULT NULL,
+  `group_name` varchar(45) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
-  UNIQUE KEY `item_name_UNIQUE` (`item_name`),
-  UNIQUE KEY `ofss_id_UNIQUE` (`ofss_id`),
-  KEY `fk_category_id_idx` (`category_id`),
-  CONSTRAINT `fk_category_id` FOREIGN KEY (`category_id`) REFERENCES `ofss_category` (`id`)
+  UNIQUE KEY `group_name_UNIQUE` (`group_name`),
+  UNIQUE KEY `group_parent_UNIQUE` (`parent_group_id`,`id`),
+  KEY `fk_parent_group_id_idx` (`parent_group_id`),
+  CONSTRAINT `fk_parent_group_id` FOREIGN KEY (`parent_group_id`) REFERENCES `ofss_group` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -156,4 +157,4 @@ CREATE TABLE `us_gaap_tag_statement_type` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-04-05 20:15:39
+-- Dump completed on 2025-04-05 22:01:27
