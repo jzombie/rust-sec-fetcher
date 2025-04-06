@@ -25,15 +25,13 @@ DROP TABLE IF EXISTS `ofss_category`;
 CREATE TABLE `ofss_category` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `group_id` int unsigned NOT NULL,
-  `ofss_id` int NOT NULL,
   `category_name` varchar(72) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
-  UNIQUE KEY `ofss_id_UNIQUE` (`ofss_id`),
   UNIQUE KEY `category_name_group_UNIQUE` (`category_name`,`group_id`),
   KEY `fk_group_id_idx` (`group_id`),
   CONSTRAINT `fk_group_id` FOREIGN KEY (`group_id`) REFERENCES `ofss_group` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=140 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -53,7 +51,7 @@ CREATE TABLE `ofss_group` (
   UNIQUE KEY `group_parent_UNIQUE` (`parent_group_id`,`id`),
   KEY `fk_parent_group_id_idx` (`parent_group_id`),
   CONSTRAINT `fk_parent_group_id` FOREIGN KEY (`parent_group_id`) REFERENCES `ofss_group` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -129,6 +127,26 @@ CREATE TABLE `us_gaap_tag` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `us_gaap_tag_ofss_category`
+--
+
+DROP TABLE IF EXISTS `us_gaap_tag_ofss_category`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `us_gaap_tag_ofss_category` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `us_gaap_tag_id` int unsigned NOT NULL,
+  `ofss_category_id` int unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  KEY `fk_ofss_category_id_idx` (`ofss_category_id`),
+  KEY `fk_us_gaap_tag_id_idx` (`us_gaap_tag_id`),
+  CONSTRAINT `fk_ofss_category_id` FOREIGN KEY (`ofss_category_id`) REFERENCES `ofss_category` (`id`),
+  CONSTRAINT `fk_us_gaap_tag_id` FOREIGN KEY (`us_gaap_tag_id`) REFERENCES `us_gaap_tag` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `us_gaap_tag_statement_type`
 --
 
@@ -157,4 +175,4 @@ CREATE TABLE `us_gaap_tag_statement_type` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-04-05 22:01:27
+-- Dump completed on 2025-04-05 22:18:36
