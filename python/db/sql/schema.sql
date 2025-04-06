@@ -95,7 +95,7 @@ DROP TABLE IF EXISTS `us_gaap_statement_type`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `us_gaap_statement_type` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `statement_type` varchar(20) NOT NULL,
+  `statement_type` varchar(30) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
   UNIQUE KEY `statement_type_UNIQUE` (`statement_type`)
@@ -176,4 +176,4 @@ CREATE TABLE `us_gaap_tag_statement_type` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-04-06  8:08:54
+-- Dump completed on 2025-04-06  8:13:13
