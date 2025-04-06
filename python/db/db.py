@@ -318,9 +318,9 @@ class DB(DBConnector):
         entity_id_name: str,
         parent_id_name: str,
         parent_id: int,
-        new_entities: List[Dict[str, Any]],
+        associate_entities: List[Dict[str, Any]],
         unique_fields: List[str],
-        datetime_field: str = "upsert_datetime",
+        upsert_datetime_field: str | None = "upsert_datetime",
         trim_strings: bool = True,
     ) -> None:
         """
@@ -333,9 +333,9 @@ class DB(DBConnector):
         - entity_id_name (str): The name of the entity ID field in the table.
         - parent_id_name (str): The name of the parent ID field in the table.
         - parent_id (int): The ID of the parent entity.
-        - new_entities (List[Dict[str, Any]]): A list of dictionaries representing new entities.
+        - associate_entities (List[Dict[str, Any]]): A list of dictionaries representing associated entities.
         - unique_fields (List[str]): A list of fields that uniquely identify a record.
-        - datetime_field (str): The name of the datetime field for the upsert operation (default is 'upsert_datetime').
+        - upsert_datetime_field (str | None): The name of the datetime field for the upsert operation (default is 'upsert_datetime').
         - trim_strings (str): A flag to indicate whether or not strings should be trimmed.
         """
 
@@ -350,15 +350,16 @@ class DB(DBConnector):
 
         # Track upsert entities
         upsert_entity_ids = set()
-        total_new_entities = len(new_entities)
-        for idx, entity in enumerate(new_entities):
-            if total_new_entities > 100 and idx % 100 == 0:
+        total_associated_entities = len(associate_entities)
+        for idx, entity in enumerate(associate_entities):
+            if total_associated_entities > 100 and idx % 100 == 0:
                 logging.info(
-                    f"Performing entity upsert: {idx + 1} of {total_new_entities}"
+                    f"Performing entity upsert: {idx + 1} of {total_associated_entities}"
                 )
 
-            # Ensure datetime field is set
-            entity[datetime_field] = self.to_sql_datetime(datetime.now())
+            if upsert_datetime_field is not None:
+                # Ensure datetime field is set
+                entity[upsert_datetime_field] = self.to_sql_datetime(datetime.now())
 
             # Upsert the entity
             entity_id = self.upsert_entity(
