@@ -1,10 +1,8 @@
 import random
-import os
-import json
 import torch
-import optuna
 import numpy as np
 import pytorch_lightning as pl
+import logging
 
 # === SEED ===
 SEED = 42
@@ -33,3 +31,4 @@ def seed_everything(seed: int):
 
 # Ensure it's called!
 seed_everything(SEED)
+logging.info("Everything seeded!")
