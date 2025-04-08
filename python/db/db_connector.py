@@ -1,5 +1,6 @@
 import os
 import logging
+import config
 import time
 import mysql.connector
 import warnings
