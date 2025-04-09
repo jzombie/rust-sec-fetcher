@@ -1,3 +1,4 @@
+use crate::enums::Url;
 use crate::models::InvestmentCompany;
 use crate::network::SecClient;
 use crate::parsers::parse_investment_companies_csv;
@@ -80,10 +81,7 @@ pub async fn fetch_investment_company_series_and_class_dataset_for_year(
     year: usize,
     sec_client: &SecClient,
 ) -> Result<Vec<InvestmentCompany>, Box<dyn Error>> {
-    let url = format!(
-        "https://www.sec.gov/files/investment/data/other/investment-company-series-and-class-information/investment-company-series-class-{}.csv",
-        year
-    );
+    let url = Url::InvestmentCompanySeriesAndClassDataset(year).value();
 
     let throttle_policy_override = {
         let mut policy = sec_client.get_throttle_policy();
@@ -106,6 +104,7 @@ pub async fn fetch_investment_company_series_and_class_dataset_for_year(
     parse_investment_companies_csv(byte_array)
 }
 
+// TODO: Remove?
 // pub async fn fetch_investment_company_series_and_class_dataset(
 //     sec_client: &SecClient,
 //     year: usize,

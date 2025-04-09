@@ -8,6 +8,7 @@ use std::error::Error;
 pub async fn fetch_company_tickers(sec_client: &SecClient) -> Result<Vec<Ticker>, Box<dyn Error>> {
     // TODO: Also incorporate: https://www.sec.gov/include/ticker.txt
 
+    // TODO: Move to enum
     let company_tickers_url = "https://www.sec.gov/files/company_tickers.json";
     let company_tickers_data = sec_client.fetch_json(company_tickers_url, None).await?;
 

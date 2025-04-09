@@ -16,6 +16,7 @@ pub async fn fetch_us_gaap_fundamentals(
     // Get the formatted CIK for the ticker
     let cik = Cik::get_company_cik_by_ticker_symbol(company_tickers, ticker_symbol)?;
 
+    // TODO: Move to enum
     let url = format!(
         "https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json",
         cik.to_string()

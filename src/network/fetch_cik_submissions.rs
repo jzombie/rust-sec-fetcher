@@ -8,7 +8,7 @@ pub async fn fetch_cik_submissions(
     sec_client: &SecClient,
     cik: Cik,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
-    // TODO: Migrate to `cik.get_submissions_url``
+    // TODO: Move to enum
     let url = format!(
         "https://data.sec.gov/submissions/CIK{}.json",
         cik.to_string()

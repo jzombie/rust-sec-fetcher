@@ -38,6 +38,7 @@ pub async fn fetch_nport_filing_by_cik_and_accession_number(
     let company_tickers = fetch_company_tickers(&sec_client).await?;
 
     // TODO: Dedupe
+    // TODO: Move to enum
     let url = format!(
         "https://www.sec.gov/Archives/edgar/data/{}/{}/primary_doc.xml",
         cik.to_string(),
