@@ -1,3 +1,4 @@
+use crate::enums::Url;
 use crate::models::{AccessionNumber, Cik, CikSubmission, NportInvestment};
 use crate::network::{
     fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_company_tickers, SecClient,
@@ -37,13 +38,7 @@ pub async fn fetch_nport_filing_by_cik_and_accession_number(
 ) -> Result<Vec<NportInvestment>, Box<dyn Error>> {
     let company_tickers = fetch_company_tickers(&sec_client).await?;
 
-    // TODO: Dedupe
-    // TODO: Move to enum
-    let url = format!(
-        "https://www.sec.gov/Archives/edgar/data/{}/{}/primary_doc.xml",
-        cik.to_string(),
-        accession_number.to_unformatted_string()
-    );
+    let url = Url::CikAccessionPrimaryDocument(cik.clone(), accession_number.clone()).value();
 
     let response = sec_client
         .raw_request(reqwest::Method::GET, &url, None, None)

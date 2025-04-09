@@ -1,3 +1,4 @@
+use crate::enums::Url;
 use crate::models::{AccessionNumber, Cik, CikSubmission};
 use crate::network::SecClient;
 use chrono::NaiveDate;
@@ -8,11 +9,8 @@ pub async fn fetch_cik_submissions(
     sec_client: &SecClient,
     cik: Cik,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
-    // TODO: Move to enum
-    let url = format!(
-        "https://data.sec.gov/submissions/CIK{}.json",
-        cik.to_string()
-    );
+    let url = Url::CikSubmission(cik.clone()).value();
+
     let data: Value = sec_client.fetch_json(&url, None).await?;
 
     // TODO: Move the following into `parsers`
