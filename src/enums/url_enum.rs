@@ -1,15 +1,29 @@
 use crate::models::{AccessionNumber, Cik};
 pub type Year = usize;
 
+/// A convenience enum for accessing structured SEC URLs.
 pub enum Url {
+    /// Points to the SEC's Investment Company Series and Class dataset CSV
+    /// for a given year.
     InvestmentCompanySeriesAndClassDataset(Year),
+
+    /// Points to the JSON submission metadata for a specific CIK.
     CikSubmission(Cik),
+
+    /// Points to the `primary_doc.xml` of a specific filing, using
+    /// CIK and Accession Number.
     CikAccessionPrimaryDocument(Cik, AccessionNumber),
+
+    /// Points to the full company ticker list JSON from the SEC.
     CompanyTickers,
+
+    /// Points to the `companyfacts` XBRL JSON API for a specific CIK.
     CompanyFacts(Cik),
 }
 
 impl Url {
+    /// Returns the fully qualified URL string corresponding to the
+    /// specified variant.
     pub fn value(&self) -> String {
         match &self {
             Url::InvestmentCompanySeriesAndClassDataset(year) => format!(
