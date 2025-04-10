@@ -1,33 +1,11 @@
-import json
+from ..pretrained_io import PretrainedIO
 import torch
 import pytorch_lightning as pl
 from torch import nn
 import torch.nn.functional as F
 from utils.pytorch import seed_everything
 
-class UsGaapAlignmentModel(pl.LightningModule):
-    @classmethod
-    def from_pretrained(cls, config_path, weights_path, map_location=None):
-        """
-        Load a model from saved configuration and weights.
-
-        Args:
-            config_path (str): Path to a JSON file containing the model's init kwargs.
-            weights_path (str): Path to a .pt or .bin file containing the model's state_dict.
-            map_location (Union[str, torch.device], optional): Device to map the tensors to.
-                Examples: "cpu", "cuda:0", torch.device("mps"). Defaults to None (let PyTorch decide).
-
-        Returns:
-            model (nn.Module): Instantiated model with loaded weights.
-        """
-        with open(config_path, "r") as f:
-            config = json.load(f)
-
-        model = cls(**config)
-        state_dict = torch.load(weights_path, map_location=map_location)
-        model.load_state_dict(state_dict)
-        return model
-
+class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
     def __init__(self, dropout_rate=0.2, hidden_size=256, num_heads=8, lr=1e-5, batch_size=36, gradient_clip=1.0, input_size = 1024):
         super(UsGaapAlignmentModel, self).__init__()
 
