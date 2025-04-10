@@ -10,6 +10,8 @@ pub enum Url {
     /// Points to the JSON submission metadata for a specific CIK.
     CikSubmission(Cik),
 
+    CikAccession(Cik, AccessionNumber),
+
     /// Points to the `primary_doc.xml` of a specific filing, using
     /// CIK and Accession Number.
     CikAccessionPrimaryDocument(Cik, AccessionNumber),
@@ -34,10 +36,14 @@ impl Url {
                 "https://data.sec.gov/submissions/CIK{}.json",
                 cik.to_string()
             ),
-            Url::CikAccessionPrimaryDocument(cik, accession_number ) => format!(
-                "https://www.sec.gov/Archives/edgar/data/{}/{}/primary_doc.xml",
+            Url::CikAccession(cik, accession_number ) => format!(
+                "https://www.sec.gov/Archives/edgar/data/{}/{}",
                 cik.to_string(),
                 accession_number.to_unformatted_string()
+            ),
+            Url::CikAccessionPrimaryDocument(cik, accession_number ) => format!(
+                "{}/primary_doc.xml",
+                Url::CikAccession(cik.clone(), accession_number.clone()).value(),
             ),
             Url::CompanyTickers => "https://www.sec.gov/files/company_tickers.json".to_string(),
             Url::CompanyFacts(cik) => format!(

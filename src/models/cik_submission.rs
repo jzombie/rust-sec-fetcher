@@ -1,3 +1,4 @@
+use crate::enums::Url;
 use crate::models::{AccessionNumber, Cik};
 use chrono::NaiveDate;
 
@@ -33,12 +34,7 @@ impl CikSubmission {
         nport_p_submissions.first().cloned()
     }
 
-    // TODO: Dedupe
     pub fn as_edgar_archive_url(&self) -> String {
-        format!(
-            "https://www.sec.gov/Archives/edgar/data/{}/{}/",
-            self.cik.to_string(),
-            self.accession_number.to_string()
-        )
+        Url::CikAccession(self.cik.clone(), self.accession_number.clone()).value()
     }
 }
