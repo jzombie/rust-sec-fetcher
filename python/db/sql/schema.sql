@@ -103,13 +103,13 @@ CREATE TABLE `us_gaap_statement_type` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `us_gaap_tag`
+-- Table structure for table `us_gaap_concept`
 --
 
-DROP TABLE IF EXISTS `us_gaap_tag`;
+DROP TABLE IF EXISTS `us_gaap_concept`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `us_gaap_tag` (
+CREATE TABLE `us_gaap_concept` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `balance_type_id` int unsigned DEFAULT NULL,
@@ -127,61 +127,61 @@ CREATE TABLE `us_gaap_tag` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `us_gaap_tag_description_variation`
+-- Table structure for table `us_gaap_concept_description_variation`
 --
 
-DROP TABLE IF EXISTS `us_gaap_tag_description_variation`;
+DROP TABLE IF EXISTS `us_gaap_concept_description_variation`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `us_gaap_tag_description_variation` (
+CREATE TABLE `us_gaap_concept_description_variation` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `us_gaap_tag_id` int unsigned NOT NULL,
+  `us_gaap_concept_id` int unsigned NOT NULL,
   `text` text NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
-  KEY `fk_us_gaap_tag_id_idx` (`us_gaap_tag_id`)
+  KEY `fk_us_gaap_concept_id_idx` (`us_gaap_concept_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `us_gaap_tag_ofss_category`
+-- Table structure for table `us_gaap_concept_ofss_category`
 --
 
-DROP TABLE IF EXISTS `us_gaap_tag_ofss_category`;
+DROP TABLE IF EXISTS `us_gaap_concept_ofss_category`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `us_gaap_tag_ofss_category` (
+CREATE TABLE `us_gaap_concept_ofss_category` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `us_gaap_tag_id` int unsigned NOT NULL,
+  `us_gaap_concept_id` int unsigned NOT NULL,
   `ofss_category_id` int unsigned NOT NULL,
   `is_manually_mapped` tinyint unsigned NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
   KEY `fk_ofss_category_id_idx` (`ofss_category_id`),
-  KEY `fk_us_gaap_tag_id_idx` (`us_gaap_tag_id`),
+  KEY `fk_us_gaap_concept_id_idx` (`us_gaap_concept_id`),
   CONSTRAINT `fk_ofss_category_id` FOREIGN KEY (`ofss_category_id`) REFERENCES `ofss_category` (`id`),
-  CONSTRAINT `fk_us_gaap_tag_id` FOREIGN KEY (`us_gaap_tag_id`) REFERENCES `us_gaap_tag` (`id`)
+  CONSTRAINT `fk_us_gaap_concept_id` FOREIGN KEY (`us_gaap_concept_id`) REFERENCES `us_gaap_concept` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `us_gaap_tag_statement_type`
+-- Table structure for table `us_gaap_concept_statement_type`
 --
 
-DROP TABLE IF EXISTS `us_gaap_tag_statement_type`;
+DROP TABLE IF EXISTS `us_gaap_concept_statement_type`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `us_gaap_tag_statement_type` (
+CREATE TABLE `us_gaap_concept_statement_type` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `us_gaap_tag_id` int unsigned NOT NULL,
+  `us_gaap_concept_id` int unsigned NOT NULL,
   `us_gaap_statement_type_id` int unsigned NOT NULL,
   `is_manually_mapped` tinyint unsigned NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
-  UNIQUE KEY `tag_statement_UNIQUE` (`us_gaap_tag_id`,`us_gaap_statement_type_id`),
+  UNIQUE KEY `tag_statement_UNIQUE` (`us_gaap_concept_id`,`us_gaap_statement_type_id`),
   KEY `fk_statement_id_idx` (`us_gaap_statement_type_id`),
   CONSTRAINT `fk_statement_id` FOREIGN KEY (`us_gaap_statement_type_id`) REFERENCES `us_gaap_statement_type` (`id`),
-  CONSTRAINT `fk_tag_id` FOREIGN KEY (`us_gaap_tag_id`) REFERENCES `us_gaap_tag` (`id`)
+  CONSTRAINT `fk_tag_id` FOREIGN KEY (`us_gaap_concept_id`) REFERENCES `us_gaap_concept` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
