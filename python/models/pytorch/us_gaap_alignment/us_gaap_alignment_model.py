@@ -141,3 +141,20 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
 
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=self.hparams.lr)
+
+
+    # TODO: Implement; For inference (Leave here or place elsewhere)
+    # def transform(self, variation_embeddings: torch.Tensor) -> torch.Tensor:
+    #     """
+    #     Transforms input variation embeddings using the trained model.
+    #     Equivalent to forward() but semantically clearer for inference.
+
+    #     Args:
+    #         variation_embeddings (torch.Tensor): Input tensor of shape (N, D)
+
+    #     Returns:
+    #         torch.Tensor: Transformed embeddings of shape (N, D)
+    #     """
+    #     self.eval()
+    #     with torch.no_grad():
+    #         return self.forward(variation_embeddings)
