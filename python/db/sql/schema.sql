@@ -71,38 +71,6 @@ CREATE TABLE `us_gaap_balance_type` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `us_gaap_period_type`
---
-
-DROP TABLE IF EXISTS `us_gaap_period_type`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `us_gaap_period_type` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `period_type` varchar(8) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `id_UNIQUE` (`id`),
-  UNIQUE KEY `period_type_UNIQUE` (`period_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `us_gaap_statement_type`
---
-
-DROP TABLE IF EXISTS `us_gaap_statement_type`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `us_gaap_statement_type` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `statement_type` varchar(30) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `id_UNIQUE` (`id`),
-  UNIQUE KEY `statement_type_UNIQUE` (`statement_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `us_gaap_concept`
 --
 
@@ -112,6 +80,7 @@ DROP TABLE IF EXISTS `us_gaap_concept`;
 CREATE TABLE `us_gaap_concept` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
+  `concept_type_id` int unsigned NOT NULL,
   `balance_type_id` int unsigned DEFAULT NULL,
   `period_type_id` int unsigned DEFAULT NULL,
   `label` text,
@@ -121,7 +90,9 @@ CREATE TABLE `us_gaap_concept` (
   UNIQUE KEY `name_UNIQUE` (`name`),
   KEY `fk_balance_type_id_idx` (`balance_type_id`),
   KEY `fk_period_type_id_idx` (`period_type_id`),
+  KEY `fk_concept_type_id_idx` (`concept_type_id`),
   CONSTRAINT `fk_balance_type_id` FOREIGN KEY (`balance_type_id`) REFERENCES `us_gaap_balance_type` (`id`),
+  CONSTRAINT `fk_concept_type_id` FOREIGN KEY (`concept_type_id`) REFERENCES `us_gaap_concept_type` (`id`),
   CONSTRAINT `fk_period_type_id` FOREIGN KEY (`period_type_id`) REFERENCES `us_gaap_period_type` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -178,10 +149,58 @@ CREATE TABLE `us_gaap_concept_statement_type` (
   `is_manually_mapped` tinyint unsigned NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
-  UNIQUE KEY `tag_statement_UNIQUE` (`us_gaap_concept_id`,`us_gaap_statement_type_id`),
+  UNIQUE KEY `concept_statement_UNIQUE` (`us_gaap_concept_id`,`us_gaap_statement_type_id`),
   KEY `fk_statement_id_idx` (`us_gaap_statement_type_id`),
   CONSTRAINT `fk_statement_id` FOREIGN KEY (`us_gaap_statement_type_id`) REFERENCES `us_gaap_statement_type` (`id`),
-  CONSTRAINT `fk_tag_id` FOREIGN KEY (`us_gaap_concept_id`) REFERENCES `us_gaap_concept` (`id`)
+  CONSTRAINT `fk_concept_id` FOREIGN KEY (`us_gaap_concept_id`) REFERENCES `us_gaap_concept` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `us_gaap_concept_type`
+--
+
+DROP TABLE IF EXISTS `us_gaap_concept_type`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `us_gaap_concept_type` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `concept_type` varchar(45) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  UNIQUE KEY `concept_type_UNIQUE` (`concept_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `us_gaap_period_type`
+--
+
+DROP TABLE IF EXISTS `us_gaap_period_type`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `us_gaap_period_type` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `period_type` varchar(8) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  UNIQUE KEY `period_type_UNIQUE` (`period_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `us_gaap_statement_type`
+--
+
+DROP TABLE IF EXISTS `us_gaap_statement_type`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `us_gaap_statement_type` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `statement_type` varchar(30) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  UNIQUE KEY `statement_type_UNIQUE` (`statement_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -194,4 +213,4 @@ CREATE TABLE `us_gaap_concept_statement_type` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-04-06 15:18:00
+-- Dump completed on 2025-04-10  9:03:31
