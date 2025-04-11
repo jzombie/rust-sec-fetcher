@@ -1,2 +1,3 @@
-from .ingest_us_gaap_concepts import upsert_us_gaap_concepts
+from .ingest_ofss_concept_mappings import upsert_ofss_concept_mappings
 from .ingest_ofss_schema import insert_ofss_data
+from .ingest_us_gaap_concepts import upsert_us_gaap_concepts
