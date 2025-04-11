@@ -38,11 +38,7 @@ def upsert_us_gaap_concepts(db: DB, csv_data):
             label = row['label'] if row['label'] else None
             documentation = row['documentation'] if row['documentation'] else None
 
-            try:
-                concept_type_id = db.upsert_entity('us_gaap_concept_type', {'concept_type': concept_type}, ['concept_type'])
-            except Exception as e:
-                logging.warning(f"Error upserting concept type '{concept_type}': {e}")
-                continue
+            concept_type_id = db.upsert_entity('us_gaap_concept_type', {'concept_type': concept_type}, ['concept_type'])
 
             # Upsert balance type if provided
             if balance is not None:
