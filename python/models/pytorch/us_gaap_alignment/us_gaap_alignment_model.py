@@ -5,6 +5,18 @@ from torch import nn
 import torch.nn.functional as F
 from utils.pytorch import seed_everything
 
+# Note:
+# The BGE encoder model (e.g., BAAI/bge-large-en-v1.5) is *not* included directly
+# in this architecture. This is an intentional design decision for efficiency:
+#
+# 1. The BGE model is large (~560M parameters) and memory-intensive.
+# 2. We assume embeddings from BGE are precomputed and passed in as input.
+# 3. This reduces runtime memory usage and avoids redundant computation.
+# 4. Keeping the encoder separate enables embedding caching and flexible updates.
+#
+# If needed, the encoder can be integrated as a frozen submodule,
+# but doing so would significantly increase memory and load time,
+# and would require retraining to maintain compatibility.
 class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
     def __init__(self, dropout_rate=0.2, hidden_size=256, num_heads=8, lr=1e-5, batch_size=36, gradient_clip=1.0, input_size = 1024):
         super(UsGaapAlignmentModel, self).__init__()
