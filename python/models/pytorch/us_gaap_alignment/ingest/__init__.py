@@ -1,0 +1,1 @@
+from .ingest_us_gaap_concepts import upsert_us_gaap_concepts
