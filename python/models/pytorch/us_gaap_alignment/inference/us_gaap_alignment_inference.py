@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import List, Dict
 import torch
 import json
@@ -6,16 +7,28 @@ from sklearn.metrics.pairwise import cosine_similarity
 from utils import generate_us_gaap_description
 from ..us_gaap_alignment_model import UsGaapAlignmentModel
 
-# TODO: Memoize
-def load_jsonl_embeddings(path):
+@lru_cache(maxsize=None)
+def load_jsonl_embeddings(path: str) -> List[Dict]:
     """
     Load precomputed embeddings and metadata from a JSONL file.
+
+    NOTE:
+        The return value is memoized with @lru_cache and must be treated as
+        read-only. Any mutation will affect all future calls with the same path.
+
+    Args:
+        path (str): Path to the JSONL file.
+
+    Returns:
+        List[dict]: List of rows with NumPy-converted 'description_embedding'.
     """
     rows = []
     with open(path, "r") as f:
         for line in f:
             row = json.loads(line)
-            row["description_embedding"] = np.array(row["description_embedding"], dtype=np.float32)
+            row["description_embedding"] = np.array(
+                row["description_embedding"], dtype=np.float32
+            )
             rows.append(row)
     return rows
 
