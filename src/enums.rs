@@ -1,3 +1,6 @@
+mod cache_namespace_prefix_enum;
+pub use cache_namespace_prefix_enum::CacheNamespacePrefix;
+
 mod fundamental_concept_enum;
 pub use fundamental_concept_enum::FundamentalConcept;
 

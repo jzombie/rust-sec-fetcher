@@ -1,4 +1,4 @@
-use crate::enums::Url;
+use crate::enums::{CacheNamespacePrefix, Url};
 use crate::models::InvestmentCompany;
 use crate::network::SecClient;
 use crate::parsers::parse_investment_companies_csv;
@@ -10,7 +10,7 @@ use std::sync::{Arc, LazyLock};
 
 static NAMESPACE_HASHER_LATEST_FUNDS_YEAR: LazyLock<Arc<NamespaceHasher>> = LazyLock::new(|| {
     Arc::new(NamespaceHasher::new(
-        b"network::fetch_investment_company_series_and_class_dataset",
+        CacheNamespacePrefix::LatestFundsYear.value(),
     ))
 });
 

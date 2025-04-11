@@ -1,4 +1,4 @@
-use crate::enums::TickerOrigin;
+use crate::enums::{CacheNamespacePrefix, TickerOrigin};
 use crate::models::Cik;
 use crate::Caches;
 use dashmap::DashMap;
@@ -11,7 +11,7 @@ static TOKEN_CACHE: LazyLock<DashMap<String, Vec<String>>> = LazyLock::new(DashM
 
 static NAMESPACE_HASHER_FUZZY_MATCHER: LazyLock<Arc<NamespaceHasher>> = LazyLock::new(|| {
     Arc::new(NamespaceHasher::new(
-        b"CompanyTicker::get_by_fuzzy_matched_name",
+        CacheNamespacePrefix::CompanyTickerFuzzyMatch.value(),
     ))
 });
 
