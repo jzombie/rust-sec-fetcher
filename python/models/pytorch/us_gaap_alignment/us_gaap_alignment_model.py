@@ -1,8 +1,11 @@
-from ..pretrained_io import PretrainedIO
+from functools import lru_cache
+from typing import Tuple
 import torch
 import pytorch_lightning as pl
 from torch import nn
 import torch.nn.functional as F
+from transformers import PreTrainedTokenizer, PreTrainedModel, AutoTokenizer, AutoModel
+from ..pretrained_io import PretrainedIO
 from utils.pytorch import seed_everything
 
 # Note:
@@ -18,6 +21,36 @@ from utils.pytorch import seed_everything
 # but doing so would significantly increase memory and load time,
 # and would require retraining to maintain compatibility.
 class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
+    @staticmethod
+    @lru_cache(maxsize=4)
+    def get_base_encoder(device: torch.device) -> Tuple[PreTrainedTokenizer, PreTrainedModel]:
+        """
+        Load the tokenizer and encoder used to generate base text embeddings
+        for variation descriptions prior to alignment.
+
+        This ensures consistent preprocessing and embedding generation
+        across training, inference, and evaluation stages.
+
+        Args:
+            device (torch.device): Device to place the encoder on
+                (e.g., torch.device("cuda"), torch.device("mps"), or "cpu").
+
+        Returns:
+            Tuple[PreTrainedTokenizer, PreTrainedModel]: A tuple containing
+            the tokenizer and encoder from the BAAI/bge-large-en-v1.5 model.
+        """
+        model_name = "BAAI/bge-large-en-v1.5"
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        encoder = AutoModel.from_pretrained(model_name)
+
+        # Move the encoder to the specified device
+        encoder = encoder.to(device)
+
+        encoder.eval()
+
+        return tokenizer, encoder
+
+
     def __init__(self, dropout_rate=0.2, hidden_size=256, num_heads=8, lr=1e-5, batch_size=36, gradient_clip=1.0, input_size = 1024):
         super(UsGaapAlignmentModel, self).__init__()
 
