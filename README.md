@@ -203,6 +203,90 @@ The Entity Name column will reflect these ETF providers.
 | `<isNonCashCollateral>`           | Indicates if **non-cash collateral** is involved (e.g., securities, bonds).                                                                                                         | `"Y"` (Yes) or `"N"` (No).                                                                                    |
 | `<isLoanByFund>`                  | Indicates if the fund itself has **loaned out the security**.                                                                                                                       | `"Y"` (Yes, loaned) or `"N"` (No).                                                                            |
 
+## Institutional and Insider Activity
+
+### Form 13F – Institutional Holdings
+
+**Form 13F** is filed quarterly by institutional investment managers with **at least $100 million** in assets under management. It discloses the manager's long positions in **U.S.-listed equity securities**.
+
+#### How to Access 13F Filings:
+
+Like other filings, these can be retrieved from:
+
+```http
+https://data.sec.gov/submissions/CIK##########.json
+```
+
+Look for `form == "13F-HR"` (the main holdings report) in the `filings.recent` section.
+
+#### Filing URL Construction:
+
+Using the accession number:
+```
+https://www.sec.gov/Archives/edgar/data/{CIK}/{ACCESSION_NUMBER}/primary_doc.xml
+```
+
+Or for index and full document list:
+
+```
+https://www.sec.gov/Archives/edgar/data/{CIK}/{ACCESSION_NUMBER}/index.json
+```
+
+#### Notes:
+
+- Holdings are typically found in an XML file (may use `<infoTable>` for each security).
+- Fields include: `cusip`, `nameOfIssuer`, `value`, `shrsOrPrnAmt`, `putCall`, `investmentDiscretion`, `votingAuthority`, etc.
+- Filing frequency: **Quarterly** (within 45 days after quarter end).
+
+---
+
+### Form 4 – Insider Transactions
+
+**Form 4** is used to report insider transactions by corporate officers, directors, and beneficial owners (>10%).
+
+#### How to Access:
+
+Same CIK JSON endpoint:
+
+```http
+https://data.sec.gov/submissions/CIK##########.json
+```
+
+Filter `form == "4"` in `filings.recent`.
+
+#### Filing URL Construction:
+
+Use the accession number like so:
+
+```http
+https://www.sec.gov/Archives/edgar/data/{CIK}/{ACCESSION_NUMBER}/xslF345X03/{DOCUMENT_NAME}.xml
+```
+
+You can also inspect the index:
+```
+https://www.sec.gov/Archives/edgar/data/{CIK}/{ACCESSION_NUMBER}/index.json
+```
+
+#### Common Fields:
+
+| **Field**              | **Description**                        |
+|------------------------|----------------------------------------|
+| `transactionDate`      | Date of insider trade                  |
+| `transactionCode`      | Code: `P` = purchase, `S` = sale, etc. |
+| `securitiesTransacted` | Number of shares bought or sold        |
+| `ownershipNature`      | Direct / Indirect ownership            |
+| `issuerCik`            | CIK of the issuing company             |
+
+#### Notes:
+
+- Form 4 must be filed **within 2 business days** of the transaction.
+- Includes **structured XML**, but not XBRL.
+
+#### Parsing Considerations:
+
+- Transactions are contained in `<nonDerivativeTable>` and `<derivativeTable>`.
+- The root tag is usually `<ownershipDocument>`.
+
 
 ## TODO: Company information via latest 10-K
 

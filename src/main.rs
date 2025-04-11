@@ -15,6 +15,7 @@ use std::path::Path;
 use tokio;
 use tokio::fs::create_dir_all;
 
+// Prototype iterator for investment companies
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // Initialize logger with default level INFO if not explicitly set
@@ -64,6 +65,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         if let Some(ticker_symbol) = &fund.class_ticker {
             info!("Ticker symbol: {}", ticker_symbol);
 
+            info!("Fetching latest NPORT-P filing...");
             let latest_nport_filing =
                 match fetch_nport_filing_by_ticker_symbol(&client, &ticker_symbol).await {
                     Ok(filing) => filing,
@@ -75,6 +77,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         continue;
                     }
                 };
+            info!("Fetched latest NPORT-P filing");
 
             // Get first letter of ticker symbol and uppercase it
             let first_letter = ticker_symbol.chars().next().unwrap().to_ascii_uppercase();
@@ -95,6 +98,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             );
 
             // Save CSV to categorized directory
+            info!("Writing CSV...");
             let file_path = format!("{}/{}.csv", dir_path, ticker_symbol);
             if let Err(e) = latest_nport_filing.write_to_csv(&file_path) {
                 let msg = format!("Failed to write CSV for {}: {}", ticker_symbol, e);
@@ -180,11 +184,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
 //     let mut error_log: HashMap<String, String> = HashMap::new();
 
 //     for (i, company_ticker) in company_tickers.iter().enumerate() {
-//         let ticker_symbol = &company_ticker.ticker_symbol;
+//         let ticker_symbol = &company_ticker.symbol;
 
 //         println!(
 //             "Processing ticker: {} ({} of {})",
-//             company_ticker.ticker_symbol,
+//             company_ticker.symbol,
 //             i + 1,
 //             company_tickers.len()
 //         );

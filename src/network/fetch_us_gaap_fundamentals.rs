@@ -1,3 +1,4 @@
+use crate::enums::Url;
 use crate::models::{Cik, Ticker};
 use crate::network::SecClient;
 use crate::parsers::parse_us_gaap_fundamentals;
@@ -16,10 +17,7 @@ pub async fn fetch_us_gaap_fundamentals(
     // Get the formatted CIK for the ticker
     let cik = Cik::get_company_cik_by_ticker_symbol(company_tickers, ticker_symbol)?;
 
-    let url = format!(
-        "https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json",
-        cik.to_string()
-    );
+    let url = Url::CompanyFacts(cik.clone()).value();
 
     // TODO: Debug log
     println!("Using URL: {}", url);
