@@ -30,11 +30,11 @@ def build_us_gaap_alignment_dataset(output_file: str):
                 bt.balance AS balance_type,
                 pt.period_type AS period_type,
                 GROUP_CONCAT(DISTINCT m.ofss_category_id ORDER BY m.ofss_category_id) AS ofss_category_ids,
-                GROUP_CONCAT(DISTINCT s.us_gaap_statement_type_id ORDER BY s.us_gaap_statement_type_id) AS statement_type_ids
+                -- GROUP_CONCAT(DISTINCT s.us_gaap_statement_type_id ORDER BY s.us_gaap_statement_type_id) AS statement_type_ids
             FROM us_gaap_concept t
             JOIN us_gaap_concept_description_variation v ON v.us_gaap_concept_id = t.id
             LEFT JOIN us_gaap_concept_ofss_category m ON m.us_gaap_concept_id = t.id AND m.is_manually_mapped = 1
-            LEFT JOIN us_gaap_concept_statement_type s ON s.us_gaap_concept_id = t.id AND s.is_manually_mapped = 1
+            -- LEFT JOIN us_gaap_concept_statement_type s ON s.us_gaap_concept_id = t.id AND s.is_manually_mapped = 1
             LEFT JOIN us_gaap_balance_type bt ON t.balance_type_id = bt.id
             LEFT JOIN us_gaap_period_type pt ON t.period_type_id = pt.id
             LEFT JOIN us_gaap_concept_type ct ON t.concept_type_id = ct.id
@@ -76,7 +76,7 @@ def build_concept_dataset(output_file, db, query: str, tokenizer, encoder, devic
         "balance_type",
         "period_type",
         "ofss_category_ids",
-        "statement_type_ids"
+        # "statement_type_ids"
     ])
 
     # Apply generate_us_gaap_description to the concept names
@@ -100,12 +100,11 @@ def build_concept_dataset(output_file, db, query: str, tokenizer, encoder, devic
     # Limit to a maximum of 2 labels per row
     df["ofss_category_ids"] = df["ofss_category_ids"].apply(lambda x: x[:2])
 
-    df["statement_type_ids"] = df["statement_type_ids"].apply(
-        lambda s: [int(x) for x in s.split(",")] if s else []
-    )
+    # df["statement_type_ids"] = df["statement_type_ids"].apply(
+    #     lambda s: [int(x) for x in s.split(",")] if s else []
+    # )
 
     # Save the dataset as JSONL (with embeddings and category IDs included)
     df.to_json(output_file, orient="records", lines=True)
 
     print(f"Dataset saved to {output_file} with {len(df)} rows, including embeddings and metadata.")
-
