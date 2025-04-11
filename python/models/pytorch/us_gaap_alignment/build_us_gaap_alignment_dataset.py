@@ -20,30 +20,28 @@ def build_us_gaap_alignment_dataset(output_file: str):
     # Database setup
     db = DB()
 
-    queries = {
-        "concept_variations": """
-            SELECT
-                t.id AS us_gaap_concept_id,
-                t.name AS us_gaap_concept_name,
-                ct.concept_type AS concept_type,
-                v.text AS variation_text,
-                bt.balance AS balance_type,
-                pt.period_type AS period_type,
-                GROUP_CONCAT(DISTINCT m.ofss_category_id ORDER BY m.ofss_category_id) AS ofss_category_ids
-                -- GROUP_CONCAT(DISTINCT s.us_gaap_statement_type_id ORDER BY s.us_gaap_statement_type_id) AS statement_type_ids
-            FROM us_gaap_concept t
-            JOIN us_gaap_concept_description_variation v ON v.us_gaap_concept_id = t.id
-            LEFT JOIN us_gaap_concept_ofss_category m ON m.us_gaap_concept_id = t.id AND m.is_manually_mapped = 1
-            -- LEFT JOIN us_gaap_concept_statement_type s ON s.us_gaap_concept_id = t.id AND s.is_manually_mapped = 1
-            LEFT JOIN us_gaap_balance_type bt ON t.balance_type_id = bt.id
-            LEFT JOIN us_gaap_period_type pt ON t.period_type_id = pt.id
-            LEFT JOIN us_gaap_concept_type ct ON t.concept_type_id = ct.id
-            WHERE m.ofss_category_id IS NOT NULL
-            GROUP BY t.id, v.text
-        """
-    }
+    query = """
+        SELECT
+            t.id AS us_gaap_concept_id,
+            t.name AS us_gaap_concept_name,
+            ct.concept_type AS concept_type,
+            v.text AS variation_text,
+            bt.balance AS balance_type,
+            pt.period_type AS period_type,
+            GROUP_CONCAT(DISTINCT m.ofss_category_id ORDER BY m.ofss_category_id) AS ofss_category_ids
+            -- GROUP_CONCAT(DISTINCT s.us_gaap_statement_type_id ORDER BY s.us_gaap_statement_type_id) AS statement_type_ids
+        FROM us_gaap_concept t
+        JOIN us_gaap_concept_description_variation v ON v.us_gaap_concept_id = t.id
+        LEFT JOIN us_gaap_concept_ofss_category m ON m.us_gaap_concept_id = t.id AND m.is_manually_mapped = 1
+        -- LEFT JOIN us_gaap_concept_statement_type s ON s.us_gaap_concept_id = t.id AND s.is_manually_mapped = 1
+        LEFT JOIN us_gaap_balance_type bt ON t.balance_type_id = bt.id
+        LEFT JOIN us_gaap_period_type pt ON t.period_type_id = pt.id
+        LEFT JOIN us_gaap_concept_type ct ON t.concept_type_id = ct.id
+        WHERE m.ofss_category_id IS NOT NULL
+        GROUP BY t.id, v.text
+    """
 
-    build_concept_dataset(output_file, db, queries["concept_variations"], tokenizer, encoder, device)
+    build_concept_dataset(output_file, db, query, tokenizer, encoder, device)
 
 def generate_embeddings(texts, tokenizer, encoder, device, batch_size=16):
     """
