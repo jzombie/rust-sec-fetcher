@@ -29,7 +29,7 @@ def build_us_gaap_alignment_dataset(output_file: str):
                 v.text AS variation_text,
                 bt.balance AS balance_type,
                 pt.period_type AS period_type,
-                GROUP_CONCAT(DISTINCT m.ofss_category_id ORDER BY m.ofss_category_id) AS ofss_category_ids,
+                GROUP_CONCAT(DISTINCT m.ofss_category_id ORDER BY m.ofss_category_id) AS ofss_category_ids
                 -- GROUP_CONCAT(DISTINCT s.us_gaap_statement_type_id ORDER BY s.us_gaap_statement_type_id) AS statement_type_ids
             FROM us_gaap_concept t
             JOIN us_gaap_concept_description_variation v ON v.us_gaap_concept_id = t.id
