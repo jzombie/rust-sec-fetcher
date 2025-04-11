@@ -14,33 +14,14 @@ ALLOWED_NON_XBRLI_CONCEPT_TYPES = [
 # the label and description.
 #
 # https://www.fasb.org/page/detail?pageId=/projects/FASB-Taxonomies/2025-gaap-financial-reporting-taxonomy.html
-def load_csv(file_path: str):
-    """
-    Loads the data from a CSV file.
-
-    Parameters:
-    - file_path (str): Path to the CSV file.
-
-    Returns:
-    - list: Parsed data from the CSV file as a list of dictionaries.
-    """
-    data = []
-    with open(file_path, 'r') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            data.append(row)
-    return data
-
-def upsert_us_gaap_concepts(db: DB, csv_file_path: str):
+def upsert_us_gaap_concepts(db: DB, csv_data):
     """
     Upserts the US GAAP concept data into the database.
 
     Parameters:
     - db: The DB instance from your ORM.
-    - csv_file_path (str): Path to the CSV file.
+    - csv_data
     """
-
-    csv_data = load_csv(csv_file_path)
 
     try:
         for row in tqdm(csv_data, desc="Importing US GAAP Concepts"):

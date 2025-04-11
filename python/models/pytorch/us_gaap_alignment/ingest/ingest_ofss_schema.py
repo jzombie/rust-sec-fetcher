@@ -1,19 +1,5 @@
-import json
 import logging
 from db import DB
-
-def load_ofss_schema(file_path):
-    """
-    Loads the schema from a JSON file.
-
-    Parameters:
-    - file_path (str): Path to the JSON schema file.
-
-    Returns:
-    - dict: Parsed JSON data.
-    """
-    with open(file_path, 'r') as f:
-        return json.load(f)
 
 def insert_ofss_data(db: DB, schema_data, parent_category_id=None):
     """
