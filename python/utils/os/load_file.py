@@ -1,6 +1,7 @@
 import json
 import csv
 
+# Optionally handle multi-line files here?
 def load_json(file_path):
     """
     Loads the contents from a JSON file.
