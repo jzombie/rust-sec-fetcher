@@ -25,20 +25,19 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
     @lru_cache(maxsize=4)
     def get_base_encoder(device: torch.device) -> Tuple[PreTrainedTokenizer, PreTrainedModel]:
         """
-        Load the tokenizer and encoder used to generate base text embeddings
-        for variation descriptions prior to alignment.
-
-        This ensures consistent preprocessing and embedding generation
-        across training, inference, and evaluation stages.
+        Load the tokenizer and transformer encoder used to generate text embeddings
+        prior to alignment. This method ensures consistent preprocessing across
+        training, inference, and evaluation workflows.
 
         Args:
-            device (torch.device): Device to place the encoder on
-                (e.g., torch.device("cuda"), torch.device("mps"), or "cpu").
+            device (torch.device): Target device for encoder placement 
+                (e.g., torch.device("cuda"), "cpu", or "mps").
 
         Returns:
-            Tuple[PreTrainedTokenizer, PreTrainedModel]: A tuple containing
-            the tokenizer and encoder from the BAAI/bge-large-en-v1.5 model.
+            Tuple[PreTrainedTokenizer, PreTrainedModel]: Tokenizer and transformer
+            model (e.g., BAAI/bge-large-en-v1.5) moved to the target device.
         """
+
         model_name = "BAAI/bge-large-en-v1.5"
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         encoder = AutoModel.from_pretrained(model_name)
@@ -51,7 +50,30 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
         return tokenizer, encoder
 
 
-    def __init__(self, dropout_rate=0.2, hidden_size=256, num_heads=8, lr=1e-5, batch_size=36, gradient_clip=1.0, input_size = 1024):
+    def __init__(
+            self,
+            dropout_rate=0.2,
+            hidden_size=256,
+            num_heads=8,
+            lr=1e-5,
+            batch_size=36,
+            gradient_clip=1.0,
+            input_size = 1024
+        ):
+        """
+        Initialize the US GAAP alignment model with an attention-based architecture
+        for embedding transformation.
+
+        Args:
+            dropout_rate (float): Dropout rate applied after activation layers.
+            hidden_size (int): Dimension of the hidden layer and attention embedding.
+            num_heads (int): Number of attention heads.
+            lr (float): Learning rate for the optimizer.
+            batch_size (int): Training batch size.
+            gradient_clip (float): Gradient clipping value.
+            input_size (int): Dimensionality of input embeddings.
+        """
+
         super(UsGaapAlignmentModel, self).__init__()
 
         self.lr = lr
@@ -88,7 +110,20 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
 
         self.fc_out = nn.Linear(hidden_size, input_size)  # Adjust to match input size
 
-    def forward(self, variation_embeddings):      
+    def forward(self, variation_embeddings):
+        """
+        Perform a forward pass to transform variation embeddings into aligned
+        semantic space using fully connected layers and self-attention.
+
+        Args:
+            variation_embeddings (torch.Tensor): Input tensor of shape 
+                [batch_size, input_size].
+
+        Returns:
+            torch.Tensor: Transformed embedding tensor of shape 
+                [batch_size, input_size].
+        """
+
         # Pass the embeddings through the fully connected layers
         variation_embeddings = self.fc(variation_embeddings)
 
@@ -108,6 +143,19 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
         return transformed_variation_embeddings
 
     def training_step(self, batch, batch_idx):
+        """
+        Perform a single training step using a batch of variation and description 
+        embeddings. Computes the cosine and Euclidean losses for alignment.
+
+        Args:
+            batch (Tuple[torch.Tensor, torch.Tensor]): Batch of variation and
+                corresponding description embeddings.
+            batch_idx (int): Index of the current batch.
+
+        Returns:
+            torch.Tensor: The total training loss for the batch.
+        """
+
         # Get the variation and description embeddings from the batch
         variation_embeddings, description_embeddings = batch
     
@@ -137,6 +185,19 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
         return total_loss
     
     def validation_step(self, batch, batch_idx):
+        """
+        Perform a validation step on a batch, computing the total loss and tracking
+        loss metrics including cosine and Euclidean distances.
+
+        Args:
+            batch (Tuple[torch.Tensor, torch.Tensor]): Batch of variation and
+                corresponding description embeddings.
+            batch_idx (int): Index of the current validation batch.
+
+        Returns:
+            torch.Tensor: The total validation loss for the batch.
+        """
+
         # Get the variation and description embeddings from the batch
         variation_embeddings, description_embeddings = batch
         
@@ -168,7 +229,15 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
 
     def cosine_similarity_loss(self, embedding1, embedding2):
         """
-        Calculate the Cosine similarity between two embeddings using F.pairwise_distance, as a loss (lower is better).
+        Compute the mean cosine similarity loss between two embedding tensors. 
+        Converts similarity into loss via (1 - cosine_sim).
+
+        Args:
+            embedding1 (torch.Tensor): First batch of embeddings.
+            embedding2 (torch.Tensor): Second batch of embeddings.
+
+        Returns:
+            torch.Tensor: Scalar loss value representing average 1 - cosine similarity.
         """
         
         # Compute cosine similarity
@@ -180,9 +249,24 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
 
     def euclidean_distance(self, embedding1, embedding2):
         """
-        Calculate the Euclidean distance between two embeddings using F.pairwise_distance.
+        Compute the pairwise Euclidean distance between two batches of embeddings.
+
+        Args:
+            embedding1 (torch.Tensor): First batch of embeddings.
+            embedding2 (torch.Tensor): Second batch of embeddings.
+
+        Returns:
+            torch.Tensor: Element-wise Euclidean distance vector for each pair.
         """
+
         return F.pairwise_distance(embedding1, embedding2, p=2)
 
     def configure_optimizers(self):
+        """
+        Configure and return the optimizer for the model training process.
+
+        Returns:
+            torch.optim.Optimizer: An instance of AdamW optimizer.
+        """
+        
         return torch.optim.AdamW(self.parameters(), lr=self.hparams.lr)
