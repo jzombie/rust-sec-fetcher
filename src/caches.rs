@@ -29,7 +29,7 @@ impl Caches {
             }
         }
 
-        // Company Ticker Cache
+        // Preprocessor Cache
         {
             let http_cache_path = cache_base_path.join("preprocessor_cache.bin");
 
