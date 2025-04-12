@@ -101,7 +101,7 @@ def build_concept_dataset(
     device: torch.device
 ) -> None:
     """
-    Execute a SQL query against the GAAP concept database, extract all
+    Execute a SQL query against the US GAAP concept database, extract all
     variation rows, generate embeddings, and construct a labeled JSONL dataset.
 
     Args:
