@@ -32,8 +32,6 @@ ALLOWED_CONCEPT_TYPES = [
     "dtr-types:volumeItemType",
     "srt-types:perUnitItemType",
     "xbrli:decimalItemType",
-    "xbrli:durationItemType",
-    "us-types:interestRateItemType",
     "xbrli:integerItemType",
     "dtr-types:flowItemType"
 ]
