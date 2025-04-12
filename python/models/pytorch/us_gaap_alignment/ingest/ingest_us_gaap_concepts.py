@@ -3,11 +3,24 @@ import logging
 from db import DB
 from tqdm import tqdm
 
-ALLOWED_NON_XBRLI_CONCEPT_TYPES = [
-    "dtr-types:perShareItemType",
-    "dtr-types:percentItemType",
-    "dtr-types:volumeItemType",
-    "srt-types:perUnitItemType"
+# ALLOWED_NON_XBRLI_CONCEPT_TYPES = [
+#     "dtr-types:perShareItemType",
+#     "dtr-types:percentItemType",
+#     "dtr-types:volumeItemType",
+#     "srt-types:perUnitItemType"
+# ]
+
+# Note: These were derived based on the original concept types which had statement type
+# mappings, then filtered down to only include which are mostly relevant to the OFSS schema.
+#
+# Items such as "date" are meant to be referenced separately and not obtained from this list.
+ALLOWED_CONCEPT_TYPES = [
+    'dtr-types:percentItemType',
+    'dtr-types:perShareItemType',
+    # 'xbrli:dateItemType',
+    # 'xbrli:gYearMonthItemType'
+    'xbrli:monetaryItemType',
+    'xbrli:sharesItemType'
 ]
 
 # Note: The decision was made to use this CSV instead of the raw XBRL as it is easier to parse and to obtain
@@ -35,8 +48,7 @@ def upsert_us_gaap_concepts(db: DB, csv_data: list[dict]) -> None:
     try:
         for row in tqdm(csv_data, desc="Importing US GAAP Concepts"):
             if row['prefix'] != "us-gaap" or (
-                not row['type'].startswith("xbrli:") and 
-                row['type'] not in ALLOWED_NON_XBRLI_CONCEPT_TYPES
+                row['type'] not in ALLOWED_CONCEPT_TYPES
             ):
                 continue
 
