@@ -1,3 +1,5 @@
+import logging
+from transformers import PreTrainedTokenizerBase, PreTrainedModel
 import pandas as pd
 import numpy as np
 from db import DB
@@ -7,13 +9,22 @@ import torch
 from utils.pytorch import seed_everything, get_device
 from .us_gaap_alignment_model import UsGaapAlignmentModel
 
-def build_us_gaap_alignment_dataset(output_file: str):
+def build_us_gaap_alignment_dataset(output_file: str, device: torch.device) -> None:
     """
-    Build the US GAAP alignment dataset by generating embeddings for
-    variations and descriptions of US GAAP concepts.
-    """
+    Construct a dataset of US GAAP variation embeddings and descriptions,
+    enriched with concept metadata and OFSS category associations. The dataset
+    is saved in JSONL format.
 
-    device = get_device()
+    Steps:
+    - Queries the database for concept variations and metadata.
+    - Generates BGE embeddings for variation text and auto-descriptions.
+    - Adds OFSS category IDs as multi-label targets.
+    - Saves to disk with variation and description embeddings.
+
+    Args:
+        output_file (str): Path to save the output JSONL dataset file.
+        device (torch.device): Device to run inference (e.g., "cuda", "cpu", "mps").
+    """
 
     tokenizer, encoder = UsGaapAlignmentModel.get_base_encoder(device)
 
@@ -43,10 +54,27 @@ def build_us_gaap_alignment_dataset(output_file: str):
 
     build_concept_dataset(output_file, db, query, tokenizer, encoder, device)
 
-def generate_embeddings(texts, tokenizer, encoder, device, batch_size=16):
+def generate_embeddings(
+    texts: list[str],
+    tokenizer: PreTrainedTokenizerBase,
+    encoder: PreTrainedModel,
+    device: torch.device,
+    batch_size: int = 16
+) -> np.ndarray:
     """
-    Generate embeddings for texts using the transformer model on the MPS device.
+    Generate BGE embeddings for a list of input texts using the transformer model.
+
+    Args:
+        texts (list[str]): List of raw text strings to embed.
+        tokenizer (PreTrainedTokenizerBase): HuggingFace tokenizer compatible with encoder model.
+        encoder (PreTrainedModel): HuggingFace transformer model to produce embeddings.
+        device (torch.device): Device to run inference (e.g., "cuda", "cpu", "mps").
+        batch_size (int): Number of samples per inference batch.
+
+    Returns:
+        np.ndarray: 2D NumPy array of shape [len(texts), embedding_dim].
     """
+
     embeddings = []
     for i in tqdm(range(0, len(texts), batch_size), desc="Generating Embeddings"):
         batch_texts = texts[i:i+batch_size]
@@ -64,7 +92,27 @@ def generate_embeddings(texts, tokenizer, encoder, device, batch_size=16):
         embeddings.extend(batch_embeddings)
     return np.array(embeddings)
 
-def build_concept_dataset(output_file, db, query: str, tokenizer, encoder, device):
+def build_concept_dataset(
+    output_file: str,
+    db: DB,
+    query: str,
+    tokenizer: PreTrainedTokenizerBase,
+    encoder: PreTrainedModel,
+    device: torch.device
+) -> None:
+    """
+    Execute a SQL query against the GAAP concept database, extract all
+    variation rows, generate embeddings, and construct a labeled JSONL dataset.
+
+    Args:
+        output_file (str): Path to save the JSONL dataset.
+        db (DB): Instance of the active database connection.
+        query (str): SQL query to select variations and metadata.
+        tokenizer (PreTrainedTokenizerBase): HuggingFace tokenizer compatible with encoder model.
+        encoder (PreTrainedModel): HuggingFace transformer model to produce embeddings.
+        device (torch.device): Target device for embedding generation.
+    """
+
     # Fetch data from the database
     df = db.get(query, [
         "us_gaap_concept_id",
@@ -81,11 +129,11 @@ def build_concept_dataset(output_file, db, query: str, tokenizer, encoder, devic
     df["us_gaap_concept_description"] = df["us_gaap_concept_name"].apply(generate_us_gaap_description)
 
     # Generate embeddings for variation text and description
-    print("Generating embeddings for variation text...")
+    logging.info("Generating embeddings for variation text...")
     variation_embeddings = generate_embeddings(df["variation_text"].tolist(), tokenizer, encoder, device)
 
     # Add embeddings as columns directly to the DataFrame
-    print("Generating embeddings for concept descriptions...")
+    logging.info("Generating embeddings for concept descriptions...")
     description_embeddings = generate_embeddings(df["us_gaap_concept_description"].tolist(), tokenizer, encoder, device)
 
     # Optionally process the `ofss_category_ids` if needed
@@ -105,4 +153,4 @@ def build_concept_dataset(output_file, db, query: str, tokenizer, encoder, devic
     # Save the dataset as JSONL (with embeddings and category IDs included)
     df.to_json(output_file, orient="records", lines=True)
 
-    print(f"Dataset saved to {output_file} with {len(df)} rows, including embeddings and metadata.")
+    logging.info(f"Dataset saved to {output_file} with {len(df)} rows, including embeddings and metadata.")
