@@ -52,13 +52,13 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
 
     def __init__(
             self,
-            dropout_rate=0.2,
-            hidden_size=256,
-            num_heads=8,
-            lr=1e-5,
-            batch_size=36,
-            gradient_clip=1.0,
-            input_size = 1024
+            dropout_rate=0.0,
+            hidden_size=1024,
+            num_heads=4,
+            lr=0.00045519680860224305,
+            batch_size=24,
+            gradient_clip=0.7000000000000001,
+            input_size=1024
         ):
         """
         Initialize the US GAAP alignment model with an attention-based architecture
@@ -268,5 +268,5 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
         Returns:
             torch.optim.Optimizer: An instance of AdamW optimizer.
         """
-        
+
         return torch.optim.AdamW(self.parameters(), lr=self.hparams.lr)
