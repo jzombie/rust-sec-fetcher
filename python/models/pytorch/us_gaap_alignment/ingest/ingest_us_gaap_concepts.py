@@ -31,8 +31,8 @@ ALLOWED_CONCEPT_TYPES = [
     "xbrli:sharesItemType",
     # "dtr-types:volumeItemType",
     "srt-types:perUnitItemType",
-    "xbrli:decimalItemType",
-    "xbrli:integerItemType",
+    # "xbrli:decimalItemType",
+    # "xbrli:integerItemType",
     # "dtr-types:flowItemType"
 ]
 
