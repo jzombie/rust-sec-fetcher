@@ -52,13 +52,13 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
 
     def __init__(
             self,
-            dropout_rate=0.0,
-            hidden_size=1024,
-            num_heads=4,
-            lr=0.00045519680860224305,
-            batch_size=24,
-            gradient_clip=0.7000000000000001,
-            input_size=1024
+            dropout_rate: float = 0.0,
+            hidden_size: int = 1024,
+            num_heads: int = 4,
+            lr: float = 0.00045519680860224305,
+            batch_size: int = 24,
+            gradient_clip: float = 0.7000000000000001,
+            input_size: int = 1024
         ):
         """
         Initialize the US GAAP alignment model with an attention-based architecture
@@ -110,7 +110,7 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
 
         self.fc_out = nn.Linear(hidden_size, input_size)  # Adjust to match input size
 
-    def forward(self, variation_embeddings):
+    def forward(self, variation_embeddings: torch.Tensor) -> torch.Tensor:
         """
         Perform a forward pass to transform variation embeddings into aligned
         semantic space using fully connected layers and self-attention.
@@ -142,7 +142,7 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
 
         return transformed_variation_embeddings
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> torch.Tensor:
         """
         Perform a single training step using a batch of variation and description 
         embeddings. Computes the cosine and Euclidean losses for alignment.
@@ -184,7 +184,7 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
     
         return total_loss
     
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> torch.Tensor:
         """
         Perform a validation step on a batch, computing the total loss and tracking
         loss metrics including cosine and Euclidean distances.
@@ -227,7 +227,7 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
     
         return total_loss
 
-    def cosine_similarity_loss(self, embedding1, embedding2):
+    def cosine_similarity_loss(self, embedding1: torch.Tensor, embedding2: torch.Tensor) -> torch.Tensor:
         """
         Compute the mean cosine similarity loss between two embedding tensors. 
         Converts similarity into loss via (1 - cosine_sim).
@@ -247,7 +247,7 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
         loss = 1 - cosine_sim.mean()  # Lower is better, as we want the transformed variation to be closer to the description
         return loss
 
-    def euclidean_distance(self, embedding1, embedding2):
+    def euclidean_distance(self, embedding1: torch.Tensor, embedding2: torch.Tensor) -> torch.Tensor:
         """
         Compute the pairwise Euclidean distance between two batches of embeddings.
 
@@ -261,12 +261,12 @@ class UsGaapAlignmentModel(pl.LightningModule, PretrainedIO):
 
         return F.pairwise_distance(embedding1, embedding2, p=2)
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> torch.optim.Optimizer:
         """
         Configure and return the optimizer for the model training process.
 
         Returns:
-            torch.optim.Optimizer: An instance of AdamW optimizer.
+            torch.optim.Optimizer: An Optimizer instance.
         """
 
         return torch.optim.AdamW(self.parameters(), lr=self.hparams.lr)
