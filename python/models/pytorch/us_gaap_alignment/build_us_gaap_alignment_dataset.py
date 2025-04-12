@@ -52,67 +52,6 @@ def build_us_gaap_alignment_dataset(output_file: str, device: torch.device) -> N
         GROUP BY t.id, v.text
     """
 
-    build_concept_dataset(output_file, db, query, tokenizer, encoder, device)
-
-def generate_embeddings(
-    texts: list[str],
-    tokenizer: PreTrainedTokenizerBase,
-    encoder: PreTrainedModel,
-    device: torch.device,
-    batch_size: int = 16
-) -> np.ndarray:
-    """
-    Generate BGE embeddings for a list of input texts using the transformer model.
-
-    Args:
-        texts (list[str]): List of raw text strings to embed.
-        tokenizer (PreTrainedTokenizerBase): HuggingFace tokenizer compatible with encoder model.
-        encoder (PreTrainedModel): HuggingFace transformer model to produce embeddings.
-        device (torch.device): Device to run inference (e.g., "cuda", "cpu", "mps").
-        batch_size (int): Number of samples per inference batch.
-
-    Returns:
-        np.ndarray: 2D NumPy array of shape [len(texts), embedding_dim].
-    """
-
-    embeddings = []
-    for i in tqdm(range(0, len(texts), batch_size), desc="Generating Embeddings"):
-        batch_texts = texts[i:i+batch_size]
-
-        # Tokenize the batch of texts
-        inputs = tokenizer(batch_texts, padding=True, truncation=True,
-                           max_length=512, return_tensors="pt").to(device)
-
-        # No gradients required for inference
-        with torch.no_grad():
-            outputs = encoder(**inputs)
-        
-        # Extract embeddings (use [CLS] token, first token in the sequence)
-        batch_embeddings = outputs.last_hidden_state[:, 0, :].cpu().numpy()
-        embeddings.extend(batch_embeddings)
-    return np.array(embeddings)
-
-def build_concept_dataset(
-    output_file: str,
-    db: DB,
-    query: str,
-    tokenizer: PreTrainedTokenizerBase,
-    encoder: PreTrainedModel,
-    device: torch.device
-) -> None:
-    """
-    Execute a SQL query against the US GAAP concept database, extract all
-    variation rows, generate embeddings, and construct a labeled JSONL dataset.
-
-    Args:
-        output_file (str): Path to save the JSONL dataset.
-        db (DB): Instance of the active database connection.
-        query (str): SQL query to select variations and metadata.
-        tokenizer (PreTrainedTokenizerBase): HuggingFace tokenizer compatible with encoder model.
-        encoder (PreTrainedModel): HuggingFace transformer model to produce embeddings.
-        device (torch.device): Target device for embedding generation.
-    """
-
     # Fetch data from the database
     df = db.get(query, [
         "us_gaap_concept_id",
@@ -154,3 +93,41 @@ def build_concept_dataset(
     df.to_json(output_file, orient="records", lines=True)
 
     logging.info(f"Dataset saved to {output_file} with {len(df)} rows, including embeddings and metadata.")
+
+def generate_embeddings(
+    texts: list[str],
+    tokenizer: PreTrainedTokenizerBase,
+    encoder: PreTrainedModel,
+    device: torch.device,
+    batch_size: int = 16
+) -> np.ndarray:
+    """
+    Generate BGE embeddings for a list of input texts using the transformer model.
+
+    Args:
+        texts (list[str]): List of raw text strings to embed.
+        tokenizer (PreTrainedTokenizerBase): HuggingFace tokenizer compatible with encoder model.
+        encoder (PreTrainedModel): HuggingFace transformer model to produce embeddings.
+        device (torch.device): Device to run inference (e.g., "cuda", "cpu", "mps").
+        batch_size (int): Number of samples per inference batch.
+
+    Returns:
+        np.ndarray: 2D NumPy array of shape [len(texts), embedding_dim].
+    """
+
+    embeddings = []
+    for i in tqdm(range(0, len(texts), batch_size), desc="Generating Embeddings"):
+        batch_texts = texts[i:i+batch_size]
+
+        # Tokenize the batch of texts
+        inputs = tokenizer(batch_texts, padding=True, truncation=True,
+                           max_length=512, return_tensors="pt").to(device)
+
+        # No gradients required for inference
+        with torch.no_grad():
+            outputs = encoder(**inputs)
+        
+        # Extract embeddings (use [CLS] token, first token in the sequence)
+        batch_embeddings = outputs.last_hidden_state[:, 0, :].cpu().numpy()
+        embeddings.extend(batch_embeddings)
+    return np.array(embeddings)
