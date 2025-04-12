@@ -6,7 +6,7 @@ from db import DB
 from utils import generate_us_gaap_description
 from tqdm import tqdm
 import torch
-from utils.pytorch import seed_everything, get_device
+from utils.pytorch import seed_everything
 from .us_gaap_alignment_model import UsGaapAlignmentModel
 
 def build_us_gaap_alignment_dataset(output_file: str, device: torch.device) -> None:
