@@ -35,9 +35,12 @@ def build_us_gaap_alignment_dataset(output_file: str, device: torch.device) -> N
         SELECT
             t.id AS us_gaap_concept_id,
             t.name AS us_gaap_concept_name,
+            COALESCE(ct.id, 0) AS concept_type_id,
             ct.concept_type AS concept_type,
             v.text AS variation_text,
+            COALESCE(bt.id, 0) AS balance_type_id,
             bt.balance AS balance_type,
+            COALESCE(pt.id, 0) AS period_type_id,
             pt.period_type AS period_type,
             GROUP_CONCAT(DISTINCT m.ofss_category_id ORDER BY m.ofss_category_id) AS ofss_category_ids
             -- GROUP_CONCAT(DISTINCT s.us_gaap_statement_type_id ORDER BY s.us_gaap_statement_type_id) AS statement_type_ids
@@ -56,9 +59,12 @@ def build_us_gaap_alignment_dataset(output_file: str, device: torch.device) -> N
     df = db.get(query, [
         "us_gaap_concept_id",
         "us_gaap_concept_name",
+        "concept_type_id",
         "concept_type",
         "variation_text",
+        "balance_type_id",
         "balance_type",
+        "period_type_id",
         "period_type",
         "ofss_category_ids",
         # "statement_type_ids"
