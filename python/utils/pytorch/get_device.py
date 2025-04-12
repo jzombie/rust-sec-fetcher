@@ -1,13 +1,15 @@
 import torch
 
 
-def get_device() -> str:
+def get_device() -> torch.device:
     """
-    Utility function to return the appropriate device based on availability:
-    - If MPS is available, returns "mps".
-    - If CUDA is available, returns "cuda".
-    - Otherwise, returns "cpu".
+    Detect the optimal available PyTorch device and return it as a torch.device
+    instance. Prefers MPS > CUDA > CPU.
+
+    Returns:
+        torch.device: The best available device ("mps", "cuda", or "cpu").
     """
+
     if torch.backends.mps.is_available():
         device = "mps"
     elif torch.cuda.is_available():
@@ -15,4 +17,4 @@ def get_device() -> str:
     else:
         device = "cpu"
 
-    return device
+    return torch.device(device)

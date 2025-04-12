@@ -136,27 +136,6 @@ CREATE TABLE `us_gaap_concept_ofss_category` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `us_gaap_concept_statement_type`
---
-
-DROP TABLE IF EXISTS `us_gaap_concept_statement_type`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `us_gaap_concept_statement_type` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `us_gaap_concept_id` int unsigned NOT NULL,
-  `us_gaap_statement_type_id` int unsigned NOT NULL,
-  `is_manually_mapped` tinyint unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `id_UNIQUE` (`id`),
-  UNIQUE KEY `concept_statement_UNIQUE` (`us_gaap_concept_id`,`us_gaap_statement_type_id`),
-  KEY `fk_statement_id_idx` (`us_gaap_statement_type_id`),
-  CONSTRAINT `fk_statement_id` FOREIGN KEY (`us_gaap_statement_type_id`) REFERENCES `us_gaap_statement_type` (`id`),
-  CONSTRAINT `fk_concept_id` FOREIGN KEY (`us_gaap_concept_id`) REFERENCES `us_gaap_concept` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `us_gaap_concept_type`
 --
 
@@ -187,22 +166,6 @@ CREATE TABLE `us_gaap_period_type` (
   UNIQUE KEY `period_type_UNIQUE` (`period_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `us_gaap_statement_type`
---
-
-DROP TABLE IF EXISTS `us_gaap_statement_type`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `us_gaap_statement_type` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `statement_type` varchar(30) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `id_UNIQUE` (`id`),
-  UNIQUE KEY `statement_type_UNIQUE` (`statement_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -213,4 +176,4 @@ CREATE TABLE `us_gaap_statement_type` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-04-10  9:03:31
+-- Dump completed on 2025-04-11 12:50:25
