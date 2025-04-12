@@ -16,11 +16,15 @@ def upsert_us_gaap_description_variations(db: DB, csv_data: list[dict]) -> None:
             - 'description_variation': Free-text variation to be embedded.
     """
     
+    unmapped_concept_names = set()
+
     try:
         for row in tqdm(csv_data, desc="Importing variations"):
             concept_name = row['tag']
             variation_text = row['description_variation'].lower()
 
+            # Skip if either field is empty
+            # The hand-rolled CSV file may have skipped variation text representing the original value
             if not concept_name or not variation_text:
                 continue
 
@@ -33,6 +37,7 @@ def upsert_us_gaap_description_variations(db: DB, csv_data: list[dict]) -> None:
 
             if concept_row.empty:
                 # logging.warning("Skipping unknown concept: %s", concept_name)
+                unmapped_concept_names.add(concept_name)
                 continue
 
             concept_id = concept_row.iloc[0]['id']
@@ -48,6 +53,10 @@ def upsert_us_gaap_description_variations(db: DB, csv_data: list[dict]) -> None:
             )
 
             # logging.debug("Inserted variation for concept: %s", concept_name)
+
+        for concept_name in unmapped_concept_names:
+            logging.warning(f"Unmapped concept: {concept_name}")
+        logging.warning("Total unmapped concepts: %d", len(unmapped_concept_names))
 
         logging.info("All description variations imported successfully.")
 
