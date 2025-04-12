@@ -7,17 +7,18 @@ from .us_gaap_alignment_inference import find_closest_match
 from .. import UsGaapAlignmentModel
 from utils.pytorch import seed_everything
 
-def ingest_automated_inference(db: DB, dataset_path: str, model: UsGaapAlignmentModel, device: torch.device):
+def ingest_automated_inference(db: DB, dataset_path: str, model: UsGaapAlignmentModel, device: torch.device) -> None:
     """
-    Ingests automated inference results into the database.
-    
-    Parameters:
-    - db: The DB instance from your ORM.
-    - dataset_path (str): Path to the dataset file.
-    - model: The trained model for inference.
-    - device: TODO: Document
+    Perform automated alignment inference on all unmapped US GAAP concepts,
+    find closest OFSS category matches, and upsert associations into the database.
 
+    Args:
+        db (DB): An initialized database connection instance.
+        dataset_path (str): Path to the JSONL dataset with reference embeddings.
+        model (UsGaapAlignmentModel): Fine-tuned alignment model for embedding matching.
+        device (torch.device): Device for running model inference.
     """
+    
     # Query unmapped concepts
     query = """
     SELECT
