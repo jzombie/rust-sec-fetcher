@@ -1,15 +1,20 @@
 import logging
 from db import DB
 
-def insert_ofss_data(db: DB, schema_data, parent_category_id=None):
+def insert_ofss_data(db: DB, schema_data: dict, parent_category_id: int | None = None) -> None:
     """
-    Inserts the OFSS data into the database recursively.
+    Recursively inserts hierarchical OFSS schema data into the database,
+    populating `ofss_group` and `ofss_category` tables.
 
-    Parameters:
-    - db: The DB instance from your ORM.
-    - schema_data (dict): The parsed OFSS schema data.
-    - parent_category_id: The ID of the parent category for hierarchical categories.
+    Args:
+        db (DB): Database connection instance.
+        schema_data (dict): Parsed nested structure of OFSS categories.
+            Keys are group names or item names, values are:
+            - dict (nested group): recurse and assign as children
+            - int (leaf ID): insert as `ofss_category`
+        parent_category_id (int | None): ID of the parent `ofss_group`, if applicable.
     """
+    
     try:
         for category_name, category_data in schema_data.items():
             logging.debug(f"Processing {category_name}: {type(category_data)}")

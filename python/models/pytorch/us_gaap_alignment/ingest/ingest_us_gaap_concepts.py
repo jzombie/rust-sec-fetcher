@@ -14,13 +14,22 @@ ALLOWED_NON_XBRLI_CONCEPT_TYPES = [
 # the label and description.
 #
 # https://www.fasb.org/page/detail?pageId=/projects/FASB-Taxonomies/2025-gaap-financial-reporting-taxonomy.html
-def upsert_us_gaap_concepts(db: DB, csv_data):
+def upsert_us_gaap_concepts(db: DB, csv_data: list[dict]) -> None:
     """
-    Upserts the US GAAP concept data into the database.
+    Upserts base-level US GAAP concepts into the database, including their
+    concept type, balance type, period type, label, and documentation fields.
 
-    Parameters:
-    - db: The DB instance from your ORM.
-    - csv_data
+    Only records with a 'us-gaap' prefix and a valid concept type are imported.
+
+    Args:
+        db (DB): Database connection instance.
+        csv_data (list[dict]): Parsed CSV records with fields like:
+            - 'name': US GAAP tag
+            - 'type': XBRL or DTR/SRT item type
+            - 'balance': 'debit' or 'credit' (optional)
+            - 'periodType': 'instant' or 'duration' (optional)
+            - 'label': Human-readable label (optional)
+            - 'documentation': Description (optional)
     """
 
     try:

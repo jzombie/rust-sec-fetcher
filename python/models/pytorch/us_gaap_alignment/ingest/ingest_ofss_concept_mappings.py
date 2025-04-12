@@ -5,13 +5,18 @@ import logging
 from tqdm import tqdm
 from db import DB
 
-def upsert_ofss_concept_mappings(db, csv_data):
+def upsert_ofss_concept_mappings(db: DB, csv_data: list[dict]) -> None:
     """
-    Upserts the OFSS concept mappings into the database.
+    Upserts mappings between US GAAP tags and OFSS category IDs. Skips
+    concepts not found in the database and logs all unmapped entries.
 
-    Parameters:
-    - db: The DB instance from your ORM.
-    - csv_data (list): The parsed CSV data.
+    Args:
+        db (DB): Database connection instance.
+        csv_data (list[dict]): Parsed CSV rows with fields:
+            - 'tag': US GAAP tag
+            - 'balance': Optional balance type
+            - 'period_type': Optional period type
+            - 'ofss_id': OFSS category ID to associate
     """
 
     unmapped_concept_names = set()

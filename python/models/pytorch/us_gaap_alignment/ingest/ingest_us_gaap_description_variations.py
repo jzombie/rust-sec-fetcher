@@ -2,14 +2,20 @@ import logging
 from db import DB
 from tqdm import tqdm
 
-def upsert_us_gaap_description_variations(db: DB, csv_data):
+def upsert_us_gaap_description_variations(db: DB, csv_data: list[dict]) -> None:
     """
-    Inserts GAAP concept description variations into the database.
+    Upserts description variation text for US GAAP concepts into the database.
 
-    Parameters:
-    - db: The DB instance from your ORM.
-    - csv_data (list): The parsed CSV data.
+    Each variation is lowercased and tied to its corresponding concept via
+    foreign key lookup. If the concept cannot be found, the variation is skipped.
+
+    Args:
+        db (DB): Database connection instance.
+        csv_data (list[dict]): Parsed CSV records with keys:
+            - 'tag': GAAP concept name.
+            - 'description_variation': Free-text variation to be embedded.
     """
+    
     try:
         for row in tqdm(csv_data, desc="Importing variations"):
             concept_name = row['tag']
