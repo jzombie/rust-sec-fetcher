@@ -10,18 +10,19 @@ from ..us_gaap_alignment_model import UsGaapAlignmentModel
 @lru_cache(maxsize=None)
 def load_jsonl_embeddings(path: str) -> List[Dict]:
     """
-    Load precomputed embeddings and metadata from a JSONL file.
+    Load precomputed JSONL-encoded embedding data from disk and convert each
+    row's 'description_embedding' into a NumPy array.
 
-    NOTE:
-        The return value is memoized with @lru_cache and must be treated as
-        read-only. Any mutation will affect all future calls with the same path.
+    NOTE: The result is memoized and should be treated as read-only to prevent
+    unintended side effects across calls.
 
     Args:
-        path (str): Path to the JSONL file.
+        path (str): Path to the JSONL file containing embedding records.
 
     Returns:
-        List[dict]: List of rows with NumPy-converted 'description_embedding'.
+        List[Dict]: List of deserialized rows with NumPy embeddings attached.
     """
+
     rows = []
     with open(path, "r") as f:
         for line in f:
@@ -32,17 +33,18 @@ def load_jsonl_embeddings(path: str) -> List[Dict]:
             rows.append(row)
     return rows
 
-def embed_text(text: str, model: UsGaapAlignmentModel, device: str) -> torch.Tensor:
+def embed_text(text: str, model: UsGaapAlignmentModel, device: torch.device) -> torch.Tensor:
     """
-    Convert raw text to aligned embedding using BGE encoder and fine-tuned model.
+    Encode raw input text using the BGE encoder and alignment model into a
+    single semantic embedding.
 
     Args:
-        text (str): Input variation or description text.
-        model (UsGaapAlignmentModel): Alignment model to transform BGE embeddings.
-        device (str): Device to perform inference on.
+        text (str): Raw description or variation text to encode.
+        model (UsGaapAlignmentModel): The trained transformation model.
+        device (torch.device): The device on which to run the encoder and model.
 
     Returns:
-        torch.Tensor: Transformed embedding as a 1D tensor.
+        torch.Tensor: Transformed 1D tensor representing the aligned embedding.
     """
 
     tokenizer, encoder = UsGaapAlignmentModel.get_base_encoder(device)
@@ -76,25 +78,26 @@ def find_closest_match(
     period_type: str,
     dataset_path: str,
     top_k: int = 1,
-    device: torch.device = "cpu"
+    device: torch.device = torch.device("cpu")
 ) -> List[Dict]:
     """
-    Find the top-k closest aligned US GAAP concepts by cosine similarity,
-    using a fine-tuned vector alignment model.
+    Find the top-k most similar concepts from the precomputed dataset by 
+    computing cosine similarity between the input concept and reference entries.
 
     Args:
-        us_gaap_concept (str): Raw US GAAP concept name (e.g. tag like "AccountsReceivable").
-        model (UsGaapAlignmentModel): Loaded alignment model for transforming embeddings.
-        concept_type (str): Required concept type filter (e.g. "monetaryItemType").
-        balance_type (str): Required balance type filter (e.g. "debit", "credit").
-        period_type (str): Required period type filter (e.g. "instant", "duration").
-        dataset_path (str): Path to the JSONL dataset with precomputed description embeddings.
-        top_k (int): Number of top matching results to return.
-        device (torch.device): Device for inference (e.g. "cpu", "cuda", "mps").
+        us_gaap_concept (str): The input GAAP concept name to match.
+        model (UsGaapAlignmentModel): Trained alignment model.
+        concept_type (str): Required concept type filter (e.g., monetaryItemType).
+        balance_type (str): Required balance filter (e.g., debit, credit).
+        period_type (str): Required period type filter (e.g., instant, duration).
+        dataset_path (str): Path to the JSONL dataset with reference embeddings.
+        top_k (int): Number of top matches to return.
+        device (torch.device): Torch device for inference computations.
 
     Returns:
-        List[dict]: Top matching entries from the dataset, ranked by cosine similarity.
+        List[Dict]: Top-k most similar entries from the dataset.
     """
+    
     _, encoder = UsGaapAlignmentModel.get_base_encoder(device)
 
     model = model.to(device).eval()
