@@ -1,4 +1,5 @@
 import logging
+import torch
 import pandas as pd
 from db import DB
 from tqdm import tqdm
@@ -6,7 +7,7 @@ from .us_gaap_alignment_inference import find_closest_match
 from .. import UsGaapAlignmentModel
 from utils.pytorch import seed_everything
 
-def ingest_automated_inference(db: DB, dataset_path: str, model: UsGaapAlignmentModel, device: str):
+def ingest_automated_inference(db: DB, dataset_path: str, model: UsGaapAlignmentModel, device: torch.device):
     """
     Ingests automated inference results into the database.
     

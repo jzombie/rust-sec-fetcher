@@ -76,7 +76,7 @@ def find_closest_match(
     period_type: str,
     dataset_path: str,
     top_k: int = 1,
-    device: str = "cpu"
+    device: torch.device = "cpu"
 ) -> List[Dict]:
     """
     Find the top-k closest aligned US GAAP concepts by cosine similarity,
@@ -90,7 +90,7 @@ def find_closest_match(
         period_type (str): Required period type filter (e.g. "instant", "duration").
         dataset_path (str): Path to the JSONL dataset with precomputed description embeddings.
         top_k (int): Number of top matching results to return.
-        device (str): Device for inference (e.g. "cpu", "cuda", "mps").
+        device (torch.device): Device for inference (e.g. "cpu", "cuda", "mps").
 
     Returns:
         List[dict]: Top matching entries from the dataset, ranked by cosine similarity.
