@@ -29,11 +29,11 @@ ALLOWED_CONCEPT_TYPES = [
     "dtr-types:perShareItemType",
     "xbrli:monetaryItemType",
     "xbrli:sharesItemType",
-    "dtr-types:volumeItemType",
+    # "dtr-types:volumeItemType",
     "srt-types:perUnitItemType",
     "xbrli:decimalItemType",
     "xbrli:integerItemType",
-    "dtr-types:flowItemType"
+    # "dtr-types:flowItemType"
 ]
 
 # Note: The decision was made to use this CSV instead of the raw XBRL as it is easier to parse and to obtain
