@@ -8,7 +8,7 @@ import logging
 SEED = 42
 
 
-def seed_everything(seed: int):
+def seed_everything(seed: int) -> None:
     """
     This function sets the seed for various libraries to ensure reproducibility.
     It seeds Python's built-in random module, NumPy, PyTorch (CPU and GPU), PyTorch Lightning, and MPS (Apple Silicon).
