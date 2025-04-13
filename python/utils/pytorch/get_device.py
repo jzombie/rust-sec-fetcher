@@ -11,6 +11,7 @@ def get_device() -> torch.device:
     """
 
     if torch.backends.mps.is_available():
+        # TODO: Check for related: https://pytorch.org/docs/main/notes/mps.html
         device = "mps"
     elif torch.cuda.is_available():
         device = "cuda"
