@@ -1,6 +1,6 @@
 import torch
 
-
+# TODO: Rename to `get_default_device`?
 def get_device() -> torch.device:
     """
     Detect the optimal available PyTorch device and return it as a torch.device
