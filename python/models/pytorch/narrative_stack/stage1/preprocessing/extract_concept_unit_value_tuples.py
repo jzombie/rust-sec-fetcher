@@ -9,19 +9,31 @@ from collections import defaultdict
 from tqdm import tqdm
 from db import DB
 from pathlib import Path
+import torch
+from sentence_transformers import SentenceTransformer
+from utils import generate_us_gaap_description
+from utils.pytorch import seed_everything, model_hash
+
+ConceptUnitValueTuples = List[Tuple[str, str, float]]
+UnitValues = Dict[str, List[float]]
+UnitConcepts = Dict[str, Set[str]]
+NonNumericUnits = Set[str]
+CsvFiles = List[str]
+Concepts = List[str]
+ConceptUnitPair = Tuple[str, str]
 
 
-class ExtractedConceptData(BaseModel):
-    concept_unit_value_tuples: List[Tuple[str, str, float]]
-    unit_values: Dict[str, List[float]]
-    unit_concepts: Dict[str, Set[str]]
-    non_numeric_units: Set[str]
-    csv_files: List[str]
+class ExtractedConceptUnitValueData(BaseModel):
+    concept_unit_value_tuples: ConceptUnitValueTuples
+    unit_values: UnitValues
+    unit_concepts: UnitConcepts
+    non_numeric_units: NonNumericUnits
+    csv_files: CsvFiles
 
 
 def extract_concept_unit_value_tuples(
-    data_dir: str | Path, valid_concepts: list[str]
-) -> ExtractedConceptData:
+    data_dir: str | Path, valid_concepts: Concepts
+) -> ExtractedConceptUnitValueData:
     concept_unit_value_tuples = []
     unit_values = defaultdict(list)
     unit_concepts = defaultdict(set)
@@ -57,7 +69,7 @@ def extract_concept_unit_value_tuples(
         except Exception as e:
             logging.warning(f"Skipped {path}: {e}")
 
-    return ExtractedConceptData(
+    return ExtractedConceptUnitValueData(
         concept_unit_value_tuples=concept_unit_value_tuples,
         unit_values=unit_values,
         unit_concepts=unit_concepts,
@@ -66,24 +78,69 @@ def extract_concept_unit_value_tuples(
     )
 
 
-def get_valid_concepts(db: DB) -> list[str]:
+def get_valid_concepts(db: DB) -> Concepts:
     concept_df = db.get("SELECT name FROM us_gaap_concept", ["name"])
     valid_concepts = set(concept_df["name"].values)
 
     return valid_concepts
 
 
-def generate_concepts_report(data_dir: str | Path, db: DB):
-    valid_concepts = get_valid_concepts(db)
+def collect_concept_unit_pairs(
+    extracted_concept_unit_value_data: ExtractedConceptUnitValueData,
+) -> List[ConceptUnitPair]:
+    seen = set()
+    concept_unit_pairs = []
+    for concept, unit, _ in extracted_concept_unit_value_data.concept_unit_value_tuples:
+        pair = (concept, unit)
+        if pair not in seen:
+            seen.add(pair)
+            concept_unit_pairs.append(pair)
 
-    extracted_concept_data = extract_concept_unit_value_tuples(data_dir, valid_concepts)
+    # Enforce deterministic ordering (possibly IMPORTANT)
+    return sorted(concept_unit_pairs, key=lambda x: (x[0], x[1]))
 
-    print(f"\n✅ Scanned {len(extracted_concept_data.csv_files)} files.")
+
+# TODO: Document return type
+def generate_concept_unit_embeddings(
+    concept_unit_pairs: List[ConceptUnitPair], device: torch.device
+):
+    input_texts = [
+        f"{generate_us_gaap_description(concept)} measured in {unit}"
+        for concept, unit in concept_unit_pairs
+    ]
+
+    model = SentenceTransformer("BAAI/bge-large-en-v1.5")
+    model.eval()  # IMPORTANT
+    model.to(device)
+
+    logging.info(f"Embedding model hash: {model_hash(model)}")
+
+    def encode_on_device(texts, model, batch_size=64):
+        all_embeddings = []
+        for i in tqdm(range(0, len(texts), batch_size), desc="Encoding"):
+            batch = texts[i : i + batch_size]
+            tokens = model.tokenize(batch)
+            tokens = {k: v.to(device) for k, v in tokens.items()}
+            with torch.no_grad():
+                output = model.forward(tokens)
+                embeddings = output["sentence_embedding"]
+            all_embeddings.append(embeddings.cpu())
+        return torch.cat(all_embeddings).numpy()
+
+    concept_unit_embeddings = encode_on_device(input_texts, model)
+
+    return concept_unit_embeddings
+
+
+def generate_concepts_report(
+    extracted_concept_unit_value_data: ExtractedConceptUnitValueData,
+):
+    print(f"\n✅ Scanned {len(extracted_concept_unit_value_data.csv_files)} files.")
     print(
-        f"📦 Found {len(extracted_concept_data.unit_values)} numeric units and {len(extracted_concept_data.non_numeric_units)} non-numeric units."
+        f"📦 Found {len(extracted_concept_unit_value_data.unit_values)} numeric units and {len(extracted_concept_unit_value_data.non_numeric_units)} non-numeric units."
     )
 
-    for unit, values in sorted(extracted_concept_data.unit_values.items()):
+    for unit, values in sorted(extracted_concept_unit_value_data.unit_values.items()):
         arr = np.array(values)
         print(f"🔹 {unit}")
         print(f"   Count: {len(arr)}")
@@ -92,14 +149,14 @@ def generate_concepts_report(data_dir: str | Path, db: DB):
         print(f"   Mean:  {arr.mean():,.4f}")
         print(f"   Std:   {arr.std():,.4f}")
         print(
-            f"   Concepts: {', '.join(sorted(extracted_concept_data.unit_concepts[unit]))}"
+            f"   Concepts: {', '.join(sorted(extracted_concept_unit_value_data.unit_concepts[unit]))}"
         )
 
-    if extracted_concept_data.non_numeric_units:
+    if extracted_concept_unit_value_data.non_numeric_units:
         print("\n⚠️ Non-numeric units encountered:")
-        for unit in sorted(extracted_concept_data.non_numeric_units):
+        for unit in sorted(extracted_concept_unit_value_data.non_numeric_units):
             print(f"  - {unit}")
 
     print(
-        f"\n🧮 Total values extracted: {len(extracted_concept_data.concept_unit_value_tuples):,}"
+        f"\n🧮 Total values extracted: {len(extracted_concept_unit_value_data.concept_unit_value_tuples):,}"
     )
