@@ -40,8 +40,9 @@ def extract_concept_unit_value_tuples(
     non_numeric_units = set()
 
     csv_files = []
+    # Note: If this were to span multiple sub-directories, dirs should be presorted as well
     for root, _, files in os.walk(to_path(data_dir, as_str=True)):
-        for file in files:
+        for file in sorted(files): # Ensures files in each directory are read in order
             if file.endswith(".csv"):
                 csv_files.append(os.path.join(root, file))
 
@@ -96,8 +97,7 @@ def collect_concept_unit_pairs(
             seen.add(pair)
             concept_unit_pairs.append(pair)
 
-    # Enforce deterministic ordering (possibly IMPORTANT)
-    return sorted(concept_unit_pairs, key=lambda x: (x[0], x[1]))
+    return concept_unit_pairs
 
 
 # TODO: Document return type
