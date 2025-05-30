@@ -121,6 +121,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+// Prototype debug iterator for investment companies
 // #[tokio::main]
 // async fn main() -> Result<(), Box<dyn Error>> {
 //     let config_manager = ConfigManager::load()?;
