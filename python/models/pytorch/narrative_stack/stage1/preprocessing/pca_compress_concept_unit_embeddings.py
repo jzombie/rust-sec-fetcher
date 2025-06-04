@@ -39,6 +39,12 @@ def pca_compress_concept_unit_embeddings(
     )
 
     if pca is None:
+        """
+        Notes: To further ensure determinism:
+            - Set OMP_NUM_THREADS=1, MKL_NUM_THREADS=1, etc.
+            - Fix the random seed (not needed for "full", but good practice).
+            - Use the same Python and sklearn/BLAS build across runs.
+        """
         pca = PCA(
             n_components=n_components,
             svd_solver="full",  # Exact SVD (deterministic on same system, but not cross-platform bitwise identical)
