@@ -15,7 +15,7 @@ services:
       --max-connections=200
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: onlylocal
+      MYSQL_ROOT_PASSWORD: onlylocal # TODO: Ideally this should not be hardcoded but the intentions are not to expose this database publicly
     volumes:
       - ./data/us-gaap.db:/var/lib/mysql
     ports:
@@ -23,5 +23,5 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "4"  # Allocate 4 CPU cores
+          cpus: "4" # Allocate 4 CPU cores
           memory: 2g
