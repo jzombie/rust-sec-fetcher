@@ -50,7 +50,12 @@ TODO: What is Stage 1?
 
         TODO: Document expected field rows, etc, for reference?
 
+    3. Ingest into database
 
+        Use `notebooks/ingest_us_gaap_concepts.py` to ingest.
+
+
+    --- TODO: Are these needed?
     n?. Download taxonomy hierarchies and extract ZIP file.
     n?. Extract taxonomy hierarchies to a CSV.
 
