@@ -15,8 +15,8 @@ from utils import generate_us_gaap_description
 from utils.pytorch import seed_everything, model_hash
 
 ConceptUnitValueTuples = List[Tuple[str, str, float]]
-UnitValues = Dict[str, List[float]]
-UnitConcepts = Dict[str, Set[str]]
+# UnitValues = Dict[str, List[float]] # TODO: Remove
+# UnitConcepts = Dict[str, Set[str]] # TODO: Remove
 NonNumericUnits = Set[str]
 CsvFiles = List[str]
 Concepts = List[str]
@@ -25,8 +25,8 @@ ConceptUnitPair = Tuple[str, str]
 
 class ExtractedConceptUnitValueData(BaseModel):
     concept_unit_value_tuples: ConceptUnitValueTuples
-    unit_values: UnitValues
-    unit_concepts: UnitConcepts
+    # unit_values: UnitValues # TODO: Remove
+    # unit_concepts: UnitConcepts # TODO: Remove
     non_numeric_units: NonNumericUnits
     csv_files: CsvFiles
 
@@ -35,14 +35,14 @@ def extract_concept_unit_value_tuples(
     data_dir: str | Path, valid_concepts: Concepts
 ) -> ExtractedConceptUnitValueData:
     concept_unit_value_tuples = []
-    unit_values = defaultdict(list)
-    unit_concepts = defaultdict(set)
+    # unit_values = defaultdict(list) # TODO: Remove
+    # unit_concepts = defaultdict(set) # TODO: Remove
     non_numeric_units = set()
 
     csv_files = []
     # Note: If this were to span multiple sub-directories, dirs should be presorted as well
     for root, _, files in os.walk(to_path(data_dir, as_str=True)):
-        for file in sorted(files): # Ensures files in each directory are read in order
+        for file in sorted(files):  # Ensures files in each directory are read in order
             if file.endswith(".csv"):
                 csv_files.append(os.path.join(root, file))
 
@@ -63,8 +63,8 @@ def extract_concept_unit_value_tuples(
                     try:
                         num_val = float(val_part.strip())
                         concept_unit_value_tuples.append((col, unit_part, num_val))
-                        unit_values[unit_part].append(num_val)
-                        unit_concepts[unit_part].add(col)
+                        # unit_values[unit_part].append(num_val) # TODO: Remove
+                        # unit_concepts[unit_part].add(col) # TODO: Remove
                     except ValueError:
                         non_numeric_units.add(unit_part)
         except Exception as e:
@@ -72,8 +72,8 @@ def extract_concept_unit_value_tuples(
 
     return ExtractedConceptUnitValueData(
         concept_unit_value_tuples=concept_unit_value_tuples,
-        unit_values=unit_values,
-        unit_concepts=unit_concepts,
+        # unit_values=unit_values, # TODO: Remove
+        # unit_concepts=unit_concepts, # TODO: Remove
         non_numeric_units=non_numeric_units,
         csv_files=csv_files,
     )
@@ -132,15 +132,60 @@ def generate_concept_unit_embeddings(
     return concept_unit_embeddings
 
 
+# TODO: Remove old version
+# def generate_concepts_report(
+#     extracted_concept_unit_value_data: ExtractedConceptUnitValueData,
+# ):
+#     print(f"\n✅ Scanned {len(extracted_concept_unit_value_data.csv_files)} files.")
+#     print(
+#         f"📦 Found {len(extracted_concept_unit_value_data.unit_values)} numeric units and {len(extracted_concept_unit_value_data.non_numeric_units)} non-numeric units."
+#     )
+
+#     for unit, values in sorted(extracted_concept_unit_value_data.unit_values.items()):
+#         arr = np.array(values)
+#         print(f"🔹 {unit}")
+#         print(f"   Count: {len(arr)}")
+#         print(f"   Min:   {arr.min():,.4f}")
+#         print(f"   Max:   {arr.max():,.4f}")
+#         print(f"   Mean:  {arr.mean():,.4f}")
+#         print(f"   Std:   {arr.std():,.4f}")
+#         print(
+#             f"   Concepts: {', '.join(sorted(extracted_concept_unit_value_data.unit_concepts[unit]))}"
+#         )
+
+#     if extracted_concept_unit_value_data.non_numeric_units:
+#         print("\n⚠️ Non-numeric units encountered:")
+#         for unit in sorted(extracted_concept_unit_value_data.non_numeric_units):
+#             print(f"  - {unit}")
+
+#     print(
+#         f"\n🧮 Total values extracted: {len(extracted_concept_unit_value_data.concept_unit_value_tuples):,}"
+#     )
+
+
+# TODO: Validate this matches old version
 def generate_concepts_report(
     extracted_concept_unit_value_data: ExtractedConceptUnitValueData,
 ):
     print(f"\n✅ Scanned {len(extracted_concept_unit_value_data.csv_files)} files.")
+
+    unit_stats = defaultdict(list)
+    concept_by_unit = defaultdict(set)
+
+    for (
+        concept,
+        unit,
+        value,
+    ) in extracted_concept_unit_value_data.concept_unit_value_tuples:
+        unit_stats[unit].append(value)
+        concept_by_unit[unit].add(concept)
+
     print(
-        f"📦 Found {len(extracted_concept_unit_value_data.unit_values)} numeric units and {len(extracted_concept_unit_value_data.non_numeric_units)} non-numeric units."
+        f"📦 Found {len(unit_stats)} numeric units and "
+        f"{len(extracted_concept_unit_value_data.non_numeric_units)} non-numeric units."
     )
 
-    for unit, values in sorted(extracted_concept_unit_value_data.unit_values.items()):
+    for unit, values in sorted(unit_stats.items()):
         arr = np.array(values)
         print(f"🔹 {unit}")
         print(f"   Count: {len(arr)}")
@@ -148,9 +193,7 @@ def generate_concepts_report(
         print(f"   Max:   {arr.max():,.4f}")
         print(f"   Mean:  {arr.mean():,.4f}")
         print(f"   Std:   {arr.std():,.4f}")
-        print(
-            f"   Concepts: {', '.join(sorted(extracted_concept_unit_value_data.unit_concepts[unit]))}"
-        )
+        print(f"   Concepts: {', '.join(sorted(concept_by_unit[unit]))}")
 
     if extracted_concept_unit_value_data.non_numeric_units:
         print("\n⚠️ Non-numeric units encountered:")
@@ -158,5 +201,6 @@ def generate_concepts_report(
             print(f"  - {unit}")
 
     print(
-        f"\n🧮 Total values extracted: {len(extracted_concept_unit_value_data.concept_unit_value_tuples):,}"
+        f"\n🧮 Total values extracted: "
+        f"{len(extracted_concept_unit_value_data.concept_unit_value_tuples):,}"
     )
