@@ -4,6 +4,8 @@ use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+const DATA_DIR: &str = "data/june-us-gaap";
+
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
@@ -12,7 +14,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let target_tag = &args[1];
-    let data_dir = Path::new("data/us-gaap");
+    let data_dir = Path::new(DATA_DIR);
 
     let mut matches: Vec<(PathBuf, Vec<String>)> = Vec::new();
 
