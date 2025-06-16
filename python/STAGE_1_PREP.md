@@ -1,42 +1,94 @@
 # Stage 1 Model Setup
 
-TODO: What is Stage 1?
+> **What is Stage 1?**
+> Stage 1 trains a foundational autoencoder that learns latent embeddings of `(concept, unit, value)` triples. These embeddings form the atomic layer of a multi-stage modeling pipeline that ultimately encodes financial structure and behavior.
 
-> Note: These steps should be performed within the context of the `{project_root}/python` directory, unless otherwise noted.
+> **Note:** Run all steps from the `{project_root}/python` directory unless otherwise indicated.
 
-## Dependencies and Data
+---
 
-1. Install Python dependencies
+## Dependencies and Environment
 
-    ```sh
-    pip install
-    ```
+1. **Install Python dependencies**
 
-2. Configure `.env` file for DB connectivity. TODO: Document why the DB is needed.
+   ```sh
+   pip install -r requirements.txt
+   ```
 
-    Copy `.env.example` to `.env` and configure accordingly.  
-    Note: `docker-compose.yml` may provide configuration hints.
+2. **Configure `.env` for database connectivity**
 
-3. Create `us_gaap` schema in DB.
+   ```sh
+   cp .env.example .env
+   ```
 
-    Default Charset. 
-    Default Collation.
+   Then update with your DB credentials.
+   *Hint: `docker-compose.yml` may have helpful defaults.*
 
-4. Load DB schema backup (located in `db/sql/schema.sql`).
+   > **Why is the DB needed?**
+   > The database holds US GAAP taxonomy metadata: concept names, types, period/balance classifications, and labels. It does **not** store company-reported values. Those are loaded separately during preprocessing.
 
-5. Ingest `US GAAP` taxonomies.
+---
 
-    TODO: For all included notebook steps, these notebooks may need to be modified to use the current year.
+## Database Initialization
 
-    1. Open `notebooks/us_gaap_taxonomy_downloader.ipynb` notebook.
+1. **Create the `us_gaap` schema**
 
-        This will download the a zip file with an Excel spreadsheet, and then extract a CSV
-        of the US GAAP concepts.
+   Use default settings:
 
-    2. Ingest into database
+   * Charset: `utf8mb4`
+   * Collation: `utf8mb4_unicode_ci`
 
-        Use `notebooks/ingest_us_gaap_concepts.ipynb` to ingest.
+2. **Load the schema**
 
-    3. Build training data
+   ```sh
+   mysql -u your_user -p us_gaap < db/sql/schema.sql
+   ```
 
-        Open `notebooks/stage_1_preprocessing.ipynb` 
+   This creates the following tables:
+
+   * `us_gaap_concept`
+   * `us_gaap_concept_type`
+   * `us_gaap_balance_type`
+   * `us_gaap_period_type`
+
+---
+
+## Taxonomy Ingestion and Training Data Preparation
+
+1. **Download and extract the taxonomy**
+
+   Open the notebook:
+
+   ```
+   notebooks/us_gaap_taxonomy_downloader.ipynb
+   ```
+
+   * Downloads the 2025 GAAP taxonomy ZIP
+
+   * Extracts the Excel file
+
+   * Converts the “Concepts” worksheet to CSV (`data/2025_GAAP_Concepts.csv`)
+
+   > ⚠️ Update the year manually if using a newer taxonomy version.
+
+2. **Ingest taxonomy into the DB**
+
+   ```
+   notebooks/ingest_us_gaap_concepts.ipynb
+   ```
+
+   This parses the CSV and populates the concept metadata tables.
+
+3. **Generate Stage 1 training data**
+
+   Open:
+
+   ```
+   notebooks/stage_1_preprocessing.ipynb
+   ```
+
+   This notebook:
+
+   * Pulls raw facts from filings (not from the DB)
+   * Joins each value with its corresponding taxonomy metadata
+   * Applies scaling and structuring for training
