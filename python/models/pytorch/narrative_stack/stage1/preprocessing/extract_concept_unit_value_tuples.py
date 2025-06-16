@@ -36,6 +36,7 @@ class ExtractedConceptUnitValueData(BaseModel):
     csv_files: CsvFiles
 
 
+# TODO: Restructure as an iterator, with option to yield single values, or an entire row, and don't integrate the store here
 def extract_concept_unit_value_tuples(
     data_dir: str | Path, valid_concepts: Concepts, data_store: DataStore
 ) -> None:
