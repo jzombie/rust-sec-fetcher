@@ -13,6 +13,8 @@ import torch
 from sentence_transformers import SentenceTransformer
 from utils import generate_us_gaap_description
 from utils.pytorch import seed_everything, model_hash
+from simd_r_drive import DataStore, NamespaceHasher
+import msgpack
 
 ConceptUnitValueTuples = List[Tuple[str, str, float]]
 # UnitValues = Dict[str, List[float]] # TODO: Remove
@@ -22,7 +24,10 @@ CsvFiles = List[str]
 Concepts = List[str]
 ConceptUnitPair = Tuple[str, str]
 
+NON_EMBEDDED_NAMESPACE = NamespaceHasher(b"non-embedded-concept-unit-value-tuples")
 
+
+# TODO: Remove
 class ExtractedConceptUnitValueData(BaseModel):
     concept_unit_value_tuples: ConceptUnitValueTuples
     # unit_values: UnitValues # TODO: Remove
@@ -32,9 +37,9 @@ class ExtractedConceptUnitValueData(BaseModel):
 
 
 def extract_concept_unit_value_tuples(
-    data_dir: str | Path, valid_concepts: Concepts
-) -> ExtractedConceptUnitValueData:
-    concept_unit_value_tuples = []
+    data_dir: str | Path, valid_concepts: Concepts, data_store: DataStore
+) -> None:
+    # concept_unit_value_tuples = []
     # unit_values = defaultdict(list) # TODO: Remove
     # unit_concepts = defaultdict(set) # TODO: Remove
     non_numeric_units = set()
@@ -46,39 +51,86 @@ def extract_concept_unit_value_tuples(
             if file.endswith(".csv"):
                 csv_files.append(os.path.join(root, file))
 
+    # TODO: Namespace and iterate
+    namespace = NON_EMBEDDED_NAMESPACE
+
+    i = -1
+
+    # TODO: Extract so this can be used to obtain symbol & year & statement type
     for path in tqdm(csv_files, desc="Scanning CSV files"):
         try:
             df = pd.read_csv(path, low_memory=False)
+            # TODO: Rename `col` to `concept`
             tag_columns = [col for col in df.columns if col in valid_concepts]
             if not tag_columns:
                 continue
 
             for col in tag_columns:
+                batch_entries = []
+
                 for val in df[col].dropna().astype(str):
                     # TODO: Use common token constant for "::"
                     if "::" not in val:
                         continue
                     val_part, unit_part = val.split("::", 1)
+
+                    # TODO: Rename `unit_part` to `uom`
                     unit_part = unit_part.strip().upper()
                     try:
+                        # Will raise a `ValueError`` cannot be parsed as a float
                         num_val = float(val_part.strip())
-                        concept_unit_value_tuples.append((col, unit_part, num_val))
-                        # unit_values[unit_part].append(num_val) # TODO: Remove
-                        # unit_concepts[unit_part].add(col) # TODO: Remove
+
+                        # Increment only before write
+                        i = i + 1
+
+                        # concept_unit_value_tuples.append((col, unit_part, num_val))
+                        payload = msgpack.packb(
+                            {"concept": col, "uom": unit_part, "value": num_val}
+                        )
+
+                        # Numeric index → data mapping
+                        batch_entries.append(
+                            (
+                                namespace.namespace(i.to_bytes(4, byteorder="little")),
+                                payload,
+                            )
+                        )
+
+                        # Data hash → numeric index reverse mapping
+                        batch_entries.append(
+                            (
+                                namespace.namespace(payload),
+                                i.to_bytes(4, byteorder="little"),
+                            )
+                        )
+
                     except ValueError:
                         non_numeric_units.add(unit_part)
+
+                data_store.batch_write(batch_entries)
         except Exception as e:
             logging.warning(f"Skipped {path}: {e}")
 
-    return ExtractedConceptUnitValueData(
-        concept_unit_value_tuples=concept_unit_value_tuples,
-        # unit_values=unit_values, # TODO: Remove
-        # unit_concepts=unit_concepts, # TODO: Remove
-        non_numeric_units=non_numeric_units,
-        csv_files=csv_files,
-    )
+        total_entries = i + 1
+
+        data_store.write(
+            namespace.namespace(
+                b"__triplet_count__",
+            ),
+            total_entries.to_bytes(4, byteorder="little"),
+        )
+
+    # TODO: Remove
+    # return ExtractedConceptUnitValueData(
+    #     concept_unit_value_tuples=concept_unit_value_tuples,
+    #     # unit_values=unit_values, # TODO: Remove
+    #     # unit_concepts=unit_concepts, # TODO: Remove
+    #     non_numeric_units=non_numeric_units,
+    #     csv_files=csv_files,
+    # )
 
 
+# Assuming that DB-stored concepts are "valid"
 def get_valid_concepts(db: DB) -> Concepts:
     concept_df = db.get("SELECT name FROM us_gaap_concept", ["name"])
     valid_concepts = set(concept_df["name"].values)
@@ -86,20 +138,22 @@ def get_valid_concepts(db: DB) -> Concepts:
     return valid_concepts
 
 
-def collect_concept_unit_pairs(
-    extracted_concept_unit_value_data: ExtractedConceptUnitValueData,
-) -> List[ConceptUnitPair]:
-    seen = set()
-    concept_unit_pairs = []
-    for concept, unit, _ in extracted_concept_unit_value_data.concept_unit_value_tuples:
-        pair = (concept, unit)
-        if pair not in seen:
-            seen.add(pair)
-            concept_unit_pairs.append(pair)
+# TODO: Remove
+# def collect_concept_unit_pairs(
+#     extracted_concept_unit_value_data: ExtractedConceptUnitValueData,
+# ) -> List[ConceptUnitPair]:
+#     seen = set()
+#     concept_unit_pairs = []
+#     for concept, unit, _ in extracted_concept_unit_value_data.concept_unit_value_tuples:
+#         pair = (concept, unit)
+#         if pair not in seen:
+#             seen.add(pair)
+#             concept_unit_pairs.append(pair)
 
-    return concept_unit_pairs
+#     return concept_unit_pairs
 
 
+# TODO: Refactor to work with drive
 # TODO: Document return type
 def generate_concept_unit_embeddings(
     concept_unit_pairs: List[ConceptUnitPair], device: torch.device
@@ -132,38 +186,7 @@ def generate_concept_unit_embeddings(
     return concept_unit_embeddings
 
 
-# TODO: Remove old version
-# def generate_concepts_report(
-#     extracted_concept_unit_value_data: ExtractedConceptUnitValueData,
-# ):
-#     print(f"\n✅ Scanned {len(extracted_concept_unit_value_data.csv_files)} files.")
-#     print(
-#         f"📦 Found {len(extracted_concept_unit_value_data.unit_values)} numeric units and {len(extracted_concept_unit_value_data.non_numeric_units)} non-numeric units."
-#     )
-
-#     for unit, values in sorted(extracted_concept_unit_value_data.unit_values.items()):
-#         arr = np.array(values)
-#         print(f"🔹 {unit}")
-#         print(f"   Count: {len(arr)}")
-#         print(f"   Min:   {arr.min():,.4f}")
-#         print(f"   Max:   {arr.max():,.4f}")
-#         print(f"   Mean:  {arr.mean():,.4f}")
-#         print(f"   Std:   {arr.std():,.4f}")
-#         print(
-#             f"   Concepts: {', '.join(sorted(extracted_concept_unit_value_data.unit_concepts[unit]))}"
-#         )
-
-#     if extracted_concept_unit_value_data.non_numeric_units:
-#         print("\n⚠️ Non-numeric units encountered:")
-#         for unit in sorted(extracted_concept_unit_value_data.non_numeric_units):
-#             print(f"  - {unit}")
-
-#     print(
-#         f"\n🧮 Total values extracted: {len(extracted_concept_unit_value_data.concept_unit_value_tuples):,}"
-#     )
-
-
-# TODO: Validate this matches old version
+# TODO: Refactor to work with drive
 def generate_concepts_report(
     extracted_concept_unit_value_data: ExtractedConceptUnitValueData,
 ):
