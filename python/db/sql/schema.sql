@@ -1,4 +1,4 @@
--- MySQL dump 10.13  Distrib 8.0.34, for macos13 (arm64)
+-- MySQL dump 10.13  Distrib 8.0.36, for macos14 (arm64)
 --
 -- Host: 127.0.0.1    Database: us_gaap
 -- ------------------------------------------------------
@@ -14,45 +14,6 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-
---
--- Table structure for table `ofss_category`
---
-
-DROP TABLE IF EXISTS `ofss_category`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ofss_category` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `group_id` int unsigned NOT NULL,
-  `category_name` varchar(72) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `id_UNIQUE` (`id`),
-  UNIQUE KEY `category_name_group_UNIQUE` (`category_name`,`group_id`),
-  KEY `fk_group_id_idx` (`group_id`),
-  CONSTRAINT `fk_group_id` FOREIGN KEY (`group_id`) REFERENCES `ofss_group` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `ofss_group`
---
-
-DROP TABLE IF EXISTS `ofss_group`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ofss_group` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `parent_group_id` int unsigned DEFAULT NULL,
-  `group_name` varchar(45) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `id_UNIQUE` (`id`),
-  UNIQUE KEY `group_name_UNIQUE` (`group_name`),
-  UNIQUE KEY `group_parent_UNIQUE` (`parent_group_id`,`id`),
-  KEY `fk_parent_group_id_idx` (`parent_group_id`),
-  CONSTRAINT `fk_parent_group_id` FOREIGN KEY (`parent_group_id`) REFERENCES `ofss_group` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `us_gaap_balance_type`
@@ -98,44 +59,6 @@ CREATE TABLE `us_gaap_concept` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `us_gaap_concept_description_variation`
---
-
-DROP TABLE IF EXISTS `us_gaap_concept_description_variation`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `us_gaap_concept_description_variation` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `us_gaap_concept_id` int unsigned NOT NULL,
-  `text` text NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `id_UNIQUE` (`id`),
-  KEY `fk_us_gaap_concept_id_idx` (`us_gaap_concept_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `us_gaap_concept_ofss_category`
---
-
-DROP TABLE IF EXISTS `us_gaap_concept_ofss_category`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `us_gaap_concept_ofss_category` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `us_gaap_concept_id` int unsigned NOT NULL,
-  `ofss_category_id` int unsigned NOT NULL,
-  `is_manually_mapped` tinyint unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `id_UNIQUE` (`id`),
-  KEY `fk_ofss_category_id_idx` (`ofss_category_id`),
-  KEY `fk_us_gaap_concept_id_idx` (`us_gaap_concept_id`),
-  CONSTRAINT `fk_ofss_category_id` FOREIGN KEY (`ofss_category_id`) REFERENCES `ofss_category` (`id`),
-  CONSTRAINT `fk_us_gaap_concept_id` FOREIGN KEY (`us_gaap_concept_id`) REFERENCES `us_gaap_concept` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `us_gaap_concept_type`
 --
 
@@ -176,4 +99,4 @@ CREATE TABLE `us_gaap_period_type` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-04-11 12:50:25
+-- Dump completed on 2025-06-16 11:48:44
