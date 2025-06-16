@@ -1,6 +1,8 @@
 import json
 import csv
 
+
+# TODO: Use proper [to_path] type
 def load_json(file_path):
     """
     Loads the contents from a JSON file.
@@ -11,9 +13,11 @@ def load_json(file_path):
     Returns:
     - dict: Parsed JSON data.
     """
-    with open(file_path, 'r') as f:
+    with open(file_path, "r") as f:
         return json.load(f)
 
+
+# TODO: Use proper [to_path] type
 def load_csv(file_path: str):
     """
     Loads the data from a CSV file.
@@ -25,7 +29,7 @@ def load_csv(file_path: str):
     - list: Parsed data from the CSV file as a list of dictionaries.
     """
     data = []
-    with open(file_path, 'r') as f:
+    with open(file_path, "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
             data.append(row)
