@@ -3,11 +3,37 @@ import logging
 from db import DB
 from tqdm import tqdm
 
-ALLOWED_NON_XBRLI_CONCEPT_TYPES = [
-    "dtr-types:perShareItemType",
+# ============================================================================
+# ALLOWED_CONCEPT_TYPES
+# ----------------------------------------------------------------------------
+# This list defines the subset of XBRL and US GAAP data types permitted for
+# alignment to OFSS financial statement categories. Only concepts with one of
+# these types will be considered during ingestion and mapping.
+#
+# These types were selected based on:
+# - Relevance to numerical financial reporting (e.g., dollar values, shares)
+# - Suitability for autoencoding, vector embedding, or semantic comparison
+# - Exclusion of non-numeric or non-quantitative data (e.g., booleans, enums)
+#
+# The list includes:
+# - Percentages, per-share values, monetary units, share counts
+# - Volumetric and per-unit measures (srt/dtr volume)
+# - Integer and decimal types where the semantics are clearly quantitative
+# - Interest rates and cash/operational flow concepts over time
+#
+# NOTE:
+# - Types like stringItemType, pureItemType, booleanItemType, etc., are excluded
+#   unless explicitly whitelisted elsewhere.
+ALLOWED_CONCEPT_TYPES = [
     "dtr-types:percentItemType",
-    "dtr-types:volumeItemType",
-    "srt-types:perUnitItemType"
+    "dtr-types:perShareItemType",
+    "xbrli:monetaryItemType",
+    "xbrli:sharesItemType",
+    # "dtr-types:volumeItemType",
+    "srt-types:perUnitItemType",
+    # "xbrli:decimalItemType",
+    # "xbrli:integerItemType",
+    # "dtr-types:flowItemType"
 ]
 
 # Note: The decision was made to use this CSV instead of the raw XBRL as it is easier to parse and to obtain
@@ -32,12 +58,15 @@ def upsert_us_gaap_concepts(db: DB, csv_data: list[dict]) -> None:
             - 'documentation': Description (optional)
     """
 
+    discarded_us_gaap_concept_types = set()
+
     try:
         for row in tqdm(csv_data, desc="Importing US GAAP Concepts"):
             if row['prefix'] != "us-gaap" or (
-                not row['type'].startswith("xbrli:") and 
-                row['type'] not in ALLOWED_NON_XBRLI_CONCEPT_TYPES
+                row['type'] not in ALLOWED_CONCEPT_TYPES
             ):
+                if row['prefix'] == 'us-gaap':
+                    discarded_us_gaap_concept_types.add(row['type'])
                 continue
 
             name = row['name']
@@ -74,6 +103,10 @@ def upsert_us_gaap_concepts(db: DB, csv_data: list[dict]) -> None:
             concept_id = db.upsert_entity('us_gaap_concept', concept_data, ['name'])
 
             # logging.debug(f"Upserted data for concept ({concept_id}): {name}")
+
+        for discarded_type in discarded_us_gaap_concept_types:
+            logging.warning(f"Discarded US GAAP concept type: {discarded_type}")
+        logging.warning(f"Total discarded US GAAP {len(discarded_us_gaap_concept_types)} concept types.")
 
         logging.info('US GAAP concept data has been successfully upserted.')
     except Exception as e:

@@ -37,8 +37,6 @@ The **SIC codes less than 1000** primarily cover **agriculture, forestry, fishin
 - **Materials**: Covers raw material-related industries such as forestry and logging.
 - **Industrials**: Covers agricultural support services like farm machinery and commercial agricultural operations.
 
-Would you like a **complete SIC-to-sector mapping function** for automatic classification?
-
 ### **11 Common Sectors with SIC Mapping**
 | **Sector**                     | **SIC Code Range**                                                                                |
 |--------------------------------|---------------------------------------------------------------------------------------------------|
