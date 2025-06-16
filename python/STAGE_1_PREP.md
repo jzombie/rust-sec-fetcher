@@ -26,40 +26,17 @@ TODO: What is Stage 1?
 
 5. Ingest `US GAAP` taxonomies.
 
-    TODO: This could especially be more automated.
-    
-    1. Download `GAAP Taxonomy` Excel sheet
-    
-        ```text
-        # Note: The year will need to reflect the *current* year.
+    TODO: For all included notebook steps, these notebooks may need to be modified to use the current year.
 
-        https://www.fasb.org/page/detail?pageId=/projects/FASB-Taxonomies/2025-gaap-financial-reporting-taxonomy.html
-        ```
+    1. Open `notebooks/us_gaap_taxonomy_downloader.ipynb` notebook.
 
-        Look for:
+        This will download the a zip file with an Excel spreadsheet, and then extract a CSV
+        of the US GAAP concepts.
 
-        ```
-        2025 GAAP Taxonomy (Excel Version) Taxonomy in a spreadsheet format to facilitate taxonomy review.
-        ```
-
-    2. Download the Excel version and save the `Concepts` tab (should be the default tab) to a CSV to `data/2025_GAAP_Concepts.csv`
-
-        - Character Set: Unicode (UTF-8). 
-        - Field delimiter: ,  
-        - String delimiter: "  
-
-        TODO: Document expected field rows, etc, for reference?
-
-    3. Ingest into database
+    2. Ingest into database
 
         Use `notebooks/ingest_us_gaap_concepts.py` to ingest.
 
+    3. Build training data
 
-    --- TODO: Are these needed?
-    n?. Download taxonomy hierarchies and extract ZIP file.
-    n?. Extract taxonomy hierarchies to a CSV.
-
-        - This is currently handled via `notebooks/us_gaap_statement_mapping.ipynb` and needs to be more automated.
-
-        - The *current* output of this is `data/WITH_TAXONOMY_HIERARCHY_us_gaap_2025_with_all_statements_and_hierarchy.csv`
-
+        Open `notebooks/stage_1_preprocessing.ipynb` 
