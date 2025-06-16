@@ -60,7 +60,20 @@ def extract_concept_unit_value_tuples(
     # TODO: Extract so this can be used to obtain symbol & year & statement type
     for path in tqdm(csv_files, desc="Scanning CSV files"):
         try:
+            # Note: To ensure no mixed types either set False, or specify the type with the dtype parameter.
+            # These files are not large enough on their own to need `low_memory` set to True.
             df = pd.read_csv(path, low_memory=False)
+
+            # TODO: Iterate over rows or values
+
+            # TODO: Handle
+            for row in df.itertuples(index=False):
+                print(row)  # Access via row.ColumnName
+                break
+
+            # TODO: Remove
+            return df
+
             # TODO: Rename `col` to `concept`
             tag_columns = [col for col in df.columns if col in valid_concepts]
             if not tag_columns:
