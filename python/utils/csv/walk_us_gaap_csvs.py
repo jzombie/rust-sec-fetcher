@@ -1,21 +1,28 @@
 import os
 import logging
 from pathlib import Path
-from typing import Generator, Union, Dict, List, Literal
+from typing import Generator, Union, Dict, List, Literal, Tuple
 from tqdm import tqdm
 from utils.os import to_path
 import pandas as pd
 
 UsGaapConcept = str
 
+RowYield = pd.Series
+CellYield = Dict[str, Union[str, float]]
+PairYield = Tuple[str, str]
+WalkYield = Union[RowYield, CellYield, PairYield]
+WalkGenerator = Generator[WalkYield, None, set]
+
 
 # TODO: Add return type
 def walk_us_gaap_csvs(
     data_dir: str | Path,
     valid_concepts: List[UsGaapConcept],
-    walk_type: Literal["row", "cell"] = "cell",
-) -> Generator[Union[pd.Series, Dict[str, Union[str, float]]], None, set]:
+    walk_type: Literal["row", "cell", "pair"] = "cell",
+) -> WalkGenerator:
     non_numeric_units = set()
+    seen_pairs = set()  # Only populated if `walk_type` == `pair`
 
     csv_files = []
     # Note: If this were to span multiple sub-directories, dirs should be presorted as well
@@ -35,7 +42,7 @@ def walk_us_gaap_csvs(
                 for row in df.itertuples(index=False):
                     yield row
 
-            elif walk_type == "cell":
+            elif walk_type in {"cell", "pair"}:
                 # TODO: Rename `col` to `concept`
                 tag_columns = [col for col in df.columns if col in valid_concepts]
 
@@ -56,11 +63,18 @@ def walk_us_gaap_csvs(
                             # Will raise a `ValueError`` cannot be parsed as a float
                             num_val = float(val_part.strip())
 
-                            # TODO: Use Pydantic here?
-                            yield {"concept": col, "uom": unit_part, "value": num_val}
-
                         except ValueError:
                             non_numeric_units.add(unit_part)
+                            continue
+
+                        if walk_type == "cell":
+                            # TODO: Use Pydantic here?
+                            yield {"concept": col, "uom": unit_part, "value": num_val}
+                        elif walk_type == "pair":
+                            pair = (col, unit_part)
+                            if pair not in seen_pairs:
+                                seen_pairs.add(pair)
+                                yield pair
 
         except Exception as e:
             logging.warning(f"Skipped {path}: {e}")
