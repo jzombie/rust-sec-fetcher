@@ -35,7 +35,7 @@ TODO: What is Stage 1?
 
     2. Ingest into database
 
-        Use `notebooks/ingest_us_gaap_concepts.py` to ingest.
+        Use `notebooks/ingest_us_gaap_concepts.ipynb` to ingest.
 
     3. Build training data
 
