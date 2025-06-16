@@ -108,18 +108,20 @@ def extract_concept_unit_value_tuples(
                     except ValueError:
                         non_numeric_units.add(unit_part)
 
-                data_store.batch_write(batch_entries)
+                # TODO: Uncomment if leaving in
+                # data_store.batch_write(batch_entries)
         except Exception as e:
             logging.warning(f"Skipped {path}: {e}")
 
         total_entries = i + 1
 
-        data_store.write(
-            namespace.namespace(
-                b"__triplet_count__",
-            ),
-            total_entries.to_bytes(4, byteorder="little"),
-        )
+        # TODO: Uncomment if leaving in
+        # data_store.write(
+        #     namespace.namespace(
+        #         b"__triplet_count__",
+        #     ),
+        #     total_entries.to_bytes(4, byteorder="little"),
+        # )
 
     # TODO: Remove
     # return ExtractedConceptUnitValueData(
@@ -156,6 +158,7 @@ def get_valid_concepts(db: DB) -> Concepts:
 
 # TODO: Refactor to work with drive
 # TODO: Document return type
+# TODO: Accept an iterator instead of a list
 def generate_concept_unit_embeddings(
     concept_unit_pairs: List[ConceptUnitPair], device: torch.device
 ):
