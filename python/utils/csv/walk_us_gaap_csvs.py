@@ -9,12 +9,8 @@ from pydantic import BaseModel
 
 UsGaapConcept = str
 
-# TODO: Update types
-RowYield = pd.Series
-CellYield = Dict[str, Union[str, float]]
-PairYield = Tuple[str, str]
-WalkYield = Union[RowYield, CellYield, PairYield]
-WalkGenerator = Generator[WalkYield, None, set]
+# Explicit domain-focused types
+ConceptUomPair = Tuple[str, str]
 
 
 class UsGaapTriplet(BaseModel):
@@ -22,16 +18,26 @@ class UsGaapTriplet(BaseModel):
     uom: str
     value: float | int
 
-    def as_key(self):
+    def as_key(self) -> str:
         return f"{self.concept}::{self.uom}::{self.value}"
 
 
-# TODO: Add return type
+class UsGaapRowRecord(BaseModel):
+    ticker_symbol: str
+    form: str
+    filed: str
+    entries: List[UsGaapTriplet]
+
+
+UsGaapCsvYield = Union[UsGaapTriplet, ConceptUomPair, UsGaapRowRecord, str]
+UsGaapCsvIterator = Generator[UsGaapCsvYield, None, set]
+
+
 def walk_us_gaap_csvs(
     data_dir: str | Path,
     valid_concepts: List[UsGaapConcept],
     walk_type: Literal["row", "cell", "pair", "ticker_symbol"] = "cell",
-) -> WalkGenerator:
+) -> UsGaapCsvIterator:
     non_numeric_units = set()
     seen_pairs = set()  # Only populated if `walk_type` == `pair`
 
