@@ -8,6 +8,7 @@ import pandas as pd
 
 UsGaapConcept = str
 
+# TODO: Update types
 RowYield = pd.Series
 CellYield = Dict[str, Union[str, float]]
 PairYield = Tuple[str, str]
@@ -38,9 +39,35 @@ def walk_us_gaap_csvs(
             # These files are not large enough on their own to need `low_memory` set to True.
             df = pd.read_csv(path, low_memory=False)
 
+            # if walk_type == "row":
+            #     for row in df.itertuples(index=False):
+            #         yield row
+
             if walk_type == "row":
-                for row in df.itertuples(index=False):
-                    yield row
+                tag_columns = [col for col in df.columns if col in valid_concepts]
+                if not tag_columns:
+                    continue
+
+                for _, row in df.iterrows():
+                    entries = []
+                    for col in tag_columns:
+                        val = str(row[col])
+                        if "::" not in val:
+                            continue
+
+                        # TODO: Use common token constant for "::"
+                        val_part, unit_part = val.split("::", 1)
+                        unit_part = unit_part.strip().upper()
+                        try:
+                            num_val = float(val_part.strip())
+                            # TODO: Use pydantic here
+                            entries.append(
+                                {"concept": col, "uom": unit_part, "value": num_val}
+                            )
+                        except ValueError:
+                            non_numeric_units.add(unit_part)
+                    if entries:
+                        yield entries
 
             elif walk_type in {"cell", "pair"}:
                 # TODO: Rename `col` to `concept`
@@ -68,7 +95,7 @@ def walk_us_gaap_csvs(
                             continue
 
                         if walk_type == "cell":
-                            # TODO: Use Pydantic here?
+                            # TODO: Use Pydantic here
                             yield {"concept": col, "uom": unit_part, "value": num_val}
                         elif walk_type == "pair":
                             pair = (col, unit_part)
