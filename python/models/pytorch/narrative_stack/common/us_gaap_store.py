@@ -13,7 +13,7 @@ from pydantic import BaseModel
 import numpy as np
 from sklearn.preprocessing import QuantileTransformer
 from sklearn.decomposition import PCA
-from typing import Tuple, Iterator, Optional
+from typing import Tuple, Iterator, Optional, Any
 from utils.pytorch import seed_everything, model_hash, get_device
 from utils import generate_us_gaap_description
 from models.pytorch.narrative_stack.stage1.preprocessing import (
@@ -26,6 +26,8 @@ UNSCALED_SEQUENTIAL_CELL_NAMESPACE = NamespaceHasher(b"unscaled-sequential-cell"
 SCALED_SEQUENTIAL_CELL_NAMESPACE = NamespaceHasher(b"scaled-sequential-cell")
 CELL_META_NAMESPACE = NamespaceHasher(b"cell-meta")
 CONCEPT_UNIT_PAIR_NAMESPACE = NamespaceHasher(b"concept-unit-pair")
+# REVERSE_CONCEPT_UNIT_PAIR_NAMESPACE = NamespaceHasher(b"reverse-pair-map") # TODO: Implement
+SCALER_NAMESPACE = NamespaceHasher(b"scaler")
 
 PCA_MODEL_NAMESPACE = NamespaceHasher(b"pca-model")
 PCA_REDUCED_EMBEDDING_NAMESPACE = NamespaceHasher(b"pca-reduced-embedding")
@@ -42,8 +44,13 @@ class ConceptUnitPair(BaseModel):
 
 
 class UsGaapStore:
+    # TODO: Route the store, not the path (same concept as the DB already being instantiated where needed)
     def __init__(self, store_path: str):
         self.store = DataStore(store_path)
+
+        # TODO: Remove
+        # Only available during ingestion
+        self._pair_to_id_cache: dict[ConceptUnitPair, int] = {}
 
     # Note: Most methods do not require the database, so it's used as an
     # argument here
@@ -83,6 +90,12 @@ class UsGaapStore:
                         concept_unit_entries.append((pair_key, pair_val))
                         next_pair_id += 1
 
+                        # TODO: Implement
+                        # reverse_key = REVERSE_CONCEPT_UNIT_PAIR_NAMESPACE.namespace(
+                        #     msgpack.packb((pair.concept, pair.uom))
+                        # )
+                        # store.write(reverse_key, pair_id_bytes)
+
                     pair_id = pair_to_id[pair]
                     pair_id_bytes = pair_id.to_bytes(4, "little", signed=False)
 
@@ -117,6 +130,9 @@ class UsGaapStore:
             summary = stop.value
             logging.info(summary)
 
+        # TODO: Remove
+        self._pair_to_id_cache = pair_to_id
+
         total_triplets = i_cell + 1
 
         self.store.write(
@@ -148,7 +164,7 @@ class UsGaapStore:
 
     def _scale_values(self, concept_unit_pairs_i_cells):
         # Scale all values per concept/unit group
-        for _pair, i_cells in tqdm(
+        for pair, i_cells in tqdm(
             concept_unit_pairs_i_cells.items(), desc="Scaling per concept/unit"
         ):
             i_bytes_list = [i.to_bytes(4, "little", signed=False) for i in i_cells]
@@ -184,6 +200,16 @@ class UsGaapStore:
 
                 scaled_vals = scaler.fit_transform(vals_np).flatten()
 
+            # Store the fitted scaler for future use (serialized with joblib)
+            scaler_bytes = BytesIO()
+            joblib.dump(scaler, scaler_bytes)
+            scaler_bytes.seek(0)
+            pair_id = self._get_pair_id(pair)
+            self.store.write(
+                SCALER_NAMESPACE.namespace(pair_id.to_bytes(4, "little")),
+                scaler_bytes.read(),
+            )
+
             assert len(scaled_vals) == len(i_cells)
 
             self.store.batch_write(
@@ -197,6 +223,23 @@ class UsGaapStore:
                     for i, val in zip(i_cells, scaled_vals)
                 ]
             )
+
+    # TODO: Replace w/ a store read
+    # Only available during ingestion
+    def _get_pair_id(self, pair: ConceptUnitPair) -> int:
+        if pair in self._pair_to_id_cache:
+            return self._pair_to_id_cache[pair]
+        raise KeyError(f"Concept/unit pair not found in cache: {pair}")
+
+    # TODO: Use
+    # def get_pair_id(self, pair: ConceptUnitPair) -> int:
+    #     key = REVERSE_CONCEPT_UNIT_PAIR_NAMESPACE.namespace(
+    #         msgpack.packb((pair.concept, pair.uom))
+    #     )
+    #     raw = self.store.read(key)
+    #     if raw is None:
+    #         raise KeyError(f"Concept/unit pair not found: {pair}")
+    #     return int.from_bytes(raw, "little")
 
     def iterate_concept_unit_pairs(self) -> Iterator[Tuple[int, ConceptUnitPair]]:
         """
@@ -453,6 +496,15 @@ class UsGaapStore:
             raise KeyError(f"Missing embedding for concept_unit_id {pair_id}")
         embedding = msgpack.unpackb(embedding_bytes, raw=True)
 
+        # Load scaler
+        scaler_key = SCALER_NAMESPACE.namespace(
+            pair_id.to_bytes(4, "little", signed=False)
+        )
+        scaler_bytes = self.store.read(scaler_key)
+        scaler: Optional[Any] = None
+        if scaler_bytes is not None:
+            scaler = joblib.load(BytesIO(scaler_bytes))
+
         return {
             "i_cell": i_cell,
             "pair_id": pair_id,
@@ -461,6 +513,7 @@ class UsGaapStore:
             "unscaled_value": unscaled_value,
             "scaled_value": scaled_value,
             "embedding": embedding,
+            "scaler": scaler,
         }
 
     def lookup_by_triplet(self, concept: str, uom: str, unscaled_value: float) -> dict:
