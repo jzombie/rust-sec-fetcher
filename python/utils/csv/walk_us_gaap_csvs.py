@@ -37,6 +37,7 @@ def walk_us_gaap_csvs(
     data_dir: str | Path,
     valid_concepts: List[UsGaapConcept],
     walk_type: Literal["row", "cell", "pair", "ticker_symbol"] = "cell",
+    filtered_symbols: set[str] | None = None,
 ) -> UsGaapCsvIterator:
     non_numeric_units = set()
     seen_pairs = set()  # Only populated if `walk_type` == `pair`
@@ -45,8 +46,14 @@ def walk_us_gaap_csvs(
     # Note: If this were to span multiple sub-directories, dirs should be presorted as well
     for root, _, files in os.walk(to_path(data_dir, as_str=True)):
         for file in sorted(files):  # Ensures files in each directory are read in order
-            if file.endswith(".csv"):
-                csv_files.append(os.path.join(root, file))
+            if not file.endswith(".csv"):
+                continue
+
+            ticker_symbol = os.path.splitext(file)[0]
+            if filtered_symbols is not None and ticker_symbol not in filtered_symbols:
+                continue
+
+            csv_files.append(os.path.join(root, file))
 
     for path in tqdm(csv_files, desc="Scanning CSV files"):
         ticker_symbol = os.path.splitext(os.path.basename(path))[0]
