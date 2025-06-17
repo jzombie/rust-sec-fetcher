@@ -82,6 +82,12 @@ def walk_us_gaap_csvs(
                 if not tag_columns:
                     continue
 
+                # Fetch balance_type and period_type for all tag columns in one batch
+                concept_meta_list = (
+                    db_us_gaap.get_balance_and_period_types_for_concepts(tag_columns)
+                )
+                concept_meta_map = dict(zip(tag_columns, concept_meta_list))
+
                 for _, row in df.iterrows():
                     entries = []
                     for col in tag_columns:
@@ -96,9 +102,9 @@ def walk_us_gaap_csvs(
                         try:
                             num_val = float(val_part.strip())
 
-                            # TODO: Make this optional and use in a batch
-                            balance_type, period_type = (
-                                db_us_gaap.get_concept_balance_and_period_type(col)
+                            # Make this optional
+                            balance_type, period_type = concept_meta_map.get(
+                                col, (None, None)
                             )
 
                             entries.append(
