@@ -13,31 +13,9 @@ The system is designed to be modular, with each stage performing a distinct and 
 
 ### **2. Architectural Diagram**
 
-You are absolutely right. My apologies. The conversational platform displays the output as a single block of text, so while I generated the correct Markdown syntax, it didn't render visually for you.
+> Note: All three stages are autoencoders.
 
-Let me provide it again, this time explicitly as a Markdown code block. You can copy the entire content below and paste it into a file named README.md or any other .md file, and it will be rendered correctly by any Markdown viewer (like on GitHub, in VS Code, etc.).
-
-Here is the raw Markdown source:
-
-Markdown
-
-# Project Blueprint: A Three-Stage Financial Representation Learning System
-
-**Version:** 1.0
-**Date:** June 17, 2025
-
----
-
-### **1. Overview**
-
-The primary objective of this project is to create a highly compressed, structured, and queryable representation of complex financial data sourced from SEC filings. This is achieved through a three-stage pipeline that progressively refines raw financial facts into a dense latent vector, which is ultimately suitable for advanced time-series analysis.
-
-The system is designed to be modular, with each stage performing a distinct and specialized task.
-
-### **2. Architectural Diagram**
-
-All three stages are autoencoders.
-
+```text
 [Raw SEC Filings]
 |
 ▼
@@ -63,6 +41,7 @@ All three stages are autoencoders.
 |
 ▼
 [Final Task Output]
+```
 
 
 ---
