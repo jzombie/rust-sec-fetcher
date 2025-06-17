@@ -42,16 +42,11 @@ def walk_us_gaap_csvs(
             if file.endswith(".csv"):
                 csv_files.append(os.path.join(root, file))
 
-    # TODO: Extract so this can be used to obtain symbol & year & statement type
     for path in tqdm(csv_files, desc="Scanning CSV files"):
         try:
             # Note: To ensure no mixed types either set False, or specify the type with the dtype parameter.
             # These files are not large enough on their own to need `low_memory` set to True.
             df = pd.read_csv(path, low_memory=False)
-
-            # if walk_type == "row":
-            #     for row in df.itertuples(index=False):
-            #         yield row
 
             if walk_type == "row":
                 tag_columns = [col for col in df.columns if col in valid_concepts]
