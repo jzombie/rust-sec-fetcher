@@ -67,7 +67,15 @@ def walk_us_gaap_csvs(
                         except ValueError:
                             non_numeric_units.add(unit_part)
                     if entries:
-                        yield entries
+                        yield {
+                            "ticker_symbol": os.path.splitext(os.path.basename(path))[
+                                0
+                            ],
+                            "form": row["form"],
+                            "filed": row["filed"],
+                            # "columns": tag_columns,
+                            "entries": entries,
+                        }
 
             elif walk_type in {"cell", "pair"}:
                 # TODO: Rename `col` to `concept`
