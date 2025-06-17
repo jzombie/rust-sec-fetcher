@@ -42,10 +42,12 @@ UsGaapCsvIterator = Generator[UsGaapCsvYield, None, UsGaapWalkSummary]
 
 def walk_us_gaap_csvs(
     data_dir: str | Path,
-    valid_concepts: List[UsGaapConcept],
+    db_us_gaap: DbUsGaap,
     walk_type: Literal["row", "cell", "pair", "ticker_symbol"] = "cell",
     filtered_symbols: set[str] | None = None,
 ) -> UsGaapCsvIterator:
+    valid_concepts = db_us_gaap.get_valid_concepts()
+
     non_numeric_units = set()
     seen_pairs = set()  # Only populated if `walk_type` == `pair`
 
@@ -149,13 +151,13 @@ def walk_us_gaap_csvs(
 
 def get_filtered_us_gaap_form_rows_for_symbol(
     data_dir: str | Path,
-    valid_concepts: List[UsGaapConcept],
+    db_us_gaap: DbUsGaap,
     symbol: str,
     form_types: set[str] | None = None,
 ) -> Generator[UsGaapRowRecord, None, None]:
     rows = walk_us_gaap_csvs(
         data_dir=data_dir,
-        valid_concepts=valid_concepts,
+        db_us_gaap=db_us_gaap,
         walk_type="row",
         filtered_symbols={symbol},
     )
