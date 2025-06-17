@@ -31,7 +31,6 @@ PCA_MODEL_NAMESPACE = NamespaceHasher(b"pca-model")
 PCA_REDUCED_EMBEDDING_NAMESPACE = NamespaceHasher(b"pca-reduced-embedding")
 
 
-# TODO: Refactor
 # Define immutable concept/unit pair model
 class ConceptUnitPair(BaseModel):
     concept: str
