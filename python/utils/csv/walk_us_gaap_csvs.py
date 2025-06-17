@@ -7,6 +7,8 @@ from utils.os import to_path
 import pandas as pd
 from pydantic import BaseModel
 from db import DbUsGaap
+import math
+
 
 UsGaapConcept = str
 
@@ -102,6 +104,10 @@ def walk_us_gaap_csvs(
                         try:
                             num_val = float(val_part.strip())
 
+                            # Ensure `NaN`'s are skipped
+                            if math.isnan(num_val):
+                                continue
+
                             # Make this optional
                             balance_type, period_type = concept_meta_map.get(
                                 col, (None, None)
@@ -147,6 +153,10 @@ def walk_us_gaap_csvs(
                         try:
                             # Will raise a `ValueError`` cannot be parsed as a float
                             num_val = float(val_part.strip())
+
+                            # Ensure `NaN`'s are skipped
+                            if math.isnan(num_val):
+                                continue
 
                         except ValueError:
                             non_numeric_units.add(unit_part)
