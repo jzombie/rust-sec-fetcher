@@ -10,7 +10,6 @@ import numpy as np
 from .db_connector import DBConnector
 
 
-
 class DB(DBConnector):
     def get(self, query: str, columns: List[str], params: tuple = None) -> pd.DataFrame:
         """
@@ -390,7 +389,7 @@ class DB(DBConnector):
         self,
         table_name: str,
         field_dicts: List[Dict[str, any]],
-        unique_fields: List[str] = None,
+        unique_fields: List[str] = None,  # TODO: Should this be used?
     ) -> None:
         """
         Batch inserts or updates field values into the specified table and fields.
