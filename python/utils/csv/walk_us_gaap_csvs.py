@@ -6,7 +6,7 @@ from tqdm import tqdm
 from utils.os import to_path
 import pandas as pd
 from pydantic import BaseModel
-from db import DB
+from db import DbUsGaap
 
 UsGaapConcept = str
 
@@ -42,7 +42,7 @@ UsGaapCsvIterator = Generator[UsGaapCsvYield, None, UsGaapWalkSummary]
 
 def walk_us_gaap_csvs(
     data_dir: str | Path,
-    valid_concepts: List[UsGaapConcept],  # TODO: Acquire internally
+    valid_concepts: List[UsGaapConcept],
     walk_type: Literal["row", "cell", "pair", "ticker_symbol"] = "cell",
     filtered_symbols: set[str] | None = None,
 ) -> UsGaapCsvIterator:
@@ -149,7 +149,7 @@ def walk_us_gaap_csvs(
 
 def get_filtered_us_gaap_form_rows_for_symbol(
     data_dir: str | Path,
-    valid_concepts: List[UsGaapConcept],  # TODO: Acquire internally
+    valid_concepts: List[UsGaapConcept],
     symbol: str,
     form_types: set[str] | None = None,
 ) -> Generator[UsGaapRowRecord, None, None]:

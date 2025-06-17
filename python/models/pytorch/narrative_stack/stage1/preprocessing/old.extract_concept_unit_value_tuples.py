@@ -23,7 +23,7 @@ ConceptUnitValueTuples = List[Tuple[str, str, float]]
 # UnitConcepts = Dict[str, Set[str]] # TODO: Remove
 NonNumericUnits = Set[str]
 CsvFiles = List[str]
-Concepts = List[str]
+# Concepts = List[str]
 ConceptUnitPair = Tuple[str, str]
 
 NON_EMBEDDED_NAMESPACE = NamespaceHasher(b"non-embedded-concept-unit-value-tuples")
@@ -150,11 +150,11 @@ def extract_concept_unit_value_tuples(
 
 # TODO: Move/refactor
 # Assuming that DB-stored concepts are "valid"
-def get_valid_concepts(db: DB) -> Concepts:
-    concept_df = db.get("SELECT name FROM us_gaap_concept", ["name"])
-    valid_concepts = set(concept_df["name"].values)
+# def get_valid_concepts(db: DB) -> Concepts:
+#     concept_df = db.get("SELECT name FROM us_gaap_concept", ["name"])
+#     valid_concepts = set(concept_df["name"].values)
 
-    return valid_concepts
+#     return valid_concepts
 
 
 # TODO: Remove
