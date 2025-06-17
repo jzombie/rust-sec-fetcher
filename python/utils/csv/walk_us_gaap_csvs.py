@@ -52,6 +52,7 @@ def walk_us_gaap_csvs(
                     entries = []
                     for col in tag_columns:
                         val = str(row[col])
+                        # TODO: Use common token constant for "::"
                         if "::" not in val:
                             continue
 
@@ -90,6 +91,7 @@ def walk_us_gaap_csvs(
                         # TODO: Use common token constant for "::"
                         if "::" not in val:
                             continue
+                        # TODO: Use common token constant for "::"
                         val_part, unit_part = val.split("::", 1)
 
                         # TODO: Rename `unit_part` to `uom`
