@@ -30,7 +30,7 @@ class UsGaapTriplet(BaseModel):
 def walk_us_gaap_csvs(
     data_dir: str | Path,
     valid_concepts: List[UsGaapConcept],
-    walk_type: Literal["row", "cell", "pair"] = "cell",
+    walk_type: Literal["row", "cell", "pair", "ticker_symbol"] = "cell",
 ) -> WalkGenerator:
     non_numeric_units = set()
     seen_pairs = set()  # Only populated if `walk_type` == `pair`
@@ -43,6 +43,12 @@ def walk_us_gaap_csvs(
                 csv_files.append(os.path.join(root, file))
 
     for path in tqdm(csv_files, desc="Scanning CSV files"):
+        ticker_symbol = os.path.splitext(os.path.basename(path))[0]
+
+        if walk_type == "ticker_symbol":
+            yield ticker_symbol
+            continue
+
         try:
             # Note: To ensure no mixed types either set False, or specify the type with the dtype parameter.
             # These files are not large enough on their own to need `low_memory` set to True.
@@ -73,9 +79,7 @@ def walk_us_gaap_csvs(
                             non_numeric_units.add(unit_part)
                     if entries:
                         yield {
-                            "ticker_symbol": os.path.splitext(os.path.basename(path))[
-                                0
-                            ],
+                            "ticker_symbol": ticker_symbol,
                             "form": row["form"],
                             "filed": row["filed"],
                             # "columns": tag_columns,
