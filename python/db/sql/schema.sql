@@ -24,10 +24,10 @@ DROP TABLE IF EXISTS `us_gaap_balance_type`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `us_gaap_balance_type` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `balance` varchar(7) NOT NULL,
+  `balance_type` varchar(7) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
-  UNIQUE KEY `balance_UNIQUE` (`balance`)
+  UNIQUE KEY `balance_type_UNIQUE` (`balance_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
