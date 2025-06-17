@@ -1,3 +1,5 @@
+# TODO: A majority of this file can either be removed, or a thin wrapper around `walk_us_gaap_csvs`
+
 import os
 import logging
 from typing import List, Dict, Set, Tuple, Union
