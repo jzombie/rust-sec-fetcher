@@ -1,7 +1,7 @@
 import os
 import logging
 from pathlib import Path
-from typing import Generator, Union, Dict, List, Literal, Tuple
+from typing import Generator, Union, List, Literal, Tuple, Set
 from tqdm import tqdm
 from utils.os import to_path
 import pandas as pd
@@ -31,8 +31,13 @@ class UsGaapRowRecord(BaseModel):
     entries: List[UsGaapTriplet]
 
 
+class UsGaapWalkSummary(BaseModel):
+    non_numeric_units: Set[str]
+    csv_files: List[str]
+
+
 UsGaapCsvYield = Union[UsGaapTriplet, ConceptUomPair, UsGaapRowRecord, str]
-UsGaapCsvIterator = Generator[UsGaapCsvYield, None, set]
+UsGaapCsvIterator = Generator[UsGaapCsvYield, None, UsGaapWalkSummary]
 
 
 def walk_us_gaap_csvs(
@@ -139,7 +144,7 @@ def walk_us_gaap_csvs(
         except Exception as e:
             logging.warning(f"Skipped {path}: {e}")
 
-        return non_numeric_units
+    return UsGaapWalkSummary(csv_files=csv_files, non_numeric_units=non_numeric_units)
 
 
 def get_filtered_us_gaap_form_rows_for_symbol(
