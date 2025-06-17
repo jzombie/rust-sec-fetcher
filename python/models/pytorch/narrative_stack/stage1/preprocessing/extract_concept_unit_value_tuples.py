@@ -146,6 +146,7 @@ def extract_concept_unit_value_tuples(
     # )
 
 
+# TODO: Move/refactor
 # Assuming that DB-stored concepts are "valid"
 def get_valid_concepts(db: DB) -> Concepts:
     concept_df = db.get("SELECT name FROM us_gaap_concept", ["name"])
