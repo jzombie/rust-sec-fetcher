@@ -5,9 +5,9 @@ use std::error::Error;
 
 pub type TickerFundamentalsDataFrame = DataFrame;
 
-
+// TODO: Document how sorting is performed internally
 pub fn parse_us_gaap_fundamentals(
-    serde_json_value: Value
+    serde_json_value: Value,
 ) -> Result<TickerFundamentalsDataFrame, Box<dyn Error>> {
     let data = serde_json_value;
 
