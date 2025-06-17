@@ -49,6 +49,7 @@ def walk_us_gaap_csvs(
     # TODO: Consider removing `cell` walk type (and use row entries instead)
     walk_type: Literal["row", "cell", "pair", "ticker_symbol"] = "cell",
     filtered_symbols: set[str] | None = None,
+    tqdm_desc: str = "Scanning CSV files",
 ) -> UsGaapCsvIterator:
     valid_concepts = db_us_gaap.get_valid_concepts()
 
@@ -68,7 +69,7 @@ def walk_us_gaap_csvs(
 
             csv_files.append(os.path.join(root, file))
 
-    for path in tqdm(csv_files, desc="Scanning CSV files"):
+    for path in tqdm(csv_files, desc=tqdm_desc):
         ticker_symbol = os.path.splitext(os.path.basename(path))[0]
 
         if walk_type == "ticker_symbol":
