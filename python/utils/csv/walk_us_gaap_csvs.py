@@ -5,6 +5,7 @@ from typing import Generator, Union, Dict, List, Literal, Tuple
 from tqdm import tqdm
 from utils.os import to_path
 import pandas as pd
+from pydantic import BaseModel
 
 UsGaapConcept = str
 
@@ -14,6 +15,15 @@ CellYield = Dict[str, Union[str, float]]
 PairYield = Tuple[str, str]
 WalkYield = Union[RowYield, CellYield, PairYield]
 WalkGenerator = Generator[WalkYield, None, set]
+
+
+class UsGaapTriplet(BaseModel):
+    concept: str
+    uom: str
+    value: float | int
+
+    def as_key(self):
+        return f"{self.concept}::{self.uom}::{self.value}"
 
 
 # TODO: Add return type
@@ -61,9 +71,8 @@ def walk_us_gaap_csvs(
                         unit_part = unit_part.strip().upper()
                         try:
                             num_val = float(val_part.strip())
-                            # TODO: Use pydantic here
                             entries.append(
-                                {"concept": col, "uom": unit_part, "value": num_val}
+                                UsGaapTriplet(concept=col, uom=unit_part, value=num_val)
                             )
                         except ValueError:
                             non_numeric_units.add(unit_part)
@@ -105,8 +114,9 @@ def walk_us_gaap_csvs(
                             continue
 
                         if walk_type == "cell":
-                            # TODO: Use Pydantic here
-                            yield {"concept": col, "uom": unit_part, "value": num_val}
+                            yield UsGaapTriplet(
+                                concept=col, uom=unit_part, value=num_val
+                            )
                         elif walk_type == "pair":
                             pair = (col, unit_part)
                             if pair not in seen_pairs:
