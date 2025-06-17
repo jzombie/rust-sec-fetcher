@@ -46,6 +46,7 @@ UsGaapCsvIterator = Generator[UsGaapCsvYield, None, UsGaapWalkSummary]
 def walk_us_gaap_csvs(
     data_dir: str | Path,
     db_us_gaap: DbUsGaap,
+    # TODO: Consider removing `cell` walk type (and use row entries instead)
     walk_type: Literal["row", "cell", "pair", "ticker_symbol"] = "cell",
     filtered_symbols: set[str] | None = None,
 ) -> UsGaapCsvIterator:
