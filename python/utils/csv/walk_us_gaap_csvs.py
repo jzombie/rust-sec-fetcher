@@ -14,11 +14,12 @@ UsGaapConcept = str
 ConceptUomPair = Tuple[str, str]
 
 
-# TODO: Include period and balance types
 class UsGaapTriplet(BaseModel):
     concept: str
     uom: str
     value: float | int
+    balance_type: Literal["credit", "debit"] | None
+    period_type: Literal["duration", "instant"] | None
 
     def as_key(self) -> str:
         return f"{self.concept}::{self.uom}::{self.value}"
@@ -94,8 +95,20 @@ def walk_us_gaap_csvs(
                         unit_part = unit_part.strip().upper()
                         try:
                             num_val = float(val_part.strip())
+
+                            # TODO: Make this optional and use in a batch
+                            balance_type, period_type = (
+                                db_us_gaap.get_concept_balance_and_period_type(col)
+                            )
+
                             entries.append(
-                                UsGaapTriplet(concept=col, uom=unit_part, value=num_val)
+                                UsGaapTriplet(
+                                    concept=col,
+                                    uom=unit_part,
+                                    value=num_val,
+                                    balance_type=balance_type,
+                                    period_type=period_type,
+                                )
                             )
                         except ValueError:
                             non_numeric_units.add(unit_part)
