@@ -154,7 +154,11 @@ def walk_us_gaap_csvs(
 
                         if walk_type == "cell":
                             yield UsGaapTriplet(
-                                concept=col, uom=unit_part, value=num_val
+                                concept=col,
+                                uom=unit_part,
+                                value=num_val,
+                                balance_type=None,  # Currently not supported in `cell` operation; use `row` operation instead
+                                period_type=None,  # Currently not supported in `cell` operation; use `row` operation instead
                             )
                         elif walk_type == "pair":
                             pair = (col, unit_part)
