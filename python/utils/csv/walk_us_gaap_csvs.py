@@ -13,6 +13,7 @@ UsGaapConcept = str
 ConceptUomPair = Tuple[str, str]
 
 
+# TODO: Include period and balance types
 class UsGaapTriplet(BaseModel):
     concept: str
     uom: str
@@ -91,13 +92,12 @@ def walk_us_gaap_csvs(
                         except ValueError:
                             non_numeric_units.add(unit_part)
                     if entries:
-                        yield {
-                            "ticker_symbol": ticker_symbol,
-                            "form": row["form"],
-                            "filed": row["filed"],
-                            # "columns": tag_columns,
-                            "entries": entries,
-                        }
+                        yield UsGaapRowRecord(
+                            ticker_symbol=ticker_symbol,
+                            form=row["form"],
+                            filed=row["filed"],
+                            entries=entries,
+                        )
 
             elif walk_type in {"cell", "pair"}:
                 # TODO: Rename `col` to `concept`
@@ -139,3 +139,23 @@ def walk_us_gaap_csvs(
             logging.warning(f"Skipped {path}: {e}")
 
         return non_numeric_units
+
+
+def get_filtered_us_gaap_form_rows_for_symbol(
+    data_dir: str | Path,
+    valid_concepts: List[UsGaapConcept],
+    symbol: str,
+    form_types: set[str] | None = None,
+) -> Generator[UsGaapRowRecord, None, None]:
+    rows = walk_us_gaap_csvs(
+        data_dir=data_dir,
+        valid_concepts=valid_concepts,
+        walk_type="row",
+        filtered_symbols={symbol},
+    )
+
+    for row in rows:
+        if isinstance(row, UsGaapRowRecord):
+            if form_types and row.form not in form_types:
+                continue
+            yield row
