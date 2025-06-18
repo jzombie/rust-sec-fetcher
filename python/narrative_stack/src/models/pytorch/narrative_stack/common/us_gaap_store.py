@@ -44,9 +44,8 @@ class ConceptUnitPair(BaseModel):
 
 
 class UsGaapStore:
-    # TODO: Route the store, not the path (same concept as the DB already being instantiated where needed)
-    def __init__(self, store_path: str):
-        self.store = DataStore(store_path)
+    def __init__(self, data_store: DataStore):
+        self.data_store = data_store
 
         # TODO: Remove
         # Only available during ingestion
@@ -119,7 +118,7 @@ class UsGaapStore:
                     batch.append((cell_meta_key, pair_id_bytes))
 
                 # Write current batch of entries to store
-                self.store.batch_write(batch)
+                self.data_store.batch_write(batch)
 
                 # TODO: Comment-out
                 # Optional cutoff for debugging
@@ -135,7 +134,7 @@ class UsGaapStore:
 
         total_triplets = i_cell + 1
 
-        self.store.write(
+        self.data_store.write(
             b"__triplet_count__",
             total_triplets.to_bytes(4, byteorder="little", signed=False),
         )
@@ -143,11 +142,11 @@ class UsGaapStore:
         logging.info(f"Total triplets: {total_triplets}")
 
         # Persist concept_unit_id → (concept, uom) mapping
-        self.store.batch_write(concept_unit_entries)
+        self.data_store.batch_write(concept_unit_entries)
 
         total_pairs = len(concept_unit_pairs_i_cells)
 
-        self.store.write(
+        self.data_store.write(
             b"__pair_count__", total_pairs.to_bytes(4, byteorder="little", signed=False)
         )
 
@@ -173,7 +172,9 @@ class UsGaapStore:
                 for i_bytes in i_bytes_list
             ]
 
-            values = [msgpack.unpackb(self.store.read(key), raw=True) for key in keys]
+            values = [
+                msgpack.unpackb(self.data_store.read(key), raw=True) for key in keys
+            ]
 
             vals_np = np.array(values).reshape(-1, 1)
 
@@ -205,14 +206,14 @@ class UsGaapStore:
             joblib.dump(scaler, scaler_bytes)
             scaler_bytes.seek(0)
             pair_id = self._get_pair_id(pair)
-            self.store.write(
+            self.data_store.write(
                 SCALER_NAMESPACE.namespace(pair_id.to_bytes(4, "little")),
                 scaler_bytes.read(),
             )
 
             assert len(scaled_vals) == len(i_cells)
 
-            self.store.batch_write(
+            self.data_store.batch_write(
                 [
                     (
                         SCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(
@@ -236,7 +237,7 @@ class UsGaapStore:
     #     key = REVERSE_CONCEPT_UNIT_PAIR_NAMESPACE.namespace(
     #         msgpack.packb((pair.concept, pair.uom))
     #     )
-    #     raw = self.store.read(key)
+    #     raw = self.data_store.read(key)
     #     if raw is None:
     #         raise KeyError(f"Concept/unit pair not found: {pair}")
     #     return int.from_bytes(raw, "little")
@@ -245,7 +246,7 @@ class UsGaapStore:
         """
         Yields (pair_id, ConceptUnitPair) from the concept/unit pair namespace.
         """
-        raw = self.store.read(b"__pair_count__")
+        raw = self.data_store.read(b"__pair_count__")
         if raw is None:
             raise ValueError("Missing __pair_count__ key in store")
 
@@ -255,7 +256,7 @@ class UsGaapStore:
             key = CONCEPT_UNIT_PAIR_NAMESPACE.namespace(
                 pair_id.to_bytes(4, "little", signed=False)
             )
-            val = self.store.read(key)
+            val = self.data_store.read(key)
             if val is None:
                 raise KeyError(f"Missing concept/unit for pair_id={pair_id}")
             concept, uom = msgpack.unpackb(val, raw=True)
@@ -308,7 +309,7 @@ class UsGaapStore:
             for (pair_id, _), vec in zip(pairs, pca_compressed_concept_unit_embeddings)
         ]
 
-        self.store.batch_write(pca_embedding_entries)
+        self.data_store.batch_write(pca_embedding_entries)
         logging.info(
             f"Wrote {len(pca_embedding_entries)} PCA-compressed embeddings to store."
         )
@@ -319,7 +320,7 @@ class UsGaapStore:
         pca_model_stream.seek(0)  # Move cursor to the beginning of the stream
 
         # Store PCA model in the DataStore
-        self.store.write(
+        self.data_store.write(
             PCA_MODEL_NAMESPACE.namespace(b"model"), pca_model_stream.read()
         )
 
@@ -336,7 +337,7 @@ class UsGaapStore:
             KeyError: If the PCA model is not found in the store.
         """
         # Retrieve the PCA model from store
-        pca_model_bytes = self.store.read(PCA_MODEL_NAMESPACE.namespace(b"model"))
+        pca_model_bytes = self.data_store.read(PCA_MODEL_NAMESPACE.namespace(b"model"))
         if pca_model_bytes is None:
             return None  # PCA model doesn't exist in the store
 
@@ -411,7 +412,7 @@ class UsGaapStore:
         pairs = []
 
         # Retrieve the total number of pairs
-        raw = self.store.read(b"__pair_count__")
+        raw = self.data_store.read(b"__pair_count__")
         if raw is None:
             raise KeyError("Missing __pair_count__ key in store")
 
@@ -421,14 +422,14 @@ class UsGaapStore:
             # Load (concept, uom) for the pair
             pair_id_bytes = pair_id.to_bytes(4, "little", signed=False)
             pair_key = CONCEPT_UNIT_PAIR_NAMESPACE.namespace(pair_id_bytes)
-            pair_bytes = self.store.read(pair_key)
+            pair_bytes = self.data_store.read(pair_key)
             if pair_bytes is None:
                 raise KeyError(f"Missing (concept, uom) for pair_id {pair_id}")
             concept, uom = msgpack.unpackb(pair_bytes, raw=False)
 
             # Load PCA-reduced embedding for the pair
             embedding_key = PCA_REDUCED_EMBEDDING_NAMESPACE.namespace(pair_id_bytes)
-            embedding_bytes = self.store.read(embedding_key)
+            embedding_bytes = self.data_store.read(embedding_key)
             if embedding_bytes is None:
                 raise KeyError(f"Missing embedding for pair_id {pair_id}")
             embedding = msgpack.unpackb(embedding_bytes, raw=True)
@@ -443,13 +444,13 @@ class UsGaapStore:
         return embedding_matrix_np, pairs
 
     def get_triplet_count(self) -> int:
-        raw = self.store.read(b"__triplet_count__")
+        raw = self.data_store.read(b"__triplet_count__")
         if raw is None:
             raise KeyError("Triplet count key not found")
         return int.from_bytes(raw, "little", signed=False)
 
     def get_pair_count(self) -> int:
-        raw = self.store.read(b"__pair_count__")
+        raw = self.data_store.read(b"__pair_count__")
         if raw is None:
             raise KeyError("Pair count key not found")
         return int.from_bytes(raw, "little", signed=False)
@@ -459,7 +460,7 @@ class UsGaapStore:
 
         # Load concept_unit_id from cell meta
         meta_key = CELL_META_NAMESPACE.namespace(i_bytes)
-        concept_unit_id_bytes = self.store.read(meta_key)
+        concept_unit_id_bytes = self.data_store.read(meta_key)
         if concept_unit_id_bytes is None:
             raise KeyError(f"Missing concept_unit_id for i_cell {i_cell}")
 
@@ -469,7 +470,7 @@ class UsGaapStore:
         pair_key = CONCEPT_UNIT_PAIR_NAMESPACE.namespace(
             pair_id.to_bytes(4, "little", signed=False)
         )
-        pair_bytes = self.store.read(pair_key)
+        pair_bytes = self.data_store.read(pair_key)
         if pair_bytes is None:
             raise KeyError(f"Missing (concept, uom) for concept_unit_id {pair_id}")
 
@@ -477,14 +478,14 @@ class UsGaapStore:
 
         # Load unscaled value
         unscaled_key = UNSCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes)
-        unscaled_bytes = self.store.read(unscaled_key)
+        unscaled_bytes = self.data_store.read(unscaled_key)
         if unscaled_bytes is None:
             raise KeyError(f"Missing unscaled value for i_cell {i_cell}")
         unscaled_value = msgpack.unpackb(unscaled_bytes, raw=True)
 
         # Load scaled value (optional)
         scaled_key = SCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes)
-        scaled_bytes = self.store.read(scaled_key)
+        scaled_bytes = self.data_store.read(scaled_key)
         scaled_value = (
             msgpack.unpackb(scaled_bytes, raw=True)
             if scaled_bytes is not None
@@ -495,7 +496,7 @@ class UsGaapStore:
         embedding_key = PCA_REDUCED_EMBEDDING_NAMESPACE.namespace(
             pair_id.to_bytes(4, "little", signed=False)
         )
-        embedding_bytes = self.store.read(embedding_key)
+        embedding_bytes = self.data_store.read(embedding_key)
         if embedding_bytes is None:
             raise KeyError(f"Missing embedding for concept_unit_id {pair_id}")
         # embedding = msgpack.unpackb(embedding_bytes, raw=True)
@@ -507,7 +508,7 @@ class UsGaapStore:
         scaler_key = SCALER_NAMESPACE.namespace(
             pair_id.to_bytes(4, "little", signed=False)
         )
-        scaler_bytes = self.store.read(scaler_key)
+        scaler_bytes = self.data_store.read(scaler_key)
         scaler: Optional[Any] = None
         if scaler_bytes is not None:
             scaler = joblib.load(BytesIO(scaler_bytes))
@@ -535,7 +536,7 @@ class UsGaapStore:
         triplet_key = TRIPLET_REVERSE_INDEX_NAMESPACE.namespace(triplet_key_bytes)
 
         # Lookup i_cell
-        i_cell_bytes = self.store.read(triplet_key)
+        i_cell_bytes = self.data_store.read(triplet_key)
         if i_cell_bytes is None:
             raise KeyError(
                 f"Triplet ({concept}, {uom}, {unscaled_value}) not found in reverse index"
