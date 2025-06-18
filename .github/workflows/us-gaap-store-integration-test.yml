@@ -30,13 +30,17 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
       - name: Install Python dependencies
         working-directory: python/narrative_stack
         run: |
           uv venv --python=3.12
           source .venv/bin/activate
-          uv pip install --upgrade pip
-          uv pip install -e . --config-settings group=dev
+          uv pip install -e . --group dev
 
       - name: Make test script executable
         run: chmod +x python/narrative_stack/us_gaap_store_integration_test.sh
