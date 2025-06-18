@@ -1,8 +1,11 @@
+import logging
 import os
+import numpy as np
 import tempfile
 from models.pytorch.narrative_stack.common import UsGaapStore
 from db import DbUsGaap
 from simd_r_drive import DataStore
+
 
 # Get the directory containing the script (do not change)
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -17,7 +20,7 @@ def test_ingestion_and_lookup():
         db = DbUsGaap()
 
         # Create store
-        store_path = f"{temp_dir}/store.bin"
+        store_path = os.path.join(temp_dir, "store.bin")
         data_store = DataStore(store_path)
 
         us_gaap_store = UsGaapStore(data_store)
@@ -45,3 +48,21 @@ def test_ingestion_and_lookup():
         # Embedding retrieval
         embeddings, pairs = us_gaap_store.get_embedding_matrix()
         assert embeddings.shape[0] == len(pairs)
+
+        # Inverse scaling
+        has_unscaled_value_check = False
+        for i in range(0, triplet_count):
+            data = us_gaap_store.lookup_by_index(i)
+
+            if data["scaled_value"] == 0:
+                # logging.warning("Skipping potentially unscaled value")
+                continue
+
+            transformed = data["scaler"].transform([[data["unscaled_value"]]])[0][0]
+            assert (
+                transformed == data["scaled_value"]
+            ), f"Expected {data['scaled_value']}, but got {transformed}"
+
+            has_unscaled_value_check = True
+
+        assert has_unscaled_value_check
