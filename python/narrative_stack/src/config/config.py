@@ -1,14 +1,19 @@
 import os
 import logging
 from dotenv import load_dotenv
+import sys
 
 # TODO: Run `seed_everything` from here
 
 # Get the directory containing the script
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Use os.path.join to compute the path to .env.server relative to the script's location
-env_path = os.path.join(script_dir, "../../.env")
+# Detect if the current process is running under pytest
+is_test = "pytest" in sys.modules
+
+# Choose correct .env file
+env_filename = ".env.test" if is_test else ".env"
+env_path = os.path.join(script_dir, f"../../{env_filename}")
 
 # Load the .env file
 load_dotenv(dotenv_path=env_path)

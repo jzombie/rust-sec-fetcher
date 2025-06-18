@@ -1,0 +1,50 @@
+name: US GAAP Store Integration Test
+
+on:
+  push:
+    paths:
+      - "python/narrative_stack/**"
+      - ".github/workflows/us_gaap_store_integration_test.yml"
+  pull_request:
+    paths:
+      - "python/narrative_stack/**"
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      # Todo: Remove
+      #   - name: Set up Git LFS
+      #     run: |
+      #       git lfs install
+      #       git lfs pull
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install Python dependencies
+        working-directory: python/narrative_stack
+        run: |
+          uv venv --python=3.12
+          source .venv/bin/activate
+          uv pip install -e . --group dev
+
+      - name: Make test script executable
+        run: chmod +x python/narrative_stack/us_gaap_store_integration_test.sh
+
+      - name: Run integration test
+        working-directory: python/narrative_stack
+        run: ./us_gaap_store_integration_test.sh

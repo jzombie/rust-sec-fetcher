@@ -13,7 +13,7 @@ requires-python = ">=3.12"
 dependencies = [
     "absl-py==2.2.0",
     "aiohappyeyeballs==2.6.1",
-    "aiohttp==3.11.14",
+    "aiohttp==3.11.15",
     "aiosignal==1.3.2",
     "alembic==1.15.1",
     "annotated-types==0.7.0",
@@ -182,4 +182,9 @@ dependencies = [
     "widgetsnbextension==4.0.13",
     "xxhash==3.5.0",
     "yarl==1.18.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
 ]

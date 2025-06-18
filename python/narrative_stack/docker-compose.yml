@@ -25,3 +25,30 @@ services:
         limits:
           cpus: "4" # Allocate 4 CPU cores
           memory: 2g
+
+  db_test:
+    profiles: [test] # Prevent auto-start with `docker compose up`
+    image: mysql:8.1
+    container_name: us_gaap_test_db
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --innodb-buffer-pool-size=256M
+      --innodb-log-file-size=64M
+      --innodb-log-buffer-size=32M
+      --innodb-flush-method=O_DIRECT
+      --innodb-flush-log-at-trx-commit=2
+      --innodb-file-per-table=1
+      --skip-name-resolve
+      --max-connections=50
+    restart: "no"
+    environment:
+      MYSQL_ROOT_PASSWORD: onlylocal
+    ports:
+      - "127.0.0.1:3308:3306"
+    # volumes: # Intentionally not making a volume mount at this moment; very light DB
+    #   - ./data/us-gaap-test.db:/var/lib/mysql
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1g
