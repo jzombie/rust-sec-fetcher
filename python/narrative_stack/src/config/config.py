@@ -6,10 +6,11 @@ from dotenv import load_dotenv
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Use os.path.join to compute the path to .env.server relative to the script's location
-env_path = os.path.join(script_dir, "../.env")
+env_path = os.path.join(script_dir, "../../.env")
 
 # Load the .env file
 load_dotenv(dotenv_path=env_path)
+
 
 class ColorizedHandler(logging.StreamHandler):
     COLORS = {

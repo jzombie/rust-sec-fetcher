@@ -42,6 +42,7 @@ class DBConnector:
 
     def connect(self):
         """Establish the connection to the database."""
+
         self.conn = mysql.connector.connect(
             host=os.getenv("MYSQL_HOST"),
             port=os.getenv("MYSQL_PORT"),
