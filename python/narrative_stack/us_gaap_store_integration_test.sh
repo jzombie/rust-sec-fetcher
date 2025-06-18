@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-
-# Go to project root
-# cd "$(dirname "$0")/../"
-
+# DB container and network setup
 DB_CONTAINER_NAME="us_gaap_test_db"
 DB_NAME="us_gaap_test"
+DB_NETWORK_NAME="narrative_stack_us_gaap_integration_test"
 SCHEMA_FILE="tests/integration/assets/us_gaap_schema_2025.sql"
 
 trap 'cleanup' EXIT
@@ -16,9 +14,9 @@ cleanup() {
   docker rm -f "$DB_CONTAINER_NAME" 2>/dev/null || true
 
   # Remove only the test network if it's empty
-  if docker network inspect narrative_stack_default >/dev/null 2>&1; then
-    if [[ "$(docker network inspect -f '{{json .Containers}}' narrative_stack_default)" == "{}" ]]; then
-      docker network rm narrative_stack_default || true
+  if docker network inspect "$DB_NETWORK_NAME" >/dev/null 2>&1; then
+    if [[ "$(docker network inspect -f '{{json .Containers}}' "$DB_NETWORK_NAME")" == "{}" ]]; then
+      docker network rm "$DB_NETWORK_NAME" || true
     fi
   fi
 }
