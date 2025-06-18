@@ -19,12 +19,6 @@ jobs:
         with:
           lfs: true
 
-      # Todo: Remove
-      #   - name: Set up Git LFS
-      #     run: |
-      #       git lfs install
-      #       git lfs pull
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
