@@ -33,10 +33,10 @@ jobs:
       - name: Install Python dependencies
         working-directory: python/narrative_stack
         run: |
-          python -m venv .venv
+          uv venv --python=3.12
           source .venv/bin/activate
-          pip install --upgrade pip
-          pip install -e . --config-settings group=dev
+          uv pip install --upgrade pip
+          uv pip install -e . --config-settings group=dev
 
       - name: Make test script executable
         run: chmod +x python/narrative_stack/us_gaap_store_integration_test.sh
