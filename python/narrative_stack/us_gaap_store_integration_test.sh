@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Activate the virtual environment
+source .venv/bin/activate
+
 # DB container and network setup
 DB_CONTAINER_NAME="us_gaap_test_db"
 DB_NAME="us_gaap_test"

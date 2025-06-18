@@ -43,6 +43,4 @@ jobs:
 
       - name: Run integration test
         working-directory: python/narrative_stack
-        run: |
-          source .venv/bin/activate
-          ./us_gaap_store_integration_test.sh
+        run: ./us_gaap_store_integration_test.sh
