@@ -13,6 +13,12 @@ def pca_compress_concept_unit_embeddings(
     """
     Apply PCA compression to concept-unit embeddings.
 
+     Note:
+        IncrementalPCA was considered for memory efficiency, but it introduces
+        nondeterminism due to sensitivity to batch order and floating-point
+        rounding. For reproducibility and cross-run consistency, full PCA with
+        exact SVD is used instead.
+
     Parameters:
         concept_unit_embeddings (np.ndarray):
             The input embeddings array of shape (N, D), usually float32.
