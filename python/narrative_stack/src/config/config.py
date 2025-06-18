@@ -2,6 +2,8 @@ import os
 import logging
 from dotenv import load_dotenv
 
+# TODO: Run `seed_everything` from here
+
 # Get the directory containing the script
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
