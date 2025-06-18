@@ -1,9 +1,3 @@
-[tool.setuptools]
-package-dir = {"" = "src"}
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
 [project]
 name = "narrative-stack-local"
 version = "0.1.0"
@@ -187,4 +181,16 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8.4.1",
+    "ruff>=0.12.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+exclude = [
+    "notebooks"
 ]

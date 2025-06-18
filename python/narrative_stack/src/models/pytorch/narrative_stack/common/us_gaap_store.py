@@ -14,7 +14,7 @@ import numpy as np
 from sklearn.preprocessing import QuantileTransformer
 from sklearn.decomposition import PCA
 from typing import Tuple, Iterator, Optional, Any
-from utils.pytorch import seed_everything, model_hash, get_device
+from utils.pytorch import model_hash, get_device
 from utils import generate_us_gaap_description
 from models.pytorch.narrative_stack.stage1.preprocessing import (
     pca_compress_concept_unit_embeddings,
@@ -262,8 +262,11 @@ class UsGaapStore:
             if val is None:
                 raise KeyError(f"Missing concept/unit for pair_id={pair_id}")
             concept, uom = msgpack.unpackb(val, raw=True)
-            yield pair_id, ConceptUnitPair(
-                concept=concept.decode("utf-8"), uom=uom.decode("utf-8")
+            yield (
+                pair_id,
+                ConceptUnitPair(
+                    concept=concept.decode("utf-8"), uom=uom.decode("utf-8")
+                ),
             )
 
     # TODO: Enable generation from an existing PCA
