@@ -58,6 +58,10 @@ def test_ingestion_and_lookup():
                 # logging.warning("Skipping potentially unscaled value")
                 continue
 
+            # Sanity check to ensure the scaler is actually working
+            if data["unscaled_value"] != 0:
+                assert data["unscaled_value"] != data["scaled_value"]
+
             transformed = data["scaler"].transform([[data["unscaled_value"]]])[0][0]
             assert (
                 transformed == data["scaled_value"]
