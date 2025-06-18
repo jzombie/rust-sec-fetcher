@@ -19,14 +19,29 @@ jobs:
         with:
           lfs: true
 
-      - name: Set up Git LFS
+      #   - name: Set up Git LFS
+      #     run: |
+      #       git lfs install
+      #       git lfs pull
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        working-directory: python/narrative_stack
         run: |
-          git lfs install
-          git lfs pull
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -e .[test]
 
       - name: Make test script executable
         run: chmod +x python/narrative_stack/us_gaap_store_integration_test.sh
 
       - name: Run integration test
         working-directory: python/narrative_stack
-        run: ./us_gaap_store_integration_test.sh
+        run: |
+          source .venv/bin/activate
+          ./us_gaap_store_integration_test.sh
