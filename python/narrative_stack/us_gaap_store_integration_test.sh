@@ -44,4 +44,4 @@ docker exec -i "$DB_CONTAINER_NAME" \
 # Step 5: Run integration test
 echo "Running integration test..."
 export PYTHONPATH=src
-ENV_MODE=test pytest -s -v tests/integration/test_us_gaap_store.py
+pytest -s -v tests/integration/test_us_gaap_store.py

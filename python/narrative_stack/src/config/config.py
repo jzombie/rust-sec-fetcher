@@ -1,16 +1,15 @@
 import os
 import logging
 from dotenv import load_dotenv
+import sys
 
 # TODO: Run `seed_everything` from here
 
 # Get the directory containing the script
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Detect if we're running under pytest
-# is_test = "PYTEST_CURRENT_TEST" in os.environ
-env_mode = os.getenv("ENV_MODE", "dev")  # Mainly for integration testing
-is_test = True if env_mode == "test" else False
+# Detect if the current process is running under pytest
+is_test = "pytest" in sys.modules
 
 # Choose correct .env file
 env_filename = ".env.test" if is_test else ".env"
