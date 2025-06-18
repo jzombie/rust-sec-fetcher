@@ -285,7 +285,11 @@ class UsGaapStore:
 
         pca_compressed_concept_unit_embeddings, pca = (
             pca_compress_concept_unit_embeddings(
-                embedding_matrix, n_components=234, pca=None, stable=True
+                # TODO: Don't hardcode 243
+                embedding_matrix,
+                n_components=243,
+                pca=None,
+                stable=True,
             )
         )
 
@@ -494,7 +498,10 @@ class UsGaapStore:
         embedding_bytes = self.store.read(embedding_key)
         if embedding_bytes is None:
             raise KeyError(f"Missing embedding for concept_unit_id {pair_id}")
-        embedding = msgpack.unpackb(embedding_bytes, raw=True)
+        # embedding = msgpack.unpackb(embedding_bytes, raw=True)
+        embedding = np.array(
+            msgpack.unpackb(embedding_bytes, raw=True), dtype=np.float32
+        )
 
         # Load scaler
         scaler_key = SCALER_NAMESPACE.namespace(
