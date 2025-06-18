@@ -8,7 +8,9 @@ from dotenv import load_dotenv
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Detect if we're running under pytest
-is_test = "PYTEST_CURRENT_TEST" in os.environ
+# is_test = "PYTEST_CURRENT_TEST" in os.environ
+env_mode = os.getenv("ENV_MODE", "dev")  # Mainly for integration testing
+is_test = True if env_mode == "test" else False
 
 # Choose correct .env file
 env_filename = ".env.test" if is_test else ".env"
