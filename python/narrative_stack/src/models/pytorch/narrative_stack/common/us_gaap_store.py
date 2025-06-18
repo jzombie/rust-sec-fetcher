@@ -20,6 +20,8 @@ from models.pytorch.narrative_stack.stage1.preprocessing import (
     pca_compress_concept_unit_embeddings,
 )
 
+seed_everything()
+
 # Namespaces for storing structured data
 TRIPLET_REVERSE_INDEX_NAMESPACE = NamespaceHasher(b"triplet-reverse-index")
 UNSCALED_SEQUENTIAL_CELL_NAMESPACE = NamespaceHasher(b"unscaled-sequential-cell")
