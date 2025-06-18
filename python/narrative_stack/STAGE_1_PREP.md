@@ -7,15 +7,9 @@
 
 ---
 
-## Dependencies and Environment
+## Set Up Environment
 
-1. **Install Python dependencies**
-
-   ```sh
-   pip install -r requirements.txt
-   ```
-
-2. **Configure `.env` for database connectivity**
+1. **Configure `.env` for database connectivity**
 
    ```sh
    cp .env.example .env
@@ -26,8 +20,6 @@
 
    > **Why is the DB needed?**
    > The database holds US GAAP taxonomy metadata: concept names, types, period/balance classifications, and labels. It does **not** store company-reported values. Those are loaded separately during preprocessing.
-
----
 
 ## Database Initialization
 
@@ -50,8 +42,6 @@
    * `us_gaap_concept_type`
    * `us_gaap_balance_type`
    * `us_gaap_period_type`
-
----
 
 ## Taxonomy Ingestion and Training Data Preparation
 
