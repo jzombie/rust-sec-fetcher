@@ -1,6 +1,4 @@
-import logging
 import os
-import numpy as np
 import tempfile
 from models.pytorch.narrative_stack.common import UsGaapStore
 from db import DbUsGaap
@@ -63,9 +61,9 @@ def test_ingestion_and_lookup():
                 assert data["unscaled_value"] != data["scaled_value"]
 
             transformed = data["scaler"].transform([[data["unscaled_value"]]])[0][0]
-            assert (
-                transformed == data["scaled_value"]
-            ), f"Expected {data['scaled_value']}, but got {transformed}"
+            assert transformed == data["scaled_value"], (
+                f"Expected {data['scaled_value']}, but got {transformed}"
+            )
 
             has_unscaled_value_check = True
 

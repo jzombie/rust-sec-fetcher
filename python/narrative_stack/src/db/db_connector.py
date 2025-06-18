@@ -1,20 +1,24 @@
 import os
 import logging
-import config
+from config import init_config
 import time
 import mysql.connector
 import warnings
 from contextlib import contextmanager
+
+init_config()
 
 
 class DBConnector:
     # IMPORTANT: This overrides warning.showwarning handling and could likely
     # be improved further!
     def custom_warning_handler(
-        self, message, category, filename, lineno, file=None, line=None
+        self,
+        message,
+        category,  # filename, lineno, file=None, line=None
     ):
         if (
-            category == UserWarning
+            category is UserWarning
             and message
             == "pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy."
         ):

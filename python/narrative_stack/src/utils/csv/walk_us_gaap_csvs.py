@@ -142,7 +142,6 @@ def walk_us_gaap_csvs(
                     continue
 
                 for col in tag_columns:
-
                     for val in df[col].dropna().astype(str):
                         # TODO: Use common token constant for "::"
                         if "::" not in val:
