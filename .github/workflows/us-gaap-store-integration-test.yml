@@ -35,7 +35,7 @@ jobs:
           python -m venv .venv
           source .venv/bin/activate
           pip install --upgrade pip
-          pip install -e .[test]
+          pip install -e . --config-settings group=dev
 
       - name: Make test script executable
         run: chmod +x python/narrative_stack/us_gaap_store_integration_test.sh
