@@ -1,0 +1,32 @@
+name: US GAAP Store Integration Test
+
+on:
+  push:
+    paths:
+      - "python/narrative_stack/**"
+      - ".github/workflows/us_gaap_store_integration_test.yml"
+  pull_request:
+    paths:
+      - "python/narrative_stack/**"
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Git LFS
+        run: |
+          git lfs install
+          git lfs pull
+
+      - name: Make test script executable
+        run: chmod +x python/narrative_stack/us_gaap_store_integration_test.sh
+
+      - name: Run integration test
+        working-directory: python/narrative_stack
+        run: ./us_gaap_store_integration_test.sh
