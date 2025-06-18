@@ -184,7 +184,7 @@ dependencies = [
     "yarl==1.18.3",
 ]
 
-[tool.uv.dependency-groups]
+[dependency-groups]
 dev = [
     "pytest>=8.4.1",
 ]
