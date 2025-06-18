@@ -1,5 +1,5 @@
 from .db import DB
-from typing import List, Tuple
+from typing import List
 
 
 class DbUsGaap(DB):
