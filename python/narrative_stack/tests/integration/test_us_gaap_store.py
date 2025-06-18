@@ -1,6 +1,5 @@
 import os
 import tempfile
-import shutil
 from models.pytorch.narrative_stack.common import UsGaapStore
 from db import DbUsGaap
 from simd_r_drive import DataStore
@@ -10,8 +9,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 def test_ingestion_and_lookup():
-    temp_dir = tempfile.mkdtemp()
-    try:
+    with tempfile.TemporaryDirectory() as temp_dir:
         # Create test CSVs in temp dir
         csv_dir = os.path.join(script_dir, "assets/truncated_csvs")
 
@@ -47,6 +45,3 @@ def test_ingestion_and_lookup():
         # Embedding retrieval
         embeddings, pairs = us_gaap_store.get_embedding_matrix()
         assert embeddings.shape[0] == len(pairs)
-
-    finally:
-        shutil.rmtree(temp_dir)
