@@ -14,12 +14,13 @@ import numpy as np
 from sklearn.preprocessing import QuantileTransformer
 from sklearn.decomposition import PCA
 from typing import Tuple, Iterator, Optional, Any
-from utils.pytorch import model_hash, get_device
+from utils.pytorch import model_hash, get_device, seed_everything
 from utils import generate_us_gaap_description
 from models.pytorch.narrative_stack.stage1.preprocessing import (
     pca_compress_concept_unit_embeddings,
 )
 
+# Note: This is used here for the semantic modeling (BGE model)
 seed_everything()
 
 # Namespaces for storing structured data
