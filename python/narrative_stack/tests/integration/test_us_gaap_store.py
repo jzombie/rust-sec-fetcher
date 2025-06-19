@@ -1,6 +1,5 @@
 import os
 import tempfile
-import numpy as np
 from models.pytorch.narrative_stack.common import UsGaapStore
 from db import DbUsGaap
 from simd_r_drive import DataStore
