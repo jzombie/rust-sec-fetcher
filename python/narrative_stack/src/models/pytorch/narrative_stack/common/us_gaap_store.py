@@ -3,8 +3,9 @@ import joblib
 from io import BytesIO
 import torch
 from sentence_transformers import SentenceTransformer
-from simd_r_drive import DataStore, NamespaceHasher
+from simd_r_drive import DataStore, NamespaceHasher  # Assuming these are available
 
+# from db import DbUsGaap # Assuming this is an external dependency or not part of direct store ops
 from utils.csv import walk_us_gaap_csvs  # Assuming this provides rows/cells
 from collections import defaultdict
 
@@ -235,11 +236,15 @@ class UsGaapStore:
             if n_q < 2 and len(values) >= 2:
                 n_q = 2
 
+            # --- FIX FOR UNBOUNDLOCALERROR STARTS HERE ---
+            scaler = None  # Initialize scaler here to ensure it's always bound
+
             if len(values) < 2:
                 logging.warning(
                     "Only one value present for concept/unit pair. Scaling skipped."
                 )
                 scaled_vals = np.zeros_like(vals_np.flatten())
+                # scaler remains None as initialized above, which is correct if no scaling happens
             else:
                 scaler = QuantileTransformer(
                     output_distribution="normal",
@@ -248,8 +253,10 @@ class UsGaapStore:
                     random_state=42,
                 )
                 scaled_vals = scaler.fit_transform(vals_np).flatten()
+            # --- FIX FOR UNBOUNDLOCALERROR ENDS HERE ---
 
             # Store the fitted scaler (encoded with joblib helper)
+            # This line will now always have 'scaler' defined (either as QuantileTransformer or None)
             scaler_bytes_encoded = _encode_joblib_object_to_bytes(scaler)
             pair_id = self._get_pair_id(pair)
             self.data_store.write(
@@ -266,7 +273,7 @@ class UsGaapStore:
                         SCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(
                             i.to_bytes(4, "little", signed=False)
                         ),
-                        _encode_float_to_raw_bytes(val),  # Encode float directly
+                        _encode_float_to_raw_bytes(val),
                     )
                     for i, val in zip(i_cells, scaled_vals)
                 ]
@@ -393,11 +400,11 @@ class UsGaapStore:
         embedding_matrix = []
         pairs = []
 
-        raw = self.data_store.read_entry(b"__pair_count__")  # Use read_entry
-        if raw is None:
+        raw_entry = self.data_store.read_entry(b"__pair_count__")  # Use read_entry
+        if raw_entry is None:
             raise KeyError("Missing __pair_count__ key in store")
         total_pairs = int.from_bytes(
-            bytes(raw.as_memoryview()), "little", signed=False
+            bytes(raw_entry.as_memoryview()), "little", signed=False
         )  # Convert memoryview
 
         for pair_id in range(total_pairs):
@@ -518,15 +525,28 @@ class UsGaapStore:
         scaler_key = SCALER_NAMESPACE.namespace(
             pair_id.to_bytes(4, "little", signed=False)
         )
-        scaler: Optional[Any] = self._scaler_cache.get(scaler_key)
-        if scaler is None:
+
+        # Check cache first
+        if scaler_key in self._scaler_cache:
+            # If in cache, retrieve it directly. No further loading needed.
+            scaler = self._scaler_cache[scaler_key]
+        else:
+            # Cache miss: Attempt to load from store
             scaler_entry = self.data_store.read_entry(scaler_key)
             if scaler_entry is not None:
-                scaler = _decode_joblib_object_from_memoryview(
+                # Found in store: decode, assign to scaler, and cache it
+                loaded_scaler = _decode_joblib_object_from_memoryview(
                     scaler_entry.as_memoryview()
                 )
+                scaler = loaded_scaler
+            else:
+                # Not found in store: Assign None, and cache None
+                scaler = None
+
+            # Store the result (whether a loaded scaler or None) in the cache
             self._scaler_cache[scaler_key] = scaler
 
+        # At this point, 'scaler' is guaranteed to be associated with a value (either from cache, loaded from store, or None).
         return {
             "i_cell": i_cell,
             "pair_id": pair_id,
@@ -535,7 +555,7 @@ class UsGaapStore:
             "unscaled_value": unscaled_value,
             "scaled_value": scaled_value,
             "embedding": embedding,
-            "scaler": scaler,
+            "scaler": scaler,  # Now 'scaler' is definitely bound
         }
 
     def lookup_by_triplet(self, concept: str, uom: str, unscaled_value: float) -> dict:
