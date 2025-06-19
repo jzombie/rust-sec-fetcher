@@ -61,19 +61,19 @@ def _decode_string_from_memoryview(mv: memoryview, offset: int) -> Tuple[str, in
 
 
 def _encode_float_to_raw_bytes(f: float) -> bytes:
-    """Encodes a single float to raw float64 bytes."""
-    return np.array([f], dtype=np.float64).tobytes()
+    """Encodes a single float to raw float32 bytes."""
+    return np.array([f], dtype=np.float32).tobytes()
 
 
 def _decode_float_from_memoryview(mv: memoryview) -> float:
-    """Decodes a single float from raw float64 bytes in a memoryview."""
-    return np.frombuffer(mv, dtype=np.float64)[0]
+    """Decodes a single float from raw float32 bytes in a memoryview."""
+    return np.frombuffer(mv, dtype=np.float32)[0]
 
 
 def _encode_numpy_array_to_raw_bytes(arr: np.ndarray) -> bytes:
-    """Encodes a numpy array (assumed float64) to raw bytes."""
-    if arr.dtype != np.float64:
-        arr = arr.astype(np.float64)
+    """Encodes a numpy array (assumed float32) to raw bytes."""
+    if arr.dtype != np.float32:
+        arr = arr.astype(np.float32)
     return arr.tobytes()
 
 
@@ -162,13 +162,13 @@ class UsGaapStore:
 
                     concept_unit_pairs_i_cells[pair].append(i_cell)
 
-                    # Store raw unscaled value (as float64 bytes)
+                    # Store raw unscaled value (as float32 bytes)
                     unscaled_value_encoded = _encode_float_to_raw_bytes(cell.value)
                     unscaled_key = UNSCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes)
                     batch.append((unscaled_key, unscaled_value_encoded))
 
                     # Store reverse triplet -> i_cell mapping (Custom Binary Triplet Key)
-                    # Key is now: len_concept | concept_bytes | len_uom | uom_bytes | unscaled_value_float64_bytes
+                    # Key is now: len_concept | concept_bytes | len_uom | uom_bytes | unscaled_value_float32_bytes
                     triplet_key_bytes = (
                         _encode_string_to_bytes(cell.concept)
                         + _encode_string_to_bytes(cell.uom)
@@ -266,7 +266,7 @@ class UsGaapStore:
 
             assert len(scaled_vals) == len(i_cells)
 
-            # Store scaled values (encoded as float64 bytes)
+            # Store scaled values (encoded as float32 bytes)
             self.data_store.batch_write(
                 [
                     (
@@ -299,7 +299,7 @@ class UsGaapStore:
             desc="Generating Semantic Embeddings",
         ):
             pairs.append((pair_id, pair))
-            embeddings.append(embedding)  # Embedding is already np.ndarray of float64
+            embeddings.append(embedding)  # Embedding is already np.ndarray of float32
 
         embedding_matrix = np.stack(embeddings, axis=0)
         logging.info(f"Embedding matrix shape: {embedding_matrix.shape}")
@@ -315,7 +315,7 @@ class UsGaapStore:
 
         assert len(pairs) == len(pca_compressed_concept_unit_embeddings)
 
-        # Store PCA-reduced embeddings (encoded as raw float64 numpy bytes)
+        # Store PCA-reduced embeddings (encoded as raw float32 numpy bytes)
         pca_embedding_entries = [
             (
                 PCA_REDUCED_EMBEDDING_NAMESPACE.namespace(
@@ -349,7 +349,7 @@ class UsGaapStore:
     def _generate_concept_unit_embeddings(
         self,
         device: torch.device,
-        batch_size: int = 64,
+        batch_size: int = 32,
     ) -> Iterator[Tuple[int, ConceptUnitPair, np.ndarray]]:
         # ... (No change needed here, it generates embeddings as np.ndarray) ...
         # This part generates np.ndarray, which then gets passed to generate_pca_embeddings
@@ -427,7 +427,7 @@ class UsGaapStore:
             if embedding_entry is None:
                 raise KeyError(f"Missing embedding for pair_id {pair_id}")
             embedding = _decode_numpy_array_from_memoryview(
-                embedding_entry.as_memoryview(), dtype=np.float64
+                embedding_entry.as_memoryview(), dtype=np.float32
             )
 
             pairs.append((pair_id, ConceptUnitPair(concept=concept, uom=uom)))
@@ -496,21 +496,21 @@ class UsGaapStore:
         concept, offset = _decode_string_from_memoryview(pair_mv, 0)
         uom, _ = _decode_string_from_memoryview(pair_mv, offset)
 
-        # Load unscaled value (raw float64)
+        # Load unscaled value (raw float32)
         unscaled_key = UNSCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes)
         unscaled_entry = self.data_store.read_entry(unscaled_key)
         if unscaled_entry is None:
             raise KeyError(f"Missing unscaled value for i_cell {i_cell}")
         unscaled_value = _decode_float_from_memoryview(unscaled_entry.as_memoryview())
 
-        # Load scaled value (optional, raw float64)
+        # Load scaled value (optional, raw float32)
         scaled_key = SCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes)
         scaled_entry = self.data_store.read_entry(scaled_key)
         scaled_value = None
         if scaled_entry is not None:
             scaled_value = _decode_float_from_memoryview(scaled_entry.as_memoryview())
 
-        # Load PCA-reduced embedding (raw float64 numpy array)
+        # Load PCA-reduced embedding (raw float32 numpy array)
         embedding_key = PCA_REDUCED_EMBEDDING_NAMESPACE.namespace(
             pair_id.to_bytes(4, "little", signed=False)
         )
@@ -518,7 +518,7 @@ class UsGaapStore:
         if embedding_entry is None:
             raise KeyError(f"Missing embedding for concept_unit_id {pair_id}")
         embedding = _decode_numpy_array_from_memoryview(
-            embedding_entry.as_memoryview(), dtype=np.float64
+            embedding_entry.as_memoryview(), dtype=np.float32
         )
 
         # Load scaler (cached, joblib)

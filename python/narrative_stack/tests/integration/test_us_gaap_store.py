@@ -1,5 +1,6 @@
 import os
 import tempfile
+import numpy as np
 from models.pytorch.narrative_stack.common import UsGaapStore
 from db import DbUsGaap
 from simd_r_drive import DataStore
@@ -60,10 +61,20 @@ def test_ingestion_and_lookup():
             if data["unscaled_value"] != 0:
                 assert data["unscaled_value"] != data["scaled_value"]
 
-            transformed = data["scaler"].transform([[data["unscaled_value"]]])[0][0]
-            assert transformed == data["scaled_value"], (
-                f"Expected {data['scaled_value']}, but got {transformed}"
+            # For 64-bit internal values
+            # transformed = data["scaler"].transform([[data["unscaled_value"]]])[0][0]
+            # assert transformed == data["scaled_value"], (
+            #     f"Expected {data['scaled_value']}, but got {transformed}"
+            # )
+
+            transformed = np.float32(
+                data["scaler"].transform([[data["unscaled_value"]]])[0][0]
             )
+            expected = np.float32(data["scaled_value"])
+
+            assert (
+                transformed == expected
+            ), f"Expected {expected}, but got {transformed}"
 
             has_unscaled_value_check = True
 
