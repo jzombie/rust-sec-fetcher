@@ -62,19 +62,19 @@ def test_ingestion_and_lookup():
                 assert data["unscaled_value"] != data["scaled_value"]
 
             # For 64-bit internal values
-            # transformed = data["scaler"].transform([[data["unscaled_value"]]])[0][0]
-            # assert transformed == data["scaled_value"], (
-            #     f"Expected {data['scaled_value']}, but got {transformed}"
-            # )
-
-            transformed = np.float32(
-                data["scaler"].transform([[data["unscaled_value"]]])[0][0]
-            )
-            expected = np.float32(data["scaled_value"])
-
+            transformed = data["scaler"].transform([[data["unscaled_value"]]])[0][0]
             assert (
-                transformed == expected
-            ), f"Expected {expected}, but got {transformed}"
+                transformed == data["scaled_value"]
+            ), f"Expected {data['scaled_value']}, but got {transformed}"
+
+            # For 32-bit only
+            # transformed = np.float32(
+            #     data["scaler"].transform([[data["unscaled_value"]]])[0][0]
+            # )
+            # expected = np.float32(data["scaled_value"])
+            # assert np.isclose(
+            #     transformed, expected, rtol=1e-6, atol=1e-7
+            # ), f"Expected {expected}, but got {transformed}"
 
             has_unscaled_value_check = True
 
