@@ -12,7 +12,7 @@ from collections import defaultdict
 from tqdm import tqdm
 from pydantic import BaseModel
 import numpy as np
-from sklearn.preprocessing import QuantileTransformer
+from sklearn.preprocessing import QuantileTransformer, StandardScaler
 from sklearn.decomposition import PCA
 from typing import Tuple, Iterator, Optional, Any
 from utils.pytorch import model_hash, get_device, seed_everything
@@ -236,15 +236,13 @@ class UsGaapStore:
             if n_q < 2 and len(values) >= 2:
                 n_q = 2
 
-            # --- FIX FOR UNBOUNDLOCALERROR STARTS HERE ---
-            scaler = None  # Initialize scaler here to ensure it's always bound
+            # --- ALWAYS USE A SCALER ---
 
             if len(values) < 2:
-                logging.warning(
-                    "Only one value present for concept/unit pair. Scaling skipped."
-                )
-                scaled_vals = np.zeros_like(vals_np.flatten())
-                # scaler remains None as initialized above, which is correct if no scaling happens
+                # Fallback to a StandardScaler for numeric stability
+                scaler = StandardScaler()
+                scaled_vals = scaler.fit_transform(vals_np).flatten()
+
             else:
                 scaler = QuantileTransformer(
                     output_distribution="normal",
@@ -253,7 +251,6 @@ class UsGaapStore:
                     random_state=42,
                 )
                 scaled_vals = scaler.fit_transform(vals_np).flatten()
-            # --- FIX FOR UNBOUNDLOCALERROR ENDS HERE ---
 
             # Store the fitted scaler (encoded with joblib helper)
             # This line will now always have 'scaler' defined (either as QuantileTransformer or None)
