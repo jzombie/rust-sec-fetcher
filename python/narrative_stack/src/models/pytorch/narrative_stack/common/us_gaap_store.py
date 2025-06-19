@@ -3,10 +3,9 @@ import joblib
 from io import BytesIO
 import torch
 from sentence_transformers import SentenceTransformer
-from simd_r_drive import DataStore, NamespaceHasher  # Assuming these are available
+from simd_r_drive import DataStore, NamespaceHasher
 
-# from db import DbUsGaap # Assuming this is an external dependency or not part of direct store ops
-from utils.csv import walk_us_gaap_csvs  # Assuming this provides rows/cells
+from utils.csv import walk_us_gaap_csvs
 from collections import defaultdict
 
 from tqdm import tqdm
@@ -348,7 +347,6 @@ class UsGaapStore:
         device: torch.device,
         batch_size: int = 64,
     ) -> Iterator[Tuple[int, ConceptUnitPair, np.ndarray]]:
-        # ... (No change needed here, it generates embeddings as np.ndarray) ...
         # This part generates np.ndarray, which then gets passed to generate_pca_embeddings
         # The SentenceTransformer part is external to the DataStore read/write process.
         def _embed_batch(pair_ids, pairs, texts, model, device):
@@ -363,7 +361,7 @@ class UsGaapStore:
         pairs_iter = self.iterate_concept_unit_pairs()
 
         model = SentenceTransformer("BAAI/bge-large-en-v1.5")
-        model.eval()
+        model.eval()  # IMPORTANT!
         model.to(device)
 
         logging.info(f"Embedding model hash: {model_hash(model)}")
