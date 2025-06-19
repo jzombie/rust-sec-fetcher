@@ -194,3 +194,7 @@ where = ["src"]
 exclude = [
     "notebooks"
 ]
+# TODO: Add stricter lint rules: https://docs.astral.sh/ruff/rules/
+# select = ["E", "F", "G", "B"]
+# extend-select = ["C", "I", "N", "UP"] 
+

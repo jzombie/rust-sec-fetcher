@@ -6,14 +6,16 @@ import pytorch_lightning as pl
 import logging
 
 # === SEED ===
-SEED = 42
+DEFAULT_SEED = 42
 
 
-def seed_everything(seed: int) -> None:
+def seed_everything(seed: int = DEFAULT_SEED) -> None:
     """
     This function sets the seed for various libraries to ensure reproducibility.
     It seeds Python's built-in random module, NumPy, PyTorch (CPU and GPU), PyTorch Lightning, and MPS (Apple Silicon).
     """
+
+    logging.info("Everything seeded!")
 
     # Set PYTHONHASHSEED to make Python's hash-based operations deterministic
     # (e.g., dict key ordering, set ordering, hash() values).
@@ -40,8 +42,3 @@ def seed_everything(seed: int) -> None:
 
     # PyTorch Lightning seed (this handles distributed training if enabled)
     pl.seed_everything(seed, workers=True)
-
-
-# Ensure it's called!
-seed_everything(SEED)
-logging.info("Everything seeded!")
