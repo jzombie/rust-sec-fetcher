@@ -36,12 +36,11 @@ jobs:
           source .venv/bin/activate
           uv pip install -e . --group dev
 
-      # TODO: Uncomment
-      #   - name: Check code style with ruff
-      #     working-directory: python/narrative_stack
-      #     run: |
-      #       source .venv/bin/activate
-      #       ruff check .
+      - name: Check code style with ruff
+        working-directory: python/narrative_stack
+        run: |
+          source .venv/bin/activate
+          ruff check .
 
       - name: Make test script executable
         run: chmod +x python/narrative_stack/us_gaap_store_integration_test.sh
