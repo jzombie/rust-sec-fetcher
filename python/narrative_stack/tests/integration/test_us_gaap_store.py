@@ -53,10 +53,6 @@ def test_ingestion_and_lookup():
         for i in range(0, triplet_count):
             data = us_gaap_store.lookup_by_index(i)
 
-            if data["scaled_value"] == 0:
-                # logging.warning("Skipping potentially unscaled value")
-                continue
-
             # Sanity check to ensure the scaler is actually working
             if data["unscaled_value"] != 0:
                 assert data["unscaled_value"] != data["scaled_value"]
