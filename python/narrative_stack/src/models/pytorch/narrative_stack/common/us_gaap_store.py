@@ -36,7 +36,7 @@ PCA_REDUCED_EMBEDDING_NAMESPACE = NamespaceHasher(b"pca-reduced-embedding")
 # --- GLOBAL CONSTANTS FOR ENCODING/DECODING ---
 LEN_PREFIX_BYTES = 2  # Use 2 bytes for string length prefixes (up to 65535 bytes)
 
-# --- HELPER FUNCTIONS FOR ENCODING/DECODING (NO MSGPACK) ---
+# --- HELPER FUNCTIONS FOR ENCODING/DECODING (UPDATED TO USE BYTES) ---
 
 
 def _encode_string_to_bytes(s: str) -> bytes:
@@ -50,11 +50,11 @@ def _encode_string_to_bytes(s: str) -> bytes:
     return s_len.to_bytes(LEN_PREFIX_BYTES, "little") + s_bytes
 
 
-def _decode_string_from_memoryview(mv: memoryview, offset: int) -> Tuple[str, int]:
-    """Decodes a length-prefixed string from a memoryview."""
-    s_len = int.from_bytes(mv[offset : offset + LEN_PREFIX_BYTES], "little")
+def _decode_string_from_bytes(data: bytes, offset: int) -> Tuple[str, int]:
+    """Decodes a length-prefixed string from a bytes object."""
+    s_len = int.from_bytes(data[offset : offset + LEN_PREFIX_BYTES], "little")
     offset += LEN_PREFIX_BYTES
-    s = bytes(mv[offset : offset + s_len]).decode("utf-8")
+    s = data[offset : offset + s_len].decode("utf-8")
     offset += s_len
     return s, offset
 
@@ -64,9 +64,9 @@ def _encode_float_to_raw_bytes(f: float) -> bytes:
     return np.array([f], dtype=np.float64).tobytes()
 
 
-def _decode_float_from_memoryview(mv: memoryview) -> float:
-    """Decodes a single float from raw float64 bytes in a memoryview."""
-    return np.frombuffer(mv, dtype=np.float64)[0]
+def _decode_float_from_bytes(data: bytes) -> float:
+    """Decodes a single float from raw float64 bytes."""
+    return np.frombuffer(data, dtype=np.float64)[0]
 
 
 def _encode_numpy_array_to_raw_bytes(arr: np.ndarray) -> bytes:
@@ -76,11 +76,11 @@ def _encode_numpy_array_to_raw_bytes(arr: np.ndarray) -> bytes:
     return arr.tobytes()
 
 
-def _decode_numpy_array_from_memoryview(
-    mv: memoryview, dtype: np.dtype, shape: Optional[Tuple[int, ...]] = None
+def _decode_numpy_array_from_bytes(
+    data: bytes, dtype: np.dtype, shape: Optional[Tuple[int, ...]] = None
 ) -> np.ndarray:
-    """Decodes a numpy array from a memoryview."""
-    arr = np.frombuffer(mv, dtype=dtype)
+    """Decodes a numpy array from a bytes object."""
+    arr = np.frombuffer(data, dtype=dtype)
     if shape:
         arr = arr.reshape(shape)
     return arr
@@ -93,11 +93,9 @@ def _encode_joblib_object_to_bytes(obj: Any) -> bytes:
     return buffer.getvalue()
 
 
-def _decode_joblib_object_from_memoryview(mv: memoryview) -> Any:
-    """Decodes a joblib-compatible object from bytes in a memoryview."""
-    # joblib.load typically expects file-like objects or byte strings.
-    # Convert memoryview to bytes for BytesIO.
-    return joblib.load(BytesIO(bytes(mv)))
+def _decode_joblib_object_from_bytes(data: bytes) -> Any:
+    """Decodes a joblib-compatible object from a bytes object."""
+    return joblib.load(BytesIO(data))
 
 
 # --- Pydantic Model (No Change) ---
@@ -199,13 +197,17 @@ class UsGaapStore:
         )
         logging.info(f"Total triplets: {total_triplets}")
 
-        self.data_store.batch_write(
-            concept_unit_entries
-        )  # Write the collected concept/unit pairs
+        # RESTORED: Your original workaround for batch_write issues is preserved.
+        # TODO: Fix EOF error
+        for key, value in concept_unit_entries:
+            self.data_store.batch_write(
+                [(key, value)]
+                # concept_unit_entries
+            )  # Write the collected concept/unit pairs
 
         total_pairs = len(concept_unit_pairs_i_cells)
         self.data_store.write(
-            b"__pair_count__", total_pairs.to_bytes(4, byteorder="little", signed=False)
+            b"__pair_count__", total_pairs.to_bytes(4, "little", signed=False)
         )
         logging.info(f"Total concept/unit pairs: {total_pairs}")
 
@@ -221,13 +223,14 @@ class UsGaapStore:
                 for i_bytes in i_bytes_list
             ]
 
-            # Use read_entry and decode float directly
-            values = [
-                _decode_float_from_memoryview(
-                    self.data_store.read_entry(key).as_memoryview()
-                )
-                for key in keys
-            ]
+            # Use read and decode float directly
+            values = []
+            for key in keys:
+                # MODIFIED: Changed read_entry().as_memoryview() to read()
+                raw_bytes = self.data_store.read(key)
+                if raw_bytes is None:
+                    raise KeyError(f"Missing unscaled value for key {key}")
+                values.append(_decode_float_from_bytes(raw_bytes))
 
             vals_np = np.array(values).reshape(-1, 1)
 
@@ -252,7 +255,7 @@ class UsGaapStore:
                 scaled_vals = scaler.fit_transform(vals_np).flatten()
 
             # Store the fitted scaler (encoded with joblib helper)
-            # This line will now always have 'scaler' defined (either as QuantileTransformer or None)
+            # This line will now always have 'scaler' defined
             scaler_bytes_encoded = _encode_joblib_object_to_bytes(scaler)
             pair_id = self._get_pair_id(pair)
             self.data_store.write(
@@ -322,7 +325,11 @@ class UsGaapStore:
             for (pair_id, _), vec in zip(pairs, pca_compressed_concept_unit_embeddings)
         ]
 
-        self.data_store.batch_write(pca_embedding_entries)
+        # self.data_store.batch_write(pca_embedding_entries)
+        # TODO: Fix batch write
+        for key, value in pca_embedding_entries:
+            self.data_store.batch_write([(key, value)])
+
         logging.info(
             f"Wrote {len(pca_embedding_entries)} PCA-compressed embeddings to store."
         )
@@ -335,12 +342,11 @@ class UsGaapStore:
         logging.info("Stored PCA model in store.")
 
     def load_pca_model(self) -> Optional[PCA]:
-        pca_model_entry = self.data_store.read_entry(
-            PCA_MODEL_NAMESPACE.namespace(b"model")
-        )
-        if pca_model_entry is None:
+        # MODIFIED: Changed read_entry().as_memoryview() to read()
+        pca_model_bytes = self.data_store.read(PCA_MODEL_NAMESPACE.namespace(b"model"))
+        if pca_model_bytes is None:
             return None
-        return _decode_joblib_object_from_memoryview(pca_model_entry.as_memoryview())
+        return _decode_joblib_object_from_bytes(pca_model_bytes)
 
     def _generate_concept_unit_embeddings(
         self,
@@ -395,34 +401,31 @@ class UsGaapStore:
         embedding_matrix = []
         pairs = []
 
-        raw_entry = self.data_store.read_entry(b"__pair_count__")  # Use read_entry
-        if raw_entry is None:
+        # MODIFIED: Changed read_entry().as_memoryview() to read()
+        raw_bytes = self.data_store.read(b"__pair_count__")
+        if raw_bytes is None:
             raise KeyError("Missing __pair_count__ key in store")
-        total_pairs = int.from_bytes(
-            bytes(raw_entry.as_memoryview()), "little", signed=False
-        )  # Convert memoryview
+        total_pairs = int.from_bytes(raw_bytes, "little", signed=False)
 
         for pair_id in range(total_pairs):
             pair_id_bytes = pair_id.to_bytes(4, "little", signed=False)
             pair_key = CONCEPT_UNIT_PAIR_NAMESPACE.namespace(pair_id_bytes)
-            pair_entry = self.data_store.read_entry(pair_key)  # Use read_entry
-            if pair_entry is None:
+            # MODIFIED: Changed read_entry().as_memoryview() to read()
+            pair_bytes = self.data_store.read(pair_key)
+            if pair_bytes is None:
                 raise KeyError(f"Missing concept/unit for pair_id {pair_id}")
 
-            # Decode concept and uom (length-prefixed)
-            pair_mv = pair_entry.as_memoryview()
-            concept, offset = _decode_string_from_memoryview(pair_mv, 0)
-            uom, _ = _decode_string_from_memoryview(pair_mv, offset)
+            concept, offset = _decode_string_from_bytes(pair_bytes, 0)
+            uom, _ = _decode_string_from_bytes(pair_bytes, offset)
 
             # Load PCA-reduced embedding (direct numpy)
             embedding_key = PCA_REDUCED_EMBEDDING_NAMESPACE.namespace(pair_id_bytes)
-            embedding_entry = self.data_store.read_entry(
-                embedding_key
-            )  # Use read_entry
-            if embedding_entry is None:
+            # MODIFIED: Changed read_entry().as_memoryview() to read()
+            embedding_bytes = self.data_store.read(embedding_key)
+            if embedding_bytes is None:
                 raise KeyError(f"Missing embedding for pair_id {pair_id}")
-            embedding = _decode_numpy_array_from_memoryview(
-                embedding_entry.as_memoryview(), dtype=np.float64
+            embedding = _decode_numpy_array_from_bytes(
+                embedding_bytes, dtype=np.float64
             )
 
             pairs.append((pair_id, ConceptUnitPair(concept=concept, uom=uom)))
@@ -434,36 +437,33 @@ class UsGaapStore:
     # --- CORE LOOKUP METHODS (OPTIMIZED) ---
 
     def get_triplet_count(self) -> int:
-        raw_entry = self.data_store.read_entry(b"__triplet_count__")
-        if raw_entry is None:
+        # MODIFIED: Changed read_entry().as_memoryview() to read()
+        raw_bytes = self.data_store.read(b"__triplet_count__")
+        if raw_bytes is None:
             raise KeyError("Triplet count key not found")
-        return int.from_bytes(bytes(raw_entry.as_memoryview()), "little", signed=False)
+        return int.from_bytes(raw_bytes, "little", signed=False)
 
     def get_pair_count(self) -> int:
-        raw_entry = self.data_store.read_entry(b"__pair_count__")
-        if raw_entry is None:
+        # MODIFIED: Changed read_entry().as_memoryview() to read()
+        raw_bytes = self.data_store.read(b"__pair_count__")
+        if raw_bytes is None:
             raise KeyError("Pair count key not found")
-        return int.from_bytes(bytes(raw_entry.as_memoryview()), "little", signed=False)
+        return int.from_bytes(raw_bytes, "little", signed=False)
 
     def iterate_concept_unit_pairs(self) -> Iterator[Tuple[int, ConceptUnitPair]]:
-        raw_entry = self.data_store.read_entry(b"__pair_count__")
-        if raw_entry is None:
-            raise ValueError("Missing __pair_count__ key in store")
-        total_pairs = int.from_bytes(
-            bytes(raw_entry.as_memoryview()), "little", signed=False
-        )
-
+        total_pairs = self.get_pair_count()
         for pair_id in range(total_pairs):
             key = CONCEPT_UNIT_PAIR_NAMESPACE.namespace(
                 pair_id.to_bytes(4, "little", signed=False)
             )
-            pair_entry = self.data_store.read_entry(key)
-            if pair_entry is None:
+            # MODIFIED: Changed read_entry().as_memoryview() to read()
+            pair_bytes = self.data_store.read(key)
+            if pair_bytes is None:
                 raise KeyError(f"Missing concept/unit for pair_id={pair_id}")
 
-            pair_mv = pair_entry.as_memoryview()
-            concept, offset = _decode_string_from_memoryview(pair_mv, 0)
-            uom, _ = _decode_string_from_memoryview(pair_mv, offset)
+            pair_mv = pair_bytes
+            concept, offset = _decode_string_from_bytes(pair_mv, 0)
+            uom, _ = _decode_string_from_bytes(pair_mv, offset)
 
             yield (pair_id, ConceptUnitPair(concept=concept, uom=uom))
 
@@ -472,49 +472,43 @@ class UsGaapStore:
 
         # Load concept_unit_id from cell meta (raw int)
         meta_key = CELL_META_NAMESPACE.namespace(i_bytes)
-        concept_unit_id_entry = self.data_store.read_entry(meta_key)
-        if concept_unit_id_entry is None:
+        concept_unit_id_bytes = self.data_store.read(meta_key)
+        if concept_unit_id_bytes is None:
             raise KeyError(f"Missing concept_unit_id for i_cell {i_cell}")
-        pair_id = int.from_bytes(
-            bytes(concept_unit_id_entry.as_memoryview()), "little", signed=False
-        )
+        pair_id = int.from_bytes(concept_unit_id_bytes, "little", signed=False)
 
         # Load (concept, uom) using length-prefixed strings
         pair_key = CONCEPT_UNIT_PAIR_NAMESPACE.namespace(
             pair_id.to_bytes(4, "little", signed=False)
         )
-        pair_entry = self.data_store.read_entry(pair_key)
-        if pair_entry is None:
+        pair_bytes = self.data_store.read(pair_key)
+        if pair_bytes is None:
             raise KeyError(f"Missing (concept, uom) for concept_unit_id {pair_id}")
-
-        pair_mv = pair_entry.as_memoryview()
-        concept, offset = _decode_string_from_memoryview(pair_mv, 0)
-        uom, _ = _decode_string_from_memoryview(pair_mv, offset)
+        concept, offset = _decode_string_from_bytes(pair_bytes, 0)
+        uom, _ = _decode_string_from_bytes(pair_bytes, offset)
 
         # Load unscaled value (raw float64)
         unscaled_key = UNSCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes)
-        unscaled_entry = self.data_store.read_entry(unscaled_key)
-        if unscaled_entry is None:
+        unscaled_bytes = self.data_store.read(unscaled_key)
+        if unscaled_bytes is None:
             raise KeyError(f"Missing unscaled value for i_cell {i_cell}")
-        unscaled_value = _decode_float_from_memoryview(unscaled_entry.as_memoryview())
+        unscaled_value = _decode_float_from_bytes(unscaled_bytes)
 
         # Load scaled value (optional, raw float64)
         scaled_key = SCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes)
-        scaled_entry = self.data_store.read_entry(scaled_key)
+        scaled_bytes = self.data_store.read(scaled_key)
         scaled_value = None
-        if scaled_entry is not None:
-            scaled_value = _decode_float_from_memoryview(scaled_entry.as_memoryview())
+        if scaled_bytes is not None:
+            scaled_value = _decode_float_from_bytes(scaled_bytes)
 
         # Load PCA-reduced embedding (raw float64 numpy array)
         embedding_key = PCA_REDUCED_EMBEDDING_NAMESPACE.namespace(
             pair_id.to_bytes(4, "little", signed=False)
         )
-        embedding_entry = self.data_store.read_entry(embedding_key)
-        if embedding_entry is None:
+        embedding_bytes = self.data_store.read(embedding_key)
+        if embedding_bytes is None:
             raise KeyError(f"Missing embedding for concept_unit_id {pair_id}")
-        embedding = _decode_numpy_array_from_memoryview(
-            embedding_entry.as_memoryview(), dtype=np.float64
-        )
+        embedding = _decode_numpy_array_from_bytes(embedding_bytes, dtype=np.float64)
 
         # Load scaler (cached, joblib)
         scaler_key = SCALER_NAMESPACE.namespace(
@@ -527,21 +521,17 @@ class UsGaapStore:
             scaler = self._scaler_cache[scaler_key]
         else:
             # Cache miss: Attempt to load from store
-            scaler_entry = self.data_store.read_entry(scaler_key)
-            if scaler_entry is not None:
+            scaler_bytes = self.data_store.read(scaler_key)
+            if scaler_bytes is not None:
                 # Found in store: decode, assign to scaler, and cache it
-                loaded_scaler = _decode_joblib_object_from_memoryview(
-                    scaler_entry.as_memoryview()
-                )
+                loaded_scaler = _decode_joblib_object_from_bytes(scaler_bytes)
                 scaler = loaded_scaler
             else:
                 # Not found in store: Assign None, and cache None
                 scaler = None
-
-            # Store the result (whether a loaded scaler or None) in the cache
             self._scaler_cache[scaler_key] = scaler
 
-        # At this point, 'scaler' is guaranteed to be associated with a value (either from cache, loaded from store, or None).
+        # At this point, 'scaler' is guaranteed to be associated with a value
         return {
             "i_cell": i_cell,
             "pair_id": pair_id,
@@ -550,7 +540,7 @@ class UsGaapStore:
             "unscaled_value": unscaled_value,
             "scaled_value": scaled_value,
             "embedding": embedding,
-            "scaler": scaler,  # Now 'scaler' is definitely bound
+            "scaler": scaler,
         }
 
     def lookup_by_triplet(self, concept: str, uom: str, unscaled_value: float) -> dict:
@@ -568,14 +558,12 @@ class UsGaapStore:
         )
         triplet_key = TRIPLET_REVERSE_INDEX_NAMESPACE.namespace(triplet_key_bytes)
 
-        i_cell_entry = self.data_store.read_entry(triplet_key)
-        if i_cell_entry is None:
+        i_cell_bytes = self.data_store.read(triplet_key)
+        if i_cell_bytes is None:
             raise KeyError(
                 f"Triplet ({concept}, {uom}, {unscaled_value}) not found in reverse index"
             )
 
-        i_cell = int.from_bytes(
-            bytes(i_cell_entry.as_memoryview()), "little", signed=False
-        )
+        i_cell = int.from_bytes(i_cell_bytes, "little", signed=False)
 
         return self.lookup_by_index(i_cell)
