@@ -197,13 +197,7 @@ class UsGaapStore:
         )
         logging.info(f"Total triplets: {total_triplets}")
 
-        # RESTORED: Your original workaround for batch_write issues is preserved.
-        # TODO: Fix EOF error
-        for key, value in concept_unit_entries:
-            self.data_store.batch_write(
-                [(key, value)]
-                # concept_unit_entries
-            )  # Write the collected concept/unit pairs
+        self.data_store.batch_write(concept_unit_entries)
 
         total_pairs = len(concept_unit_pairs_i_cells)
         self.data_store.write(
@@ -325,10 +319,7 @@ class UsGaapStore:
             for (pair_id, _), vec in zip(pairs, pca_compressed_concept_unit_embeddings)
         ]
 
-        # self.data_store.batch_write(pca_embedding_entries)
-        # TODO: Fix batch write
-        for key, value in pca_embedding_entries:
-            self.data_store.batch_write([(key, value)])
+        self.data_store.batch_write(pca_embedding_entries)
 
         logging.info(
             f"Wrote {len(pca_embedding_entries)} PCA-compressed embeddings to store."
