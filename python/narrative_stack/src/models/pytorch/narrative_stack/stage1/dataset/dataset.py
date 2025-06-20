@@ -2,16 +2,18 @@ from torch.utils.data import Dataset
 import torch
 import numpy as np
 from utils.pytorch import seed_everything
+from simd_r_drive_net_client import DataStoreNetClient
+from models.pytorch.narrative_stack.common import UsGaapStore
 
 seed_everything()
 
 
 # Stage 1 dataset: concept+uom embedding + value
 class ConceptValueDataset(Dataset):
-    def __init__(self, return_scaler=False):
+    def __init__(self, websocket_address: str, return_scaler=False):
         # In __init__, we only store configuration and data that CAN be pickled.
         # We DO NOT create the network client here.
-        self.address = "127.0.0.1:51521"  # Store address as a simple string
+        self.address = websocket_address
         self.return_scaler = return_scaler
 
         # We set the client and store to None initially.
@@ -21,11 +23,8 @@ class ConceptValueDataset(Dataset):
 
         # You can get the count once in the main process to set the length.
         # This requires a temporary client.
-        from simd_r_drive_net_client import DataStoreNetClient
 
         temp_client = DataStoreNetClient(self.address)
-
-        from models.pytorch.narrative_stack.common import UsGaapStore
 
         temp_store = UsGaapStore(temp_client)
         self.triplet_count = temp_store.get_triplet_count()
@@ -39,8 +38,6 @@ class ConceptValueDataset(Dataset):
         # for this worker, it does nothing.
         if self.data_store_client is None:
             print(f"Initializing client for a new worker...")  # Helpful debug print
-            from simd_r_drive_net_client import DataStoreNetClient
-            from models.pytorch.narrative_stack.common import UsGaapStore
 
             self.data_store_client = DataStoreNetClient(self.address)
             self.us_gaap_store = UsGaapStore(self.data_store_client)
@@ -67,6 +64,7 @@ class ConceptValueDataset(Dataset):
             return x, y, scaler_obj, (concept, unit)
         return x, y, (concept, unit)
 
+    # TODO: Remove
     # def __getitem__(self, idx):
     #     item_data = self.us_gaap_store.lookup_by_index(idx)
     #     concept = item_data["concept"]
