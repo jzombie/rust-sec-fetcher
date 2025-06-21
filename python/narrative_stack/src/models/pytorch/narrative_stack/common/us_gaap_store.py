@@ -458,6 +458,8 @@ class UsGaapStore:
 
             yield (pair_id, ConceptUnitPair(concept=concept, uom=uom))
 
+    # TODO: Implement `batch_lookup_by_indices`
+
     def lookup_by_index(self, i_cell: int) -> dict:
         i_bytes = i_cell.to_bytes(4, "little", signed=False)
 
@@ -533,6 +535,8 @@ class UsGaapStore:
             "embedding": embedding,
             "scaler": scaler,
         }
+
+    # TODO: Implement `batch_lookup_by_triplets`
 
     def lookup_by_triplet(self, concept: str, uom: str, unscaled_value: float) -> dict:
         """
