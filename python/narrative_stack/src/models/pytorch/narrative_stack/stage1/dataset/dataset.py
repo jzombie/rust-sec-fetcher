@@ -65,85 +65,78 @@ class IterableConceptValueDataset(IterableDataset):
             self.data_store_client = DataStoreWsClient(self.address)
             self.us_gaap_store = UsGaapStore(self.data_store_client)
 
-    def _process_item(self, item_data: dict):
-        """Helper function to convert a single data dict into a sample tuple."""
-        concept = item_data["concept"]
-        unit = item_data["uom"]
-        embedding = item_data["embedding"]
-        value = item_data["scaled_value"]
-
-        # Ensure value is not None before processing
-        if value is None:
-            # Handle cases where a scaled value might be missing for a valid reason
-            # For now, we'll skip this item. You could also log it or use a default.
-            return None
-
-        x = torch.tensor(
-            np.concatenate([embedding, [value]]),
-            dtype=torch.float32,
-        )
-        y = x.clone()  # For autoencoders
-        scaler = item_data.get("scaler") if self.return_scaler else None
-        concept_unit = (concept, unit)
-
-        return (x, y, scaler, concept_unit)
-
     def __iter__(self):
         """
         The core logic for an iterable-style dataset. This iterator fetches data
-        in large, efficient chunks but yields single, processed items one by one.
+        in large, efficient chunks and processes them with vectorized operations
+        before yielding single items.
         """
         self._init_worker()
 
         worker_info = torch.utils.data.get_worker_info()
-        if worker_info is None:  # Single-process data loading
-            worker_id = 0
-            num_workers = 1
-        else:
-            worker_id = worker_info.id
-            num_workers = worker_info.num_workers
-            # Increment epoch for the next iteration in the main process
-            if worker_id == 0:
-                self.epoch += 1
+        worker_id = worker_info.id if worker_info else 0
+        num_workers = worker_info.num_workers if worker_info else 1
 
-        # Create the full list of indices for the entire dataset
+        if worker_id == 0:
+            self.epoch += 1
+
         all_indices = list(range(self.triplet_count))
         if self.shuffle:
-            # FIX: All workers must use the same seed for an epoch to generate
-            # the same shuffled list. Seeding with the epoch number ensures
-            # the shuffle is different for each epoch.
             g = torch.Generator()
             g.manual_seed(42 + self.epoch)
-            indices_for_shuffling = torch.randperm(
-                self.triplet_count, generator=g
-            ).tolist()
-            all_indices = [all_indices[i] for i in indices_for_shuffling]
+            perm = torch.randperm(self.triplet_count, generator=g).tolist()
+            all_indices = [all_indices[i] for i in perm]
 
-        # Determine which subset of the data this worker is responsible for
-        # This slicing is now performed on the same shuffled list for all workers,
-        # guaranteeing no data duplication.
         items_per_worker = int(math.ceil(self.triplet_count / num_workers))
         start_idx = worker_id * items_per_worker
         end_idx = min(start_idx + items_per_worker, self.triplet_count)
 
         worker_indices = all_indices[start_idx:end_idx]
 
-        # Main loop: Fetch internal batches and yield single items
         for i in range(0, len(worker_indices), self.internal_batch_size):
-            # Create a large, efficient batch of indices to fetch from the DB
             index_batch = worker_indices[i : i + self.internal_batch_size]
-
             if not index_batch:
                 continue
 
             # Fetch all data for this internal batch of indices
             batch_data = self.us_gaap_store.batch_lookup_by_indices(index_batch)
 
-            # Now, yield each item from the fetched batch one by one
-            for item_data in batch_data:
-                processed_item = self._process_item(item_data)
-                if processed_item:
-                    yield processed_item
+            # --- Vectorized Processing with Pre-allocation ---
+            valid_data = [
+                item for item in batch_data if item["scaled_value"] is not None
+            ]
+            if not valid_data:
+                continue
+
+            num_valid = len(valid_data)
+            # Assuming embedding dimension is 243
+            embedding_dim = 243
+
+            # Pre-allocate final NumPy arrays to avoid intermediate Python lists
+            embeddings_np = np.empty((num_valid, embedding_dim), dtype=np.float32)
+            values_np = np.empty((num_valid, 1), dtype=np.float32)
+
+            # Fill the pre-allocated arrays in a loop
+            for idx, item in enumerate(valid_data):
+                embeddings_np[idx] = item["embedding"]
+                values_np[idx] = item["scaled_value"]
+
+            # Perform the concatenation as a single, fast matrix operation
+            x_data_np = np.concatenate([embeddings_np, values_np], axis=1)
+
+            # Convert the entire processed batch to a PyTorch tensor
+            x_data_torch = torch.from_numpy(x_data_np)
+
+            # --- Yield Individual Items ---
+            for j in range(num_valid):
+                x = x_data_torch[j]
+                y = x.clone()
+
+                item_meta = valid_data[j]
+                scaler = item_meta.get("scaler") if self.return_scaler else None
+                concept_unit = (item_meta["concept"], item_meta["uom"])
+
+                yield (x, y, scaler, concept_unit)
 
 
 # --- Example of how to use it ---
