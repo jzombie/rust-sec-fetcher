@@ -174,6 +174,7 @@ class UsGaapStore:
                     triplet_key = TRIPLET_REVERSE_INDEX_NAMESPACE.namespace(
                         triplet_key_bytes
                     )
+
                     batch.append(
                         (triplet_key, i_bytes)
                     )  # i_bytes is already raw int bytes
@@ -219,14 +220,41 @@ class UsGaapStore:
                 for i_bytes in i_bytes_list
             ]
 
+            # TODO: Remove
+            # print(f"Key len: {len(keys)}")
+
+            # TODO: Replace w/ batch_read
             # Use read and decode float directly
-            values = []
-            for key in keys:
-                # MODIFIED: Changed read_entry().as_memoryview() to read()
-                raw_bytes = self.data_store.read(key)
-                if raw_bytes is None:
-                    raise KeyError(f"Missing unscaled value for key {key}")
-                values.append(_decode_float_from_bytes(raw_bytes))
+            # values = []
+            # for key in keys:
+            #     # MODIFIED: Changed read_entry().as_memoryview() to read()
+            #     raw_bytes = self.data_store.read(key)
+            #     if raw_bytes is None:
+            #         raise KeyError(f"Missing unscaled value for key {key}")
+            #     values.append(_decode_float_from_bytes(raw_bytes))
+
+            values = [
+                (
+                    _decode_float_from_bytes(raw)  # happy path
+                    if raw is not None  # raw is the payload returned by batch_read
+                    else (_ for _ in ()).throw(
+                        KeyError(f"Missing unscaled value for key {key!r}")
+                    )
+                )
+                for key, raw in zip(keys, self.data_store.batch_read(keys))
+            ]
+
+            # TODO: Remove
+            # MAX_BATCH_SIZE = 1_000
+            # values: list[float] = []
+
+            # for offset in range(0, len(keys), MAX_BATCH_SIZE):
+            #     chunk = keys[offset : offset + MAX_BATCH_SIZE]
+
+            #     for key, raw in zip(chunk, self.data_store.batch_read(chunk)):
+            #         if raw is None:
+            #             raise KeyError(f"Missing unscaled value for key {key!r}")
+            #         values.append(_decode_float_from_bytes(raw))
 
             vals_np = np.array(values).reshape(-1, 1)
 
