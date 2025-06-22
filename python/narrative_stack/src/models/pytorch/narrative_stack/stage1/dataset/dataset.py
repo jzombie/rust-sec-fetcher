@@ -58,6 +58,15 @@ class IterableConceptValueDataset(IterableDataset):
         temp_store = UsGaapStore(temp_client)
         self.triplet_count = temp_store.get_triplet_count()
 
+    def __len__(self):
+        """
+        Returns the total number of samples in the dataset.
+
+        PyTorch Lightning will then use this total to display the
+        epoch progress bar.
+        """
+        return self.triplet_count
+
     def _init_worker(self):
         """Initializes the client and store within the worker process."""
         if self.data_store_client is None:
