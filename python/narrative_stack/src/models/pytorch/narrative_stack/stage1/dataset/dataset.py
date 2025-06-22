@@ -9,122 +9,138 @@
 
 # # TODO: Convert to batch reader
 
-from torch.utils.data import IterableDataset
 import torch
+from torch.utils.data import IterableDataset
+import random
 import numpy as np
 import math
-from utils.pytorch import seed_everything
-from simd_r_drive_net_client import DataStoreNetClient
-from models.pytorch.narrative_stack.common import UsGaapStore
-
-# def collate_with_scaler(batch):
-#     xs, ys, scalers_list, concept_units = zip(*batch)
-#     return torch.stack(xs), torch.stack(ys), scalers_list, list(concept_units)
+from simd_r_drive_ws_client import DataStoreWsClient
+from models.pytorch.narrative_stack.common import (
+    UsGaapStore,
+)  # Assuming this path is correct
 
 
-seed_everything()
+def collate_with_scaler(batch):
+    """
+    Custom collate function that correctly handles a list of individual samples.
+    Each sample is a tuple: (x, y, scaler, concept_unit).
+    """
+    # Unzip the list of tuples into separate lists
+    xs, ys, scalers_list, concept_units = zip(*batch)
+
+    # Stack the tensors to create a batch
+    xs_batch = torch.stack(xs)
+    ys_batch = torch.stack(ys)
+
+    # The scalers and concept_units remain as lists
+    return xs_batch, ys_batch, scalers_list, list(concept_units)
 
 
-# Stage 1 dataset, refactored for batch reading.
 class IterableConceptValueDataset(IterableDataset):
-    def __init__(self, websocket_address: str, batch_size: int, return_scaler=False):
-        # Store configuration.
+    def __init__(
+        self,
+        websocket_address: str,
+        internal_batch_size: int = 1024,  # How many items to fetch from the DB at once
+        return_scaler=True,
+        shuffle=False,
+    ):
         self.address = websocket_address
-        self.batch_size = batch_size
+        self.internal_batch_size = internal_batch_size
         self.return_scaler = return_scaler
+        self.shuffle = shuffle
 
-        # The client and store are initialized in each worker.
         self.data_store_client = None
         self.us_gaap_store = None
 
-        # Get the total count once in the main process to calculate the number of batches.
-        temp_client = DataStoreNetClient(self.address)
+        # Get the total count once in the main process
+        temp_client = DataStoreWsClient(self.address)
         temp_store = UsGaapStore(temp_client)
         self.triplet_count = temp_store.get_triplet_count()
 
-        # Worker-specific info will be set in __iter__
-        self.worker_id = None
-        self.num_workers = None
-
-    @property
-    def num_batches(self) -> int:
-        """
-        Calculates and returns the total number of batches in the dataset for one epoch.
-        This is crucial for progress bars and schedulers in training frameworks.
-        """
-        if self.batch_size is None or self.batch_size == 0:
-            return 0
-        return math.ceil(self.triplet_count / self.batch_size)
-
     def _init_worker(self):
-        """Initializes the network client and store within the worker process."""
+        """Initializes the client and store within the worker process."""
         if self.data_store_client is None:
-            # This check ensures the client is created only once per worker.
-            print(f"Initializing client for a new worker...")
-            self.data_store_client = DataStoreNetClient(self.address)
+            # Each worker gets its own client connection
+            self.data_store_client = DataStoreWsClient(self.address)
+            # FIX: Corrected the typo from self.us_gaa_store to self.us_gaap_store
             self.us_gaap_store = UsGaapStore(self.data_store_client)
 
-    def _process_batch(self, batch_data: list[dict]):
-        """Helper function to convert a list of data dicts into tensors."""
-        xs, ys, scalers, concept_units = [], [], [], []
+    def _process_item(self, item_data: dict):
+        """Helper function to convert a single data dict into a sample tuple."""
+        concept = item_data["concept"]
+        unit = item_data["uom"]
+        embedding = item_data["embedding"]
+        value = item_data["scaled_value"]
 
-        for item_data in batch_data:
-            concept = item_data["concept"]
-            unit = item_data["uom"]
-            embedding = item_data["embedding"]
-            value = item_data["scaled_value"]
+        # Ensure value is not None before processing
+        if value is None:
+            # Handle cases where a scaled value might be missing for a valid reason
+            # For now, we'll skip this item. You could also log it or use a default.
+            return None
 
-            x = torch.tensor(
-                np.concatenate([embedding, [value]]),
-                dtype=torch.float32,
-            )
+        x = torch.tensor(
+            np.concatenate([embedding, [value]]),
+            dtype=torch.float32,
+        )
+        y = x.clone()  # For autoencoders
+        scaler = item_data.get("scaler") if self.return_scaler else None
+        concept_unit = (concept, unit)
 
-            xs.append(x)
-            ys.append(x.clone())  # For autoencoders
-            concept_units.append((concept, unit))
-            if self.return_scaler:
-                scalers.append(item_data["scaler"])
-
-        if self.return_scaler:
-            return torch.stack(xs), torch.stack(ys), scalers, concept_units
-        return torch.stack(xs), torch.stack(ys), concept_units
+        return (x, y, scaler, concept_unit)
 
     def __iter__(self):
-        """The core logic for an iterable-style dataset."""
-        # This method is called once per epoch for each worker.
+        """
+        The core logic for an iterable-style dataset. This iterator fetches data
+        in large, efficient chunks but yields single, processed items one by one.
+        """
         self._init_worker()
 
-        # Determine which subset of the data this worker is responsible for.
         worker_info = torch.utils.data.get_worker_info()
         if worker_info is None:  # Single-process data loading
-            self.worker_id = 0
-            self.num_workers = 1
+            worker_id = 0
+            num_workers = 1
         else:
-            self.worker_id = worker_info.id
-            self.num_workers = worker_info.num_workers
+            worker_id = worker_info.id
+            num_workers = worker_info.num_workers
 
-        # Calculate the start and end index for this specific worker.
-        items_per_worker = int(math.ceil(self.triplet_count / self.num_workers))
-        start_idx = self.worker_id * items_per_worker
+        # Create the full list of indices for the entire dataset
+        all_indices = list(range(self.triplet_count))
+        if self.shuffle:
+            # Use a seed based on the epoch to get different shuffles
+            # Requires access to the current epoch, which Lightning provides.
+            # If not using Lightning, a fixed or time-based seed can be used.
+            g = torch.Generator()
+            # This requires passing the epoch number to the dataset, a common pattern.
+            # For simplicity here, we use a fixed seed, but this should be improved.
+            g.manual_seed(42 + worker_id)
+            indices_for_shuffling = torch.randperm(
+                self.triplet_count, generator=g
+            ).tolist()
+            all_indices = [all_indices[i] for i in indices_for_shuffling]
+
+        # Determine which subset of the data this worker is responsible for
+        items_per_worker = int(math.ceil(self.triplet_count / num_workers))
+        start_idx = worker_id * items_per_worker
         end_idx = min(start_idx + items_per_worker, self.triplet_count)
 
-        # The main loop: create batches of indices and fetch them.
-        for i in range(start_idx, end_idx, self.batch_size):
-            # 1. Create a batch of indices for this worker's chunk of data.
-            batch_indices = list(range(i, min(i + self.batch_size, end_idx)))
+        worker_indices = all_indices[start_idx:end_idx]
 
-            if not batch_indices:
+        # Main loop: Fetch internal batches and yield single items
+        for i in range(0, len(worker_indices), self.internal_batch_size):
+            # Create a large, efficient batch of indices to fetch from the DB
+            index_batch = worker_indices[i : i + self.internal_batch_size]
+
+            if not index_batch:
                 continue
 
-            # 2. Make ONE network call to fetch all data for this batch of indices.
-            #    This is where you use your batch_read functionality.
-            batch_data = self.us_gaap_store.batch_lookup_by_indices(batch_indices)
+            # Fetch all data for this internal batch of indices
+            batch_data = self.us_gaap_store.batch_lookup_by_indices(index_batch)
 
-            # 3. Process the raw batch data into tensors.
-            processed_batch = self._process_batch(batch_data)
-
-            # 4. Yield the complete, processed batch.
-            yield processed_batch
+            # Now, yield each item from the fetched batch one by one
+            for item_data in batch_data:
+                processed_item = self._process_item(item_data)
+                if processed_item:
+                    yield processed_item
 
 
 # --- Example of how to use it ---

@@ -1,1 +1,1 @@
-from .dataset import ConceptValueDataset, collate_with_scaler
+from .dataset import IterableConceptValueDataset, collate_with_scaler
