@@ -403,6 +403,7 @@ class UsGaapStore:
                 buffer_ids, buffer_pairs, buffer_texts, model, device
             )
 
+    # TODO: Use batch reads
     def get_embedding_matrix(self) -> Tuple[np.ndarray, list]:
         embedding_matrix = []
         pairs = []
