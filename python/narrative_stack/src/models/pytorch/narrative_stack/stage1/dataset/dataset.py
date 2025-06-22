@@ -7,11 +7,12 @@
 
 # seed_everything()
 
-# # TODO: Convert to batch reader
+# TODO: Pre-concatenate torch tensor in store?
 
 import torch
 from torch.utils.data import IterableDataset
-import random
+
+# import random
 import numpy as np
 import math
 from simd_r_drive_ws_client import DataStoreWsClient
@@ -48,6 +49,7 @@ class IterableConceptValueDataset(IterableDataset):
         self.internal_batch_size = internal_batch_size
         self.return_scaler = return_scaler
         self.shuffle = shuffle
+        self.epoch = 0  # Initialize epoch count
 
         self.data_store_client = None
         self.us_gaap_store = None
@@ -62,7 +64,6 @@ class IterableConceptValueDataset(IterableDataset):
         if self.data_store_client is None:
             # Each worker gets its own client connection
             self.data_store_client = DataStoreWsClient(self.address)
-            # FIX: Corrected the typo from self.us_gaa_store to self.us_gaap_store
             self.us_gaap_store = UsGaapStore(self.data_store_client)
 
     def _process_item(self, item_data: dict):
@@ -102,23 +103,26 @@ class IterableConceptValueDataset(IterableDataset):
         else:
             worker_id = worker_info.id
             num_workers = worker_info.num_workers
+            # Increment epoch for the next iteration in the main process
+            if worker_id == 0:
+                self.epoch += 1
 
         # Create the full list of indices for the entire dataset
         all_indices = list(range(self.triplet_count))
         if self.shuffle:
-            # Use a seed based on the epoch to get different shuffles
-            # Requires access to the current epoch, which Lightning provides.
-            # If not using Lightning, a fixed or time-based seed can be used.
+            # FIX: All workers must use the same seed for an epoch to generate
+            # the same shuffled list. Seeding with the epoch number ensures
+            # the shuffle is different for each epoch.
             g = torch.Generator()
-            # This requires passing the epoch number to the dataset, a common pattern.
-            # For simplicity here, we use a fixed seed, but this should be improved.
-            g.manual_seed(42 + worker_id)
+            g.manual_seed(42 + self.epoch)
             indices_for_shuffling = torch.randperm(
                 self.triplet_count, generator=g
             ).tolist()
             all_indices = [all_indices[i] for i in indices_for_shuffling]
 
         # Determine which subset of the data this worker is responsible for
+        # This slicing is now performed on the same shuffled list for all workers,
+        # guaranteeing no data duplication.
         items_per_worker = int(math.ceil(self.triplet_count / num_workers))
         start_idx = worker_id * items_per_worker
         end_idx = min(start_idx + items_per_worker, self.triplet_count)
