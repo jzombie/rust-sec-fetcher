@@ -209,64 +209,58 @@ class UsGaapStore:
         self._scale_values(concept_unit_pairs_i_cells)
 
     def _scale_values(self, concept_unit_pairs_i_cells):
+        """
+        Scales values for each concept/unit pair. It reads all unscaled values
+        for a pair in performance-minded chunks, fits a single scaler to all
+        of them, and then writes back the scaled values in batches.
+        """
         READ_BATCH_SIZE = 1024
 
         full_write_batch = []
 
-        # Convert the concept/unit pairs to a list of keys for batch processing
-        all_keys = []
-        for pair, i_cells in concept_unit_pairs_i_cells.items():
-            i_bytes_list = [i.to_bytes(4, "little", signed=False) for i in i_cells]
-            keys = [
-                UNSCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes)
-                for i_bytes in i_bytes_list
-            ]
-            all_keys.extend(keys)  # Collect all keys for batch processing
-
-        # Process in batches of `READ_BATCH_SIZE` keys
-        for batch_start in tqdm(
-            range(0, len(all_keys), READ_BATCH_SIZE), desc="Scaling in batches"
+        for pair, i_cells in tqdm(
+            concept_unit_pairs_i_cells.items(), desc="Scaling per concept/unit"
         ):
-            batch_keys = all_keys[batch_start : batch_start + READ_BATCH_SIZE]
-
-            # Batch read the keys
-            raw_values = self.data_store.batch_read(batch_keys)
-
-            # Process the batch of values
-            values = [
-                (
-                    _decode_float_from_bytes(raw)  # happy path
-                    if raw is not None  # raw is the payload returned by batch_read
-                    else (_ for _ in ()).throw(
-                        KeyError(f"Missing unscaled value for key {key!r}")
-                    )
+            # --- Step 1: Fetch all unscaled values for the current pair in chunks ---
+            all_values_for_pair = []
+            keys_for_pair = [
+                UNSCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(
+                    i.to_bytes(4, "little", signed=False)
                 )
-                for key, raw in zip(batch_keys, raw_values)
+                for i in i_cells
             ]
 
-            vals_np = np.array(values).reshape(-1, 1)
+            for i in range(0, len(keys_for_pair), READ_BATCH_SIZE):
+                chunk_keys = keys_for_pair[i : i + READ_BATCH_SIZE]
+                raw_bytes_list = self.data_store.batch_read(chunk_keys)
 
-            n_q = min(len(values), 1000)
-            if n_q < 2 and len(values) >= 2:
+                for raw_bytes, key in zip(raw_bytes_list, chunk_keys):
+                    if raw_bytes is None:
+                        raise KeyError(f"Missing unscaled value for key {key!r}")
+                    all_values_for_pair.append(_decode_float_from_bytes(raw_bytes))
+
+            # --- Step 2: Fit a single scaler to all values for this pair ---
+            vals_np = np.array(all_values_for_pair).reshape(-1, 1)
+
+            n_q = min(len(all_values_for_pair), 1000)
+            if n_q < 2 and len(all_values_for_pair) >= 2:
                 n_q = 2
 
-            # --- ALWAYS USE A SCALER ---
-
-            if len(values) < 2:
+            if len(all_values_for_pair) < 2:
                 # Fallback to a StandardScaler for numeric stability
                 scaler = StandardScaler()
-                scaled_vals = scaler.fit_transform(vals_np).flatten()
-
             else:
                 scaler = QuantileTransformer(
                     output_distribution="normal",
                     n_quantiles=n_q,
-                    subsample=len(values),
+                    subsample=len(all_values_for_pair),  # Use all values for fitting
                     random_state=42,
                 )
-                scaled_vals = scaler.fit_transform(vals_np).flatten()
 
-            # Store the fitted scaler (encoded with joblib helper)
+            # Fit and transform all values at once
+            scaled_vals = scaler.fit_transform(vals_np).flatten()
+
+            # --- Step 3: Store the single fitted scaler for this pair ---
             scaler_bytes_encoded = _encode_joblib_object_to_bytes(scaler)
             pair_id = self._get_pair_id(pair)
             self.data_store.write(
@@ -274,133 +268,17 @@ class UsGaapStore:
                 scaler_bytes_encoded,
             )
 
-            # Prepare the batch of scaled values for writing
-            for i, val in zip(batch_keys, scaled_vals):
-                full_write_batch.append(
-                    (
-                        SCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(
-                            i
-                        ),  # Use `i` directly
-                        _encode_float_to_raw_bytes(val),
-                    )
+            # --- Step 4: Write back all scaled values in batches ---
+            assert len(scaled_vals) == len(i_cells)
+
+            for i_cell, scaled_val in zip(i_cells, scaled_vals):
+                scaled_val_key = SCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(
+                    i_cell.to_bytes(4, "little", signed=False)
                 )
+                scaled_val_bytes = _encode_float_to_raw_bytes(scaled_val)
+                full_write_batch.append((scaled_val_key, scaled_val_bytes))
 
-            # Write the accumulated batch if it's reached `READ_BATCH_SIZE` entries
-            if len(full_write_batch) >= READ_BATCH_SIZE:
-                self.data_store.batch_write(full_write_batch)
-                full_write_batch.clear()  # Reset the batch for the next round
-
-        # Ensure that any remaining writes are executed
-        if full_write_batch:
-            self.data_store.batch_write(full_write_batch)
-
-    # TODO: Remove older implementation
-    # def _scale_values(self, concept_unit_pairs_i_cells):
-    #     full_batch = []
-
-    #     for pair, i_cells in tqdm(
-    #         concept_unit_pairs_i_cells.items(), desc="Scaling per concept/unit"
-    #     ):
-    #         i_bytes_list = [i.to_bytes(4, "little", signed=False) for i in i_cells]
-    #         keys = [
-    #             UNSCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes)
-    #             for i_bytes in i_bytes_list
-    #         ]
-
-    #         # TODO: Remove
-    #         # print(f"Key len: {len(keys)}")
-
-    #         # TODO: Replace w/ batch_read
-    #         # Use read and decode float directly
-    #         # values = []
-    #         # for key in keys:
-    #         #     # MODIFIED: Changed read_entry().as_memoryview() to read()
-    #         #     raw_bytes = self.data_store.read(key)
-    #         #     if raw_bytes is None:
-    #         #         raise KeyError(f"Missing unscaled value for key {key}")
-    #         #     values.append(_decode_float_from_bytes(raw_bytes))
-
-    #         values = [
-    #             (
-    #                 _decode_float_from_bytes(raw)  # happy path
-    #                 if raw is not None  # raw is the payload returned by batch_read
-    #                 else (_ for _ in ()).throw(
-    #                     KeyError(f"Missing unscaled value for key {key!r}")
-    #                 )
-    #             )
-    #             for key, raw in zip(keys, self.data_store.batch_read(keys))
-    #         ]
-
-    #         # TODO: Remove
-    #         # MAX_BATCH_SIZE = 1_000
-    #         # values: list[float] = []
-
-    #         # for offset in range(0, len(keys), MAX_BATCH_SIZE):
-    #         #     chunk = keys[offset : offset + MAX_BATCH_SIZE]
-
-    #         #     for key, raw in zip(chunk, self.data_store.batch_read(chunk)):
-    #         #         if raw is None:
-    #         #             raise KeyError(f"Missing unscaled value for key {key!r}")
-    #         #         values.append(_decode_float_from_bytes(raw))
-
-    #         vals_np = np.array(values).reshape(-1, 1)
-
-    #         n_q = min(len(values), 1000)
-    #         if n_q < 2 and len(values) >= 2:
-    #             n_q = 2
-
-    #         # --- ALWAYS USE A SCALER ---
-
-    #         if len(values) < 2:
-    #             # Fallback to a StandardScaler for numeric stability
-    #             scaler = StandardScaler()
-    #             scaled_vals = scaler.fit_transform(vals_np).flatten()
-
-    #         else:
-    #             scaler = QuantileTransformer(
-    #                 output_distribution="normal",
-    #                 n_quantiles=n_q,
-    #                 subsample=len(values),
-    #                 random_state=42,
-    #             )
-    #             scaled_vals = scaler.fit_transform(vals_np).flatten()
-
-    #         # Store the fitted scaler (encoded with joblib helper)
-    #         # This line will now always have 'scaler' defined
-    #         scaler_bytes_encoded = _encode_joblib_object_to_bytes(scaler)
-    #         pair_id = self._get_pair_id(pair)
-    #         self.data_store.write(
-    #             SCALER_NAMESPACE.namespace(pair_id.to_bytes(4, "little")),
-    #             scaler_bytes_encoded,
-    #         )
-
-    #         assert len(scaled_vals) == len(i_cells)
-
-    #         # TODO: Uncomment and replace `full_batch` if memory is an issue here
-    #         # Store scaled values (encoded as float64 bytes)
-    #         # self.data_store.batch_write(
-    #         #     [
-    #         #         (
-    #         #             SCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(
-    #         #                 i.to_bytes(4, "little", signed=False)
-    #         #             ),
-    #         #             _encode_float_to_raw_bytes(val),
-    #         #         )
-    #         #         for i, val in zip(i_cells, scaled_vals)
-    #         #     ]
-    #         # )
-
-    #         for i, val in zip(i_cells, scaled_vals):
-    #             full_batch.append(
-    #                 (
-    #                     SCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(
-    #                         i.to_bytes(4, "little", signed=False)
-    #                     ),
-    #                     _encode_float_to_raw_bytes(val),
-    #                 )
-    #             )
-
-    #     self.data_store.batch_write(full_batch)
+        self.data_store.batch_write(full_write_batch)
 
     def _get_pair_id(self, pair: ConceptUnitPair) -> int:
         """
@@ -594,6 +472,8 @@ class UsGaapStore:
         return batch_results[0]
 
     def batch_lookup_by_indices(self, cell_indices: list[int]) -> list[dict]:
+        # TODO: Don't name these "stage1", etc. since various stages of the model are also named this way
+
         # Stage 1: Fetch meta and cell-specific values
         stage1_requests = []
         for i_cell in cell_indices:
