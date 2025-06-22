@@ -268,7 +268,6 @@ class UsGaapStore:
                 scaler_bytes_encoded,
             )
 
-            # --- Step 4: Write back all scaled values in batches ---
             assert len(scaled_vals) == len(i_cells)
 
             for i_cell, scaled_val in zip(i_cells, scaled_vals):
@@ -278,6 +277,7 @@ class UsGaapStore:
                 scaled_val_bytes = _encode_float_to_raw_bytes(scaled_val)
                 full_write_batch.append((scaled_val_key, scaled_val_bytes))
 
+        # --- Step 4: Write back all scaled values in batches ---
         self.data_store.batch_write(full_write_batch)
 
     def _get_pair_id(self, pair: ConceptUnitPair) -> int:
