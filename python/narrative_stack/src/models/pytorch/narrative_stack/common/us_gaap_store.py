@@ -208,6 +208,8 @@ class UsGaapStore:
         self._scale_values(concept_unit_pairs_i_cells)
 
     def _scale_values(self, concept_unit_pairs_i_cells):
+        full_batch = []
+
         for pair, i_cells in tqdm(
             concept_unit_pairs_i_cells.items(), desc="Scaling per concept/unit"
         ):
@@ -259,18 +261,31 @@ class UsGaapStore:
 
             assert len(scaled_vals) == len(i_cells)
 
+            # TODO: Uncomment and replace `full_batch` if memory is an issue here
             # Store scaled values (encoded as float64 bytes)
-            self.data_store.batch_write(
-                [
+            # self.data_store.batch_write(
+            #     [
+            #         (
+            #             SCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(
+            #                 i.to_bytes(4, "little", signed=False)
+            #             ),
+            #             _encode_float_to_raw_bytes(val),
+            #         )
+            #         for i, val in zip(i_cells, scaled_vals)
+            #     ]
+            # )
+
+            for i, val in zip(i_cells, scaled_vals):
+                full_batch.append(
                     (
                         SCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(
                             i.to_bytes(4, "little", signed=False)
                         ),
                         _encode_float_to_raw_bytes(val),
                     )
-                    for i, val in zip(i_cells, scaled_vals)
-                ]
-            )
+                )
+
+        self.data_store.batch_write(full_batch)
 
     def _get_pair_id(self, pair: ConceptUnitPair) -> int:
         """
