@@ -7,18 +7,16 @@
 
 # seed_everything()
 
-# TODO: Pre-concatenate torch tensor in store?
 
 import torch
 from torch.utils.data import IterableDataset
 
-# import random
 import numpy as np
 import math
 from simd_r_drive_ws_client import DataStoreWsClient
 from models.pytorch.narrative_stack.common import (
     UsGaapStore,
-)  # Assuming this path is correct
+)
 
 
 def collate_with_scaler(batch):
@@ -26,6 +24,7 @@ def collate_with_scaler(batch):
     Custom collate function that correctly handles a list of individual samples.
     Each sample is a tuple: (x, y, scaler, concept_unit).
     """
+
     # Unzip the list of tuples into separate lists
     xs, ys, scalers_list, concept_units = zip(*batch)
 
