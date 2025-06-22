@@ -3,7 +3,7 @@ import joblib
 from io import BytesIO
 import torch
 from sentence_transformers import SentenceTransformer
-from simd_r_drive import DataStore, NamespaceHasher
+from simd_r_drive_ws_client import DataStoreWsClient, NamespaceHasher
 
 from utils.csv import walk_us_gaap_csvs
 from collections import defaultdict
@@ -109,7 +109,7 @@ class ConceptUnitPair(BaseModel):
 
 # --- UsGaapStore Class ---
 class UsGaapStore:
-    def __init__(self, data_store: DataStore):
+    def __init__(self, data_store: DataStoreWsClient):
         self.data_store = data_store
         # _pair_to_id_cache is only for ingestion, will be built during ingestion
         self._pair_to_id_cache: dict[ConceptUnitPair, int] = {}
