@@ -589,83 +589,108 @@ class UsGaapStore:
 
             yield (pair_id, ConceptUnitPair(concept=concept, uom=uom))
 
-    # TODO: Implement `batch_lookup_by_indices`
-
     def lookup_by_index(self, i_cell: int) -> dict:
-        i_bytes = i_cell.to_bytes(4, "little", signed=False)
+        batch_results = self.batch_lookup_by_indices([i_cell])
+        return batch_results[0]
 
-        # Load concept_unit_id from cell meta (raw int)
-        meta_key = CELL_META_NAMESPACE.namespace(i_bytes)
-        concept_unit_id_bytes = self.data_store.read(meta_key)
-        if concept_unit_id_bytes is None:
-            raise KeyError(f"Missing concept_unit_id for i_cell {i_cell}")
-        pair_id = int.from_bytes(concept_unit_id_bytes, "little", signed=False)
+    def batch_lookup_by_indices(self, cell_indices: list[int]) -> list[dict]:
+        # Stage 1: Fetch meta and cell-specific values
+        stage1_requests = []
+        for i_cell in cell_indices:
+            i_bytes = i_cell.to_bytes(4, "little")
+            stage1_requests.append(
+                {
+                    "meta": CELL_META_NAMESPACE.namespace(i_bytes),
+                    "unscaled": UNSCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes),
+                    "scaled": SCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes),
+                }
+            )
 
-        # Load (concept, uom) using length-prefixed strings
-        pair_key = CONCEPT_UNIT_PAIR_NAMESPACE.namespace(
-            pair_id.to_bytes(4, "little", signed=False)
-        )
-        pair_bytes = self.data_store.read(pair_key)
-        if pair_bytes is None:
-            raise KeyError(f"Missing (concept, uom) for concept_unit_id {pair_id}")
-        concept, offset = _decode_string_from_bytes(pair_bytes, 0)
-        uom, _ = _decode_string_from_bytes(pair_bytes, offset)
+        stage1_results = self.data_store.batch_read_structured(stage1_requests)
 
-        # Load unscaled value (raw float64)
-        unscaled_key = UNSCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes)
-        unscaled_bytes = self.data_store.read(unscaled_key)
-        if unscaled_bytes is None:
-            raise KeyError(f"Missing unscaled value for i_cell {i_cell}")
-        unscaled_value = _decode_float_from_bytes(unscaled_bytes)
+        # Stage 2: Process stage 1, gather unique pair_ids and build stage 2 requests
+        pair_id_map = {}  # Maps i_cell -> pair_id
+        stage2_requests = {}  # Maps pair_id -> request dict to avoid duplicate fetches
+        for i_cell, result in zip(cell_indices, stage1_results):
+            meta_bytes = result["meta"]
+            if meta_bytes is None:
+                raise KeyError(f"Missing meta for i_cell {i_cell}")
+            pair_id = int.from_bytes(meta_bytes, "little")
+            pair_id_map[i_cell] = pair_id
 
-        # Load scaled value (optional, raw float64)
-        scaled_key = SCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes)
-        scaled_bytes = self.data_store.read(scaled_key)
-        scaled_value = None
-        if scaled_bytes is not None:
-            scaled_value = _decode_float_from_bytes(scaled_bytes)
+            if pair_id not in stage2_requests:
+                pair_id_bytes = pair_id.to_bytes(4, "little")
+                request = {
+                    "pair_info": CONCEPT_UNIT_PAIR_NAMESPACE.namespace(pair_id_bytes),
+                    "embedding": PCA_REDUCED_EMBEDDING_NAMESPACE.namespace(
+                        pair_id_bytes
+                    ),
+                }
+                # Only fetch scaler if it's not in the cache
+                if SCALER_NAMESPACE.namespace(pair_id_bytes) not in self._scaler_cache:
+                    request["scaler"] = SCALER_NAMESPACE.namespace(pair_id_bytes)
+                stage2_requests[pair_id] = request
 
-        # Load PCA-reduced embedding (raw float64 numpy array)
-        embedding_key = PCA_REDUCED_EMBEDDING_NAMESPACE.namespace(
-            pair_id.to_bytes(4, "little", signed=False)
-        )
-        embedding_bytes = self.data_store.read(embedding_key)
-        if embedding_bytes is None:
-            raise KeyError(f"Missing embedding for concept_unit_id {pair_id}")
-        embedding = _decode_numpy_array_from_bytes(embedding_bytes, dtype=np.float64)
+        # Stage 3: Fetch pair-dependent data
+        unique_pair_ids = list(stage2_requests.keys())
+        unique_requests = [stage2_requests[pid] for pid in unique_pair_ids]
+        stage2_results_list = self.data_store.batch_read_structured(unique_requests)
+        stage2_results_map = dict(zip(unique_pair_ids, stage2_results_list))
 
-        # Load scaler (cached, joblib)
-        scaler_key = SCALER_NAMESPACE.namespace(
-            pair_id.to_bytes(4, "little", signed=False)
-        )
+        # Stage 4: Consolidate results
+        final_results = []
+        for i_cell, s1_result in zip(cell_indices, stage1_results):
+            pair_id = pair_id_map[i_cell]
+            s2_result = stage2_results_map[pair_id]
 
-        # Check cache first
-        if scaler_key in self._scaler_cache:
-            # If in cache, retrieve it directly. No further loading needed.
-            scaler = self._scaler_cache[scaler_key]
-        else:
-            # Cache miss: Attempt to load from store
-            scaler_bytes = self.data_store.read(scaler_key)
-            if scaler_bytes is not None:
-                # Found in store: decode, assign to scaler, and cache it
-                loaded_scaler = _decode_joblib_object_from_bytes(scaler_bytes)
-                scaler = loaded_scaler
+            # Decode all data
+            unscaled_bytes = s1_result["unscaled"]
+            if unscaled_bytes is None:
+                raise KeyError(f"Missing unscaled value for i_cell {i_cell}")
+
+            pair_bytes = s2_result["pair_info"]
+            if pair_bytes is None:
+                raise KeyError(f"Missing pair info for pair_id {pair_id}")
+            concept, offset = _decode_string_from_bytes(pair_bytes, 0)
+            uom, _ = _decode_string_from_bytes(pair_bytes, offset)
+
+            embedding_bytes = s2_result["embedding"]
+            if embedding_bytes is None:
+                raise KeyError(f"Missing embedding for pair_id {pair_id}")
+
+            # Handle scaler caching
+            scaler_key = SCALER_NAMESPACE.namespace(pair_id.to_bytes(4, "little"))
+            if scaler_key in self._scaler_cache:
+                scaler = self._scaler_cache[scaler_key]
             else:
-                # Not found in store: Assign None, and cache None
-                scaler = None
-            self._scaler_cache[scaler_key] = scaler
+                scaler_bytes = s2_result.get("scaler")
+                scaler = (
+                    _decode_joblib_object_from_bytes(scaler_bytes)
+                    if scaler_bytes
+                    else None
+                )
+                self._scaler_cache[scaler_key] = scaler
 
-        # At this point, 'scaler' is guaranteed to be associated with a value
-        return {
-            "i_cell": i_cell,
-            "pair_id": pair_id,
-            "concept": concept,
-            "uom": uom,
-            "unscaled_value": unscaled_value,
-            "scaled_value": scaled_value,
-            "embedding": embedding,
-            "scaler": scaler,
-        }
+            final_results.append(
+                {
+                    "i_cell": i_cell,
+                    "pair_id": pair_id,
+                    "concept": concept,
+                    "uom": uom,
+                    "unscaled_value": _decode_float_from_bytes(unscaled_bytes),
+                    "scaled_value": (
+                        _decode_float_from_bytes(s1_result["scaled"])
+                        if s1_result["scaled"]
+                        else None
+                    ),
+                    "embedding": _decode_numpy_array_from_bytes(
+                        embedding_bytes, dtype=np.float64
+                    ),
+                    "scaler": scaler,
+                }
+            )
+
+        return final_results
 
     # TODO: Implement `batch_lookup_by_triplets`
 
