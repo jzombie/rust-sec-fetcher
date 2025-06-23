@@ -52,3 +52,17 @@ services:
         limits:
           cpus: "2"
           memory: 1g
+
+  # i.e., docker compose --profile test up --build simd_r_drive_ws_server_test
+  simd_r_drive_ws_server_test:
+    profiles: [test] # only with `--profile test`
+    build:
+      context: .
+      dockerfile: Dockerfile.simd-r-drive-ci-server
+      args:
+        SERVER_ARGS: "data.bin --listen 0.0.0.0:8080"
+    ports:
+      - 8081:8080
+    depends_on:
+      - db_test # optional; remove if not needed
+    restart: "no"
