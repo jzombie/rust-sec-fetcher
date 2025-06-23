@@ -1,3 +1,7 @@
+# Examples:
+#   - build: docker build -f Dockerfile.simd-r-drive-ci-server -t test .
+#   - run: docker run --rm -p 8080:8080 test
+
 # syntax=docker/dockerfile:1
 ###############################################################################
 # Single-stage image for CI: builds and runs simd-r-drive-ws-server
