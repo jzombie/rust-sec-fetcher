@@ -19,7 +19,7 @@ RUN cargo install --locked simd-r-drive-ws-server@0.7.0-alpha
 # • Override at build time:  --build-arg SERVER_ARGS="data.bin --listen 127.0.0.1:8080"
 # • Override at run  time:   -e SERVER_ARGS="data.bin --listen 127.0.0.1:8080"
 # ---------------------------------------------------------------------------
-ARG SERVER_ARGS="data.bin --listen 127.0.0.1:8080"
+ARG SERVER_ARGS="data.bin --listen 0.0.0.0:8080"
 ENV SERVER_ARGS=${SERVER_ARGS}
 
 EXPOSE 8080
