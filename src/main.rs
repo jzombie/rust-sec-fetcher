@@ -202,7 +202,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         match fetch_us_gaap_fundamentals(&client, &company_tickers, &ticker_symbol).await {
             Ok(mut fundamentals_df) => {
-                let file_path = format!("data/june-us-gaap/{}.csv", &ticker_symbol);
+                let file_path = format!("data/22-june-us-gaap/{}.csv", &ticker_symbol);
                 match File::create(&file_path) {
                     Ok(mut file) => {
                         if let Err(e) = CsvWriter::new(&mut file)
