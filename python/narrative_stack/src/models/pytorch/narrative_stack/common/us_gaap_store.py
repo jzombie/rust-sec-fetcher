@@ -363,7 +363,7 @@ class UsGaapStore:
         pairs_iter = self.iterate_concept_unit_pairs()
 
         model = SentenceTransformer("BAAI/bge-large-en-v1.5")
-        model.eval()
+        model.eval() # IMPORTANT!
         model.to(device)
 
         logging.info(f"Embedding model hash: {model_hash(model)}")
