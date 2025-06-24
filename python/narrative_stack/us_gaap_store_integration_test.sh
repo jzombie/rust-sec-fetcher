@@ -1,3 +1,6 @@
+# Note: git lfs must be enabled and updated. See corresponding
+# `.github/workflows/us-gaap-store-integration-test.yml` for local setup.
+
 #!/usr/bin/env bash
 set -euo pipefail
 

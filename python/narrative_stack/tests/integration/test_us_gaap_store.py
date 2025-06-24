@@ -48,10 +48,16 @@ def test_ingestion_and_lookup():
         embeddings, pairs = us_gaap_store.get_embedding_matrix()
         assert embeddings.shape[0] == len(pairs)
 
+        print("Fetching cached data...")
+        cached_data = us_gaap_store.batch_read(list(range(triplet_count)))
+
+        print(f"Cached data length: {len(cached_data)}")
+        assert len(cached_data) == triplet_count
+
         # Inverse scaling
         has_unscaled_value_check = False
         for i in range(0, triplet_count):
-            data = us_gaap_store.lookup_by_index(i)
+            data = cached_data[i]
 
             # Sanity check to ensure the scaler is actually working
             if data["unscaled_value"] != 0:
