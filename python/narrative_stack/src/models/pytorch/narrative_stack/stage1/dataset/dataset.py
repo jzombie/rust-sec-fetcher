@@ -3,7 +3,7 @@
 # import numpy as np
 # from utils.pytorch import seed_everything
 # from simd_r_drive_net_client import DataStoreNetClient
-# from models.pytorch.narrative_stack.common import UsGaapStore
+# from us_gaap_store import UsGaapStore
 
 # seed_everything()
 
@@ -14,9 +14,7 @@ from torch.utils.data import IterableDataset
 import numpy as np
 import math
 from simd_r_drive_ws_client import DataStoreWsClient
-from models.pytorch.narrative_stack.common import (
-    UsGaapStore,
-)
+from us_gaap_store import UsGaapStore
 
 
 def collate_with_scaler(batch):

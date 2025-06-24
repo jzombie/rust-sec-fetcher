@@ -1,5 +1,5 @@
 import os
-from models.pytorch.narrative_stack.common import UsGaapStore
+from us_gaap_store import UsGaapStore
 from db import DbUsGaap
 from simd_r_drive_ws_client import DataStoreWsClient
 
