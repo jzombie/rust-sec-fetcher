@@ -9,7 +9,7 @@ from utils.csv import walk_us_gaap_csvs
 from collections import defaultdict
 
 from tqdm import tqdm
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 import numpy as np
 from sklearn.preprocessing import QuantileTransformer, StandardScaler
 from sklearn.decomposition import PCA
@@ -155,8 +155,10 @@ class ConceptUnitPair(BaseModel):
     concept: str
     uom: str
 
-    class Config:
-        frozen = True
+    model_config = ConfigDict(
+        frozen=True # Enables hash-able models
+    )
+
 
 class FullCellData(BaseModel):
     """Represents all data associated with a single financial data cell."""
@@ -169,9 +171,9 @@ class FullCellData(BaseModel):
     embedding: np.ndarray = Field(..., description="The PCA-reduced semantic embedding of the concept/unit pair.")
     scaler: Any = Field(..., description="The fitted scikit-learn scaler object for this pair.")
 
-    class Config:
-        arbitrary_types_allowed = True # Allow np.ndarray and sklearn scaler
-
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True # Allow np.ndarray and sklearn scaler
+    )
 
 # --- UsGaapStore Class ---
 class UsGaapStore:
