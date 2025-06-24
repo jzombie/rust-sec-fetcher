@@ -4,6 +4,9 @@ set -euo pipefail
 # Activate the virtual environment
 source .venv/bin/activate
 
+# Install development dependencies
+uv pip install -e . --group dev
+
 # DB container and network setup
 DB_CONTAINER_NAME="us_gaap_test_db" # TODO: Rename w/ `TEST_` prefix
 DB_NAME="us_gaap_test" # TODO: Rename w/ `TEST_` prefix
@@ -25,8 +28,7 @@ cleanup() {
 }
 
 # Step 1: Start the test services (MySQL & SIMD R Drive)
-# Note: Orbstack (Mac) *may* be referencing this wrong; if so, try with /usr/local/bin/docker
-docker compose up --profile test -d
+docker compose --profile test up -d
 
 # Step 2: Wait for MySQL to be ready
 echo "Waiting for MySQL to be ready..."
