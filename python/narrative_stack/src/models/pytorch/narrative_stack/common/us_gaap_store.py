@@ -24,13 +24,64 @@ from models.pytorch.narrative_stack.stage1.preprocessing import (
 seed_everything()
 
 # --- NAMESPACES ---
+
+# Stores a reverse index mapping a full data triplet (concept, unit, value)
+# to its sequential integer ID (i_cell).
+# Key: A custom binary concatenation of concept (str), uom (str), and value (float64).
+# Value: The i_cell (4-byte unsigned int).
+# Purpose: Allows for quickly finding the ID of a specific, known data point.
 TRIPLET_REVERSE_INDEX_NAMESPACE = NamespaceHasher(b"triplet-reverse-index")
+
+# Stores the original, unscaled numerical value for each data cell.
+# Key: The sequential cell ID, i_cell (4-byte unsigned int).
+# Value: The raw unscaled value (float64).
+# Purpose: Holds the raw financial data before any normalization is applied.
 UNSCALED_SEQUENTIAL_CELL_NAMESPACE = NamespaceHasher(b"unscaled-sequential-cell")
+
+# Stores the normalized (scaled) numerical value for each data cell.
+# Key: The sequential cell ID, i_cell (4-byte unsigned int).
+# Value: The scaled value (float64).
+# Purpose: Holds the normalized data used for model training, where each value
+# is scaled relative to others of the same concept/unit pair.
 SCALED_SEQUENTIAL_CELL_NAMESPACE = NamespaceHasher(b"scaled-sequential-cell")
+
+# Stores metadata for each individual cell. It acts as a link between a
+# specific data point (i_cell) and the *type* of data it represents (pair_id).
+# Key: The sequential cell ID, i_cell (4-byte unsigned int).
+# Value: The ID for the (concept, uom) pair, pair_id (4-byte unsigned int).
+# Purpose: Connects a specific numeric value to its semantic category (e.g.,
+# this links cell #12345 to pair #42, which might represent 'Assets, USD').
+# This avoids storing the full concept/uom strings for every single data point.
 CELL_META_NAMESPACE = NamespaceHasher(b"cell-meta")
+
+# Stores the definition of each (concept, unit) pair. This is the other half
+# of the relationship with CELL_META_NAMESPACE.
+# Key: The pair_id (4-byte unsigned int).
+# Value: The actual concept and uom strings, encoded together.
+# Purpose: Acts as a lookup table for pair_id. While CELL_META tells you
+# cell #12345 is of type #42, this namespace tells you that type #42 means
+# ('Assets', 'USD'). This is a database normalization strategy.
 CONCEPT_UNIT_PAIR_NAMESPACE = NamespaceHasher(b"concept-unit-pair")
+
+# Stores the fitted scikit-learn scaler object for each (concept, unit) pair.
+# Key: The pair_id (4-byte unsigned int).
+# Value: A joblib-serialized scaler object (e.g., QuantileTransformer).
+# Purpose: Ensures that during inference or further processing, the exact same
+# scaling can be applied to new data as was used during ingestion.
 SCALER_NAMESPACE = NamespaceHasher(b"scaler")
+
+# Stores the single, globally fitted scikit-learn PCA model.
+# Key: A constant byte string (b"model").
+# Value: A joblib-serialized PCA model object.
+# Purpose: Holds the trained PCA model used to compress the high-dimensional
+# text embeddings into a lower-dimensional space.
 PCA_MODEL_NAMESPACE = NamespaceHasher(b"pca-model")
+
+# Stores the final, PCA-reduced embedding for each (concept, unit) pair.
+# Key: The pair_id (4-byte unsigned int).
+# Value: The PCA-compressed embedding vector (numpy array of float64).
+# Purpose: Stores the semantic representation of each data category after
+# dimensionality reduction, ready for use in downstream models.
 PCA_REDUCED_EMBEDDING_NAMESPACE = NamespaceHasher(b"pca-reduced-embedding")
 
 # --- GLOBAL CONSTANTS FOR ENCODING/DECODING ---
