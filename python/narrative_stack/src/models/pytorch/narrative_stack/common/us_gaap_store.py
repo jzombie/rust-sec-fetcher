@@ -109,9 +109,16 @@ def _decode_string_from_bytes(data: bytes, offset: int) -> Tuple[str, int]:
     offset += s_len
     return s, offset
 
+def _encode_u32_to_raw_bytes(i: int) -> bytes:
+    """Encodes a single `u32` integer to raw bytes"""
+    return i.to_bytes(4, "little", signed=False)
+
+def _decode_u32_from_raw_bytes(data: bytes) -> int:
+    """Decodes a single `u32` integer from raw bytes"""
+    return int.from_bytes(data, "little", signed=False)
 
 def _encode_float_to_raw_bytes(f: float) -> bytes:
-    """Encodes a single float to raw float64 bytes."""
+    """Extracts the raw 8-byte sequence that represents a 64-bit float."""
     return np.array([f], dtype=np.float64).tobytes()
 
 
@@ -208,11 +215,11 @@ class UsGaapStore:
                     i_cell += 1
 
                     pair = ConceptUnitPair(concept=cell.concept, uom=cell.uom)
-                    i_bytes = i_cell.to_bytes(4, "little", signed=False)
+                    i_bytes = _encode_u32_to_raw_bytes(i_cell)
 
                     if pair not in pair_to_id:
                         pair_to_id[pair] = next_pair_id
-                        pair_id_bytes = next_pair_id.to_bytes(4, "little", signed=False)
+                        pair_id_bytes = _encode_u32_to_raw_bytes(next_pair_id)
                         pair_key = CONCEPT_UNIT_PAIR_NAMESPACE.namespace(pair_id_bytes)
 
                         # Encode concept and uom as length-prefixed strings
@@ -223,7 +230,7 @@ class UsGaapStore:
                         next_pair_id += 1
 
                     pair_id = pair_to_id[pair]
-                    pair_id_bytes = pair_id.to_bytes(4, "little", signed=False)
+                    pair_id_bytes = _encode_u32_to_raw_bytes(pair_id)
 
                     concept_unit_pairs_i_cells[pair].append(i_cell)
 
@@ -262,7 +269,7 @@ class UsGaapStore:
         total_triplets = i_cell + 1
         self.data_store.write(
             b"__triplet_count__",
-            total_triplets.to_bytes(4, byteorder="little", signed=False),
+            _encode_u32_to_raw_bytes(total_triplets)
         )
         logging.info(f"Total triplets: {total_triplets}")
 
@@ -270,7 +277,7 @@ class UsGaapStore:
 
         total_pairs = len(concept_unit_pairs_i_cells)
         self.data_store.write(
-            b"__pair_count__", total_pairs.to_bytes(4, "little", signed=False)
+            b"__pair_count__", _encode_u32_to_raw_bytes(total_pairs)
         )
         logging.info(f"Total concept/unit pairs: {total_pairs}")
 
@@ -293,7 +300,7 @@ class UsGaapStore:
             all_values_for_pair = []
             keys_for_pair = [
                 UNSCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(
-                    i.to_bytes(4, "little", signed=False)
+                    _encode_u32_to_raw_bytes(i)
                 )
                 for i in i_cells
             ]
@@ -332,7 +339,7 @@ class UsGaapStore:
             scaler_bytes_encoded = _encode_joblib_object_to_bytes(scaler)
             pair_id = self._get_pair_id(pair)
             self.data_store.write(
-                SCALER_NAMESPACE.namespace(pair_id.to_bytes(4, "little")),
+                SCALER_NAMESPACE.namespace(_encode_u32_to_raw_bytes(pair_id)),
                 scaler_bytes_encoded,
             )
 
@@ -340,7 +347,7 @@ class UsGaapStore:
 
             for i_cell, scaled_val in zip(i_cells, scaled_vals):
                 scaled_val_key = SCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(
-                    i_cell.to_bytes(4, "little", signed=False)
+                    _encode_u32_to_raw_bytes(i_cell)
                 )
                 scaled_val_bytes = _encode_float_to_raw_bytes(scaled_val)
                 full_write_batch.append((scaled_val_key, scaled_val_bytes))
@@ -388,7 +395,7 @@ class UsGaapStore:
         pca_embedding_entries = [
             (
                 PCA_REDUCED_EMBEDDING_NAMESPACE.namespace(
-                    pair_id.to_bytes(4, "little", signed=False)
+                    _encode_u32_to_raw_bytes(pair_id)
                 ),
                 _encode_numpy_array_to_raw_bytes(vec),  # Encode numpy array directly
             )
@@ -473,10 +480,10 @@ class UsGaapStore:
         raw_bytes = self.data_store.read(b"__pair_count__")
         if raw_bytes is None:
             raise KeyError("Missing __pair_count__ key in store")
-        total_pairs = int.from_bytes(raw_bytes, "little", signed=False)
+        total_pairs =_decode_u32_from_raw_bytes(raw_bytes)
 
         for pair_id in range(total_pairs):
-            pair_id_bytes = pair_id.to_bytes(4, "little", signed=False)
+            pair_id_bytes = _encode_u32_to_raw_bytes(pair_id)
             pair_key = CONCEPT_UNIT_PAIR_NAMESPACE.namespace(pair_id_bytes)
             # MODIFIED: Changed read_entry().as_memoryview() to read()
             pair_bytes = self.data_store.read(pair_key)
@@ -509,20 +516,20 @@ class UsGaapStore:
         raw_bytes = self.data_store.read(b"__triplet_count__")
         if raw_bytes is None:
             raise KeyError("Triplet count key not found")
-        return int.from_bytes(raw_bytes, "little", signed=False)
+        return _decode_u32_from_raw_bytes(raw_bytes)
 
     def get_pair_count(self) -> int:
         # MODIFIED: Changed read_entry().as_memoryview() to read()
         raw_bytes = self.data_store.read(b"__pair_count__")
         if raw_bytes is None:
             raise KeyError("Pair count key not found")
-        return int.from_bytes(raw_bytes, "little", signed=False)
+        return _decode_u32_from_raw_bytes(raw_bytes)
 
     def iterate_concept_unit_pairs(self) -> Iterator[Tuple[int, ConceptUnitPair]]:
         total_pairs = self.get_pair_count()
         for pair_id in range(total_pairs):
             key = CONCEPT_UNIT_PAIR_NAMESPACE.namespace(
-                pair_id.to_bytes(4, "little", signed=False)
+                _encode_u32_to_raw_bytes(pair_id)
             )
             # MODIFIED: Changed read_entry().as_memoryview() to read()
             pair_bytes = self.data_store.read(key)
@@ -545,7 +552,7 @@ class UsGaapStore:
         # Stage 1: Fetch meta and cell-specific values
         stage1_requests = []
         for i_cell in cell_indices:
-            i_bytes = i_cell.to_bytes(4, "little")
+            i_bytes = _encode_u32_to_raw_bytes(i_cell)
             stage1_requests.append(
                 {
                     "meta": CELL_META_NAMESPACE.namespace(i_bytes),
@@ -563,11 +570,11 @@ class UsGaapStore:
             meta_bytes = result["meta"]
             if meta_bytes is None:
                 raise KeyError(f"Missing meta for i_cell {i_cell}")
-            pair_id = int.from_bytes(meta_bytes, "little")
+            pair_id = _decode_u32_from_raw_bytes(meta_bytes)
             pair_id_map[i_cell] = pair_id
 
             if pair_id not in stage2_requests:
-                pair_id_bytes = pair_id.to_bytes(4, "little")
+                pair_id_bytes = _encode_u32_to_raw_bytes(pair_id)
                 request = {
                     "pair_info": CONCEPT_UNIT_PAIR_NAMESPACE.namespace(pair_id_bytes),
                     "embedding": PCA_REDUCED_EMBEDDING_NAMESPACE.namespace(
@@ -607,7 +614,7 @@ class UsGaapStore:
                 raise KeyError(f"Missing embedding for pair_id {pair_id}")
 
             # Handle scaler caching
-            scaler_key = SCALER_NAMESPACE.namespace(pair_id.to_bytes(4, "little"))
+            scaler_key = SCALER_NAMESPACE.namespace(_encode_u32_to_raw_bytes(pair_id))
             if scaler_key in self._scaler_cache:
                 scaler = self._scaler_cache[scaler_key]
             else:
@@ -662,6 +669,6 @@ class UsGaapStore:
                 f"Triplet ({concept}, {uom}, {unscaled_value}) not found in reverse index"
             )
 
-        i_cell = int.from_bytes(i_cell_bytes, "little", signed=False)
+        i_cell = _decode_u32_from_raw_bytes(i_cell_bytes)
 
         return self.lookup_by_index(i_cell)
