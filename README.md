@@ -1,3 +1,1 @@
-# SEC Fetcher
-
-**This is a work-in-progress research project.**
+**This is an experimental research project.**
