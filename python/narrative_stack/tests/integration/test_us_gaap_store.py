@@ -39,8 +39,8 @@ def test_ingestion_and_lookup():
 
     # Lookup first i_cell
     result = us_gaap_store.lookup_by_index(0)
-    assert "concept" in result
-    assert "unscaled_value" in result
+    assert result.concept != None
+    assert result.unscaled_value != None
 
     # Embedding retrieval
     embeddings, pairs = us_gaap_store.get_embedding_matrix()
@@ -58,23 +58,14 @@ def test_ingestion_and_lookup():
         data = cached_data[i]
 
         # Sanity check to ensure the scaler is actually working
-        if data["unscaled_value"] != 0:
-            assert data["unscaled_value"] != data["scaled_value"]
+        if data.unscaled_value != 0:
+            assert data.unscaled_value != data.scaled_value
 
         # For 64-bit internal values
-        transformed = data["scaler"].transform([[data["unscaled_value"]]])[0][0]
+        transformed = data.scaler.transform([[data.unscaled_value]])[0][0]
         assert (
-            transformed == data["scaled_value"]
-        ), f"Expected {data['scaled_value']}, but got {transformed}"
-
-        # For 32-bit only
-        # transformed = np.float32(
-        #     data["scaler"].transform([[data["unscaled_value"]]])[0][0]
-        # )
-        # expected = np.float32(data["scaled_value"])
-        # assert np.isclose(
-        #     transformed, expected, rtol=1e-6, atol=1e-7
-        # ), f"Expected {expected}, but got {transformed}"
+            transformed == data.scaled_value
+        ), f"Expected {data.scaled_value}, but got {transformed}"
 
         has_unscaled_value_check = True
 

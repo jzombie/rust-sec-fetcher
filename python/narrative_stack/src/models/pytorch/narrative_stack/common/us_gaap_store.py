@@ -9,7 +9,7 @@ from utils.csv import walk_us_gaap_csvs
 from collections import defaultdict
 
 from tqdm import tqdm
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import numpy as np
 from sklearn.preprocessing import QuantileTransformer, StandardScaler
 from sklearn.decomposition import PCA
@@ -149,13 +149,28 @@ def _decode_joblib_object_from_bytes(data: bytes) -> Any:
     return joblib.load(BytesIO(data))
 
 
-# --- Pydantic Model (No Change) ---
+# --- Pydantic Models ---
+
 class ConceptUnitPair(BaseModel):
     concept: str
     uom: str
 
     class Config:
         frozen = True
+
+class FullCellData(BaseModel):
+    """Represents all data associated with a single financial data cell."""
+    i_cell: int = Field(..., description="The unique sequential integer ID for this data cell.")
+    pair_id: int = Field(..., description="The integer ID for the concept/unit pair.")
+    concept: str = Field(..., description="The financial concept (e.g., 'Assets', 'Revenues').")
+    uom: str = Field(..., description="The unit of measure (e.g., 'USD', 'shares').")
+    unscaled_value: float = Field(..., description="The original, unscaled numerical value.")
+    scaled_value: Optional[float] = Field(..., description="The value after QuantileTransformer normalization.")
+    embedding: np.ndarray = Field(..., description="The PCA-reduced semantic embedding of the concept/unit pair.")
+    scaler: Any = Field(..., description="The fitted scikit-learn scaler object for this pair.")
+
+    class Config:
+        arbitrary_types_allowed = True # Allow np.ndarray and sklearn scaler
 
 
 # --- UsGaapStore Class ---
@@ -518,11 +533,11 @@ class UsGaapStore:
 
             yield (pair_id, ConceptUnitPair(concept=concept, uom=uom))
 
-    def lookup_by_index(self, i_cell: int) -> dict:
+    def lookup_by_index(self, i_cell: int) -> FullCellData:
         batch_results = self.batch_lookup_by_indices([i_cell])
         return batch_results[0]
 
-    def batch_lookup_by_indices(self, cell_indices: list[int]) -> list[dict]:
+    def batch_lookup_by_indices(self, cell_indices: list[int]) -> list[FullCellData]:
         # TODO: Don't name these "stage1", etc. since various stages of the model are also named this way
 
         # Stage 1: Fetch meta and cell-specific values
@@ -603,29 +618,28 @@ class UsGaapStore:
                 self._scaler_cache[scaler_key] = scaler
 
             final_results.append(
-                {
-                    "i_cell": i_cell,
-                    "pair_id": pair_id,
-                    "concept": concept,
-                    "uom": uom,
-                    "unscaled_value": _decode_float_from_bytes(unscaled_bytes),
-                    "scaled_value": (
-                        _decode_float_from_bytes(s1_result["scaled"])
+                FullCellData (
+                    i_cell=i_cell,
+                    pair_id=pair_id,
+                    concept=concept,
+                    uom=uom,
+                    unscaled_value=_decode_float_from_bytes(unscaled_bytes),
+                    scaled_value=(_decode_float_from_bytes(s1_result["scaled"])
                         if s1_result["scaled"]
                         else None
                     ),
-                    "embedding": _decode_numpy_array_from_bytes(
+                    embedding=_decode_numpy_array_from_bytes(
                         embedding_bytes, dtype=np.float64
                     ),
-                    "scaler": scaler,
-                }
+                    scaler=scaler,
+                )
             )
 
         return final_results
 
     # TODO: Implement `batch_lookup_by_triplets`
 
-    def lookup_by_triplet(self, concept: str, uom: str, unscaled_value: float) -> dict:
+    def lookup_by_triplet(self, concept: str, uom: str, unscaled_value: float) -> FullCellData:
         """
         Given a (concept, uom, value) triplet, return its i_cell, unscaled value,
         and scaled value if available.
