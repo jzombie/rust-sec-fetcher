@@ -3,6 +3,7 @@ services:
   # DEFAULT, INGESTION PROFILE
   ###################################################
 
+  # docker compose --profile default up
   db:
     profiles: [default]
     image: mysql:8.1
