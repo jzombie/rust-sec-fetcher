@@ -19,6 +19,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # TODO: Remove if removing keyring support
       - name: Install Ubuntu prerequisites
         run: sudo apt install libdbus-1-dev pkg-config
 
