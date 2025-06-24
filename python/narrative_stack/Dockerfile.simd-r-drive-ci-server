@@ -1,0 +1,33 @@
+# Examples:
+#   - build: docker build -f Dockerfile.simd-r-drive-ci-server -t test .
+#   - run: docker run --rm -p 8080:8080 test
+
+# syntax=docker/dockerfile:1
+###############################################################################
+# Single-stage image for CI: builds and runs simd-r-drive-ws-server
+###############################################################################
+ARG RUST_VERSION=1.87
+FROM rust:${RUST_VERSION}-slim
+
+# ---------------------------------------------------------------------------
+# Build the server binary
+# ---------------------------------------------------------------------------
+RUN cargo install --locked simd-r-drive-ws-server@0.7.0-alpha
+
+# ---------------------------------------------------------------------------
+# Default command-line flags for the server
+# • Override at build time:  --build-arg SERVER_ARGS="data.bin --listen 127.0.0.1:8080"
+# • Override at run  time:   -e SERVER_ARGS="data.bin --listen 127.0.0.1:8080"
+# ---------------------------------------------------------------------------
+ARG SERVER_ARGS="data.bin --listen 127.0.0.1:8080"
+ENV SERVER_ARGS=${SERVER_ARGS}
+
+EXPOSE 8080
+
+# ---------------------------------------------------------------------------
+# ENTRYPOINT passes the baked-in $SERVER_ARGS first,
+# then any extra flags supplied via `docker run … <extra flags>`
+# ---------------------------------------------------------------------------
+ENTRYPOINT ["/bin/sh", "-c", \
+  "exec simd-r-drive-ws-server ${SERVER_ARGS} \"$@\""]
+CMD []

@@ -32,7 +32,7 @@ class DBConnector:
         # Establish the connection
         self.connect()
 
-        # TODO: Uncomment
+        # TODO: Uncomment?
         # self.keep_alive_thread = threading.Thread(target=self.keep_alive)
         # self.keep_alive_thread.daemon = (
         #     True  # Set daemon to True to exit the thread when the main program exits
