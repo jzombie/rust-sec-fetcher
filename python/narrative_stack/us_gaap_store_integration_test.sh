@@ -5,10 +5,10 @@ set -euo pipefail
 source .venv/bin/activate
 
 # DB container and network setup
-DB_CONTAINER_NAME="us_gaap_test_db"
-DB_NAME="us_gaap_test"
-DB_NETWORK_NAME="narrative_stack_us_gaap_integration_test"
-SCHEMA_FILE="tests/integration/assets/us_gaap_schema_2025.sql"
+DB_CONTAINER_NAME="us_gaap_test_db" # TODO: Rename w/ `TEST_` prefix
+DB_NAME="us_gaap_test" # TODO: Rename w/ `TEST_` prefix
+DB_NETWORK_NAME="narrative_stack_us_gaap_integration_test" # TODO: Rename w/ `TEST_` prefix
+SCHEMA_FILE="tests/integration/assets/us_gaap_schema_2025.sql" # TODO: Rename w/ `TEST_` prefix
 
 trap 'cleanup' EXIT
 
@@ -24,8 +24,9 @@ cleanup() {
   fi
 }
 
-# Step 1: Start MySQL container
-docker compose up -d db_test
+# Step 1: Start the test services (MySQL & SIMD R Drive)
+# Note: Orbstack (Mac) *may* be referencing this wrong; if so, try with /usr/local/bin/docker
+docker compose up --profile test -d
 
 # Step 2: Wait for MySQL to be ready
 echo "Waiting for MySQL to be ready..."

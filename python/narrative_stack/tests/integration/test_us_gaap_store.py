@@ -2,7 +2,7 @@ import os
 import tempfile
 from models.pytorch.narrative_stack.common import UsGaapStore
 from db import DbUsGaap
-from simd_r_drive import DataStore
+from simd_r_drive_ws_client import DataStoreWsClient
 
 
 # Get the directory containing the script (do not change)
@@ -17,9 +17,10 @@ def test_ingestion_and_lookup():
         # Create in-memory or stub DB object
         db = DbUsGaap()
 
-        # Create store
-        store_path = os.path.join(temp_dir, "store.bin")
-        data_store = DataStore(store_path)
+        # Connect to store
+        host=os.getenv("SIMD_R_DRIVE_SERVER_HOST")
+        port=os.getenv("SIMD_R_DRIVE_SERVER_PORT")
+        data_store = DataStoreWsClient(f"{host}:{port}")
 
         us_gaap_store = UsGaapStore(data_store)
 
