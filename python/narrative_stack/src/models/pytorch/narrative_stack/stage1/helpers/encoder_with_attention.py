@@ -1,12 +1,7 @@
 from torch import nn
-import pytorch_lightning as pl
 
-from torch.nn.functional import cosine_similarity
-import torch.nn.functional as F
-from torch.optim.lr_scheduler import CosineAnnealingLR
 
 # from torchmetrics.regression import R2Score
-from collections import defaultdict
 
 from .value_attention_modulator import ValueAttentionModulator
 

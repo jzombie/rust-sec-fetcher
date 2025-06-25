@@ -39,8 +39,8 @@ def test_ingestion_and_lookup():
 
     # Lookup first i_cell
     result = us_gaap_store.lookup_by_index(0)
-    assert result.concept != None
-    assert result.unscaled_value != None
+    assert result.concept is not None
+    assert result.unscaled_value is not None
 
     # Embedding retrieval
     embeddings, pairs = us_gaap_store.get_embedding_matrix()

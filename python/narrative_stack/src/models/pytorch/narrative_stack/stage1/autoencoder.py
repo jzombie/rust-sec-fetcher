@@ -8,11 +8,10 @@ import torch.nn.functional as F
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
 # from torchmetrics.regression import R2Score
-from collections import defaultdict
 
 
 
-from .helpers import AggregateStats, DecoderWithAttention, EncoderWithAttention, ValueAttentionModulator
+from .helpers import AggregateStats, DecoderWithAttention, EncoderWithAttention
 
 
 
