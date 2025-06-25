@@ -206,10 +206,14 @@ class UsGaapStore:
         i_cell = -1
         next_pair_id = 0
 
+        x_batch = -1
+        loc_batch = []
+
         try:
             while True:
                 row = next(gen)
-                batch = []
+                
+                x_batch += 1
 
                 for cell in row.entries:
                     i_cell += 1
@@ -237,7 +241,7 @@ class UsGaapStore:
                     # Store raw unscaled value (as float64 bytes)
                     unscaled_value_encoded = _encode_float_to_raw_bytes(cell.value)
                     unscaled_key = UNSCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes)
-                    batch.append((unscaled_key, unscaled_value_encoded))
+                    loc_batch.append((unscaled_key, unscaled_value_encoded))
 
                     # Store reverse triplet -> i_cell mapping (Custom Binary Triplet Key)
                     # Key is now: len_concept | concept_bytes | len_uom | uom_bytes | unscaled_value_float64_bytes
@@ -250,20 +254,29 @@ class UsGaapStore:
                         triplet_key_bytes
                     )
 
-                    batch.append(
+                    loc_batch.append(
                         (triplet_key, i_bytes)
                     )  # i_bytes is already raw int bytes
 
                     # Store cell meta (i_cell -> concept_unit_id)
                     cell_meta_key = CELL_META_NAMESPACE.namespace(i_bytes)
-                    batch.append((cell_meta_key, pair_id_bytes))
+                    loc_batch.append((cell_meta_key, pair_id_bytes))
 
-                # TODO: Store into a larger write buffer; this is too slow
-                self.data_store.batch_write(batch)
+                if x_batch % 1024 * 9 == 0:
+                    self.data_store.batch_write(loc_batch)
+                    loc_batch.clear()
 
-        except StopIteration as stop:
-            summary = stop.value
-            logging.info(summary)
+        except StopIteration as _stop:
+            # Note: This will console spam a Jupyter notebook
+
+            # summary = stop.value
+            # logging.info(summary)
+            pass
+
+        # Write remaining local batches
+        if len(loc_batch):
+            self.data_store.batch_write(loc_batch)
+            loc_batch.clear()
 
         self._pair_to_id_cache = pair_to_id  # Cache for _get_pair_id during ingestion
 
@@ -290,7 +303,7 @@ class UsGaapStore:
         for a pair in performance-minded chunks, fits a single scaler to all
         of them, and then writes back the scaled values in batches.
         """
-        READ_BATCH_SIZE = 1024
+        READ_BATCH_SIZE = 1024 * 9
 
         full_write_batch = []
 
@@ -651,10 +664,11 @@ class UsGaapStore:
 
     def lookup_by_triplet(self, concept: str, uom: str, unscaled_value: float) -> FullCellData:
         """
-        Given a (concept, uom, value) triplet, return its i_cell, unscaled value,
-        and scaled value if available.
+        Given a `(concept, uom, value)` triplet, return its corresponding `FullCellData`,
+        if available.
+
         NOTE: The key generation for this method must match the custom binary format
-              used in ingest_us_gaap_csvs for TRIPLET_REVERSE_INDEX_NAMESPACE.
+              used in `ingest_us_gaap_csvs` for TRIPLET_REVERSE_INDEX_NAMESPACE.
         """
         # Encode the triplet as used in reverse index (CUSTOM BINARY FORMAT)
         triplet_key_bytes = (
