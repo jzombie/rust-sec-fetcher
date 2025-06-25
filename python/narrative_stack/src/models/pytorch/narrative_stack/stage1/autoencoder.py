@@ -7,10 +7,6 @@ from torch.nn.functional import cosine_similarity
 import torch.nn.functional as F
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-# from torchmetrics.regression import R2Score
-
-
-
 from .helpers import AggregateStats, DecoderWithAttention, EncoderWithAttention
 
 
@@ -41,86 +37,6 @@ class Stage1Autoencoder(pl.LightningModule):
 
         self.save_hyperparameters(ignore=["median_scaled_val", "mean_emb"])
 
-        # --> Register mean_s and mean_emb as buffers <--
-        # self.register_buffer("median_scaled_val", median_scaled_val)
-        # self.register_buffer("mean_emb", mean_emb)
-
-        # self.value_proj = nn.Sequential(
-        #     nn.Linear(1, 32),
-        #     nn.GELU(),
-        #     nn.Linear(32, self.hparams.latent_dim),
-        #     nn.LayerNorm(self.hparams.latent_dim)
-        # )
-
-        # May 1, 2025 original
-        # self.value_proj = nn.Sequential(
-        #     nn.Linear(1, 32),
-        #     nn.GELU(),
-        #     nn.Linear(32, latent_dim),
-        #     nn.LayerNorm(latent_dim)
-        # )
-
-        # self.value_proj = nn.Sequential(
-        #     nn.Linear(1, 32),
-        #     nn.GELU(),
-        #     nn.Linear(32, 64),
-        #     nn.GELU(),
-        #     nn.Linear(64, latent_dim),
-        #     nn.LayerNorm(latent_dim)
-        # )
-
-        # self.attended_interaction = nn.Sequential(
-        #     nn.Linear(latent_dim * 2, latent_dim * 2),
-        #     nn.GELU(),
-        #     nn.Linear(latent_dim * 2, latent_dim),
-        #     nn.LayerNorm(latent_dim)
-        # )
-
-        # self.encoder = nn.Sequential(
-        #     nn.Linear(input_dim - 1 + self.hparams.latent_dim, 256),
-        #     nn.GELU(),
-        #     nn.Dropout(p=dropout_rate),
-        #     nn.Linear(256, latent_dim)
-        # )
-
-        # self.gate = nn.Sequential(
-        #     nn.Linear(latent_dim * 2, latent_dim),
-        #     nn.GELU(),
-        #     nn.Linear(latent_dim, latent_dim),
-        #     nn.Sigmoid()
-        # )
-
-        # self.fusion_logits = nn.Parameter(torch.zeros(3))
-        # self.fusion_dim = latent_dim * 3
-        # self.post_fusion_norm = nn.LayerNorm(self.fusion_dim)
-
-        # self.joint_input_dim = (input_dim - 1) * 2
-        # self.joint_input_norm = nn.LayerNorm(self.joint_input_dim)
-
-        # self.encoder = nn.Sequential(
-        #     nn.Linear(self.joint_input_dim, latent_dim * 4),
-        #     nn.GELU(),
-        #     nn.Dropout(p=dropout_rate),
-        #     nn.Linear(latent_dim * 4, latent_dim * 2),
-        #     nn.GELU(),
-        #     nn.Dropout(p=dropout_rate),
-        #     nn.Linear(latent_dim * 2, latent_dim)
-        # )
-
-        # self.encoder = nn.Sequential(
-        #     # nn.Linear(self.joint_input_dim, latent_dim * 4),
-        #     # nn.GELU(),
-        #     # nn.LayerNorm(latent_dim * 4),
-        #     # nn.Dropout(p=encoder_dropout_rate),
-
-        #     nn.Linear(input_dim - 1, input_dim * 4),
-        #     nn.GELU(),
-        #     nn.LayerNorm(input_dim * 4),
-        #     nn.Dropout(p=encoder_dropout_rate),
-
-        #     nn.Linear(input_dim * 4, latent_dim)  # Bottleneck
-        # )
-
         self.encoder = EncoderWithAttention(
             emb_dim=input_dim - 1,
             latent_dim=latent_dim,
@@ -132,34 +48,6 @@ class Stage1Autoencoder(pl.LightningModule):
             emb_dim=input_dim - 1,
             dropout_rate=value_dropout_rate,
         )
-
-        # self.embedding_decoder = DecoderWithAttention(
-        #     latent_dim=latent_dim,
-        #     emb_dim=input_dim - 1,
-        #     dropout_rate=encoder_dropout_rate
-        # )
-
-        # self.embedding_decoder = nn.Sequential(
-        #     nn.Linear(latent_dim, (input_dim - 1) * 2),
-        #     nn.GELU(),
-        #     # nn.Dropout(p=dropout_rate),
-        #     nn.Linear((input_dim - 1) * 2, input_dim - 1)
-        # )
-
-        # May 1, 2025 original
-        # self.value_decoder = nn.Sequential(
-        #     nn.Linear(latent_dim, 32),
-        #     nn.GELU(),
-        #     nn.Dropout(p=value_dropout_rate),
-        #     nn.Linear(32, 1)
-        # )
-
-        # self.value_decoder = nn.Sequential(
-        #     nn.Linear(latent_dim, (input_dim - 1) * 2),
-        #     nn.GELU(),
-        #     # nn.Dropout(p=dropout_rate),
-        #     nn.Linear((input_dim - 1) * 2, 1)
-        # )
 
         # self.loss_fn = nn.MSELoss()
         self.loss_fn = nn.L1Loss()  # MAELoss
@@ -175,36 +63,6 @@ class Stage1Autoencoder(pl.LightningModule):
         x_val = x[:, -1].unsqueeze(1)
         z = self.encoder(x_emb, x_val)
         return F.normalize(z, p=2, dim=1)
-
-    # def encode(self, x):
-    #     # x shape: [batch_size, input_dim]
-    #     x_emb = x[:, :-1] # Non-scaled embeddings
-    #     x_val = x[:, -1].unsqueeze(1) # Scaled values
-
-    #     # Inject Gaussian noise into embedding (during training only)
-    #     # if self.training:
-    #     #     x_emb = x_emb + torch.randn_like(x_emb) * self.hparams.embedding_noise_std
-
-    #     # val_proj = self.value_proj(x_val)
-    #     value_modulated = self.value_attention(x_emb, x_val)
-    #     joint_input = torch.cat([x_emb, value_modulated], dim=1)
-
-    #     # joint_input = torch.cat([x_emb, value_weighted_x_emb], dim=1)
-    #     # joint_input = self.joint_input_norm(joint_input)
-
-    #     z = self.encoder(joint_input)
-
-    #     # Apply L2 normalization along the feature dimension (dim=1)
-    #     # p=2 is the default for L2 norm, but explicitly stated for clarity
-    #     z = F.normalize(z, p=2, dim=1)
-
-    #     return z
-
-    # def decode(self, z):
-    #     recon_emb = self.embedding_decoder(z)
-    #     recon_val = self.value_decoder(z)
-
-    #     return recon_emb, recon_val
 
     def decode(self, z):
         return self.decoder(z)
