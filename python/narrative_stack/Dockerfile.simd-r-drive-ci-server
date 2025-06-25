@@ -12,7 +12,7 @@ FROM rust:${RUST_VERSION}-slim
 # ---------------------------------------------------------------------------
 # Build the server binary
 # ---------------------------------------------------------------------------
-RUN cargo install --locked simd-r-drive-ws-server@0.7.0-alpha
+RUN cargo install --locked simd-r-drive-ws-server@0.8.0-alpha
 
 # ---------------------------------------------------------------------------
 # Default command-line flags for the server

@@ -1740,7 +1740,7 @@ requires-dist = [
     { name = "send2trash", specifier = "==1.8.3" },
     { name = "sentence-transformers", specifier = "==3.4.1" },
     { name = "setuptools", specifier = "==70.2.0" },
-    { name = "simd-r-drive-ws-client", specifier = ">=0.7.0a0" },
+    { name = "simd-r-drive-ws-client", specifier = ">=0.8.0a0" },
     { name = "six", specifier = "==1.17.0" },
     { name = "sniffio", specifier = "==1.3.1" },
     { name = "soupsieve", specifier = "==2.6" },
@@ -2994,17 +2994,17 @@ wheels = [
 
 [[package]]
 name = "simd-r-drive-ws-client"
-version = "0.7.0a0"
+version = "0.8.0a0"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/44/99/75c1d8cd2f8a007c8aa05959661a74c43eb383a2eef22a992e76d9367955/simd_r_drive_ws_client-0.7.0a0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:e3b7378a5f5d99221afe07edd2b416075b01abca3cc94a242013265d40cd96f6", size = 799782, upload-time = "2025-06-24T03:46:14.952Z" },
-    { url = "https://files.pythonhosted.org/packages/8f/0a/abcd0d4b54abeb3497e3f41476323a59cc644bf995e369b8b90d2e85ab26/simd_r_drive_ws_client-0.7.0a0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1070dd01770264c1f6b8530066bf2c1b97d615ba18114bbee6edb1d190a63ba1", size = 894179, upload-time = "2025-06-24T03:46:16.104Z" },
-    { url = "https://files.pythonhosted.org/packages/a1/30/52089f20df38deaf639440212804dfcc7d29d1d2cac4b1cea422bc3af4b3/simd_r_drive_ws_client-0.7.0a0-cp312-cp312-win32.whl", hash = "sha256:ef0a3056706811b753ca7806f04ff658ae2d10452c6de970a22e9c44bb141b1b", size = 607186, upload-time = "2025-06-24T03:46:17.254Z" },
-    { url = "https://files.pythonhosted.org/packages/30/94/dc2470e600c53332a8f7b5edf445792f99bca8f263920c294342f4fde2db/simd_r_drive_ws_client-0.7.0a0-cp312-cp312-win_amd64.whl", hash = "sha256:8a1ef44ca4bc244edd69b32eef2c4b7c521ec1bce0951c4d1339adc367418c58", size = 637382, upload-time = "2025-06-24T03:46:18.693Z" },
-    { url = "https://files.pythonhosted.org/packages/20/7e/6110a260e286715efb79e7a0e9c0642a93b66fcaf6624208698f6d417a22/simd_r_drive_ws_client-0.7.0a0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:3d71fbe0db8eae89414d42d6dbc18777600ced592c327fb4ef4957ffbd48fa51", size = 799704, upload-time = "2025-06-24T03:46:20.121Z" },
-    { url = "https://files.pythonhosted.org/packages/c7/ca/d8250f32781dbf9ce4686c9380019d82a6e15a3825bb3245ee6ea304a7bd/simd_r_drive_ws_client-0.7.0a0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:60ca39d4d5565ebab6bd9c7de3474fc7f0643fbe631d357cf25385570864d4e9", size = 894094, upload-time = "2025-06-24T03:46:22.625Z" },
-    { url = "https://files.pythonhosted.org/packages/15/c1/80a0eeea2a083e5c3cd8ecd1d1f13de3e3b6052677f727a96d030fef96c0/simd_r_drive_ws_client-0.7.0a0-cp313-cp313-win32.whl", hash = "sha256:47227d2e8a5b7482f9198e7d6c006334f3351f30197be720917b38ec3a3bef17", size = 606903, upload-time = "2025-06-24T03:46:24.111Z" },
-    { url = "https://files.pythonhosted.org/packages/ec/dd/384395be088fea79b199482fd0b99ff903ea1581ff9bbdf5791235ad04b5/simd_r_drive_ws_client-0.7.0a0-cp313-cp313-win_amd64.whl", hash = "sha256:1304a7e55aff9cf83b7deee43b18aa4a9c4a08e32c3a96aab5e26154c1f46d06", size = 637276, upload-time = "2025-06-24T03:46:25.507Z" },
+    { url = "https://files.pythonhosted.org/packages/0b/f2/7dac8f0b7a46708d8d51629b308dec6c3af79c8cceca31f7a52d2448ab3d/simd_r_drive_ws_client-0.8.0a0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:43bb22cd060b23924126adfea90c7eb00af7a06e6e7394842f9da5cf6c622ee0", size = 811780, upload-time = "2025-06-25T23:29:54.111Z" },
+    { url = "https://files.pythonhosted.org/packages/4a/8a/579fd5f2a091924641b986f4c7421e0f3ef5ffff4154b9cc292c713ac961/simd_r_drive_ws_client-0.8.0a0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1eb3d7b03c6c3faff2ced9104394b134ece967026d8dfbc779fb2968393f7706", size = 911101, upload-time = "2025-06-25T23:29:55.082Z" },
+    { url = "https://files.pythonhosted.org/packages/79/60/55e82ca2db08decededa824136783e2c8152523ee554f2ee0e7e4ac67d3c/simd_r_drive_ws_client-0.8.0a0-cp312-cp312-win32.whl", hash = "sha256:94e17de075a6e8bfa166b30713cd09336e4cbbd54ce93880f4db5e70d75c6819", size = 619585, upload-time = "2025-06-25T23:29:56.126Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/e0/acb14b04e090d2f2d68b34241a4e235578cbe6df571ca00e0192925618c4/simd_r_drive_ws_client-0.8.0a0-cp312-cp312-win_amd64.whl", hash = "sha256:99eeb28b903960586ba711bb2e6ca2ae8889c6d4d4f43d6b4ce6966ae717107c", size = 648381, upload-time = "2025-06-25T23:29:57.447Z" },
+    { url = "https://files.pythonhosted.org/packages/89/c9/3b34fde1318ce764f343376d2a93fbb08bf8755ea0466dec4303ab30a5ce/simd_r_drive_ws_client-0.8.0a0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:7d351e6e0de4e0ff837fea754f638a1ca2e24cd901f9e7feab0c8f0a976d0d78", size = 811867, upload-time = "2025-06-25T23:29:58.383Z" },
+    { url = "https://files.pythonhosted.org/packages/68/65/0d9ae86990bb6974647378bcddb1c6b543491c24a247a9f9df675525eb69/simd_r_drive_ws_client-0.8.0a0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ca3c54e20e818ee2a38c3d7d51df1b6c68c85c9407d359646dee2606de0858e6", size = 911204, upload-time = "2025-06-25T23:29:59.273Z" },
+    { url = "https://files.pythonhosted.org/packages/86/0c/b682923c17ebd732dcc0a95082dc6ec0b5cae81d64ba973a1eefc93e17e2/simd_r_drive_ws_client-0.8.0a0-cp313-cp313-win32.whl", hash = "sha256:e1759c990e742e5118b66afe513fb1f02d3a5ac343964b3f5e3e866aae387a8a", size = 619352, upload-time = "2025-06-25T23:30:00.236Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/bd/583a001753c76d8175f7ed7766bda42e65af434a5612901d8aef9c6950c8/simd_r_drive_ws_client-0.8.0a0-cp313-cp313-win_amd64.whl", hash = "sha256:b4a60c3e9968432b35186c483f192d37cd195118fce1286a1daeef241bc5fd69", size = 648535, upload-time = "2025-06-25T23:30:01.222Z" },
 ]
 
 [[package]]
