@@ -25,7 +25,7 @@ def get_project_root_path(relative_path: Union[str, Path] = "") -> Path:
 
     if project_root is None:
         raise FileNotFoundError(
-            "Could not find pyproject.toml in current or parent directories."
+            "Could not find `pyproject.toml` in current or parent directories."
         )
 
     rel_path = to_path(relative_path)  # ensure Path type
