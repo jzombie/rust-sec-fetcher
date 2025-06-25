@@ -110,7 +110,7 @@ class IterableConceptValueDataset(IterableDataset):
 
             # --- Vectorized Processing with Pre-allocation ---
             valid_data = [
-                item for item in batch_data if item["scaled_value"] is not None
+                item for item in batch_data if item.scaled_value is not None
             ]
             if not valid_data:
                 continue
@@ -125,8 +125,8 @@ class IterableConceptValueDataset(IterableDataset):
 
             # Fill the pre-allocated arrays in a loop
             for idx, item in enumerate(valid_data):
-                embeddings_np[idx] = item["embedding"]
-                values_np[idx] = item["scaled_value"]
+                embeddings_np[idx] = item.embedding
+                values_np[idx] = item.scaled_value
 
             # Perform the concatenation as a single, fast matrix operation
             x_data_np = np.concatenate([embeddings_np, values_np], axis=1)
@@ -140,8 +140,8 @@ class IterableConceptValueDataset(IterableDataset):
                 y = x.clone()
 
                 item_meta = valid_data[j]
-                scaler = item_meta.get("scaler") if self.return_scaler else None
-                concept_unit = (item_meta["concept"], item_meta["uom"])
+                scaler = item_meta.scaler if self.return_scaler else None
+                concept_unit = (item_meta.concept, item_meta.uom)
 
                 yield (x, y, scaler, concept_unit)
 
