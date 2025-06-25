@@ -258,6 +258,7 @@ class UsGaapStore:
                     cell_meta_key = CELL_META_NAMESPACE.namespace(i_bytes)
                     batch.append((cell_meta_key, pair_id_bytes))
 
+                # TODO: Store into a larger write buffer; this is too slow
                 self.data_store.batch_write(batch)
 
         except StopIteration as stop:
