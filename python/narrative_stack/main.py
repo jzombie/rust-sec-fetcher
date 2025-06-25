@@ -5,6 +5,9 @@ from dataclasses import asdict
 # https://pypi.org/project/typer/
 app = typer.Typer()
 
+# TODO: Maybe `hydra` is a better direction for main.py? https://hydra.cc/docs/1.3/intro/
+
+
 @app.command()
 def paths():
     print("")
