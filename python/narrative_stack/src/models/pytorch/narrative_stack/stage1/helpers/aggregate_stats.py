@@ -61,7 +61,7 @@ class AggregateStats:
             stats["sum_y_true2"] += np.sum(np.square(yt.astype(np.float64)))
             stats["sum_y_pred2"] += np.sum(np.square(yp.astype(np.float64)))
 
-            
+            # TODO: Fix `RuntimeWarning: overflow encountered in multiply` error
             stats["sum_y_true_y_pred"] += np.sum(yt * yp)
 
         self.z_sum += z_norm.sum()
