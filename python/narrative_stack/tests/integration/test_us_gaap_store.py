@@ -1,5 +1,6 @@
 import os
 from us_gaap_store import UsGaapStore
+from config import db_config
 from db import DbUsGaap
 from simd_r_drive_ws_client import DataStoreWsClient
 
@@ -13,7 +14,7 @@ def test_ingestion_and_lookup():
     csv_dir = os.path.join(script_dir, "assets/truncated_csvs")
 
     # Create in-memory or stub DB object
-    db = DbUsGaap()
+    db = DbUsGaap(db_config)
 
     # Connect to store
     host=os.getenv("SIMD_R_DRIVE_SERVER_HOST")
