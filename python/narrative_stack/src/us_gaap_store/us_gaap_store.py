@@ -305,8 +305,6 @@ class UsGaapStore:
         """
         READ_BATCH_SIZE = 1024 * 9
 
-        full_write_batch = []
-
         for pair, i_cells in tqdm(
             concept_unit_pairs_i_cells.items(), desc="Scaling per concept/unit"
         ):
@@ -359,15 +357,17 @@ class UsGaapStore:
 
             assert len(scaled_vals) == len(i_cells)
 
+            loc_batch = []
+
             for i_cell, scaled_val in zip(i_cells, scaled_vals):
                 scaled_val_key = SCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(
                     _encode_u32_to_raw_bytes(i_cell)
                 )
                 scaled_val_bytes = _encode_float_to_raw_bytes(scaled_val)
-                full_write_batch.append((scaled_val_key, scaled_val_bytes))
+                loc_batch.append((scaled_val_key, scaled_val_bytes))
 
-        # --- Step 4: Write back all scaled values in batches ---
-        self.data_store.batch_write(full_write_batch)
+            # --- Step 4: Write back all scaled values in current batch ---
+            self.data_store.batch_write(loc_batch)
 
     def _get_pair_id(self, pair: ConceptUnitPair) -> int:
         """
