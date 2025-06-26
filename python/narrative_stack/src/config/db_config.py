@@ -2,6 +2,7 @@ import os
 from .config import init_config
 from pydantic import BaseModel
 
+# Auto-init config to acquire environment vars
 init_config()
 
 

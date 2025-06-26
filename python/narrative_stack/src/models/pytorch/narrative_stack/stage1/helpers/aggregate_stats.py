@@ -10,7 +10,6 @@ class AggregateStats:
             lambda: {
                 "mae_sum": 0.0,
                 "abs_sum": 0.0,
-                # old: "r2": R2Score().to(device),
                 "n": 0,
                 "sum_y_true": 0.0,
                 "sum_y_pred": 0.0,
@@ -22,45 +21,6 @@ class AggregateStats:
         self.z_sum = 0.0
         self.z_sq_sum = 0.0
         self.z_count = 0
-
-    # TODO: Remove old, slower update method
-    # def update(self, tags, y_pred_batch, y_true_batch, z_norm_batch):
-    #     """
-    #     tags: List[Tuple[str, str]]
-    #     y_pred_batch, y_true_batch, z_norm_batch: Tensors of shape [B]
-    #     """
-    #     y_pred_batch = y_pred_batch.detach().cpu()
-    #     y_true_batch = y_true_batch.detach().cpu()
-    #     z_norm_batch = z_norm_batch.detach().cpu()
-
-    #     for i, tag in enumerate(tags):
-    #         stats = self._per_tag[tag]
-    #         abs_err = torch.abs(y_pred_batch[i] - y_true_batch[i]).item()
-    #         abs_target = torch.abs(y_true_batch[i]).item()
-
-    #         stats["mae_sum"] += abs_err
-    #         stats["abs_sum"] += abs_target
-
-    #         # Manual R² computation is used here instead of torchmetrics.R2Score
-    #         # to address performance issues specific to this use case—
-    #         # namely, avoiding per-sample `.update()` overhead and GPU sync stalls
-    #         # during large-scale per-tag aggregation. This optimization is targeted
-    #         # and does not imply that torchmetrics.R2Score is unsuitable
-    #         # for other scenarios or tasks.
-
-    #         # stats["r2"].update(y_pred_batch[i].unsqueeze(0), y_true_batch[i].unsqueeze(0))
-    #         stats["n"] += 1
-    #         yt = y_true_batch[i].item()
-    #         yp = y_pred_batch[i].item()
-    #         stats["sum_y_true"] += yt
-    #         stats["sum_y_pred"] += yp
-    #         stats["sum_y_true2"] += yt * yt
-    #         stats["sum_y_pred2"] += yp * yp
-    #         stats["sum_y_true_y_pred"] += yt * yp
-
-    #     self.z_sum += z_norm_batch.sum().item()
-    #     self.z_sq_sum += (z_norm_batch ** 2).sum().item()
-    #     self.z_count += z_norm_batch.size(0)
 
     def update(self, tags, y_pred_batch, y_true_batch, z_norm_batch):
         """
@@ -98,19 +58,9 @@ class AggregateStats:
             stats["n"] += len(idxs)
             stats["sum_y_true"] += yt.sum()
             stats["sum_y_pred"] += yp.sum()
-            # stats["sum_y_true2"] += np.sum(yt ** 2) # TODO: Fix potential RuntimeWarning: overflow encountered in square
-            # stats["sum_y_pred2"] += np.sum(yp ** 2) # TODO: Fix potential RuntimeWarning: overflow encountered in square
             stats["sum_y_true2"] += np.sum(np.square(yt.astype(np.float64)))
             stats["sum_y_pred2"] += np.sum(np.square(yp.astype(np.float64)))
 
-            # TODO: Fix: RuntimeWarning: overflow encountered in multiply:  stats["sum_y_true_y_pred"] += np.sum(yt * yp)
-             # Solution with clamping:
-            # 1. Perform multiplication in float64 to avoid overflow during product calculation
-            # 2. Clamp the result to FLOAT32_MAX (or any desired max value)
-            # 3. Sum the clamped values
-            # product_yt_yp_float64 = yt.astype(np.float64) * yp.astype(np.float64)
-            # clamped_product = np.clip(product_yt_yp_float64, a_min=None, a_max=FLOAT32_MAX)
-            # stats["sum_y_true_y_pred"] += np.sum(clamped_product)
             
             stats["sum_y_true_y_pred"] += np.sum(yt * yp)
 
