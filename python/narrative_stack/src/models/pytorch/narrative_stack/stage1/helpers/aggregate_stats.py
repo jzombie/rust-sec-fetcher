@@ -3,7 +3,27 @@ from collections import defaultdict
 
 
 class AggregateStats:
+    """
+    Batch-wise accumulator for per-tag regression metrics.
+
+    Keeps running totals for:
+    - Mean Absolute Error (MAE) and relative MAE
+    - Coefficient of determination (R2)
+    - z-score mean and standard deviation
+
+    Designed for large-scale evaluation where per-sample metric calls would
+    create heavy Python overhead or GPU<->CPU synchronisation stalls.
+    """
+
     def __init__(self, device):
+        """
+        Parameters
+        ----------
+        device : torch.device | str
+            Torch device on which model tensors live.  Stored only for reference;
+            all accumulation happens on CPU with NumPy.
+        """
+
         self.device = device
         self._eps = 1e-8
         self._per_tag = defaultdict(
@@ -24,9 +44,26 @@ class AggregateStats:
 
     def update(self, tags, y_pred_batch, y_true_batch, z_norm_batch):
         """
-        tags: List[Tuple[str, str]]
-        y_pred_batch, y_true_batch, z_norm_batch: Tensors of shape [B]
+        Add a mini-batch to the running totals.
+
+        Parameters
+        ----------
+        tags : list[tuple[str, str]]
+            Identifier per sample, for example (concept, unit).  Used as dict key.
+        y_pred_batch : torch.Tensor
+            Model predictions, shape [B].
+        y_true_batch : torch.Tensor
+            Ground-truth targets, shape [B].
+        z_norm_batch : torch.Tensor
+            Pre-computed z-scores that track scale drift, shape [B].
+
+        Notes
+        -----
+        * All tensors are detached, moved to CPU, then cast to float32 for MAE
+        aggregation and float64 for R2 numerics.
+        * A small epsilon (=1e-8) avoids divide-by-zero in relative MAE.
         """
+
         y_pred = y_pred_batch.detach().cpu().numpy().astype(np.float32)
         y_true = y_true_batch.detach().cpu().numpy().astype(np.float32)
         z_norm = z_norm_batch.detach().cpu().numpy().astype(np.float32)
@@ -69,6 +106,17 @@ class AggregateStats:
         self.z_count += z_norm.shape[0]
 
     def median_relative_mae(self):
+        """
+        Return the median relative MAE across all tags.
+
+        Relative MAE for a tag = sum|y_hat - y| / (sum|y| + eps).
+
+        Returns
+        -------
+        float
+            0 <= value < inf.  Zero means perfect reconstruction; higher is worse.
+        """
+
         vals = []
         for v in self._per_tag.values():
             if v["abs_sum"] > 0:
@@ -76,6 +124,20 @@ class AggregateStats:
         return float(np.median(vals)) if vals else 0.0
 
     def worst_median_relative_mae(self, top_frac=0.05):
+        """
+        Median relative MAE for the worst-performing fraction of tags.
+
+        Parameters
+        ----------
+        top_frac : float, default 0.05
+            Fraction (0-1) of highest relative-MAE tags to include.
+
+        Returns
+        -------
+        float
+            Median of that subset; useful for spotting long-tail failure cases.
+        """
+
         vals = []
         for v in self._per_tag.values():
             if v["abs_sum"] > 0:
@@ -91,10 +153,19 @@ class AggregateStats:
 
     def _compute_r2_values(self):
         """
-        Compute R² values for all tags with at least 2 samples.
-        Filters out NaN or infinite results caused by overflow or invalid math.
-        Optimized for speed using NumPy vectorization.
+        Vectorised R2 for every tag with >= 2 samples.
+
+        Returns
+        -------
+        list[float]
+            Finite R2 values; list may be empty if no valid tags exist.
+
+        Notes
+        -----
+        * Uses float64 throughout to reduce numeric cancellation.
+        * Non-finite or overflow results are filtered out with np.isfinite.
         """
+
         # 1. Extract data into NumPy arrays from the defaultdict values
         # Filter out entries where n < 2 upfront
         valid_data_dicts = [v for v in self._per_tag.values() if v["n"] >= 2]
@@ -145,15 +216,33 @@ class AggregateStats:
 
     def median_r2(self):
         """
-        Compute the median R² across all valid tags.
+        Median R2 across all valid tags.
+
+        Returns
+        -------
+        float
+            Range is (-inf, 1].  One is perfect, zero matches the naïve mean,
+            values below zero are worse than a constant predictor.
         """
+
         vals = self._compute_r2_values()
         return float(np.median(vals)) if vals else 0.0
 
     def worst_median_r2(self, bottom_frac=0.05):
         """
-        Compute the median R² among the bottom `bottom_frac` of tags.
+        Median R2 for the lowest-scoring fraction of tags.
+
+        Parameters
+        ----------
+        bottom_frac : float, default 0.05
+            Fraction (0-1) of tags with the poorest R2 to include.
+
+        Returns
+        -------
+        float
+            Median of that subset; highlights systematic under-performance.
         """
+
         vals = self._compute_r2_values()
         if not vals:
             return 0.0
@@ -162,6 +251,15 @@ class AggregateStats:
         return float(np.median(vals[:k]))
 
     def z_norm_mean_std(self):
+        """
+        Mean and standard deviation of observed z-scores.
+
+        Returns
+        -------
+        tuple[float, float]
+            (mean, std).  If no samples have been seen, both values are 0.0.
+        """
+
         if self.z_count == 0:
             return 0.0, 0.0
 
@@ -171,4 +269,10 @@ class AggregateStats:
         return mean, var**0.5
 
     def reset(self):
+        """
+        Clear all running totals and start from scratch.
+
+        Equivalent to creating a new AggregateStats instance with the same device.
+        """
+
         self.__init__(self.device)

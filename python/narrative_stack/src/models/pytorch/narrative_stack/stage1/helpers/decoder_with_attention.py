@@ -1,16 +1,31 @@
 from torch import nn
 
 
-# from torchmetrics.regression import R2Score
-
-
-
-
-
-
-
 class DecoderWithAttention(nn.Module):
+    """
+    Latent-to-output decoder.
+
+    Steps
+    -----
+    1. Expand latent vector and apply dropout.
+    2. Run a lightweight self-attention pass.
+    3. Split into two heads:
+       * emb_head -> reconstructed embedding  [B, emb_dim]
+       * val_head -> reconstructed scalar     [B, 1]
+    """
+
     def __init__(self, latent_dim, emb_dim, dropout_rate=0.0):
+        """
+        Parameters
+        ----------
+        latent_dim : int
+            Size of the bottleneck vector z.
+        emb_dim : int
+            Target dimension of the reconstructed embedding.
+        dropout_rate : float, default 0.0
+            Dropout applied after the expansion layer.
+        """
+
         super().__init__()
         self.expand = nn.Sequential(
             nn.Linear(latent_dim, latent_dim * 4),
@@ -34,11 +49,19 @@ class DecoderWithAttention(nn.Module):
 
     def forward(self, z):
         """
-        z: [B, latent_dim]
-        Returns:
-            recon_emb: [B, emb_dim]
-            recon_val: [B, 1]
+        Parameters
+        ----------
+        z : torch.Tensor
+            Latent vector, shape [B, latent_dim].
+
+        Returns
+        -------
+        recon_emb : torch.Tensor
+            Reconstructed embedding, shape [B, emb_dim].
+        recon_val : torch.Tensor
+            Reconstructed scalar value, shape [B, 1].
         """
+
         h = self.expand(z)  # [B, 4D]
         h_attn, _ = self.attn(h.unsqueeze(1), h.unsqueeze(1), h.unsqueeze(1))
         h = h_attn.squeeze(1)
