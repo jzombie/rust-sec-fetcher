@@ -11,7 +11,6 @@ from .helpers import AggregateStats, DecoderWithAttention, EncoderWithAttention
 
 
 
-# LightningModule
 class Stage1Autoencoder(pl.LightningModule):
     EPSILON = torch.finfo(torch.float32).eps
 
@@ -92,7 +91,6 @@ class Stage1Autoencoder(pl.LightningModule):
         target_emb = target[:, :-1]
         target_val = target[:, -1].unsqueeze(1)
 
-        # TODO: Figure out how to work out a potentially missing scaler
         if scaler and isinstance(scaler, (list, tuple)):
             recon_val_np = recon_val.detach().cpu().numpy()
             target_val_np = target_val.detach().cpu().numpy()
@@ -118,7 +116,8 @@ class Stage1Autoencoder(pl.LightningModule):
                 target_val_orig, dtype=torch.float32, device=target_val.device
             )
         else:
-            raise Exception("Scaler not implemented")
+            # FIXME: A more precise error would be beneficial
+            raise NotImplementedError("A scaler was not implemented for a concept/unit pair")
 
         # non-scaled
         embedding_loss = self.loss_fn(recon_emb, target_emb)
@@ -328,8 +327,6 @@ class Stage1Autoencoder(pl.LightningModule):
         current_lr = self.trainer.optimizers[0].param_groups[0]["lr"]
         return current_lr
 
-    # def configure_optimizers(self):
-    #     return torch.optim.Adam(self.parameters(), lr=self.hparams.lr, weight_decay=self.hparams.weight_decay)
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
             self.parameters(),
@@ -337,13 +334,11 @@ class Stage1Autoencoder(pl.LightningModule):
             weight_decay=self.hparams.weight_decay,
         )
 
-        # Use CosineAnnealingLR with T_max=15 and eta_min=1e-6 (matches your 15 epochs)
         scheduler = CosineAnnealingLR(
             optimizer,
             T_max=self.hparams.lr_annealing_epochs,
             eta_min=self.hparams.min_lr,
         )
 
-        # TODO: Replace scheduler with CosineAnnealingWarmRestarts(optimizer, T_0=15, T_mult=1)?
 
         return [optimizer], [scheduler]
