@@ -1,6 +1,6 @@
 import os
 from us_gaap_store import UsGaapStore
-from config import db_config
+from config import db_config, simd_r_drive_server_config
 from db import DbUsGaap
 from simd_r_drive_ws_client import DataStoreWsClient
 
@@ -17,9 +17,7 @@ def test_ingestion_and_lookup():
     db = DbUsGaap(db_config)
 
     # Connect to store
-    host=os.getenv("SIMD_R_DRIVE_SERVER_HOST")
-    port=os.getenv("SIMD_R_DRIVE_SERVER_PORT")
-    data_store = DataStoreWsClient(f"{host}:{port}")
+    data_store = DataStoreWsClient(simd_r_drive_server_config)
 
     us_gaap_store = UsGaapStore(data_store)
 
