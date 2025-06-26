@@ -79,6 +79,7 @@ class Stage1Autoencoder(pl.LightningModule):
     def decode(self, z):
         return self.decoder(z)
 
+    # pylint: disable=arguments-differ
     def forward(self, x):
         z = self.encode(x)
 
