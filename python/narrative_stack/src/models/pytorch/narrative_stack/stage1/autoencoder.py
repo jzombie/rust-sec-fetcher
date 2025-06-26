@@ -21,21 +21,33 @@ class Stage1Autoencoder(pl.LightningModule):
         latent_dim=256,
         encoder_dropout_rate=0.0,
         value_dropout_rate=0.0,
-        # lr=0.00023072200683712404,
         lr=5e-5,
         min_lr=1e-6,
-        # lr=0.00002307,
         batch_size=64,
         gradient_clip=0.5,
         alpha_embed=1.0,
         alpha_value=1.0,
-        # embedding_noise_std=0.0, # 0.02 is roughly ~0.951 cosine sim difference for 243 dimeensions; 0.01 is roughly ~0.99
         weight_decay=5.220603379116996e-07,
         lr_annealing_epochs=15,
     ):
         super().__init__()
 
-        self.save_hyperparameters(ignore=["median_scaled_val", "mean_emb"])
+        self.save_hyperparameters()
+
+        # Access through `self.hparams`; `save_hyperparameters` fills it.
+        # These locals exist only to prevent “unused” linter warnings.
+        self.input_dim=input_dim
+        self.latent_dim=latent_dim
+        self.encoder_dropout_rate=encoder_dropout_rate
+        self.value_dropout_rate=value_dropout_rate
+        self.lr=lr
+        self.min_lr=min_lr
+        self.batch_size=batch_size
+        self.gradient_clip=gradient_clip
+        self.alpha_embed=alpha_embed
+        self.alpha_value=alpha_value
+        self.weight_decay=weight_decay
+        self.lr_annealing_epochs=lr_annealing_epochs
 
         self.encoder = EncoderWithAttention(
             emb_dim=input_dim - 1,
@@ -155,7 +167,7 @@ class Stage1Autoencoder(pl.LightningModule):
             z_norm_std,
         )
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch, _batch_idx):
         if len(batch) == 4:
             x, target, scaler, concept_units = batch
         elif len(batch) == 3:
@@ -226,7 +238,7 @@ class Stage1Autoencoder(pl.LightningModule):
         )
         return total_loss
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch, _batch_idx):
         if len(batch) == 4:
             x, target, scaler, concept_units = batch
         elif len(batch) == 3:
