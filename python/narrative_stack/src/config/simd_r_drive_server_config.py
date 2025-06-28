@@ -7,11 +7,11 @@ init_config()
 
 class SimdRDriveServerConfig(BaseModel):
     host: str
-    port: str
+    port: int
 
 simd_r_drive_server_config = SimdRDriveServerConfig (
     host=os.getenv("SIMD_R_DRIVE_SERVER_HOST"),
-    port=os.getenv("SIMD_R_DRIVE_SERVER_PORT"),
+    port=int(os.getenv("SIMD_R_DRIVE_SERVER_PORT")),
 )
 
 __all__ = ["SimdRDriveServerConfig", "simd_r_drive_server_config"]
