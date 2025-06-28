@@ -17,7 +17,7 @@ def test_ingestion_and_lookup():
     db = DbUsGaap(db_config)
 
     # Connect to store
-    data_store = DataStoreWsClient(simd_r_drive_server_config)
+    data_store = DataStoreWsClient(simd_r_drive_server_config.host, simd_r_drive_server_config.port)
 
     us_gaap_store = UsGaapStore(data_store)
 
