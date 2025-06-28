@@ -70,7 +70,7 @@ services:
       context: .
       dockerfile: Dockerfile.simd-r-drive-ci-server
       args:
-        SERVER_ARGS: "data.bin --listen 0.0.0.0:8080"
+        SERVER_ARGS: "data.bin --host 0.0.0.0 --port 8080"
     ports:
       - 3309:8080
     depends_on:
