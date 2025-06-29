@@ -688,29 +688,35 @@ class UsGaapStore:
     # TODO: Type w/ Pydantic?
     def cache_stage1_inference_batch(self, batch):
         # print(batch)
-        batch_latent_bytes = [
-            _encode_numpy_array_to_raw_bytes(record["latent"], np.float32)
-            for record in batch
-        ]
+        # batch_latent_bytes = [
+        #     _encode_numpy_array_to_raw_bytes(record["latent"], np.float32)
+        #     for record in batch
+        # ]
         
-        decoded_latent_vectors = [
-            _decode_numpy_array_from_bytes(bytes, dtype=np.float32)
-            for bytes in batch_latent_bytes
-        ]
+        # decoded_latent_vectors = [
+        #     _decode_numpy_array_from_bytes(bytes, dtype=np.float32)
+        #     for bytes in batch_latent_bytes
+        # ]
 
-        # ── integrity check ───────────────────────────────────────────────
-        # Make sure round‑trip (numpy → bytes → numpy) is bit‑identical.
-        # Use array_equal (exact match) instead of allclose.
-        assert len(decoded_latent_vectors) == len(batch), "Batch size mismatch"
-        for rec, dec in zip(batch, decoded_latent_vectors):
-            np.testing.assert_array_equal(
-                rec["latent"], dec, err_msg="Latent vector round-trip failed"
-            )
-        # ──────────────────────────────────────────────────────────────────
+        # # ── integrity check ───────────────────────────────────────────────
+        # # Make sure round‑trip (numpy → bytes → numpy) is bit‑identical.
+        # # Use array_equal (exact match) instead of allclose.
+        # assert len(decoded_latent_vectors) == len(batch), "Batch size mismatch"
+        # for rec, dec in zip(batch, decoded_latent_vectors):
+        #     np.testing.assert_array_equal(
+        #         rec["latent"], dec, err_msg="Latent vector round-trip failed"
+        #     )
+        # # ──────────────────────────────────────────────────────────────────
 
-        for decoded in decoded_latent_vectors:
-            print(decoded)
+        writable_batch = []
 
+        for record in batch:
+            key_bytes = STAGE1_LATENT_EMBEDDING_NAMESPACE.namespace(_encode_u32_to_raw_bytes(record["i_cell"]))
+            latent_bytes = _encode_numpy_array_to_raw_bytes(record["latent"], np.float32)
+
+            writable_batch.append((key_bytes, latent_bytes))
+
+        self.data_store.batch_write(writable_batch)
 
     # TODO: Implement `batch_lookup_by_triplets`
 
