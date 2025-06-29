@@ -19,6 +19,7 @@ from utils import generate_us_gaap_description
 from models.pytorch.narrative_stack.stage1.preprocessing import (
     pca_compress_concept_unit_embeddings,
 )
+from db import DbUsGaap
 
 # Note: This is used here for the semantic modeling (BGE model)
 seed_everything()
@@ -191,9 +192,8 @@ class UsGaapStore:
         self._scaler_cache: dict[bytes, Any] = {}  # For runtime lookup
 
     # --- INGESTION METHODS ---
-    # Note: `db_us_gaap` is assumed to be an external dependency or unused in this context
     def ingest_us_gaap_csvs(
-        self, csv_data_dir: str, db_us_gaap: Any
+        self, csv_data_dir: str, db_us_gaap: DbUsGaap
     ):  # Changed type hint
         gen = walk_us_gaap_csvs(
             csv_data_dir, db_us_gaap, "row", tqdm_desc="Migrating CSV files..."
