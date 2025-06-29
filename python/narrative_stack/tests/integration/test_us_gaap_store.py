@@ -3,6 +3,7 @@ from us_gaap_store import UsGaapStore
 from config import db_config, simd_r_drive_server_config
 from db import DbUsGaap
 from simd_r_drive_ws_client import DataStoreWsClient
+import numpy as np
 
 
 # Get the directory containing the script (do not change)
@@ -41,12 +42,19 @@ def test_ingestion_and_lookup():
     assert result.concept is not None
     assert result.unscaled_value is not None
 
-    # Embedding retrieval
-    embeddings, pairs = us_gaap_store.get_embedding_matrix()
-    assert embeddings.shape[0] == len(pairs)
-
     print("Fetching cached data...")
     cached_data = us_gaap_store.batch_lookup_by_indices(list(range(triplet_count)))
+
+    # Semantic embedding retrieval
+    embedding_matrix, pairs = us_gaap_store.get_embedding_matrix()
+    assert embedding_matrix.shape[0] == len(pairs)
+    for i_cell, rec in zip(range(triplet_count), cached_data):
+        pair_id = rec.pair_id
+        np.testing.assert_array_equal(
+            rec.embedding,
+            embedding_matrix[pair_id],
+            err_msg=f"Embedding mismatch for pair_id={pair_id}",
+        )
 
     print(f"Cached data length: {len(cached_data)}")
     assert len(cached_data) == triplet_count

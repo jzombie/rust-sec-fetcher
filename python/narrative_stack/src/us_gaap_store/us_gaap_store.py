@@ -86,6 +86,9 @@ PCA_MODEL_NAMESPACE = NamespaceHasher(b"pca-model")
 # dimensionality reduction, ready for use in downstream models.
 PCA_REDUCED_EMBEDDING_NAMESPACE = NamespaceHasher(b"pca-reduced-embedding")
 
+# TODO: Document
+STAGE1_LATENT_EMBEDDING_NAMESPACE = NamespaceHasher(b"stage1-latent-embedding")
+
 # --- GLOBAL CONSTANTS FOR ENCODING/DECODING ---
 LEN_PREFIX_BYTES = 2  # Use 2 bytes for string length prefixes (up to 65535 bytes)
 
@@ -129,12 +132,29 @@ def _decode_float_from_bytes(data: bytes) -> float:
     return np.frombuffer(data, dtype=np.float64)[0]
 
 
-def _encode_numpy_array_to_raw_bytes(arr: np.ndarray) -> bytes:
-    """Converts a NumPy array to float64 if needed, then returns its raw byte sequence."""
-    if arr.dtype != np.float64:
-        arr = arr.astype(np.float64)
-    return arr.tobytes()
+def _encode_numpy_array_to_raw_bytes(
+    arr: np.ndarray,
+    as_type: Optional[np.dtype] = np.float64,
+) -> bytes:
+    """
+    Serialize a NumPy array to raw bytes.
 
+    Parameters
+    ----------
+    arr : np.ndarray
+        Array to serialize.
+    as_type : Optional[np.dtype], default np.float64
+        • np.dtype → cast to this dtype before serialization.  
+        • None     → keep arr.dtype unchanged.
+
+    Returns
+    -------
+    bytes
+        Contiguous byte sequence representing the (possibly cast) array.
+    """
+    if as_type is not None and arr.dtype != as_type:
+        arr = arr.astype(as_type, copy=False)
+    return np.ascontiguousarray(arr).tobytes()
 
 def _decode_numpy_array_from_bytes(
     data: bytes, dtype: np.dtype, shape: Optional[Tuple[int, ...]] = None
@@ -383,6 +403,7 @@ class UsGaapStore:
 
     # --- EMBEDDING GENERATION/LOADING METHODS ---
 
+    # TODO: Rename to reflect semantic embeddings and the caching of them
     def generate_pca_embeddings(self):
         pairs = []
         embeddings = []
@@ -414,7 +435,8 @@ class UsGaapStore:
                 PCA_REDUCED_EMBEDDING_NAMESPACE.namespace(
                     _encode_u32_to_raw_bytes(pair_id)
                 ),
-                _encode_numpy_array_to_raw_bytes(vec),  # Encode numpy array directly
+                # IMPORTANT: `float64` type MUST be used here as the PCA embeddings are encoded as float64
+                _encode_numpy_array_to_raw_bytes(vec, np.float64),  # Encode numpy array directly
             )
             for (pair_id, _), vec in zip(pairs, pca_compressed_concept_unit_embeddings)
         ]
@@ -488,6 +510,7 @@ class UsGaapStore:
                 buffer_ids, buffer_pairs, buffer_texts, model, device
             )
 
+    # TODO: Rename to `get_semantic_embedding_matrix`
     # TODO: Use batch reads
     def get_embedding_matrix(self) -> Tuple[np.ndarray, list]:
         embedding_matrix = []
@@ -662,6 +685,32 @@ class UsGaapStore:
         return final_results
     
     # TODO: Implement ability to ingest triplet vectors from stage1 model
+    # TODO: Type w/ Pydantic?
+    def cache_stage1_inference_batch(self, batch):
+        # print(batch)
+        batch_latent_bytes = [
+            _encode_numpy_array_to_raw_bytes(record["latent"], np.float32)
+            for record in batch
+        ]
+        
+        decoded_latent_vectors = [
+            _decode_numpy_array_from_bytes(bytes, dtype=np.float32)
+            for bytes in batch_latent_bytes
+        ]
+
+        # ── integrity check ───────────────────────────────────────────────
+        # Make sure round‑trip (numpy → bytes → numpy) is bit‑identical.
+        # Use array_equal (exact match) instead of allclose.
+        assert len(decoded_latent_vectors) == len(batch), "Batch size mismatch"
+        for rec, dec in zip(batch, decoded_latent_vectors):
+            np.testing.assert_array_equal(
+                rec["latent"], dec, err_msg="Latent vector round-trip failed"
+            )
+        # ──────────────────────────────────────────────────────────────────
+
+        for decoded in decoded_latent_vectors:
+            print(decoded)
+
 
     # TODO: Implement `batch_lookup_by_triplets`
 
