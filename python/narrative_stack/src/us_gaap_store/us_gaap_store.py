@@ -659,6 +659,8 @@ class UsGaapStore:
             )
 
         return final_results
+    
+    # TODO: Implement ability to ingest triplet vectors from stage1 model
 
     # TODO: Implement `batch_lookup_by_triplets`
 
