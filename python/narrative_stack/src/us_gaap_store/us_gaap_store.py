@@ -561,13 +561,11 @@ class UsGaapStore:
         return batch_results[0]
 
     def batch_lookup_by_indices(self, cell_indices: list[int]) -> list[FullCellData]:
-        # TODO: Don't name these "stage1", etc. since various stages of the model are also named this way
-
-        # Stage 1: Fetch meta and cell-specific values
-        stage1_requests = []
+        # Step 1: Fetch meta and cell-specific values
+        step1_requests = []
         for i_cell in cell_indices:
             i_bytes = _encode_u32_to_raw_bytes(i_cell)
-            stage1_requests.append(
+            step1_requests.append(
                 {
                     "meta": CELL_META_NAMESPACE.namespace(i_bytes),
                     "unscaled": UNSCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes),
@@ -575,19 +573,19 @@ class UsGaapStore:
                 }
             )
 
-        stage1_results = self.data_store.batch_read_structured(stage1_requests)
+        step1_results = self.data_store.batch_read_structured(step1_requests)
 
-        # Stage 2: Process stage 1, gather unique pair_ids and build stage 2 requests
+        # Step 2: Process stage 1, gather unique pair_ids and build stage 2 requests
         pair_id_map = {}  # Maps i_cell -> pair_id
-        stage2_requests = {}  # Maps pair_id -> request dict to avoid duplicate fetches
-        for i_cell, result in zip(cell_indices, stage1_results):
+        step2_requests = {}  # Maps pair_id -> request dict to avoid duplicate fetches
+        for i_cell, result in zip(cell_indices, step1_results):
             meta_bytes = result["meta"]
             if meta_bytes is None:
                 raise KeyError(f"Missing meta for i_cell {i_cell}")
             pair_id = _decode_u32_from_raw_bytes(meta_bytes)
             pair_id_map[i_cell] = pair_id
 
-            if pair_id not in stage2_requests:
+            if pair_id not in step2_requests:
                 pair_id_bytes = _encode_u32_to_raw_bytes(pair_id)
                 request = {
                     "pair_info": CONCEPT_UNIT_PAIR_NAMESPACE.namespace(pair_id_bytes),
@@ -598,19 +596,19 @@ class UsGaapStore:
                 # Only fetch scaler if it's not in the cache
                 if SCALER_NAMESPACE.namespace(pair_id_bytes) not in self._scaler_cache:
                     request["scaler"] = SCALER_NAMESPACE.namespace(pair_id_bytes)
-                stage2_requests[pair_id] = request
+                step2_requests[pair_id] = request
 
-        # Stage 3: Fetch pair-dependent data
-        unique_pair_ids = list(stage2_requests.keys())
-        unique_requests = [stage2_requests[pid] for pid in unique_pair_ids]
-        stage2_results_list = self.data_store.batch_read_structured(unique_requests)
-        stage2_results_map = dict(zip(unique_pair_ids, stage2_results_list))
+        # Step 3: Fetch pair-dependent data
+        unique_pair_ids = list(step2_requests.keys())
+        unique_requests = [step2_requests[pid] for pid in unique_pair_ids]
+        step2_results_list = self.data_store.batch_read_structured(unique_requests)
+        step2_results_map = dict(zip(unique_pair_ids, step2_results_list))
 
-        # Stage 4: Consolidate results
+        # Step 4: Consolidate results
         final_results = []
-        for i_cell, s1_result in zip(cell_indices, stage1_results):
+        for i_cell, s1_result in zip(cell_indices, step1_results):
             pair_id = pair_id_map[i_cell]
-            s2_result = stage2_results_map[pair_id]
+            s2_result = step2_results_map[pair_id]
 
             # Decode all data
             unscaled_bytes = s1_result["unscaled"]
