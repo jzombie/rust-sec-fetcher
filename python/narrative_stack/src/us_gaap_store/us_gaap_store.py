@@ -78,6 +78,7 @@ SCALER_NAMESPACE = NamespaceHasher(b"scaler")
 # text embeddings into a lower-dimensional space.
 PCA_MODEL_NAMESPACE = NamespaceHasher(b"pca-model")
 
+# TODO: Rename to imply `semantic` embedding
 # Stores the final, PCA-reduced embedding for each (concept, unit) pair.
 # Key: The pair_id (4-byte unsigned int).
 # Value: The PCA-compressed embedding vector (numpy array of float64).
@@ -176,6 +177,8 @@ class FullCellData(BaseModel):
     uom: str = Field(..., description="The unit of measure (e.g., 'USD', 'shares').")
     unscaled_value: float = Field(..., description="The original, unscaled numerical value.")
     scaled_value: Optional[float] = Field(..., description="The value after QuantileTransformer normalization.")
+
+    # TODO: Rename to `semantic_embedding`
     embedding: np.ndarray = Field(..., description="The PCA-reduced semantic embedding of the concept/unit pair.")
     scaler: Any = Field(..., description="The fitted scikit-learn scaler object for this pair.")
 

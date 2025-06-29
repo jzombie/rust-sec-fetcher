@@ -15,14 +15,14 @@ def collate_with_scaler(batch):
     """
 
     # Unzip the list of tuples into separate lists
-    xs, ys, scalers_list, concept_units = zip(*batch)
+    i_cell_list, xs, ys, scalers_list, concept_units = zip(*batch)
 
     # Stack the tensors to create a batch
     xs_batch = torch.stack(xs)
     ys_batch = torch.stack(ys)
 
     # The scalers and concept_units remain as lists
-    return xs_batch, ys_batch, scalers_list, list(concept_units)
+    return i_cell_list, xs_batch, ys_batch, scalers_list, list(concept_units)
 
 
 class IterableConceptValueDataset(IterableDataset):
@@ -134,7 +134,8 @@ class IterableConceptValueDataset(IterableDataset):
                 y = x.clone()
 
                 item_meta = valid_data[j]
+                i_cell = valid_data[j].i_cell
                 scaler = item_meta.scaler if self.return_scaler else None
                 concept_unit = (item_meta.concept, item_meta.uom)
 
-                yield (x, y, scaler, concept_unit)
+                yield (i_cell, x, y, scaler, concept_unit)
