@@ -16,7 +16,7 @@ def init_config():
     if is_config_init:
         return
 
-    # TODO: Run `seed_everything` from here
+    # TODO: Run `seed_everything` from here?
 
     # Get the directory containing the script
     script_dir = os.path.dirname(os.path.abspath(__file__))

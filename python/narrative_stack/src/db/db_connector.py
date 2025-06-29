@@ -1,10 +1,11 @@
 import os
 import logging
-from config import init_config
+from config import init_config, DBConfig
 import time
 import mysql.connector
 import warnings
 from contextlib import contextmanager
+
 
 init_config()
 
@@ -28,7 +29,9 @@ class DBConnector:
     def __del__(self):
         warnings.showwarning = self.default_warning_handler
 
-    def __init__(self):
+    def __init__(self, db_config: DBConfig):
+        self.db_config = db_config
+
         # Establish the connection
         self.connect()
 
@@ -48,11 +51,11 @@ class DBConnector:
         """Establish the connection to the database."""
 
         self.conn = mysql.connector.connect(
-            host=os.getenv("MYSQL_HOST"),
-            port=os.getenv("MYSQL_PORT"),
-            user=os.getenv("MYSQL_USER"),
-            password=os.getenv("MYSQL_PASSWORD"),
-            database=os.getenv("MYSQL_DATABASE"),
+            host=self.db_config.host,
+            port=self.db_config.port,
+            user=self.db_config.user,
+            password=self.db_config.password,
+            database=self.db_config.database,
             # connection_timeout=10,  # Timeout for the connection attempt (in seconds)
             # read_timeout=30,        # Timeout for waiting for response from server (in seconds)
             # write_timeout=30        # Timeout for sending data to server (in seconds)

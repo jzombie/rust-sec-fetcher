@@ -13,6 +13,7 @@ from torch.utils.data import IterableDataset
 
 import numpy as np
 import math
+from config import SimdRDriveServerConfig
 from simd_r_drive_ws_client import DataStoreWsClient
 from us_gaap_store import UsGaapStore
 
@@ -37,12 +38,12 @@ def collate_with_scaler(batch):
 class IterableConceptValueDataset(IterableDataset):
     def __init__(
         self,
-        websocket_address: str,
+        simd_r_drive_server_config: SimdRDriveServerConfig,
         internal_batch_size: int = 1024,  # How many items to fetch from the DB at once
         return_scaler=True,
         shuffle=False,
     ):
-        self.address = websocket_address
+        self.simd_r_drive_server_config = simd_r_drive_server_config
         self.internal_batch_size = internal_batch_size
         self.return_scaler = return_scaler
         self.shuffle = shuffle
@@ -52,9 +53,12 @@ class IterableConceptValueDataset(IterableDataset):
         self.us_gaap_store = None
 
         # Get the total count once in the main process
-        temp_client = DataStoreWsClient(self.address)
+        temp_client = DataStoreWsClient(simd_r_drive_server_config.host, simd_r_drive_server_config.port)
         temp_store = UsGaapStore(temp_client)
         self.triplet_count = temp_store.get_triplet_count()
+
+        # Disconnect temp client
+        del temp_client
 
     def __len__(self):
         """
@@ -69,7 +73,7 @@ class IterableConceptValueDataset(IterableDataset):
         """Initializes the client and store within the worker process."""
         if self.data_store_client is None:
             # Each worker gets its own client connection
-            self.data_store_client = DataStoreWsClient(self.address)
+            self.data_store_client = DataStoreWsClient(self.simd_r_drive_server_config.host, self.simd_r_drive_server_config.port)
             self.us_gaap_store = UsGaapStore(self.data_store_client)
 
     def __iter__(self):
@@ -110,7 +114,7 @@ class IterableConceptValueDataset(IterableDataset):
 
             # --- Vectorized Processing with Pre-allocation ---
             valid_data = [
-                item for item in batch_data if item["scaled_value"] is not None
+                item for item in batch_data if item.scaled_value is not None
             ]
             if not valid_data:
                 continue
@@ -125,8 +129,8 @@ class IterableConceptValueDataset(IterableDataset):
 
             # Fill the pre-allocated arrays in a loop
             for idx, item in enumerate(valid_data):
-                embeddings_np[idx] = item["embedding"]
-                values_np[idx] = item["scaled_value"]
+                embeddings_np[idx] = item.embedding
+                values_np[idx] = item.scaled_value
 
             # Perform the concatenation as a single, fast matrix operation
             x_data_np = np.concatenate([embeddings_np, values_np], axis=1)
@@ -140,8 +144,8 @@ class IterableConceptValueDataset(IterableDataset):
                 y = x.clone()
 
                 item_meta = valid_data[j]
-                scaler = item_meta.get("scaler") if self.return_scaler else None
-                concept_unit = (item_meta["concept"], item_meta["uom"])
+                scaler = item_meta.scaler if self.return_scaler else None
+                concept_unit = (item_meta.concept, item_meta.uom)
 
                 yield (x, y, scaler, concept_unit)
 

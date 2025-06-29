@@ -1,5 +1,6 @@
 import os
 from us_gaap_store import UsGaapStore
+from config import db_config, simd_r_drive_server_config
 from db import DbUsGaap
 from simd_r_drive_ws_client import DataStoreWsClient
 
@@ -13,12 +14,10 @@ def test_ingestion_and_lookup():
     csv_dir = os.path.join(script_dir, "assets/truncated_csvs")
 
     # Create in-memory or stub DB object
-    db = DbUsGaap()
+    db = DbUsGaap(db_config)
 
     # Connect to store
-    host=os.getenv("SIMD_R_DRIVE_SERVER_HOST")
-    port=os.getenv("SIMD_R_DRIVE_SERVER_PORT")
-    data_store = DataStoreWsClient(f"{host}:{port}")
+    data_store = DataStoreWsClient(simd_r_drive_server_config.host, simd_r_drive_server_config.port)
 
     us_gaap_store = UsGaapStore(data_store)
 
@@ -39,8 +38,8 @@ def test_ingestion_and_lookup():
 
     # Lookup first i_cell
     result = us_gaap_store.lookup_by_index(0)
-    assert result.concept != None
-    assert result.unscaled_value != None
+    assert result.concept is not None
+    assert result.unscaled_value is not None
 
     # Embedding retrieval
     embeddings, pairs = us_gaap_store.get_embedding_matrix()
