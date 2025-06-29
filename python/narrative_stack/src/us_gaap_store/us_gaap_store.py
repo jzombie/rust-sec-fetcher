@@ -188,7 +188,7 @@ class ConceptUnitPair(BaseModel):
         frozen=True # Enables hash-able models
     )
 
-
+# TODO: Rename to reflect Stage 1 preprocessing
 class FullCellData(BaseModel):
     """Represents all data associated with a single financial data cell."""
     i_cell: int = Field(..., description="The unique sequential integer ID for this data cell.")
@@ -204,6 +204,14 @@ class FullCellData(BaseModel):
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True # Allow np.ndarray and sklearn scaler
+    )
+
+class Stage1InferenceRecord(BaseModel):
+    i_cell: int = Field(..., description="The unique sequential integer ID for this data cell.")
+    latent_embedding: np.ndarray = Field(..., description="The inferenced latent embedding from the Stage 1 model.")
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True # Allow np.ndarray
     )
 
 # --- UsGaapStore Class ---
@@ -685,8 +693,8 @@ class UsGaapStore:
         return final_results
     
     # TODO: Implement ability to ingest triplet vectors from stage1 model
-    # TODO: Type w/ Pydantic?
-    def cache_stage1_inference_batch(self, batch):
+    def cache_stage1_inference_batch(self, batch: list[Stage1InferenceRecord]) -> None:
+        # TODO: Refactor; add more tests
         # print(batch)
         # batch_latent_bytes = [
         #     _encode_numpy_array_to_raw_bytes(record["latent"], np.float32)
@@ -711,8 +719,8 @@ class UsGaapStore:
         writable_batch = []
 
         for record in batch:
-            key_bytes = STAGE1_LATENT_EMBEDDING_NAMESPACE.namespace(_encode_u32_to_raw_bytes(record["i_cell"]))
-            latent_bytes = _encode_numpy_array_to_raw_bytes(record["latent"], np.float32)
+            key_bytes = STAGE1_LATENT_EMBEDDING_NAMESPACE.namespace(_encode_u32_to_raw_bytes(record.i_cell))
+            latent_bytes = _encode_numpy_array_to_raw_bytes(record.latent_embedding, np.float32)
 
             writable_batch.append((key_bytes, latent_bytes))
 
