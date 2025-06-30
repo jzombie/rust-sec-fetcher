@@ -736,21 +736,17 @@ class UsGaapStore:
         self.data_store.batch_write(writable_batch)
 
     # TODO: Document
-    def batch_lookup_stage1_latents_by_indices(self, cell_indices: list[int]) -> list[np.ndarray]:
+    def get_stage1_latent_matrix_from_indices(self, cell_indices: list[int]) -> np.ndarray:
         read_keys = [
-             STAGE1_LATENT_EMBEDDING_NAMESPACE.namespace(_encode_u32_to_raw_bytes(i_cell))
-             for i_cell in cell_indices
+            STAGE1_LATENT_EMBEDDING_NAMESPACE.namespace(_encode_u32_to_raw_bytes(i))
+            for i in cell_indices
         ]
-
-        raw_bytes_list = self.data_store.batch_read(read_keys)
-
-        return [
-            _decode_numpy_array_from_bytes(raw_bytes, np.float32)
-            for raw_bytes in raw_bytes_list
-        ]
+        raw = self.data_store.batch_read(read_keys)
+        vecs = [_decode_numpy_array_from_bytes(b, np.float32) for b in raw]
+        return np.stack(vecs, axis=0)
 
     # TODO: Document
-    def batch_lookup_stage1_latents_by_triplets(self, triplets: list[Triplet]) -> list[np.ndarray]:
+    def get_stage1_latent_matrix_from_triplets(self, triplets: list[Triplet]) -> np.ndarray:
        
         # Encode the triplet as used in reverse index (CUSTOM BINARY FORMAT)
         triplet_keys = [
@@ -777,4 +773,4 @@ class UsGaapStore:
             for i_cell_bytes in i_cell_bytes_list
         ]
 
-        return self.batch_lookup_stage1_latents_by_indices(cell_indices)
+        return self.get_stage1_latent_matrix_from_indices(cell_indices)
