@@ -831,6 +831,11 @@ class UsGaapStore:
         # STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE = NamespaceHasher(b"stage2-sequential-row-category")
         # STAGE2_ROW_CATEGORY_REVERSE_INDEX_NAMESPACE = NamespaceHasher(b"stage2-row-category-reverse-index")
 
+    # TODO: Implement
+    # def get_cached_stage_rows(self, ticker_symbol: str, form: str, filed: str):
+
+    
+
     # TODO: Integrate? 
     # def cache_balance_and_period_types(self, db_us_gaap: DbUsGaap):
     #     for row in db_us_gaap.get("SELECT id, period_type FROM us_gaap_period_type", columns=["id", "period_type"]).itertuples(index=False):
