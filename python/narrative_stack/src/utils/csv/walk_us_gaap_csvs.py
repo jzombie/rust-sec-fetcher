@@ -16,7 +16,7 @@ UsGaapConcept = str
 ConceptUomPair = Tuple[str, str]
 
 
-class UsGaapTriplet(BaseModel):
+class UsGaapCsvTriplet(BaseModel):
     concept: str
     uom: str
     value: float | int
@@ -27,20 +27,20 @@ class UsGaapTriplet(BaseModel):
         return f"{self.concept}::{self.uom}::{self.value}"
 
 
-class UsGaapRowRecord(BaseModel):
+class UsGaapCsvRowRecord(BaseModel):
     ticker_symbol: str
     form: str
     filed: str
-    entries: List[UsGaapTriplet]
+    entries: List[UsGaapCsvTriplet]
 
 
-class UsGaapWalkSummary(BaseModel):
+class UsGaapCsvWalkSummary(BaseModel):
     non_numeric_units: Set[str]
     csv_files: List[str]
 
 
-UsGaapCsvYield = Union[UsGaapTriplet, ConceptUomPair, UsGaapRowRecord, str]
-UsGaapCsvIterator = Generator[UsGaapCsvYield, None, UsGaapWalkSummary]
+UsGaapCsvYield = Union[UsGaapCsvTriplet, ConceptUomPair, UsGaapCsvRowRecord, str]
+UsGaapCsvIterator = Generator[UsGaapCsvYield, None, UsGaapCsvWalkSummary]
 
 def walk_us_gaap_csvs(
     data_dir: str | Path,
@@ -64,8 +64,8 @@ def walk_us_gaap_csvs(
         db_us_gaap: Database handle used for concept validation and for
             querying balance/period metadata.
         walk_type: Selects the yield granularity:
-            * "row"  - yield a ``UsGaapRowRecord`` per table row.
-            * "cell" - yield a ``UsGaapTriplet`` per numeric cell.
+            * "row"  - yield a ``UsGaapCsvRowRecord`` per table row.
+            * "cell" - yield a ``UsGaapCsvTriplet`` per numeric cell.
             * "pair" - yield each unique ``(concept, uom)`` pair once.
             * "ticker_symbol" - yield the file's ticker symbol only.
         filtered_symbols: If given, restrict traversal to these tickers.
@@ -75,7 +75,7 @@ def walk_us_gaap_csvs(
         Objects defined by ``UsGaapCsvYield`` that match *walk_type*.
 
     Returns:
-        UsGaapWalkSummary: Lists all CSV paths scanned and the set of
+        UsGaapCsvWalkSummary: Lists all CSV paths scanned and the set of
         units that appeared with non-numeric values.
 
     Notes:
@@ -151,7 +151,7 @@ def walk_us_gaap_csvs(
                             )
 
                             entries.append(
-                                UsGaapTriplet(
+                                UsGaapCsvTriplet(
                                     concept=col,
                                     uom=unit_part,
                                     value=num_val,
@@ -162,7 +162,7 @@ def walk_us_gaap_csvs(
                         except ValueError:
                             non_numeric_units.add(unit_part)
                     if entries:
-                        yield UsGaapRowRecord(
+                        yield UsGaapCsvRowRecord(
                             ticker_symbol=ticker_symbol,
                             form=row["form"],
                             filed=row["filed"],
@@ -199,7 +199,7 @@ def walk_us_gaap_csvs(
                             continue
 
                         if walk_type == "cell":
-                            yield UsGaapTriplet(
+                            yield UsGaapCsvTriplet(
                                 concept=col,
                                 uom=unit_part,
                                 value=num_val,
@@ -215,7 +215,7 @@ def walk_us_gaap_csvs(
         except Exception as e:
             logging.warning(f"Skipped {path}: {e}")
 
-    return UsGaapWalkSummary(csv_files=csv_files, non_numeric_units=non_numeric_units)
+    return UsGaapCsvWalkSummary(csv_files=csv_files, non_numeric_units=non_numeric_units)
 
 
 def get_filtered_us_gaap_form_rows_for_symbol(
@@ -223,7 +223,7 @@ def get_filtered_us_gaap_form_rows_for_symbol(
     db_us_gaap: DbUsGaap,
     symbol: str,
     form_types: set[str] | None = None,
-) -> Generator[UsGaapRowRecord, None, None]:
+) -> Generator[UsGaapCsvRowRecord, None, None]:
     rows = walk_us_gaap_csvs(
         data_dir=data_dir,
         db_us_gaap=db_us_gaap,
@@ -232,7 +232,7 @@ def get_filtered_us_gaap_form_rows_for_symbol(
     )
 
     for row in rows:
-        if isinstance(row, UsGaapRowRecord):
+        if isinstance(row, UsGaapCsvRowRecord):
             if form_types and row.form not in form_types:
                 continue
             yield row
