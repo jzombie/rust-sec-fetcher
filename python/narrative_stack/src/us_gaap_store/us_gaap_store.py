@@ -791,10 +791,12 @@ class UsGaapStore:
     def cache_stage2_category_stack(self, i_category_stack: int, category_stack_name: str):
         self.data_store.batch_write(
             [
+                # Forward map
                 (
                     STAGE2_CATEGORY_STACK_NAMESPACE.namespace(_encode_u32_to_raw_bytes(i_category_stack)),
                     _encode_string_to_bytes(category_stack_name)
                 ),
+                # Reverse map
                 (
                     STAGE2_CATEGORY_STACK_REVERSE_INDEX_NAMESPACE.namespace(_encode_string_to_bytes(category_stack_name)),
                     _encode_u32_to_raw_bytes(i_category_stack)
@@ -817,6 +819,12 @@ class UsGaapStore:
         for category_stack_name, cell_indices in category_stacks_cell_indices.items():
             category_stack_id = self.get_stage2_category_stack_id(category_stack_name)
             print(f"Category stack name: {category_stack_name}, id: {category_stack_id}", cell_indices)
+
+        # TODO: Don't assume deterministic i_row
+        # TODO: Cache composite key
+        # i_row__and__category_stack_id = cell_indices
+        #
+        # TODO: Also enable reverse mapping (ticker_symbol, form, filed) = i_row
 
     # TODO: Integrate? 
     # def cache_balance_and_period_types(self, db_us_gaap: DbUsGaap):
