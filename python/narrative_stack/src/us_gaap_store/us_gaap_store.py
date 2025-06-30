@@ -699,6 +699,7 @@ class UsGaapStore:
         return final_results
     
     # TODO: Implement ability to ingest triplet vectors from stage1 model
+    # TODO: Document
     def cache_stage1_inference_batch(self, batch: list[Stage1InferenceRecord]) -> None:
         # TODO: Refactor; add more tests
         # print(batch)
@@ -731,6 +732,20 @@ class UsGaapStore:
             writable_batch.append((key_bytes, latent_bytes))
 
         self.data_store.batch_write(writable_batch)
+
+    # TODO: Document
+    def batch_lookup_stage1_latents_by_indices(self, cell_indices: list[int]) -> list[np.ndarray]:
+        read_keys = [
+             STAGE1_LATENT_EMBEDDING_NAMESPACE.namespace(_encode_u32_to_raw_bytes(i_cell))
+             for i_cell in cell_indices
+        ]
+
+        raw_bytes_list = self.data_store.batch_read(read_keys)
+
+        return [
+            _decode_numpy_array_from_bytes(raw_bytes, np.float32)
+            for raw_bytes in raw_bytes_list
+        ]
 
     # TODO: Implement `batch_lookup_by_triplets`
 
