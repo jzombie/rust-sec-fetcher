@@ -4,10 +4,6 @@ from io import BytesIO
 import numpy as np
 from typing import Tuple, Optional, Any
 
-# --- GLOBAL CONSTANTS FOR ENCODING/DECODING ---
-LEN_PREFIX_BYTES = 2  # Use 2 bytes for string length prefixes (up to 65535 bytes)
-
-# --- HELPER FUNCTIONS FOR ENCODING/DECODING (UPDATED TO USE BYTES) ---
 
 __all__ = [
     "encode_string_to_bytes",
@@ -21,6 +17,10 @@ __all__ = [
     "encode_joblib_object_to_bytes",
     "decode_joblib_object_from_bytes"
 ]
+
+# Specifies how many bytes are used to store the length prefix for encoded strings.
+# With 2 bytes, we can represent string lengths up to 65,535 bytes (uint16 range).
+LEN_PREFIX_BYTES = 2
 
 
 def encode_string_to_bytes(s: str) -> bytes:
