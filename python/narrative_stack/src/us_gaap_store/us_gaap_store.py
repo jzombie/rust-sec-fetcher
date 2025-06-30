@@ -534,10 +534,10 @@ class UsGaapStore:
             raise KeyError("Missing __pair_count__ key in store")
         total_pairs =_decode_u32_from_raw_bytes(raw_bytes)
 
+        # TODO: Using a batch read would be more efficient
         for pair_id in range(total_pairs):
             pair_id_bytes = _encode_u32_to_raw_bytes(pair_id)
             pair_key = CONCEPT_UNIT_PAIR_NAMESPACE.namespace(pair_id_bytes)
-            # MODIFIED: Changed read_entry().as_memoryview() to read()
             pair_bytes = self.data_store.read(pair_key)
             if pair_bytes is None:
                 raise KeyError(f"Missing concept/unit for pair_id {pair_id}")
@@ -547,7 +547,6 @@ class UsGaapStore:
 
             # Load PCA-reduced embedding (direct numpy)
             embedding_key = PCA_REDUCED_EMBEDDING_NAMESPACE.namespace(pair_id_bytes)
-            # MODIFIED: Changed read_entry().as_memoryview() to read()
             embedding_bytes = self.data_store.read(embedding_key)
             if embedding_bytes is None:
                 raise KeyError(f"Missing embedding for pair_id {pair_id}")
