@@ -277,6 +277,7 @@ class UsGaapStore:
                     unscaled_key = UNSCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes)
                     loc_batch.append((unscaled_key, unscaled_value_encoded))
 
+                    # TODO: Dedupe this key creation
                     # Store reverse triplet -> i_cell mapping (Custom Binary Triplet Key)
                     # Key is now: len_concept | concept_bytes | len_uom | uom_bytes | unscaled_value_float64_bytes
                     triplet_key_bytes = (
@@ -750,6 +751,7 @@ class UsGaapStore:
        
         # Encode the triplet as used in reverse index (CUSTOM BINARY FORMAT)
         triplet_keys = [
+            # TODO: Dedupe this key creation
             TRIPLET_REVERSE_INDEX_NAMESPACE.namespace(
                 _encode_string_to_bytes(triplet.concept)
                 + _encode_string_to_bytes(triplet.uom)
