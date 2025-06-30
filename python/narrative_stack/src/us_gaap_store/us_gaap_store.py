@@ -90,9 +90,10 @@ PCA_REDUCED_EMBEDDING_NAMESPACE = NamespaceHasher(b"pca-reduced-embedding")
 STAGE1_LATENT_EMBEDDING_NAMESPACE = NamespaceHasher(b"stage1-latent-embedding")
 
 # TODO: Document
-STAGE2_CATEGORY_STACK_NAMESPACE = NamespaceHasher(b"stage2-category-stack")
-STAGE2_CATEGORY_STACK_REVERSE_INDEX_NAMESPACE = NamespaceHasher(b"stage2-category-stack-reverse-index")
-STAGE2_ROW_INDEX_NAMESPACE = NamespaceHasher(b"stage2-row-index")
+# STAGE2_CATEGORY_STACK_NAMESPACE = NamespaceHasher(b"stage2-category-stack")
+# STAGE2_CATEGORY_STACK_REVERSE_INDEX_NAMESPACE = NamespaceHasher(b"stage2-category-stack-reverse-index")
+STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE = NamespaceHasher(b"stage2-sequential-row-category")
+STAGE2_ROW_CATEGORY_REVERSE_INDEX_NAMESPACE = NamespaceHasher(b"stage2-row-category-reverse-index")
 
 
 # --- GLOBAL CONSTANTS FOR ENCODING/DECODING ---
@@ -788,42 +789,47 @@ class UsGaapStore:
         return self.get_stage1_latent_matrix_from_indices(cell_indices)
 
     # TODO: Document
-    def cache_stage2_category_stack(self, i_category_stack: int, category_stack_name: str):
-        self.data_store.batch_write(
-            [
-                # Forward map
-                (
-                    STAGE2_CATEGORY_STACK_NAMESPACE.namespace(_encode_u32_to_raw_bytes(i_category_stack)),
-                    _encode_string_to_bytes(category_stack_name)
-                ),
-                # Reverse map
-                (
-                    STAGE2_CATEGORY_STACK_REVERSE_INDEX_NAMESPACE.namespace(_encode_string_to_bytes(category_stack_name)),
-                    _encode_u32_to_raw_bytes(i_category_stack)
-                ),
-            ]
-        )
+    # def cache_stage2_category_stack(self, i_category_stack: int, category_stack_name: str):
+    #     self.data_store.batch_write(
+    #         [
+    #             # Forward map
+    #             (
+    #                 STAGE2_CATEGORY_STACK_NAMESPACE.namespace(_encode_u32_to_raw_bytes(i_category_stack)),
+    #                 _encode_string_to_bytes(category_stack_name)
+    #             ),
+    #             # Reverse map
+    #             (
+    #                 STAGE2_CATEGORY_STACK_REVERSE_INDEX_NAMESPACE.namespace(_encode_string_to_bytes(category_stack_name)),
+    #                 _encode_u32_to_raw_bytes(i_category_stack)
+    #             ),
+    #         ]
+    #     )
 
-    def get_stage2_category_stack_id(self, category_stack_name: str) -> Optional[int]:
-        raw_bytes = self.data_store.read(
-            STAGE2_CATEGORY_STACK_REVERSE_INDEX_NAMESPACE.namespace(_encode_string_to_bytes(category_stack_name))
-        )
+    # def get_stage2_category_stack_id(self, category_stack_name: str) -> Optional[int]:
+    #     raw_bytes = self.data_store.read(
+    #         STAGE2_CATEGORY_STACK_REVERSE_INDEX_NAMESPACE.namespace(_encode_string_to_bytes(category_stack_name))
+    #     )
 
-        if raw_bytes:
-            return _decode_u32_from_raw_bytes(raw_bytes)
+    #     if raw_bytes:
+    #         return _decode_u32_from_raw_bytes(raw_bytes)
 
     # TODO: Document
     def cache_stage2_row(self, i_row: int, ticker_symbol: str, form: str, filed: str, category_stacks_cell_indices: DefaultDict[str, List[int]],):
         print(f"i_row: {i_row}, ticker symbol: {ticker_symbol}, form: {form}, filed: {filed}")
 
         for category_stack_name, cell_indices in category_stacks_cell_indices.items():
-            category_stack_id = self.get_stage2_category_stack_id(category_stack_name)
-            print(f"Category stack name: {category_stack_name}, id: {category_stack_id}", cell_indices)
+            row_category_id_bytes = STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(
+                _encode_string_to_bytes(f"{i_row}::{ticker_symbol}::{form}::{category_stack_name}")
+            )
+            print(f"Category stack name: {category_stack_name}, id: {row_category_id_bytes}", cell_indices)
 
         # TODO: Cache composite key
         # i_row__and__category_stack_id = cell_indices
         #
         # TODO: Also enable reverse mapping (ticker_symbol, form, filed) = i_row
+
+        # STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE = NamespaceHasher(b"stage2-sequential-row-category")
+        # STAGE2_ROW_CATEGORY_REVERSE_INDEX_NAMESPACE = NamespaceHasher(b"stage2-row-category-reverse-index")
 
     # TODO: Integrate? 
     # def cache_balance_and_period_types(self, db_us_gaap: DbUsGaap):
