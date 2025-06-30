@@ -820,7 +820,6 @@ class UsGaapStore:
             category_stack_id = self.get_stage2_category_stack_id(category_stack_name)
             print(f"Category stack name: {category_stack_name}, id: {category_stack_id}", cell_indices)
 
-        # TODO: Don't assume deterministic i_row
         # TODO: Cache composite key
         # i_row__and__category_stack_id = cell_indices
         #
