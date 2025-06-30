@@ -126,11 +126,9 @@ def _encode_float_to_raw_bytes(f: float) -> bytes:
     """Encodes a float into its raw 8-byte (float64) sequence."""
     return np.array([f], dtype=np.float64).tobytes()
 
-
 def _decode_float_from_bytes(data: bytes) -> float:
     """Decodes an 8-byte sequence into a 64-bit float."""
     return np.frombuffer(data, dtype=np.float64)[0]
-
 
 def _encode_numpy_array_to_raw_bytes(
     arr: np.ndarray,
@@ -746,7 +744,7 @@ class UsGaapStore:
         return np.stack(vecs, axis=0)
 
     # TODO: Document
-    def get_stage1_latent_matrix_from_triplets(self, triplets: list[Triplet]) -> np.ndarray:
+    def get_stage1_latent_cell_indices_from_triplets(self, triplets: list[Triplet]) -> list[int]:
        
         # Encode the triplet as used in reverse index (CUSTOM BINARY FORMAT)
         triplet_keys = [
@@ -772,5 +770,11 @@ class UsGaapStore:
             _decode_u32_from_raw_bytes(i_cell_bytes)
             for i_cell_bytes in i_cell_bytes_list
         ]
+
+        return cell_indices
+
+    # TODO: Document
+    def get_stage1_latent_matrix_from_triplets(self, triplets: list[Triplet]) -> np.ndarray:
+        cell_indices = self.get_stage1_latent_cell_indices_from_triplets(triplets)
 
         return self.get_stage1_latent_matrix_from_indices(cell_indices)
