@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field, ConfigDict
 import numpy as np
 from sklearn.preprocessing import QuantileTransformer, StandardScaler
 from sklearn.decomposition import PCA
-from typing import Tuple, Iterator, Optional, Any
+from typing import Tuple, Iterator, Optional, Any, DefaultDict, List
 from utils.pytorch import model_hash, get_device, seed_everything
 from utils import generate_us_gaap_description
 from models.pytorch.narrative_stack.stage1.preprocessing import (
@@ -88,8 +88,12 @@ PCA_REDUCED_EMBEDDING_NAMESPACE = NamespaceHasher(b"pca-reduced-embedding")
 
 # TODO: Document
 STAGE1_LATENT_EMBEDDING_NAMESPACE = NamespaceHasher(b"stage1-latent-embedding")
-# BALANCE_TYPE_NAMESPACE = NamespaceHasher(b"balance-type") # TODO: Integrate?
-# PERIOD_TYPE_NAMESPACE = NamespaceHasher(b"period-type")   # TODO: Integrate?
+
+# TODO: Document
+STAGE2_CATEGORY_STACK_NAMESPACE = NamespaceHasher(b"stage2-category-stack")
+STAGE2_CATEGORY_STACK_REVERSE_INDEX_NAMESPACE = NamespaceHasher(b"stage2-category-stack-reverse-index")
+STAGE2_ROW_INDEX_NAMESPACE = NamespaceHasher(b"stage2-row-index")
+
 
 # --- GLOBAL CONSTANTS FOR ENCODING/DECODING ---
 LEN_PREFIX_BYTES = 2  # Use 2 bytes for string length prefixes (up to 65535 bytes)
@@ -782,6 +786,37 @@ class UsGaapStore:
         cell_indices = self.get_stage1_latent_cell_indices_from_triplets(triplets)
 
         return self.get_stage1_latent_matrix_from_indices(cell_indices)
+
+    # TODO: Document
+    def cache_stage2_category_stack(self, i_category_stack: int, category_stack_name: str):
+        self.data_store.batch_write(
+            [
+                (
+                    STAGE2_CATEGORY_STACK_NAMESPACE.namespace(_encode_u32_to_raw_bytes(i_category_stack)),
+                    _encode_string_to_bytes(category_stack_name)
+                ),
+                (
+                    STAGE2_CATEGORY_STACK_REVERSE_INDEX_NAMESPACE.namespace(_encode_string_to_bytes(category_stack_name)),
+                    _encode_u32_to_raw_bytes(i_category_stack)
+                ),
+            ]
+        )
+
+    def get_stage2_category_stack_id(self, category_stack_name: str) -> Optional[int]:
+        raw_bytes = self.data_store.read(
+            STAGE2_CATEGORY_STACK_REVERSE_INDEX_NAMESPACE.namespace(_encode_string_to_bytes(category_stack_name))
+        )
+
+        if raw_bytes:
+            return _decode_u32_from_raw_bytes(raw_bytes)
+
+    # TODO: Document
+    def cache_stage2_row(self, i_row: int, ticker_symbol: str, form: str, filed: str, category_stacks_cell_indices: DefaultDict[str, List[int]],):
+        print(f"i_row: {i_row}, ticker symbol: {ticker_symbol}, form: {form}, filed: {filed}")
+
+        for category_stack_name, cell_indices in category_stacks_cell_indices.items():
+            category_stack_id = self.get_stage2_category_stack_id(category_stack_name)
+            print(f"Category stack name: {category_stack_name}, id: {category_stack_id}", cell_indices)
 
     # TODO: Integrate? 
     # def cache_balance_and_period_types(self, db_us_gaap: DbUsGaap):
