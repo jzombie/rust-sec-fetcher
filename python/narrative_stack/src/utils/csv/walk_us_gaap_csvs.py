@@ -224,6 +224,28 @@ def get_filtered_us_gaap_form_rows_for_symbol(
     symbol: str,
     form_types: set[str] | None = None,
 ) -> Generator[UsGaapCsvRowRecord, None, None]:
+    """
+    Yields parsed row records for a given ticker symbol, optionally filtered by form.
+
+    This function loads all CSV rows associated with the specified ticker symbol
+    and yields only those rows that match the allowed form types, if provided.
+
+    Args:
+        data_dir (str | Path): Directory containing flat SEC US GAAP CSV files.
+        db_us_gaap (DbUsGaap): Database interface used to fetch concept metadata.
+        symbol (str): The ticker symbol to filter on.
+        form_types (set[str] | None, optional): A set of form types to include
+            (e.g., {"10-K", "10-Q"}). If None, all forms are included.
+
+    Yields:
+        UsGaapCsvRowRecord: One record per qualifying row in the CSV.
+
+    Notes:
+        * This function uses the "row" walk mode and performs type checks on each
+          yielded item to ensure it is a `UsGaapCsvRowRecord`.
+        * Form filtering is applied after row parsing.
+    """
+
     rows = walk_us_gaap_csvs(
         data_dir=data_dir,
         db_us_gaap=db_us_gaap,
