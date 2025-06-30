@@ -462,6 +462,7 @@ class UsGaapStore:
         )
         logging.info("Stored PCA model in store.")
 
+    # TODO: Rename to reflect Stage 1
     def load_pca_model(self) -> Optional[PCA]:
         # MODIFIED: Changed read_entry().as_memoryview() to read()
         pca_model_bytes = self.data_store.read(PCA_MODEL_NAMESPACE.namespace(b"model"))
@@ -559,6 +560,7 @@ class UsGaapStore:
 
     # --- CORE LOOKUP METHODS (OPTIMIZED) ---
 
+    # TODO: Rename to reflect Stage 1
     def get_triplet_count(self) -> int:
         # MODIFIED: Changed read_entry().as_memoryview() to read()
         raw_bytes = self.data_store.read(b"__triplet_count__")
@@ -566,6 +568,7 @@ class UsGaapStore:
             raise KeyError("Triplet count key not found")
         return _decode_u32_from_raw_bytes(raw_bytes)
 
+    # TODO: Rename to reflect Stage 1
     def get_pair_count(self) -> int:
         # MODIFIED: Changed read_entry().as_memoryview() to read()
         raw_bytes = self.data_store.read(b"__pair_count__")
@@ -573,6 +576,7 @@ class UsGaapStore:
             raise KeyError("Pair count key not found")
         return _decode_u32_from_raw_bytes(raw_bytes)
 
+    # TODO: Rename to reflect Stage 1
     def iterate_concept_unit_pairs(self) -> Iterator[Tuple[int, ConceptUnitPair]]:
         total_pairs = self.get_pair_count()
         for pair_id in range(total_pairs):
@@ -590,10 +594,12 @@ class UsGaapStore:
 
             yield (pair_id, ConceptUnitPair(concept=concept, uom=uom))
 
+    # TODO: Rename to reflect Stage 1
     def lookup_by_index(self, i_cell: int) -> FullCellData:
         batch_results = self.batch_lookup_by_indices([i_cell])
         return batch_results[0]
 
+    # TODO: Rename to reflect Stage 1
     def batch_lookup_by_indices(self, cell_indices: list[int]) -> list[FullCellData]:
         # Step 1: Fetch meta and cell-specific values
         step1_requests = []
