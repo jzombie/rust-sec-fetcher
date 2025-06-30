@@ -88,6 +88,8 @@ PCA_REDUCED_EMBEDDING_NAMESPACE = NamespaceHasher(b"pca-reduced-embedding")
 
 # TODO: Document
 STAGE1_LATENT_EMBEDDING_NAMESPACE = NamespaceHasher(b"stage1-latent-embedding")
+# BALANCE_TYPE_NAMESPACE = NamespaceHasher(b"balance-type") # TODO: Integrate?
+# PERIOD_TYPE_NAMESPACE = NamespaceHasher(b"period-type")   # TODO: Integrate?
 
 # --- GLOBAL CONSTANTS FOR ENCODING/DECODING ---
 LEN_PREFIX_BYTES = 2  # Use 2 bytes for string length prefixes (up to 65535 bytes)
@@ -778,3 +780,25 @@ class UsGaapStore:
         cell_indices = self.get_stage1_latent_cell_indices_from_triplets(triplets)
 
         return self.get_stage1_latent_matrix_from_indices(cell_indices)
+
+    # TODO: Integrate? 
+    # def cache_balance_and_period_types(self, db_us_gaap: DbUsGaap):
+    #     for row in db_us_gaap.get("SELECT id, period_type FROM us_gaap_period_type", columns=["id", "period_type"]).itertuples(index=False):
+    #         self.data_store.write(
+    #             PERIOD_TYPE_NAMESPACE.namespace(_encode_string_to_bytes(row.period_type)),
+    #             _encode_u32_to_raw_bytes(row.id)
+    #         )
+
+    #     for row in db_us_gaap.get("SELECT id, balance_type FROM us_gaap_balance_type", columns=["id", "balance_type"]).itertuples(index=False):
+    #         self.data_store.write(
+    #             BALANCE_TYPE_NAMESPACE.namespace(_encode_string_to_bytes(row.balance_type)),
+    #             _encode_u32_to_raw_bytes(row.id)
+    #         )
+
+    # # TODO: Document and implement
+    # def cache_cells_balance_types(self, balance_types: list[(int, Optional[str])]):
+    #     pass
+
+    # # TODO: Document and implement
+    # def cache_cells_period_types(self, period_types: list[(int, Optional[str])]):
+    #     pass
