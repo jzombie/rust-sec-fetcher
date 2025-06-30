@@ -10,10 +10,8 @@ from db import DbUsGaap
 import math
 
 
-UsGaapConcept = str
-
 # Explicit domain-focused types
-ConceptUomPair = Tuple[str, str]
+UsGaapCsvConceptUomPair = Tuple[str, str]
 
 
 class UsGaapCsvTriplet(BaseModel):
@@ -39,7 +37,7 @@ class UsGaapCsvWalkSummary(BaseModel):
     csv_files: List[str]
 
 
-UsGaapCsvYield = Union[UsGaapCsvTriplet, ConceptUomPair, UsGaapCsvRowRecord, str]
+UsGaapCsvYield = Union[UsGaapCsvTriplet, UsGaapCsvConceptUomPair, UsGaapCsvRowRecord, str]
 UsGaapCsvIterator = Generator[UsGaapCsvYield, None, UsGaapCsvWalkSummary]
 
 def walk_us_gaap_csvs(
