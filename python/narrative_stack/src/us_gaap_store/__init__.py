@@ -1,3 +1,3 @@
-from .us_gaap_store import UsGaapStore, Stage1InferenceRecord
+from .us_gaap_store import UsGaapStore, Triplet, Stage1InferenceRecord
 
-__all__ = ["UsGaapStore", "Stage1InferenceRecord"]
+__all__ = ["UsGaapStore", "Triplet", "Stage1InferenceRecord"]

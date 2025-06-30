@@ -188,6 +188,9 @@ class ConceptUnitPair(BaseModel):
         frozen=True # Enables hash-able models
     )
 
+class Triplet(ConceptUnitPair):
+    unscaled_value: float
+
 # TODO: Rename to reflect Stage 1 preprocessing
 class FullCellData(BaseModel):
     """Represents all data associated with a single financial data cell."""
@@ -747,30 +750,32 @@ class UsGaapStore:
             for raw_bytes in raw_bytes_list
         ]
 
-    # TODO: Implement `batch_lookup_by_triplets`
-
-    def lookup_by_triplet(self, concept: str, uom: str, unscaled_value: float) -> FullCellData:
-        """
-        Given a `(concept, uom, value)` triplet, return its corresponding `FullCellData`,
-        if available.
-
-        NOTE: The key generation for this method must match the custom binary format
-              used in `ingest_us_gaap_csvs` for TRIPLET_REVERSE_INDEX_NAMESPACE.
-        """
+    # TODO: Document
+    def batch_lookup_stage1_latents_by_triplets(self, triplets: list[Triplet]) -> list[np.ndarray]:
+       
         # Encode the triplet as used in reverse index (CUSTOM BINARY FORMAT)
-        triplet_key_bytes = (
-            _encode_string_to_bytes(concept)
-            + _encode_string_to_bytes(uom)
-            + _encode_float_to_raw_bytes(unscaled_value)
-        )
-        triplet_key = TRIPLET_REVERSE_INDEX_NAMESPACE.namespace(triplet_key_bytes)
-
-        i_cell_bytes = self.data_store.read(triplet_key)
-        if i_cell_bytes is None:
-            raise KeyError(
-                f"Triplet ({concept}, {uom}, {unscaled_value}) not found in reverse index"
+        triplet_keys = [
+            TRIPLET_REVERSE_INDEX_NAMESPACE.namespace(
+                _encode_string_to_bytes(triplet.concept)
+                + _encode_string_to_bytes(triplet.uom)
+                + _encode_float_to_raw_bytes(triplet.unscaled_value)
             )
+            for triplet in triplets
+        ]
 
-        i_cell = _decode_u32_from_raw_bytes(i_cell_bytes)
+        i_cell_bytes_list = self.data_store.batch_read(triplet_keys)
+        
+        # TODO: Clean up
+        # if i_cell_bytes is None:
+        #     raise KeyError(
+        #         f"Triplet ({concept}, {uom}, {unscaled_value}) not found in reverse index"
+        #     )
 
-        return self.lookup_by_index(i_cell)
+        # i_cell = _decode_u32_from_raw_bytes(i_cell_bytes)
+        
+        cell_indices = [
+            _decode_u32_from_raw_bytes(i_cell_bytes)
+            for i_cell_bytes in i_cell_bytes_list
+        ]
+
+        return self.batch_lookup_stage1_latents_by_indices(cell_indices)
