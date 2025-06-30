@@ -19,6 +19,7 @@ from utils import generate_us_gaap_description
 from models.pytorch.narrative_stack.stage1.preprocessing import (
     pca_compress_concept_unit_embeddings,
 )
+from db import DbUsGaap
 
 # Note: This is used here for the semantic modeling (BGE model)
 seed_everything()
@@ -77,12 +78,16 @@ SCALER_NAMESPACE = NamespaceHasher(b"scaler")
 # text embeddings into a lower-dimensional space.
 PCA_MODEL_NAMESPACE = NamespaceHasher(b"pca-model")
 
+# TODO: Rename to imply `semantic` embedding
 # Stores the final, PCA-reduced embedding for each (concept, unit) pair.
 # Key: The pair_id (4-byte unsigned int).
 # Value: The PCA-compressed embedding vector (numpy array of float64).
 # Purpose: Stores the semantic representation of each data category after
 # dimensionality reduction, ready for use in downstream models.
 PCA_REDUCED_EMBEDDING_NAMESPACE = NamespaceHasher(b"pca-reduced-embedding")
+
+# TODO: Document
+STAGE1_LATENT_EMBEDDING_NAMESPACE = NamespaceHasher(b"stage1-latent-embedding")
 
 # --- GLOBAL CONSTANTS FOR ENCODING/DECODING ---
 LEN_PREFIX_BYTES = 2  # Use 2 bytes for string length prefixes (up to 65535 bytes)
@@ -127,12 +132,29 @@ def _decode_float_from_bytes(data: bytes) -> float:
     return np.frombuffer(data, dtype=np.float64)[0]
 
 
-def _encode_numpy_array_to_raw_bytes(arr: np.ndarray) -> bytes:
-    """Converts a NumPy array to float64 if needed, then returns its raw byte sequence."""
-    if arr.dtype != np.float64:
-        arr = arr.astype(np.float64)
-    return arr.tobytes()
+def _encode_numpy_array_to_raw_bytes(
+    arr: np.ndarray,
+    as_type: Optional[np.dtype] = np.float64,
+) -> bytes:
+    """
+    Serialize a NumPy array to raw bytes.
 
+    Parameters
+    ----------
+    arr : np.ndarray
+        Array to serialize.
+    as_type : Optional[np.dtype], default np.float64
+        • np.dtype → cast to this dtype before serialization.  
+        • None     → keep arr.dtype unchanged.
+
+    Returns
+    -------
+    bytes
+        Contiguous byte sequence representing the (possibly cast) array.
+    """
+    if as_type is not None and arr.dtype != as_type:
+        arr = arr.astype(as_type, copy=False)
+    return np.ascontiguousarray(arr).tobytes()
 
 def _decode_numpy_array_from_bytes(
     data: bytes, dtype: np.dtype, shape: Optional[Tuple[int, ...]] = None
@@ -166,7 +188,10 @@ class ConceptUnitPair(BaseModel):
         frozen=True # Enables hash-able models
     )
 
+class Triplet(ConceptUnitPair):
+    unscaled_value: float
 
+# TODO: Rename to reflect Stage 1 preprocessing
 class FullCellData(BaseModel):
     """Represents all data associated with a single financial data cell."""
     i_cell: int = Field(..., description="The unique sequential integer ID for this data cell.")
@@ -175,11 +200,21 @@ class FullCellData(BaseModel):
     uom: str = Field(..., description="The unit of measure (e.g., 'USD', 'shares').")
     unscaled_value: float = Field(..., description="The original, unscaled numerical value.")
     scaled_value: Optional[float] = Field(..., description="The value after QuantileTransformer normalization.")
+
+    # TODO: Rename to `semantic_embedding`
     embedding: np.ndarray = Field(..., description="The PCA-reduced semantic embedding of the concept/unit pair.")
     scaler: Any = Field(..., description="The fitted scikit-learn scaler object for this pair.")
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True # Allow np.ndarray and sklearn scaler
+    )
+
+class Stage1InferenceRecord(BaseModel):
+    i_cell: int = Field(..., description="The unique sequential integer ID for this data cell.")
+    latent_embedding: np.ndarray = Field(..., description="The inferenced latent embedding from the Stage 1 model.")
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True # Allow np.ndarray
     )
 
 # --- UsGaapStore Class ---
@@ -191,9 +226,8 @@ class UsGaapStore:
         self._scaler_cache: dict[bytes, Any] = {}  # For runtime lookup
 
     # --- INGESTION METHODS ---
-    # Note: `db_us_gaap` is assumed to be an external dependency or unused in this context
     def ingest_us_gaap_csvs(
-        self, csv_data_dir: str, db_us_gaap: Any
+        self, csv_data_dir: str, db_us_gaap: DbUsGaap
     ):  # Changed type hint
         gen = walk_us_gaap_csvs(
             csv_data_dir, db_us_gaap, "row", tqdm_desc="Migrating CSV files..."
@@ -380,6 +414,7 @@ class UsGaapStore:
 
     # --- EMBEDDING GENERATION/LOADING METHODS ---
 
+    # TODO: Rename to reflect semantic embeddings and the caching of them
     def generate_pca_embeddings(self):
         pairs = []
         embeddings = []
@@ -411,7 +446,8 @@ class UsGaapStore:
                 PCA_REDUCED_EMBEDDING_NAMESPACE.namespace(
                     _encode_u32_to_raw_bytes(pair_id)
                 ),
-                _encode_numpy_array_to_raw_bytes(vec),  # Encode numpy array directly
+                # IMPORTANT: `float64` type MUST be used here as the PCA embeddings are encoded as float64
+                _encode_numpy_array_to_raw_bytes(vec, np.float64),  # Encode numpy array directly
             )
             for (pair_id, _), vec in zip(pairs, pca_compressed_concept_unit_embeddings)
         ]
@@ -429,6 +465,7 @@ class UsGaapStore:
         )
         logging.info("Stored PCA model in store.")
 
+    # TODO: Rename to reflect Stage 1
     def load_pca_model(self) -> Optional[PCA]:
         # MODIFIED: Changed read_entry().as_memoryview() to read()
         pca_model_bytes = self.data_store.read(PCA_MODEL_NAMESPACE.namespace(b"model"))
@@ -485,6 +522,7 @@ class UsGaapStore:
                 buffer_ids, buffer_pairs, buffer_texts, model, device
             )
 
+    # TODO: Rename to `get_semantic_embedding_matrix`
     # TODO: Use batch reads
     def get_embedding_matrix(self) -> Tuple[np.ndarray, list]:
         embedding_matrix = []
@@ -496,10 +534,10 @@ class UsGaapStore:
             raise KeyError("Missing __pair_count__ key in store")
         total_pairs =_decode_u32_from_raw_bytes(raw_bytes)
 
+        # TODO: Using a batch read would be more efficient
         for pair_id in range(total_pairs):
             pair_id_bytes = _encode_u32_to_raw_bytes(pair_id)
             pair_key = CONCEPT_UNIT_PAIR_NAMESPACE.namespace(pair_id_bytes)
-            # MODIFIED: Changed read_entry().as_memoryview() to read()
             pair_bytes = self.data_store.read(pair_key)
             if pair_bytes is None:
                 raise KeyError(f"Missing concept/unit for pair_id {pair_id}")
@@ -509,7 +547,6 @@ class UsGaapStore:
 
             # Load PCA-reduced embedding (direct numpy)
             embedding_key = PCA_REDUCED_EMBEDDING_NAMESPACE.namespace(pair_id_bytes)
-            # MODIFIED: Changed read_entry().as_memoryview() to read()
             embedding_bytes = self.data_store.read(embedding_key)
             if embedding_bytes is None:
                 raise KeyError(f"Missing embedding for pair_id {pair_id}")
@@ -525,6 +562,7 @@ class UsGaapStore:
 
     # --- CORE LOOKUP METHODS (OPTIMIZED) ---
 
+    # TODO: Rename to reflect Stage 1
     def get_triplet_count(self) -> int:
         # MODIFIED: Changed read_entry().as_memoryview() to read()
         raw_bytes = self.data_store.read(b"__triplet_count__")
@@ -532,6 +570,7 @@ class UsGaapStore:
             raise KeyError("Triplet count key not found")
         return _decode_u32_from_raw_bytes(raw_bytes)
 
+    # TODO: Rename to reflect Stage 1
     def get_pair_count(self) -> int:
         # MODIFIED: Changed read_entry().as_memoryview() to read()
         raw_bytes = self.data_store.read(b"__pair_count__")
@@ -539,6 +578,7 @@ class UsGaapStore:
             raise KeyError("Pair count key not found")
         return _decode_u32_from_raw_bytes(raw_bytes)
 
+    # TODO: Rename to reflect Stage 1
     def iterate_concept_unit_pairs(self) -> Iterator[Tuple[int, ConceptUnitPair]]:
         total_pairs = self.get_pair_count()
         for pair_id in range(total_pairs):
@@ -556,18 +596,18 @@ class UsGaapStore:
 
             yield (pair_id, ConceptUnitPair(concept=concept, uom=uom))
 
+    # TODO: Rename to reflect Stage 1
     def lookup_by_index(self, i_cell: int) -> FullCellData:
         batch_results = self.batch_lookup_by_indices([i_cell])
         return batch_results[0]
 
+    # TODO: Rename to reflect Stage 1
     def batch_lookup_by_indices(self, cell_indices: list[int]) -> list[FullCellData]:
-        # TODO: Don't name these "stage1", etc. since various stages of the model are also named this way
-
-        # Stage 1: Fetch meta and cell-specific values
-        stage1_requests = []
+        # Step 1: Fetch meta and cell-specific values
+        step1_requests = []
         for i_cell in cell_indices:
             i_bytes = _encode_u32_to_raw_bytes(i_cell)
-            stage1_requests.append(
+            step1_requests.append(
                 {
                     "meta": CELL_META_NAMESPACE.namespace(i_bytes),
                     "unscaled": UNSCALED_SEQUENTIAL_CELL_NAMESPACE.namespace(i_bytes),
@@ -575,19 +615,19 @@ class UsGaapStore:
                 }
             )
 
-        stage1_results = self.data_store.batch_read_structured(stage1_requests)
+        step1_results = self.data_store.batch_read_structured(step1_requests)
 
-        # Stage 2: Process stage 1, gather unique pair_ids and build stage 2 requests
+        # Step 2: Process stage 1, gather unique pair_ids and build stage 2 requests
         pair_id_map = {}  # Maps i_cell -> pair_id
-        stage2_requests = {}  # Maps pair_id -> request dict to avoid duplicate fetches
-        for i_cell, result in zip(cell_indices, stage1_results):
+        step2_requests = {}  # Maps pair_id -> request dict to avoid duplicate fetches
+        for i_cell, result in zip(cell_indices, step1_results):
             meta_bytes = result["meta"]
             if meta_bytes is None:
                 raise KeyError(f"Missing meta for i_cell {i_cell}")
             pair_id = _decode_u32_from_raw_bytes(meta_bytes)
             pair_id_map[i_cell] = pair_id
 
-            if pair_id not in stage2_requests:
+            if pair_id not in step2_requests:
                 pair_id_bytes = _encode_u32_to_raw_bytes(pair_id)
                 request = {
                     "pair_info": CONCEPT_UNIT_PAIR_NAMESPACE.namespace(pair_id_bytes),
@@ -598,19 +638,19 @@ class UsGaapStore:
                 # Only fetch scaler if it's not in the cache
                 if SCALER_NAMESPACE.namespace(pair_id_bytes) not in self._scaler_cache:
                     request["scaler"] = SCALER_NAMESPACE.namespace(pair_id_bytes)
-                stage2_requests[pair_id] = request
+                step2_requests[pair_id] = request
 
-        # Stage 3: Fetch pair-dependent data
-        unique_pair_ids = list(stage2_requests.keys())
-        unique_requests = [stage2_requests[pid] for pid in unique_pair_ids]
-        stage2_results_list = self.data_store.batch_read_structured(unique_requests)
-        stage2_results_map = dict(zip(unique_pair_ids, stage2_results_list))
+        # Step 3: Fetch pair-dependent data
+        unique_pair_ids = list(step2_requests.keys())
+        unique_requests = [step2_requests[pid] for pid in unique_pair_ids]
+        step2_results_list = self.data_store.batch_read_structured(unique_requests)
+        step2_results_map = dict(zip(unique_pair_ids, step2_results_list))
 
-        # Stage 4: Consolidate results
+        # Step 4: Consolidate results
         final_results = []
-        for i_cell, s1_result in zip(cell_indices, stage1_results):
+        for i_cell, s1_result in zip(cell_indices, step1_results):
             pair_id = pair_id_map[i_cell]
-            s2_result = stage2_results_map[pair_id]
+            s2_result = step2_results_map[pair_id]
 
             # Decode all data
             unscaled_bytes = s1_result["unscaled"]
@@ -659,31 +699,78 @@ class UsGaapStore:
             )
 
         return final_results
+    
+    # TODO: Implement ability to ingest triplet vectors from stage1 model
+    # TODO: Document
+    def cache_stage1_inference_batch(self, batch: list[Stage1InferenceRecord]) -> None:
+        # TODO: Refactor; add more tests
+        # print(batch)
+        # batch_latent_bytes = [
+        #     _encode_numpy_array_to_raw_bytes(record["latent"], np.float32)
+        #     for record in batch
+        # ]
+        
+        # decoded_latent_vectors = [
+        #     _decode_numpy_array_from_bytes(bytes, dtype=np.float32)
+        #     for bytes in batch_latent_bytes
+        # ]
 
-    # TODO: Implement `batch_lookup_by_triplets`
+        # # ── integrity check ───────────────────────────────────────────────
+        # # Make sure round‑trip (numpy → bytes → numpy) is bit‑identical.
+        # # Use array_equal (exact match) instead of allclose.
+        # assert len(decoded_latent_vectors) == len(batch), "Batch size mismatch"
+        # for rec, dec in zip(batch, decoded_latent_vectors):
+        #     np.testing.assert_array_equal(
+        #         rec["latent"], dec, err_msg="Latent vector round-trip failed"
+        #     )
+        # # ──────────────────────────────────────────────────────────────────
 
-    def lookup_by_triplet(self, concept: str, uom: str, unscaled_value: float) -> FullCellData:
-        """
-        Given a `(concept, uom, value)` triplet, return its corresponding `FullCellData`,
-        if available.
+        writable_batch = []
 
-        NOTE: The key generation for this method must match the custom binary format
-              used in `ingest_us_gaap_csvs` for TRIPLET_REVERSE_INDEX_NAMESPACE.
-        """
+        for record in batch:
+            key_bytes = STAGE1_LATENT_EMBEDDING_NAMESPACE.namespace(_encode_u32_to_raw_bytes(record.i_cell))
+            latent_bytes = _encode_numpy_array_to_raw_bytes(record.latent_embedding, np.float32)
+
+            writable_batch.append((key_bytes, latent_bytes))
+
+        self.data_store.batch_write(writable_batch)
+
+    # TODO: Document
+    def get_stage1_latent_matrix_from_indices(self, cell_indices: list[int]) -> np.ndarray:
+        read_keys = [
+            STAGE1_LATENT_EMBEDDING_NAMESPACE.namespace(_encode_u32_to_raw_bytes(i))
+            for i in cell_indices
+        ]
+        raw = self.data_store.batch_read(read_keys)
+        vecs = [_decode_numpy_array_from_bytes(b, np.float32) for b in raw]
+        return np.stack(vecs, axis=0)
+
+    # TODO: Document
+    def get_stage1_latent_matrix_from_triplets(self, triplets: list[Triplet]) -> np.ndarray:
+       
         # Encode the triplet as used in reverse index (CUSTOM BINARY FORMAT)
-        triplet_key_bytes = (
-            _encode_string_to_bytes(concept)
-            + _encode_string_to_bytes(uom)
-            + _encode_float_to_raw_bytes(unscaled_value)
-        )
-        triplet_key = TRIPLET_REVERSE_INDEX_NAMESPACE.namespace(triplet_key_bytes)
-
-        i_cell_bytes = self.data_store.read(triplet_key)
-        if i_cell_bytes is None:
-            raise KeyError(
-                f"Triplet ({concept}, {uom}, {unscaled_value}) not found in reverse index"
+        triplet_keys = [
+            TRIPLET_REVERSE_INDEX_NAMESPACE.namespace(
+                _encode_string_to_bytes(triplet.concept)
+                + _encode_string_to_bytes(triplet.uom)
+                + _encode_float_to_raw_bytes(triplet.unscaled_value)
             )
+            for triplet in triplets
+        ]
 
-        i_cell = _decode_u32_from_raw_bytes(i_cell_bytes)
+        i_cell_bytes_list = self.data_store.batch_read(triplet_keys)
+        
+        # TODO: Clean up
+        # if i_cell_bytes is None:
+        #     raise KeyError(
+        #         f"Triplet ({concept}, {uom}, {unscaled_value}) not found in reverse index"
+        #     )
 
-        return self.lookup_by_index(i_cell)
+        # i_cell = _decode_u32_from_raw_bytes(i_cell_bytes)
+        
+        cell_indices = [
+            _decode_u32_from_raw_bytes(i_cell_bytes)
+            for i_cell_bytes in i_cell_bytes_list
+        ]
+
+        return self.get_stage1_latent_matrix_from_indices(cell_indices)

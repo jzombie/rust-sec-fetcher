@@ -168,13 +168,14 @@ class Stage1Autoencoder(pl.LightningModule):
         )
 
     def training_step(self, batch, _batch_idx):
-        if len(batch) == 4:
-            x, target, scaler, concept_units = batch
-        elif len(batch) == 3:
-            x, target, scaler = batch
+        # TODO: Dedupe
+        if len(batch) == 5:
+            _, x, target, scaler, concept_units = batch
+        elif len(batch) == 4:
+            _, x, target, scaler = batch
             concept_units = None
         else:
-            x, target = batch
+            _, x, target = batch
             scaler = None
             concept_units = None
 
@@ -239,13 +240,14 @@ class Stage1Autoencoder(pl.LightningModule):
         return total_loss
 
     def validation_step(self, batch, _batch_idx):
-        if len(batch) == 4:
-            x, target, scaler, concept_units = batch
-        elif len(batch) == 3:
-            x, target, scaler = batch
+        # TODO: Dedupe
+        if len(batch) == 5:
+            _, x, target, scaler, concept_units = batch
+        elif len(batch) == 4:
+            _, x, target, scaler = batch
             concept_units = None
         else:
-            x, target = batch
+            _, x, target = batch
             scaler = None
             concept_units = None
 
