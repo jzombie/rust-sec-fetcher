@@ -42,7 +42,6 @@ class UsGaapWalkSummary(BaseModel):
 UsGaapCsvYield = Union[UsGaapTriplet, ConceptUomPair, UsGaapRowRecord, str]
 UsGaapCsvIterator = Generator[UsGaapCsvYield, None, UsGaapWalkSummary]
 
-
 def walk_us_gaap_csvs(
     data_dir: str | Path,
     db_us_gaap: DbUsGaap,
@@ -51,6 +50,42 @@ def walk_us_gaap_csvs(
     filtered_symbols: set[str] | None = None,
     tqdm_desc: str = "Scanning CSV files",
 ) -> UsGaapCsvIterator:
+    """
+    Iterate over SEC US-GAAP CSV exports in a *flat* directory.
+
+    The function is deterministic **IF** all CSVs live in the same
+    directory (no sub-folders).  File order is fixed by an explicit
+    `sorted(files)` call; row and column order are preserved by pandas.
+
+    Args:
+        data_dir: Path to the directory containing the CSV files.  Only
+            one level deep is supported; nested folders break ordering
+            guarantees.
+        db_us_gaap: Database handle used for concept validation and for
+            querying balance/period metadata.
+        walk_type: Selects the yield granularity:
+            * "row"  - yield a ``UsGaapRowRecord`` per table row.
+            * "cell" - yield a ``UsGaapTriplet`` per numeric cell.
+            * "pair" - yield each unique ``(concept, uom)`` pair once.
+            * "ticker_symbol" - yield the file's ticker symbol only.
+        filtered_symbols: If given, restrict traversal to these tickers.
+        tqdm_desc: Progress-bar label.
+
+    Yields:
+        Objects defined by ``UsGaapCsvYield`` that match *walk_type*.
+
+    Returns:
+        UsGaapWalkSummary: Lists all CSV paths scanned and the set of
+        units that appeared with non-numeric values.
+
+    Notes:
+        * The generator consumes every CSV fully before moving to the
+          next, so memory footprint stays small.
+        * In "pair" mode, uniqueness is enforced with an in-memory set.
+          In CPython ≥3.7 dicts preserve insertion order, so first-seen
+          order is stable.
+    """
+
     valid_concepts = db_us_gaap.get_valid_concepts()
 
     non_numeric_units = set()
