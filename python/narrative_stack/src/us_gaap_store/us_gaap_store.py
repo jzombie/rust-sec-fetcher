@@ -827,10 +827,12 @@ class UsGaapStore:
 
         return final_output
 
-    def get_stage2_category_stacks_cell_indices_by_row(self, i_row: int) -> DefaultDict[str, np.ndarray]:
+    def get_stage2_category_stacks_cell_indices_by_rows(
+        self, row_ids: list[int]
+    ) -> list[DefaultDict[str, np.ndarray]]:
         """
-        Returns a mapping of category stack names to i_cell index arrays
-        for a single row ID (i_row).
+        Returns a list of mappings (one per i_row) from category stack name
+        to i_cell index array. Preserves duplicates.
         """
 
         # TODO: Dedupe
@@ -843,18 +845,26 @@ class UsGaapStore:
             "none::duration",
         ]
 
-        keys = {
-            suffix: STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(
-                encode_string_to_bytes(f"{i_row}::{suffix}")
-            )
-            for suffix in CATEGORY_STACK_SUFFIXES
-        }
+        batch_keys = []
+        for i_row in row_ids:
+            for suffix in CATEGORY_STACK_SUFFIXES:
+                key = STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(
+                    encode_string_to_bytes(f"{i_row}::{suffix}")
+                )
+                batch_keys.append(key)
 
-        raw = self.data_store.batch_read(list(keys.values()))
-        result = defaultdict(lambda: np.empty((0,), dtype=np.uint32))
+        raw_values = self.data_store.batch_read(batch_keys)
 
-        for suffix, raw_bytes in zip(keys.keys(), raw):
-            if raw_bytes is not None:
-                result[suffix] = decode_numpy_array_from_bytes(raw_bytes, dtype=np.uint32)
+        per_row_output = [
+            defaultdict(lambda: np.empty((0,), dtype=np.uint32))
+            for _ in row_ids
+        ]
 
-        return result
+        for i, raw in enumerate(raw_values):
+            row_idx = i // len(CATEGORY_STACK_SUFFIXES)
+            suffix = CATEGORY_STACK_SUFFIXES[i % len(CATEGORY_STACK_SUFFIXES)]
+
+            if raw is not None:
+                per_row_output[row_idx][suffix] = decode_numpy_array_from_bytes(raw, dtype=np.uint32)
+
+        return per_row_output
