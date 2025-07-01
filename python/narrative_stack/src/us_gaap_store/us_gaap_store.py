@@ -130,6 +130,11 @@ class Stage1InferenceRecord(BaseModel):
         arbitrary_types_allowed=True # Allow np.ndarray
     )
 
+class Stage2FilingQuery(BaseModel):
+    ticker_symbol: str
+    form: str
+    filed: str
+
 # --- UsGaapStore Class ---
 class UsGaapStore:
     def __init__(self, data_store: DataStoreWsClient):
@@ -718,10 +723,10 @@ class UsGaapStore:
         self.data_store.batch_write(write_batch)
 
     # TODO: Document
-    def get_cached_stage2_row_indices(self, queries = list[(str, str, str)]) -> list[int]:
+    def get_cached_stage2_row_indices(self, filing_queries = list[Stage2FilingQuery]) -> list[int]:
         row_indices_bytes = self.data_store.batch_read([
-            STAGE2_ROW_REVERSE_INDEX_NAMESPACE.namespace(encode_string_to_bytes(f"{ticker_symbol}::{form}::{filed}"))
-            for (ticker_symbol, form, filed) in queries
+            STAGE2_ROW_REVERSE_INDEX_NAMESPACE.namespace(encode_string_to_bytes(f"{query.ticker_symbol}::{query.form}::{query.filed}"))
+            for query in filing_queries
         ])
 
         return [
@@ -730,8 +735,8 @@ class UsGaapStore:
         ]
     
     # TODO: Document
-    def get_cached_stage2_category_stacks_cell_indices(self, queries = list[(str, str, str)]) -> list[DefaultDict[str, np.ndarray]]:
-        row_indices = self.get_cached_stage2_row_indices(queries)
+    def get_cached_stage2_category_stacks_cell_indices(self, filing_queries = list[Stage2FilingQuery]) -> list[DefaultDict[str, np.ndarray]]:
+        row_indices = self.get_cached_stage2_row_indices(filing_queries)
 
         # TODO: Refactor accordingly
         CATEGORY_STACK_SUFFIXES = [
@@ -770,14 +775,14 @@ class UsGaapStore:
         return processed
 
     def get_cached_stage2_category_stacks_latents(
-        self, queries: list[tuple[str, str, str]]
+        self, filing_queries: list[Stage2FilingQuery]
     ) -> list[DefaultDict[str, np.ndarray]]:
         """
         For each (ticker, form, filed) triple, returns a mapping of category stack
         name to latent embedding matrix (N, latent_dim) for the corresponding cells.
         """
         # Step 1: Get category stack cell indices per row
-        per_row_cell_indices = self.get_cached_stage2_category_stacks_cell_indices(queries)
+        per_row_cell_indices = self.get_cached_stage2_category_stacks_cell_indices(filing_queries)
 
         # Step 2: Gather all unique i_cell indices
         all_i_cells = []
