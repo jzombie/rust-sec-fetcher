@@ -768,3 +768,45 @@ class UsGaapStore:
             processed.append(row_map)
 
         return processed
+
+    def get_cached_stage2_category_stacks_latents(
+        self, queries: list[tuple[str, str, str]]
+    ) -> list[DefaultDict[str, np.ndarray]]:
+        """
+        For each (ticker, form, filed) triple, returns a mapping of category stack
+        name to latent embedding matrix (N, latent_dim) for the corresponding cells.
+        """
+        # Step 1: Get category stack cell indices per row
+        per_row_cell_indices = self.get_cached_stage2_category_stacks_cell_indices(queries)
+
+        # Step 2: Gather all unique i_cell indices
+        all_i_cells = []
+        for row_map in per_row_cell_indices:
+            for cell_indices in row_map.values():
+                all_i_cells.extend(cell_indices.tolist())
+
+        # Step 3: Deduplicate and map i_cell -> position
+        unique_i_cells = np.unique(all_i_cells)
+        i_cell_to_index = {i_cell: idx for idx, i_cell in enumerate(unique_i_cells)}
+
+        # Step 4: Get all latent vectors in one batch
+        latent_matrix = self.get_stage1_latent_matrix_from_indices(unique_i_cells.tolist())
+
+        # Step 5: Reconstruct structure with latent vectors
+        final_output: list[DefaultDict[str, np.ndarray]] = []
+        for row_map in per_row_cell_indices:
+            latent_row_map: DefaultDict[str, np.ndarray] = defaultdict(
+                lambda: np.empty((0, latent_matrix.shape[1]), dtype=np.float32)
+            )
+            for category_stack, cell_indices in row_map.items():
+                if len(cell_indices) == 0:
+                    latent_row_map[category_stack] = np.empty(
+                        (0, latent_matrix.shape[1]), dtype=np.float32
+                    )
+                    continue
+                # Map each cell index to its latent vector
+                indices = [i_cell_to_index[i] for i in cell_indices]
+                latent_row_map[category_stack] = latent_matrix[indices]
+            final_output.append(latent_row_map)
+
+        return final_output
