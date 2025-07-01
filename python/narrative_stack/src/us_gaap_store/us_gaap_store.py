@@ -727,27 +727,23 @@ class UsGaapStore:
 
     # TODO: Document
     def cache_stage2_row(self, i_row: int, ticker_symbol: str, form: str, filed: str, category_stacks_cell_indices: DefaultDict[str, np.ndarray],):
-        print(f"i_row: {i_row}, ticker symbol: {ticker_symbol}, form: {form}, filed: {filed}")
+        # print(f"i_row: {i_row}, ticker symbol: {ticker_symbol}, form: {form}, filed: {filed}")
+
+        write_batch = []
 
         for category_stack_name, cell_indices in category_stacks_cell_indices.items():
-            row_category_id_bytes = STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(
-                encode_string_to_bytes(f"{i_row}::{ticker_symbol}::{form}::{category_stack_name}")
-            )
-
-            # print(cell_indices)
-
             row_cell_indices_bytes = encode_numpy_array_to_raw_bytes(np.array(cell_indices), as_type=np.uint32)
 
-            # print("Cell indices: ", cell_indices)
-            print(f"Category stack name: {category_stack_name}, id: {row_category_id_bytes}", decode_numpy_array_from_bytes(row_cell_indices_bytes, dtype=np.uint32))
-
-        # TODO: Cache composite key
-        # i_row__and__category_stack_id = cell_indices
-        #
-        # TODO: Also enable reverse mapping (ticker_symbol, form, filed) = i_row
-
-        # STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE = NamespaceHasher(b"stage2-sequential-row-category")
-        # STAGE2_ROW_CATEGORY_REVERSE_INDEX_NAMESPACE = NamespaceHasher(b"stage2-row-category-reverse-index")
+            write_batch.append(
+                (STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(encode_string_to_bytes(f"{i_row}::{category_stack_name}")), row_cell_indices_bytes)
+            )
+            write_batch.append(
+                (STAGE2_ROW_CATEGORY_REVERSE_INDEX_NAMESPACE.namespace(
+                    encode_string_to_bytes(f"{ticker_symbol}::{form}::{filed}::{category_stack_name}")), encode_u32_to_raw_bytes(i_row)
+                )
+            )
+            
+        self.data_store.batch_write(write_batch)
 
     # TODO: Implement
     # def get_cached_stage_rows(self, ticker_symbol: str, form: str, filed: str):
