@@ -25,10 +25,28 @@ class Stage2StackDataset(IterableDataset):
         super().__init__()
         self.simd_r_drive_server_config = simd_r_drive_server_config
         self.shuffle = shuffle
+        self.epoch = 0 # Initialize epoch count
 
         self.data_store_client = None
         self.us_gaap_store = None
-        self.epoch = 0
+        
+
+        # Get the total count once in the main process
+        temp_client = DataStoreWsClient(simd_r_drive_server_config.host, simd_r_drive_server_config.port)
+        temp_store = UsGaapStore(temp_client)
+        self.row_count = temp_store.get_stage2_row_count()
+
+        # Disconnect temp client
+        del temp_client
+
+    def __len__(self):
+        """
+        Returns the total number of samples in the dataset.
+
+        PyTorch Lightning will then use this total to display the
+        epoch progress bar.
+        """
+        return self.row_count
 
     def _init_worker(self):
         """Initializes the client and store within the worker process."""
@@ -36,9 +54,6 @@ class Stage2StackDataset(IterableDataset):
             # Each worker gets its own client connection
             self.data_store_client = DataStoreWsClient(self.simd_r_drive_server_config.host, self.simd_r_drive_server_config.port)
             self.us_gaap_store = UsGaapStore(self.data_store_client)
-
-
-    # TODO: Add `__len__`
 
     def __iter__(self):
         self._init_worker()
