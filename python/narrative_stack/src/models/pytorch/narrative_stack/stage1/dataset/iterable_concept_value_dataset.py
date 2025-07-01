@@ -7,6 +7,7 @@ from config import SimdRDriveServerConfig
 from simd_r_drive_ws_client import DataStoreWsClient
 from us_gaap_store import UsGaapStore
 
+# TODO: Document/Rename that this is for Stage 1
 
 def collate_with_scaler(batch):
     """
