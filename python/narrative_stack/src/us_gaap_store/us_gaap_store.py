@@ -861,7 +861,17 @@ class UsGaapStore:
         ]
 
         for i, raw in enumerate(raw_values):
+            # Determine which row in the original `row_ids` this result belongs to.
+            #
+            # Since we emit one key per (row_id, suffix), and suffixes are repeated
+            # in a fixed order for each row, the result list is grouped like this:
+            #
+            #   [row0_suffix0, row0_suffix1, ..., row1_suffix0, row1_suffix1, ...]
+            #
+            # So we compute the row index by dividing the current position `i`
+            # by the number of suffixes per row.
             row_idx = i // len(CATEGORY_STACK_SUFFIXES)
+            
             suffix = CATEGORY_STACK_SUFFIXES[i % len(CATEGORY_STACK_SUFFIXES)]
 
             if raw is not None:
