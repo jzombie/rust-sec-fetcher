@@ -722,6 +722,12 @@ class UsGaapStore:
             
         self.data_store.batch_write(write_batch)
 
+    def get_stage2_row_count(self) -> Optional[int]:
+        raw_bytes = self.data_store.read(b"__stage2_row_count__")
+
+        if raw_bytes:
+            return decode_u32_from_raw_bytes(raw_bytes)
+
     # TODO: Document
     def get_cached_stage2_row_indices(self, filing_queries = list[Stage2FilingQuery]) -> list[int]:
         row_indices_bytes = self.data_store.batch_read([
