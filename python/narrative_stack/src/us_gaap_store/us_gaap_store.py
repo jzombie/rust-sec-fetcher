@@ -99,6 +99,7 @@ STAGE2_ROW_CATEGORY_REVERSE_INDEX_NAMESPACE = NamespaceHasher(b"stage2-row-categ
 
 # --- Pydantic Models ---
 
+# FIXME: For simplicity, reuse `UsGaapCsvConceptUomPair` [tuple] instead of this
 class ConceptUnitPair(BaseModel):
     concept: str
     uom: str
