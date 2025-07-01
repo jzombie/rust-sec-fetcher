@@ -762,14 +762,25 @@ class UsGaapStore:
     def get_cached_stage2_category_stacks_cell_indices(self, queries = list[(str, str, str)]) -> list[DefaultDict[str, np.ndarray]]:
         row_indices = self.get_cached_stage2_row_indices(queries)
 
-        structured_reads = [{
-            "credit::instant": STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(encode_string_to_bytes(f"{i_row}::credit::instant")),
-            "credit::duration": STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(encode_string_to_bytes(f"{i_row}::credit::duration")),
-            "debit::instant": STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(encode_string_to_bytes(f"{i_row}::debit::instant")),
-            "debit::duration": STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(encode_string_to_bytes(f"{i_row}::debit::duration")),
-            "none::instant": STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(encode_string_to_bytes(f"{i_row}::none::instant")),
-            "none::duration": STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(encode_string_to_bytes(f"{i_row}::none::duration")),
-        } for i_row in row_indices]
+        # TODO: Refactor accordingly
+        CATEGORY_STACK_SUFFIXES = [
+            "credit::instant",
+            "credit::duration",
+            "debit::instant",
+            "debit::duration",
+            "none::instant",
+            "none::duration",
+        ]
+
+        structured_reads = [
+            {
+                suffix: STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(
+                    encode_string_to_bytes(f"{i_row}::{suffix}")
+                )
+                for suffix in CATEGORY_STACK_SUFFIXES
+            }
+            for i_row in row_indices
+        ]
 
         raw_results = self.data_store.batch_read_structured(structured_reads)
 
