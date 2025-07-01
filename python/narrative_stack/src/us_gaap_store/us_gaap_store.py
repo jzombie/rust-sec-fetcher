@@ -89,12 +89,8 @@ PCA_REDUCED_EMBEDDING_NAMESPACE = NamespaceHasher(b"pca-reduced-embedding")
 STAGE1_LATENT_EMBEDDING_NAMESPACE = NamespaceHasher(b"stage1-latent-embedding")
 
 # TODO: Document
-# STAGE2_CATEGORY_STACK_NAMESPACE = NamespaceHasher(b"stage2-category-stack")
-# STAGE2_CATEGORY_STACK_REVERSE_INDEX_NAMESPACE = NamespaceHasher(b"stage2-category-stack-reverse-index")
 STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE = NamespaceHasher(b"stage2-sequential-row-category")
 STAGE2_ROW_REVERSE_INDEX_NAMESPACE = NamespaceHasher(b"stage2-row-reverse-index")
-
-
 
 
 # --- Pydantic Models ---
@@ -701,31 +697,6 @@ class UsGaapStore:
         return self.get_stage1_latent_matrix_from_indices(cell_indices)
 
     # TODO: Document
-    # def cache_stage2_category_stack(self, i_category_stack: int, category_stack_name: str):
-    #     self.data_store.batch_write(
-    #         [
-    #             # Forward map
-    #             (
-    #                 STAGE2_CATEGORY_STACK_NAMESPACE.namespace(_encode_u32_to_raw_bytes(i_category_stack)),
-    #                 _encode_string_to_bytes(category_stack_name)
-    #             ),
-    #             # Reverse map
-    #             (
-    #                 STAGE2_CATEGORY_STACK_REVERSE_INDEX_NAMESPACE.namespace(_encode_string_to_bytes(category_stack_name)),
-    #                 _encode_u32_to_raw_bytes(i_category_stack)
-    #             ),
-    #         ]
-    #     )
-
-    # def get_stage2_category_stack_id(self, category_stack_name: str) -> Optional[int]:
-    #     raw_bytes = self.data_store.read(
-    #         STAGE2_CATEGORY_STACK_REVERSE_INDEX_NAMESPACE.namespace(_encode_string_to_bytes(category_stack_name))
-    #     )
-
-    #     if raw_bytes:
-    #         return _decode_u32_from_raw_bytes(raw_bytes)
-
-    # TODO: Document
     def cache_stage2_row(self, i_row: int, ticker_symbol: str, form: str, filed: str, category_stacks_cell_indices: DefaultDict[str, np.ndarray]):
         # print(f"i_row: {i_row}, ticker symbol: {ticker_symbol}, form: {form}, filed: {filed}")
 
@@ -797,28 +768,3 @@ class UsGaapStore:
             processed.append(row_map)
 
         return processed
-
-  
-    
-
-    # TODO: Integrate? 
-    # def cache_balance_and_period_types(self, db_us_gaap: DbUsGaap):
-    #     for row in db_us_gaap.get("SELECT id, period_type FROM us_gaap_period_type", columns=["id", "period_type"]).itertuples(index=False):
-    #         self.data_store.write(
-    #             PERIOD_TYPE_NAMESPACE.namespace(_encode_string_to_bytes(row.period_type)),
-    #             _encode_u32_to_raw_bytes(row.id)
-    #         )
-
-    #     for row in db_us_gaap.get("SELECT id, balance_type FROM us_gaap_balance_type", columns=["id", "balance_type"]).itertuples(index=False):
-    #         self.data_store.write(
-    #             BALANCE_TYPE_NAMESPACE.namespace(_encode_string_to_bytes(row.balance_type)),
-    #             _encode_u32_to_raw_bytes(row.id)
-    #         )
-
-    # # TODO: Document and implement
-    # def cache_cells_balance_types(self, balance_types: list[(int, Optional[str])]):
-    #     pass
-
-    # # TODO: Document and implement
-    # def cache_cells_period_types(self, period_types: list[(int, Optional[str])]):
-    #     pass
