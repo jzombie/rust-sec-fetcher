@@ -50,6 +50,7 @@ class Stage2StackDataset(IterableDataset):
         if worker_id == 0:
             self.epoch += 1
 
+        # TODO: Fix; it doesn't work this way
         all_samples = self.us_gaap_store.get_cached_stage2_category_stacks_latents()
 
         if self.shuffle:
