@@ -745,7 +745,7 @@ class UsGaapStore:
     def get_cached_stage2_category_stacks_cell_indices(self, filing_queries = list[Stage2FilingQuery]) -> list[DefaultDict[str, np.ndarray]]:
         row_indices = self.get_cached_stage2_row_indices(filing_queries)
 
-        # TODO: Refactor accordingly
+        # TODO: Dedupe
         CATEGORY_STACK_SUFFIXES = [
             "credit::instant",
             "credit::duration",
@@ -788,23 +788,27 @@ class UsGaapStore:
         For each (ticker, form, filed) triple, returns a mapping of category stack
         name to latent embedding matrix (N, latent_dim) for the corresponding cells.
         """
-        # Step 1: Get category stack cell indices per row
+        # Get category stack cell indices per row
         per_row_cell_indices = self.get_cached_stage2_category_stacks_cell_indices(filing_queries)
 
-        # Step 2: Gather all unique i_cell indices
+        return self.get_cached_stage2_category_stacks_latents_by_cell_indices(per_row_cell_indices)
+
+    # TODO: Document
+    def get_cached_stage2_category_stacks_latents_by_cell_indices(self, per_row_cell_indices = list[DefaultDict[str, np.ndarray]]) -> list[DefaultDict[str, np.ndarray]]:
+        # Gather all unique i_cell indices
         all_i_cells = []
         for row_map in per_row_cell_indices:
             for cell_indices in row_map.values():
                 all_i_cells.extend(cell_indices.tolist())
 
-        # Step 3: Deduplicate and map i_cell -> position
+        #Deduplicate and map i_cell -> position
         unique_i_cells = np.unique(all_i_cells)
         i_cell_to_index = {i_cell: idx for idx, i_cell in enumerate(unique_i_cells)}
 
-        # Step 4: Get all latent vectors in one batch
+        # Get all latent vectors in one batch
         latent_matrix = self.get_stage1_latent_matrix_from_indices(unique_i_cells.tolist())
 
-        # Step 5: Reconstruct structure with latent vectors
+        # Reconstruct structure with latent vectors
         final_output: list[DefaultDict[str, np.ndarray]] = []
         for row_map in per_row_cell_indices:
             latent_row_map: DefaultDict[str, np.ndarray] = defaultdict(
@@ -822,3 +826,35 @@ class UsGaapStore:
             final_output.append(latent_row_map)
 
         return final_output
+
+    def get_stage2_category_stacks_cell_indices_by_row(self, i_row: int) -> DefaultDict[str, np.ndarray]:
+        """
+        Returns a mapping of category stack names to i_cell index arrays
+        for a single row ID (i_row).
+        """
+
+        # TODO: Dedupe
+        CATEGORY_STACK_SUFFIXES = [
+            "credit::instant",
+            "credit::duration",
+            "debit::instant",
+            "debit::duration",
+            "none::instant",
+            "none::duration",
+        ]
+
+        keys = {
+            suffix: STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(
+                encode_string_to_bytes(f"{i_row}::{suffix}")
+            )
+            for suffix in CATEGORY_STACK_SUFFIXES
+        }
+
+        raw = self.data_store.batch_read(list(keys.values()))
+        result = defaultdict(lambda: np.empty((0,), dtype=np.uint32))
+
+        for suffix, raw_bytes in zip(keys.keys(), raw):
+            if raw_bytes is not None:
+                result[suffix] = decode_numpy_array_from_bytes(raw_bytes, dtype=np.uint32)
+
+        return result
