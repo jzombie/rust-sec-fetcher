@@ -726,7 +726,7 @@ class UsGaapStore:
     #         return _decode_u32_from_raw_bytes(raw_bytes)
 
     # TODO: Document
-    def cache_stage2_row(self, i_row: int, ticker_symbol: str, form: str, filed: str, category_stacks_cell_indices: DefaultDict[str, np.ndarray],):
+    def cache_stage2_row(self, i_row: int, ticker_symbol: str, form: str, filed: str, category_stacks_cell_indices: DefaultDict[str, np.ndarray]):
         # print(f"i_row: {i_row}, ticker symbol: {ticker_symbol}, form: {form}, filed: {filed}")
 
         write_batch = []
@@ -757,10 +757,37 @@ class UsGaapStore:
             decode_u32_from_raw_bytes(i_row_bytes)
             for i_row_bytes in row_indices_bytes
         ]
+    
+    # TODO: Document
+    def get_cached_stage2_category_stacks_cell_indices(self, queries = list[(str, str, str)]) -> list[DefaultDict[str, np.ndarray]]:
+        row_indices = self.get_cached_stage2_row_indices(queries)
 
-    # TODO: Implement
-    # def get_cached_stage2_rows(self, ticker_symbol: str, form: str, filed: str):
+        structured_reads = [{
+            "credit::instant": STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(encode_string_to_bytes(f"{i_row}::credit::instant")),
+            "credit::duration": STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(encode_string_to_bytes(f"{i_row}::credit::duration")),
+            "debit::instant": STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(encode_string_to_bytes(f"{i_row}::debit::instant")),
+            "debit::duration": STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(encode_string_to_bytes(f"{i_row}::debit::duration")),
+            "none::instant": STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(encode_string_to_bytes(f"{i_row}::none::instant")),
+            "none::duration": STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(encode_string_to_bytes(f"{i_row}::none::duration")),
+        } for i_row in row_indices]
 
+        raw_results = self.data_store.batch_read_structured(structured_reads)
+
+        processed: list[DefaultDict[str, np.ndarray]] = []
+        for row in raw_results:
+            row_map: DefaultDict[str, np.ndarray] = defaultdict(
+                lambda: np.empty((0,), dtype=np.uint32)
+            )
+            for k, v in row.items():
+                row_map[k] = (
+                    decode_numpy_array_from_bytes(v, dtype=np.uint32)
+                    if v is not None else np.empty((0,), dtype=np.uint32)
+                )
+            processed.append(row_map)
+
+        return processed
+
+  
     
 
     # TODO: Integrate? 
