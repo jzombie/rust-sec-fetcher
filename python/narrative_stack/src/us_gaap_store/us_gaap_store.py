@@ -3,7 +3,7 @@ import torch
 from sentence_transformers import SentenceTransformer
 from simd_r_drive_ws_client import DataStoreWsClient, NamespaceHasher
 
-from utils.csv import walk_us_gaap_csvs
+from utils.csv import walk_us_gaap_csvs, UsGaapCsvTriplet
 from collections import defaultdict
 
 from tqdm import tqdm
@@ -106,9 +106,6 @@ class ConceptUnitPair(BaseModel):
     model_config = ConfigDict(
         frozen=True # Enables hash-able models
     )
-
-class Triplet(ConceptUnitPair):
-    unscaled_value: float
 
 # TODO: Rename to reflect Stage 1 preprocessing
 class FullCellData(BaseModel):
@@ -666,7 +663,7 @@ class UsGaapStore:
         return np.stack(vecs, axis=0)
 
     # TODO: Document
-    def get_stage1_latent_cell_indices_from_triplets(self, triplets: list[Triplet]) -> list[int]:
+    def get_stage1_latent_cell_indices_from_triplets(self, triplets: list[UsGaapCsvTriplet]) -> list[int]:
        
         # Encode the triplet as used in reverse index (CUSTOM BINARY FORMAT)
         triplet_keys = [
@@ -674,7 +671,7 @@ class UsGaapStore:
             TRIPLET_REVERSE_INDEX_NAMESPACE.namespace(
                 encode_string_to_bytes(triplet.concept)
                 + encode_string_to_bytes(triplet.uom)
-                + encode_float_to_raw_bytes(triplet.unscaled_value)
+                + encode_float_to_raw_bytes(triplet.value)
             )
             for triplet in triplets
         ]
@@ -697,7 +694,7 @@ class UsGaapStore:
         return cell_indices
 
     # TODO: Document
-    def get_stage1_latent_matrix_from_triplets(self, triplets: list[Triplet]) -> np.ndarray:
+    def get_stage1_latent_matrix_from_triplets(self, triplets: list[UsGaapCsvTriplet]) -> np.ndarray:
         cell_indices = self.get_stage1_latent_cell_indices_from_triplets(triplets)
 
         return self.get_stage1_latent_matrix_from_indices(cell_indices)
