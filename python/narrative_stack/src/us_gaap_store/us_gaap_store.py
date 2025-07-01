@@ -722,6 +722,7 @@ class UsGaapStore:
             
         self.data_store.batch_write(write_batch)
 
+    # TODO: Document
     def get_stage2_row_count(self) -> Optional[int]:
         raw_bytes = self.data_store.read(b"__stage2_row_count__")
 
