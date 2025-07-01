@@ -749,7 +749,7 @@ class UsGaapStore:
     # TODO: Document
     def get_cached_stage2_row_indices(self, queries = list[(str, str, str)]) -> list[int]:
         row_indices_bytes = self.data_store.batch_read([
-            encode_string_to_bytes(f"{ticker_symbol}::{form}::{filed}")
+            STAGE2_ROW_REVERSE_INDEX_NAMESPACE.namespace(encode_string_to_bytes(f"{ticker_symbol}::{form}::{filed}"))
             for (ticker_symbol, form, filed) in queries
         ])
 
