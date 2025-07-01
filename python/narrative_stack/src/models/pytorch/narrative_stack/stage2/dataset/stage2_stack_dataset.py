@@ -1,6 +1,6 @@
 import torch
 from torch.utils.data import IterableDataset
-from typing import List, Tuple
+from typing import List
 from simd_r_drive_ws_client import DataStoreWsClient
 from config import SimdRDriveServerConfig
 from us_gaap_store import UsGaapStore
