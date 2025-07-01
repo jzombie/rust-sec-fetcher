@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, ConfigDict
 import numpy as np
 from sklearn.preprocessing import QuantileTransformer, StandardScaler
 from sklearn.decomposition import PCA
-from typing import Tuple, Iterator, Optional, Any, DefaultDict, List
+from typing import Tuple, Iterator, Optional, Any, DefaultDict
 from utils.pytorch import model_hash, get_device, seed_everything
 from utils import generate_us_gaap_description
 from models.pytorch.narrative_stack.stage1.preprocessing import (
