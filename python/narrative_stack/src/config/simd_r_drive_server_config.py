@@ -5,6 +5,7 @@ from pydantic import BaseModel
 # Auto-init config to acquire environment vars
 init_config()
 
+# TODO: Rename to `SimdRDriveClientConfig`?
 class SimdRDriveServerConfig(BaseModel):
     host: str
     port: int
