@@ -24,6 +24,7 @@ class Stage2StackDataset(IterableDataset):
     across stacks. Empty categories are returned as tensors with shape [0, D].
     """
 
+    # TODO: Dedupe
     CATEGORY_ORDER = [
         "credit::instant",
         "credit::duration",
