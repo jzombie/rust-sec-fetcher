@@ -1,11 +1,10 @@
 import torch
-from torch.utils.data import IterableDataset
+from models.pytorch.narrative_stack.common.dataset import BaseUsGaapIterableDataset
 from simd_r_drive_ws_client import DataStoreWsClient
-from config import SimdRDriveServerConfig
 from us_gaap_store import UsGaapStore
 
 
-class Stage2StackDataset(IterableDataset):
+class Stage2StackDataset(BaseUsGaapIterableDataset):
     """
     Iterable dataset for Stage 2 autoencoder training.
 
@@ -34,60 +33,18 @@ class Stage2StackDataset(IterableDataset):
         "none::duration",
     ]
 
-    def __init__(
-        self,
-        simd_r_drive_server_config: SimdRDriveServerConfig,
-        shuffle: bool = False,
-        lookup_batch_size: int = 64,
-    ):
-        """
-        Args:
-            simd_r_drive_server_config (SimdRDriveServerConfig): Connection info
-                for the SIMD R Drive server.
-            shuffle (bool): If True, rows are shuffled on each epoch.
-        """
-        super().__init__()
-        self.simd_r_drive_server_config = simd_r_drive_server_config
-        self.shuffle = shuffle
-        self.lookup_batch_size = lookup_batch_size
-        self.epoch = 0  # Used to seed per-epoch deterministic shuffling
-
-        self.data_store_client = None
-        self.us_gaap_store = None
-
-        # Create a temporary client to fetch total row count
+    def _get_count(self) -> int:
         temp_client = DataStoreWsClient(
-            simd_r_drive_server_config.host,
-            simd_r_drive_server_config.port,
+            self.simd_r_drive_server_config.host,
+            self.simd_r_drive_server_config.port,
         )
         temp_store = UsGaapStore(temp_client)
-        self.row_count = temp_store.get_stage2_row_count()
+        row_count = temp_store.get_stage2_row_count()
         del temp_client  # No longer needed
 
-    def __len__(self):
-        """
-        Returns:
-            int: The total number of i_row samples.
+        return row_count
 
-        This allows PyTorch Lightning to display progress bars and
-        manage epoch control.
-        """
-        return self.row_count
-
-    def _init_worker(self):
-        """
-        Initializes the WebSocket client and store in each worker.
-
-        Avoids cross-thread usage of the same socket connection.
-        """
-        if self.data_store_client is None:
-            self.data_store_client = DataStoreWsClient(
-                self.simd_r_drive_server_config.host,
-                self.simd_r_drive_server_config.port,
-            )
-            self.us_gaap_store = UsGaapStore(self.data_store_client)
-
-    def __iter__(self):
+    def _yield_data(self, row_indices: list[int]):
         """
         Iterates over the dataset, yielding a tuple of 6 latent stacks
         per document row.
@@ -96,27 +53,6 @@ class Stage2StackDataset(IterableDataset):
             Tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor] where
             each Tensor has shape [N_i, latent_dim] or [0, latent_dim].
         """
-        self._init_worker()
-
-        # Get worker identity for multi-process dataloaders
-        worker_info = torch.utils.data.get_worker_info()
-        worker_id = worker_info.id if worker_info else 0
-        num_workers = worker_info.num_workers if worker_info else 1
-
-        if worker_id == 0:
-            self.epoch += 1
-
-        row_indices = list(range(self.row_count))
-        if self.shuffle:
-            g = torch.Generator()
-            g.manual_seed(42 + self.epoch)
-            row_indices = torch.randperm(self.row_count, generator=g).tolist()
-
-        # Split rows evenly across workers
-        per_worker = int(self.row_count / num_workers + 1)
-        start = worker_id * per_worker
-        end = min(start + per_worker, self.row_count)
-        row_indices = row_indices[start:end]
 
         for batch_start in range(0, len(row_indices), self.lookup_batch_size):
             rows_batch = row_indices[batch_start : batch_start + self.lookup_batch_size]
