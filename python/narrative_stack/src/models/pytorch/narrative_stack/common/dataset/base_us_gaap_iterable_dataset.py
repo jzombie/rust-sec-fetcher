@@ -48,17 +48,23 @@ class BaseUsGaapIterableDataset(IterableDataset):
         if worker_id == 0:
             self.epoch += 1
 
+        # Generate index list
         indices = list(range(self._count))
+
+        # Apply deterministic shuffle per epoch
         if self.shuffle:
             g = torch.Generator()
             g.manual_seed(42 + self.epoch)
             indices = torch.randperm(self._count, generator=g).tolist()
 
+        # Split index space between workers (non-overlapping)
+        # Each worker processes a distinct, contiguous subset
         per_worker = int(self._count / num_workers + 1)
         start = worker_id * per_worker
         end = min(start + per_worker, self._count)
         worker_indices = indices[start:end]
 
+        # Yield items in lookup batches
         for i in range(0, len(worker_indices), self.lookup_batch_size):
             batch = worker_indices[i : i + self.lookup_batch_size]
             yield from self._yield_data(batch)
