@@ -123,23 +123,22 @@ class Stage2StackDataset(IterableDataset):
             cell_map = self.us_gaap_store.get_stage2_category_stacks_cell_indices_by_rows(rows_batch)
             all_latents = self.us_gaap_store.get_cached_stage2_category_stacks_latents_by_cell_indices(cell_map)
 
-            for sample in all_latents:
+            for row in all_latents:
                 stack_map = {k: None for k in self.CATEGORY_ORDER}
 
                 latent_dim = None
-                for cat in sample.categories:
-                    if len(cat.latent_stack) > 0:
-                        latent_dim = cat.latent_stack.shape[1]
+                for key in self.CATEGORY_ORDER:
+                    if key in row and len(row[key]) > 0:
+                        latent_dim = row[key].shape[1]
                         break
                 if latent_dim is None:
                     continue
 
-                for k in stack_map:
-                    stack_map[k] = torch.empty((0, latent_dim), dtype=torch.float32)
-
-                for cat in sample.categories:
-                    key = f"{cat.balance_type}::{cat.period_type}"
-                    if key in stack_map and len(cat.latent_stack) > 0:
-                        stack_map[key] = torch.tensor(cat.latent_stack, dtype=torch.float32)
+                for k in self.CATEGORY_ORDER:
+                    stack_map[k] = (
+                        torch.tensor(row[k], dtype=torch.float32)
+                        if k in row and len(row[k]) > 0
+                        else torch.empty((0, latent_dim), dtype=torch.float32)
+                    )
 
                 yield tuple(stack_map[k] for k in self.CATEGORY_ORDER)

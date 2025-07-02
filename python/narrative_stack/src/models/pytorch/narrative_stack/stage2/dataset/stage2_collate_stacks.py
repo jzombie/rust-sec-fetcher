@@ -1,47 +1,60 @@
 import torch
+from torch.nn.utils.rnn import pad_sequence
+from models.pytorch.narrative_stack.stage2.dataset import Stage2StackDataset
 
 def stage2_collate_stacks(batch):
     """
     Collate function for Stage 2 autoencoder dataset.
 
     Args:
-        batch: list of tuples, each:
-          (stacks, masks, balance_idxs, period_idxs)
+        batch: list of tuples of six tensors, one per category:
+            Tuple[Tensor[N_i, latent_dim] x6]
 
     Returns:
-        stacks_batch: List[Tensor] [B, N_i, latent_dim]
-        masks_batch: List[Tensor] [B, N_i]
-        balance_batch: List[Tensor] [B, N_i]
-        period_batch: List[Tensor] [B, N_i]
+        stacks_batch: List[Tensor] of shape [B, N_i, latent_dim]
+        masks_batch: List[BoolTensor] of shape [B, N_i]
+        balance_batch: List[LongTensor] of shape [B, N_i]
+        period_batch: List[LongTensor] of shape [B, N_i]
     """
-    num_categories = max(len(s[0]) for s in batch)
+    
+    # TODO: Dedupe
+    CATEGORY_ORDER = [
+        "credit::instant",  # 0
+        "credit::duration", # 1
+        "debit::instant",   # 2
+        "debit::duration",  # 3
+        "none::instant",    # 4
+        "none::duration",   # 5
+    ]
+
+    # Dynamically compute balance/period maps
+    balance_map = [ {"credit": 0, "debit": 1, "none": 2}[k.split("::")[0]]
+                    for k in CATEGORY_ORDER ]
+    period_map = [ {"instant": 1, "duration": 0}[k.split("::")[1]]
+                   for k in CATEGORY_ORDER ]
 
     stacks_batch = []
     masks_batch = []
     balance_batch = []
     period_batch = []
 
-    for cat_idx in range(num_categories):
+    for cat_idx in range(len(CATEGORY_ORDER)):
         cat_stacks = []
         cat_masks = []
         cat_balance = []
         cat_period = []
 
-        for stacks, masks, bal_idxs, per_idxs in batch:
-            if cat_idx < len(stacks):
-                cat_stacks.append(stacks[cat_idx])
-                cat_masks.append(masks[cat_idx])
-                cat_balance.append(bal_idxs[cat_idx])
-                cat_period.append(per_idxs[cat_idx])
-            else:
-                cat_stacks.append(torch.zeros(0, stacks[0].shape[-1]))
-                cat_masks.append(torch.zeros(0, dtype=torch.bool))
-                cat_balance.append(torch.zeros(0, dtype=torch.long))
-                cat_period.append(torch.zeros(0, dtype=torch.long))
+        for sample in batch:
+            stack = sample[cat_idx]
+            N = stack.size(0)
+            cat_stacks.append(stack)
+            cat_masks.append(torch.ones(N, dtype=torch.bool))
+            cat_balance.append(torch.full((N,), balance_map[cat_idx], dtype=torch.long))
+            cat_period.append(torch.full((N,), period_map[cat_idx], dtype=torch.long))
 
-        stacks_batch.append(torch.nn.utils.rnn.pad_sequence(cat_stacks, batch_first=True))
-        masks_batch.append(torch.nn.utils.rnn.pad_sequence(cat_masks, batch_first=True))
-        balance_batch.append(torch.nn.utils.rnn.pad_sequence(cat_balance, batch_first=True))
-        period_batch.append(torch.nn.utils.rnn.pad_sequence(cat_period, batch_first=True))
+        stacks_batch.append(pad_sequence(cat_stacks, batch_first=True))
+        masks_batch.append(pad_sequence(cat_masks, batch_first=True))
+        balance_batch.append(pad_sequence(cat_balance, batch_first=True))
+        period_batch.append(pad_sequence(cat_period, batch_first=True))
 
     return stacks_batch, masks_batch, balance_batch, period_batch
