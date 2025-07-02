@@ -1,6 +1,5 @@
 import torch
 from torch.nn.utils.rnn import pad_sequence
-from models.pytorch.narrative_stack.stage2.dataset import Stage2StackDataset
 
 def stage2_collate_stacks(batch):
     """
