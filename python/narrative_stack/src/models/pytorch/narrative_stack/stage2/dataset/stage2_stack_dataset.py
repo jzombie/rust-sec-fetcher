@@ -1,7 +1,7 @@
 import torch
 from models.pytorch.narrative_stack.common.dataset import BaseUsGaapIterableDataset
 from simd_r_drive_ws_client import DataStoreWsClient
-from us_gaap_store import UsGaapStore
+from us_gaap_store import UsGaapStore, STAGE2_CATEGORY_STACKS
 
 
 class Stage2StackDataset(BaseUsGaapIterableDataset):
@@ -10,28 +10,11 @@ class Stage2StackDataset(BaseUsGaapIterableDataset):
 
     Each sample corresponds to a single document row (i_row), containing
     exactly six category-specific latent stacks. The categories are always
-    returned in the following fixed order:
-
-        0: credit::instant
-        1: credit::duration
-        2: debit::instant
-        3: debit::duration
-        4: none::instant
-        5: none::duration
+    returned in the same fixed order as `STAGE2_CATEGORY_STACKS`
 
     Each output is a tensor of shape [N_i, latent_dim], where N_i may vary
     across stacks. Empty categories are returned as tensors with shape [0, D].
     """
-
-    # TODO: Dedupe
-    CATEGORY_ORDER = [
-        "credit::instant",
-        "credit::duration",
-        "debit::instant",
-        "debit::duration",
-        "none::instant",
-        "none::duration",
-    ]
 
     def _get_count(self) -> int:
         temp_client = DataStoreWsClient(
@@ -60,21 +43,21 @@ class Stage2StackDataset(BaseUsGaapIterableDataset):
             all_latents = self.us_gaap_store.get_cached_stage2_category_stacks_latents_by_cell_indices(cell_map)
 
             for row in all_latents:
-                stack_map = {k: None for k in self.CATEGORY_ORDER}
+                stack_map = {k: None for k in STAGE2_CATEGORY_STACKS}
 
                 latent_dim = None
-                for key in self.CATEGORY_ORDER:
+                for key in STAGE2_CATEGORY_STACKS:
                     if key in row and len(row[key]) > 0:
                         latent_dim = row[key].shape[1]
                         break
                 if latent_dim is None:
                     continue
 
-                for k in self.CATEGORY_ORDER:
+                for k in STAGE2_CATEGORY_STACKS:
                     stack_map[k] = (
                         torch.tensor(row[k], dtype=torch.float32)
                         if k in row and len(row[k]) > 0
                         else torch.empty((0, latent_dim), dtype=torch.float32)
                     )
 
-                yield tuple(stack_map[k] for k in self.CATEGORY_ORDER)
+                yield tuple(stack_map[k] for k in STAGE2_CATEGORY_STACKS)

@@ -1,5 +1,6 @@
 import torch
 from torch.nn.utils.rnn import pad_sequence
+from us_gaap_store import STAGE2_CATEGORY_STACKS
 
 def stage2_collate_stacks(batch):
     """
@@ -15,29 +16,20 @@ def stage2_collate_stacks(batch):
         balance_batch: List[LongTensor] of shape [B, N_i]
         period_batch: List[LongTensor] of shape [B, N_i]
     """
-    
-    # TODO: Dedupe
-    CATEGORY_ORDER = [
-        "credit::instant",  # 0
-        "credit::duration", # 1
-        "debit::instant",   # 2
-        "debit::duration",  # 3
-        "none::instant",    # 4
-        "none::duration",   # 5
-    ]
 
+    # TODO: Extract into reusable utility
     # Dynamically compute balance/period maps
     balance_map = [ {"credit": 0, "debit": 1, "none": 2}[k.split("::")[0]]
-                    for k in CATEGORY_ORDER ]
+                    for k in STAGE2_CATEGORY_STACKS ]
     period_map = [ {"instant": 1, "duration": 0}[k.split("::")[1]]
-                   for k in CATEGORY_ORDER ]
+                   for k in STAGE2_CATEGORY_STACKS ]
 
     stacks_batch = []
     masks_batch = []
     balance_batch = []
     period_batch = []
 
-    for cat_idx in range(len(CATEGORY_ORDER)):
+    for cat_idx in range(len(STAGE2_CATEGORY_STACKS)):
         cat_stacks = []
         cat_masks = []
         cat_balance = []

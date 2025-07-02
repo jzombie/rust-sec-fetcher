@@ -19,6 +19,7 @@ from models.pytorch.narrative_stack.stage1.preprocessing import (
 )
 from db import DbUsGaap
 from .binary_codec import encode_string_to_bytes, decode_string_from_bytes, encode_u32_to_raw_bytes, decode_u32_from_raw_bytes, encode_float_to_raw_bytes, decode_float_from_bytes, encode_numpy_array_to_raw_bytes, decode_numpy_array_from_bytes, encode_joblib_object_to_bytes, decode_joblib_object_from_bytes
+from .constants import STAGE2_CATEGORY_STACKS
 
 # Note: This is used here for the semantic modeling (BGE model)
 seed_everything()
@@ -745,22 +746,12 @@ class UsGaapStore:
     def get_cached_stage2_category_stacks_cell_indices(self, filing_queries = list[Stage2FilingQuery]) -> list[DefaultDict[str, np.ndarray]]:
         row_indices = self.get_cached_stage2_row_indices(filing_queries)
 
-        # TODO: Dedupe
-        CATEGORY_STACK_SUFFIXES = [
-            "credit::instant",
-            "credit::duration",
-            "debit::instant",
-            "debit::duration",
-            "none::instant",
-            "none::duration",
-        ]
-
         structured_reads = [
             {
-                suffix: STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(
-                    encode_string_to_bytes(f"{i_row}::{suffix}")
+                category_stack_name: STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(
+                    encode_string_to_bytes(f"{i_row}::{category_stack_name}")
                 )
-                for suffix in CATEGORY_STACK_SUFFIXES
+                for category_stack_name in STAGE2_CATEGORY_STACKS
             }
             for i_row in row_indices
         ]
@@ -835,21 +826,11 @@ class UsGaapStore:
         to i_cell index array. Preserves duplicates.
         """
 
-        # TODO: Dedupe
-        CATEGORY_STACK_SUFFIXES = [
-            "credit::instant",
-            "credit::duration",
-            "debit::instant",
-            "debit::duration",
-            "none::instant",
-            "none::duration",
-        ]
-
         batch_keys = []
         for i_row in row_ids:
-            for suffix in CATEGORY_STACK_SUFFIXES:
+            for category_stack_name in STAGE2_CATEGORY_STACKS:
                 key = STAGE2_SEQUENTIAL_ROW_CATEGORY_NAMESPACE.namespace(
-                    encode_string_to_bytes(f"{i_row}::{suffix}")
+                    encode_string_to_bytes(f"{i_row}::{category_stack_name}")
                 )
                 batch_keys.append(key)
 
@@ -870,11 +851,11 @@ class UsGaapStore:
             #
             # So we compute the row index by dividing the current position `i`
             # by the number of suffixes per row.
-            row_idx = i // len(CATEGORY_STACK_SUFFIXES)
-            
-            suffix = CATEGORY_STACK_SUFFIXES[i % len(CATEGORY_STACK_SUFFIXES)]
+            row_idx = i // len(STAGE2_CATEGORY_STACKS)
+
+            category_stack_name = STAGE2_CATEGORY_STACKS[i % len(STAGE2_CATEGORY_STACKS)]
 
             if raw is not None:
-                per_row_output[row_idx][suffix] = decode_numpy_array_from_bytes(raw, dtype=np.uint32)
+                per_row_output[row_idx][category_stack_name] = decode_numpy_array_from_bytes(raw, dtype=np.uint32)
 
         return per_row_output
