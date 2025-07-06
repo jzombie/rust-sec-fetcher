@@ -2,10 +2,35 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
-from typing import List, Tuple, Dict
+from typing import List, Tuple
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR
 
 # --- BUILDING BLOCK MODULES ---
+
+class CosineSimilarityLoss(nn.Module):
+    """
+    Calculates the loss based on the cosine similarity between two tensors.
+    The loss is defined as 1 - mean(cosine_similarity). This means minimizing
+    the loss will maximize the cosine similarity, driving it towards 1.
+    """
+    def __init__(self, dim: int = -1, eps: float = 1e-8):
+        super().__init__()
+        self.dim = dim
+        self.eps = eps
+
+    def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            y_pred (torch.Tensor): The predicted tensor (e.g., reconstructions).
+            y_true (torch.Tensor): The ground truth tensor (e.g., originals).
+
+        Returns:
+            torch.Tensor: A single scalar value for the loss.
+        """
+        # Calculate cosine similarity along the last dimension
+        cos_sim = F.cosine_similarity(y_pred, y_true, self.dim, self.eps)
+        # The loss is 1 minus the average similarity
+        return 1 - cos_sim.mean()
 
 class PerceiverStackEncoder(nn.Module):
     """
@@ -213,7 +238,18 @@ class Stage2Autoencoder(pl.LightningModule):
             ]
         )
         # A single linear layer to create the shared bottleneck vector from all encoder outputs.
-        self.encoder_to_shared = nn.Linear(num_categories * encoder_latent_dim, shared_latent_dim)
+        # self.encoder_to_shared = nn.Linear(num_categories * encoder_latent_dim, shared_latent_dim)
+        self.encoder_to_shared = nn.Sequential(
+            nn.Linear(num_categories * encoder_latent_dim, shared_latent_dim * 2),
+            nn.GELU(),
+            nn.Linear(shared_latent_dim * 2, shared_latent_dim)
+        )
+
+        self.query_projection = nn.Sequential(
+            # Input dim is the sum of the two embedding dims
+            nn.Linear(self.hparams.query_dim * 2, self.hparams.query_dim),
+            nn.GELU()
+        )
 
         # Embeddings used to create the decoder query.
         self.balance_embedding = nn.Embedding(num_embeddings=3, embedding_dim=query_dim)
@@ -221,7 +257,9 @@ class Stage2Autoencoder(pl.LightningModule):
         
         # The single, shared decoder. It takes both the shared latent and an anchor vector.
         self.decoder = PerceiverDecoder(shared_latent_dim, encoder_latent_dim, query_dim, input_dim, decoder_depth, dropout_rate)
-        self.loss_fn = nn.MSELoss()
+        
+        self.mse_loss_fn = nn.MSELoss()
+        self.cosine_loss_fn = CosineSimilarityLoss()
 
     def _get_initial_stats_dict(self):
         """Helper method to create a clean stats dictionary."""
@@ -294,7 +332,10 @@ class Stage2Autoencoder(pl.LightningModule):
             # Create the reconstruction query from balance and period info.
             balance_embed = self.balance_embedding(balance_batch[i])
             period_embed = self.period_embedding(period_batch[i])
-            query = balance_embed + period_embed
+            
+            # query = balance_embed + period_embed
+            combined_embeds = torch.cat([balance_embed, period_embed], dim=-1)
+            query = self.query_projection(combined_embeds)
             
             # Decode using both the global shared vector and the local anchor vector.
             recon = self.decoder(shared_latent, anchor_vector, query)
@@ -317,33 +358,74 @@ class Stage2Autoencoder(pl.LightningModule):
         stacks, masks, balance_batch, period_batch = batch
         reconstructions, shared_latent = self.forward(stacks, masks, balance_batch, period_batch)
 
-        # Normalize shared latent
-        shared_latent = F.normalize(shared_latent, p=2, dim=1)
-
-        total_loss = 0.0
-        total_cos_sim = 0.0
+        # Initialize trackers for the different loss components
+        total_combined_loss = 0.0
+        total_mse_loss = 0.0
+        total_cosine_loss = 0.0
+        
+        # Track cosine similarity separately for logging/metrics
+        total_cos_sim_metric = 0.0
+        num_valid_stacks = 0
         per_stack_cosine = []
 
+        # Iterate through each category to calculate loss
         for i in range(self.hparams.num_categories):
+            # Get the valid (unmasked) items for both original and reconstruction
             original = stacks[i][masks[i]]
             recon = reconstructions[i][masks[i]]
+
+            # If a stack is empty in this batch, there's no loss to calculate for it
             if original.numel() == 0:
                 per_stack_cosine.append(0.0)
                 continue
+            
+            num_valid_stacks += 1
 
-            loss = self.loss_fn(recon, original)
-            cos_sim = F.cosine_similarity(recon, original, dim=-1).mean()
+            # --- Core Loss Calculation ---
+            # 1. Calculate the MSE loss
+            mse_loss = self.mse_loss_fn(recon, original)
+            
+            # 2. Calculate the Cosine Similarity loss
+            cosine_loss = self.cosine_loss_fn(recon, original)
 
-            total_loss += loss
-            total_cos_sim += cos_sim
-            per_stack_cosine.append(cos_sim.item())
+            # 3. Combine them using your hyperparameter `loss_alpha`
+            # alpha * MSE + (1 - alpha) * CosineLoss
+            combined_loss = (self.hparams.loss_alpha * mse_loss) + ((1.0 - self.hparams.loss_alpha) * cosine_loss)
+            
+            # --- Accumulate the losses ---
+            total_combined_loss += combined_loss
+            total_mse_loss += mse_loss
+            total_cosine_loss += cosine_loss
+            
+            # For logging, calculate the raw cosine similarity metric (which is not a loss)
+            cos_sim_metric = F.cosine_similarity(recon, original, dim=-1).mean()
+            total_cos_sim_metric += cos_sim_metric
+            per_stack_cosine.append(cos_sim_metric.item())
 
-        avg_cosine = total_cos_sim / self.hparams.num_categories
+        # Avoid division by zero if the entire batch was empty
+        if num_valid_stacks == 0:
+            return {
+                "loss": torch.tensor(0.0, device=self.device), # Return a zero loss
+                "mse_loss": 0.0,
+                "cosine_loss": 0.0,
+                "cosine_sim": 0.0,
+                "stack_cosine_sims": per_stack_cosine,
+            }
+
+        # Average the losses and metrics over the number of non-empty stacks in the batch
+        avg_mse_loss = total_mse_loss / num_valid_stacks
+        avg_cosine_loss = total_cosine_loss / num_valid_stacks
+        avg_cosine_sim = total_cos_sim_metric / num_valid_stacks
+        
+        # The final loss to backpropagate is the sum of the combined losses from each stack
+        # (This is equivalent to averaging the combined_loss, just a matter of scaling)
+        final_loss = total_combined_loss
 
         return {
-            "loss": total_loss,
-            "mse_loss": total_loss,
-            "cosine_sim": avg_cosine,
+            "loss": final_loss,
+            "mse_loss": avg_mse_loss.item(), # Log the averaged component
+            "cosine_loss": avg_cosine_loss.item(), # Log the averaged component
+            "cosine_sim": avg_cosine_sim.item(), # This is your primary metric
             "stack_cosine_sims": per_stack_cosine,
         }
 
