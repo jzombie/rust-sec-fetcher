@@ -7,6 +7,48 @@ from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR
 
 # --- BUILDING BLOCK MODULES ---
 
+class AnchorFusion(nn.Module):
+    """
+    Fuses a sequence of anchor vectors using self-attention to create a 
+    single shared latent vector.
+    """
+    def __init__(self, embed_dim: int, nhead: int, dropout_rate: float, depth: int):
+        super().__init__()
+        # A standard Transformer Encoder Layer is perfect for this.
+        # It contains self-attention and a feed-forward network.
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=embed_dim,
+            nhead=nhead,
+            dim_feedforward=embed_dim * 4,
+            dropout=dropout_rate,
+            activation=F.gelu,
+            batch_first=True, # Important!
+            norm_first=True
+        )
+        self.attention_block = nn.TransformerEncoder(encoder_layer, num_layers=depth)
+        
+        # A final linear layer to project the processed sequence to the final desired dimension
+        # This is optional but can be useful. Here, we'll just average the outputs.
+        # self.output_proj = nn.Linear(embed_dim, embed_dim)
+
+    def forward(self, anchor_vectors: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            anchor_vectors (torch.Tensor): A tensor of shape [B, Num Stacks, Dim].
+
+        Returns:
+            torch.Tensor: A single shared latent vector of shape [B, Dim].
+        """
+        # The attention block processes the full sequence.
+        # The output will have the same shape as the input: [B, Num Stacks, Dim]
+        processed_anchors = self.attention_block(anchor_vectors)
+        
+        # The most common way to get a single vector from a sequence is to average it.
+        # This is analogous to how BERT uses the [CLS] token output.
+        shared_latent = processed_anchors.mean(dim=1)
+        
+        return shared_latent
+
 class CosineSimilarityLoss(nn.Module):
     """
     Calculates the loss based on the cosine similarity between two tensors.
@@ -239,11 +281,20 @@ class Stage2Autoencoder(pl.LightningModule):
         )
         # A single linear layer to create the shared bottleneck vector from all encoder outputs.
         # self.encoder_to_shared = nn.Linear(num_categories * encoder_latent_dim, shared_latent_dim)
-        self.encoder_to_shared = nn.Sequential(
-            nn.Linear(num_categories * encoder_latent_dim, shared_latent_dim * 2),
-            nn.GELU(),
-            nn.Linear(shared_latent_dim * 2, shared_latent_dim)
+        # self.encoder_to_shared = nn.Sequential(
+        #     nn.Linear(num_categories * encoder_latent_dim, shared_latent_dim * 2),
+        #     nn.GELU(),
+        #     nn.Linear(shared_latent_dim * 2, shared_latent_dim)
+        # )
+
+        self.anchor_fusion = AnchorFusion(
+            embed_dim=self.hparams.encoder_latent_dim,
+            nhead=4, # Can be a hyperparameter
+            dropout_rate=self.hparams.dropout_rate,
+            depth=2  # Can be a hyperparameter
         )
+        # Project the output of the fusion to the desired shared_latent_dim
+        self.fusion_to_shared = nn.Linear(self.hparams.encoder_latent_dim, self.hparams.shared_latent_dim)
 
         self.query_projection = nn.Sequential(
             # Input dim is the sum of the two embedding dims
@@ -303,8 +354,17 @@ class Stage2Autoencoder(pl.LightningModule):
                 anchor_vectors.append(zero_output)
         
         # 2. Create the SINGLE shared latent vector from the anchors, meeting the design constraint.
-        concatenated_anchors = torch.cat(anchor_vectors, dim=1)
-        shared_latent = self.encoder_to_shared(concatenated_anchors)
+        # concatenated_anchors = torch.cat(anchor_vectors, dim=1)
+        # shared_latent = self.encoder_to_shared(concatenated_anchors)
+
+        # Stack the anchor vectors to create a sequence: [B, Num Stacks, Dim]
+        stacked_anchors = torch.stack(anchor_vectors, dim=1)
+        
+        # Process the sequence through the attention-based fusion module.
+        fused_representation = self.anchor_fusion(stacked_anchors)
+        
+        # Project to the final shared latent dimension.
+        shared_latent = self.fusion_to_shared(fused_representation)
 
         # === Normalize shared latent before decoding ===
         assert not torch.isnan(shared_latent).any(), "NaN before normalization"
