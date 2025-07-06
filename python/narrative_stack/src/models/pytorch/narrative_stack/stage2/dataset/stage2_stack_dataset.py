@@ -60,4 +60,7 @@ class Stage2StackDataset(BaseUsGaapIterableDataset):
                         else torch.empty((0, latent_dim), dtype=torch.float32)
                     )
 
+                    # TODO: Debug check; may need improving
+                    assert not torch.isnan(stack_map[k]).any(), f"NaNs found in stack {k}"
+
                 yield tuple(stack_map[k] for k in STAGE2_CATEGORY_STACKS)
