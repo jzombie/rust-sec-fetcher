@@ -45,11 +45,17 @@ class Stage2StackDataset(BaseUsGaapIterableDataset):
             for row in all_latents:
                 stack_map = {k: None for k in STAGE2_CATEGORY_STACKS}
 
+                # --- Find the latent dimension from the first available non-empty stack ---
+                # This is necessary to correctly shape placeholder tensors for empty categories.
                 latent_dim = None
                 for key in STAGE2_CATEGORY_STACKS:
                     if key in row and len(row[key]) > 0:
+                         # Get the dimension (D from a shape of [N, D]).
                         latent_dim = row[key].shape[1]
+                        # The dimension is assumed to be consistent, so we can stop searching.
                         break
+
+                # If a document has no data in any category, skip it entirely.
                 if latent_dim is None:
                     continue
 
