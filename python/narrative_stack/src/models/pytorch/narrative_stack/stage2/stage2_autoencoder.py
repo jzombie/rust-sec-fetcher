@@ -43,49 +43,62 @@ class PerceiverStackEncoder(nn.Module):
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         """
-        Processes the input stack to produce a single latent vector. This is the
-        final, robust version containing all necessary safety checks.
+        Processes the input stack to produce a single latent vector. This version
+        solves numerical instability by segregating valid and empty samples before
+        computation.
+
+        Args:
+            x (torch.Tensor): The input stack tensor of shape [B, N, D].
+            mask (torch.Tensor): The boolean mask of shape [B, N] indicating valid items.
+
+        Returns:
+            torch.Tensor: A single latent vector of shape [B, latent_dim].
         """
-        B, N, latent_dim = x.shape[0], x.shape[1], self.latents.size(-1)
+        B, N, D = x.shape
+        device = x.device
 
-        # --- Fix 1: Handle Empty Inputs ---
-        fully_masked_items = ~mask.any(dim=1)
-        if fully_masked_items.all():
-            return torch.zeros(B, latent_dim, device=x.device)
+        # 1. Identify valid and fully masked (empty) items in the batch
+        valid_item_indices = torch.where(mask.any(dim=1))[0]
+        # masked_item_indices = torch.where(~mask.any(dim=1))[0]
 
-        # --- Standard Operations ---
-        latents = self.latents.unsqueeze(0).repeat(B, 1, 1)
-        x_proj = self.cross_proj(x)
+        # If the whole batch is empty, return zeros.
+        if len(valid_item_indices) == 0:
+            return torch.zeros(B, self.latents.size(-1), device=device)
+
+        # 2. Create a "sub-batch" containing only the data from valid items
+        valid_x = x[valid_item_indices]
+        valid_mask = mask[valid_item_indices]
+        
+        # --- Run the entire encoder pipeline ONLY on the valid sub-batch ---
+        sub_batch_size = valid_x.shape[0]
+
+        latents = self.latents.unsqueeze(0).repeat(sub_batch_size, 1, 1)
+        x_proj = self.cross_proj(valid_x)
+
         latents_norm = self.query_norm(latents)
         x_proj_norm = self.kv_norm(x_proj)
-        key_padding_mask = ~mask
+        
+        key_padding_mask = ~valid_mask
+        
         attn_output, _ = self.cross_attn(
             query=latents_norm, key=x_proj_norm, value=x_proj_norm, key_padding_mask=key_padding_mask
         )
-        if not torch.isfinite(attn_output).all():
-            attn_output = torch.nan_to_num(attn_output)
+        
+        # The sub-batch is guaranteed to be free of fully masked items, so this is stable.
         latents = latents + attn_output
 
-        # --- Fix 2: Prevent Activation Explosion ---
         for block in self.blocks:
             latents = block(latents)
-            # Clamp activations after each block to prevent them from growing to infinity.
-            latents = torch.clamp(latents, -30, 30)
-
-        # --- Final Normalization and Pooling ---
+            
         processed_latents = self.output_norm(latents)
-        out = processed_latents.mean(dim=1)
+        valid_outputs = processed_latents.mean(dim=1)
+        
+        # 3. Create a full-size output tensor and scatter the results back
+        full_output = torch.zeros(B, self.latents.size(-1), device=device)
+        full_output[valid_item_indices] = valid_outputs
 
-        # --- Fix 1 (cont.): Finalize Empty Input Handling ---
-        # This ensures any NaNs created by LayerNorm on zero-variance inputs are fixed.
-        if fully_masked_items.any():
-            out[fully_masked_items] = 0.0
-
-        # --- Fix 3: The Final Backstop ---
-        # Unconditionally guarantee the output is finite, catching any other edge cases.
-        out = torch.nan_to_num(out, nan=0.0, posinf=0.0, neginf=0.0)
-
-        return out
+        # Any NaNs from other sources are still sanitized as a final guardrail.
+        return torch.nan_to_num(full_output)
 
 
 class PerceiverDecoder(nn.Module):
@@ -391,34 +404,35 @@ class Stage2Autoencoder(pl.LightningModule):
             self.log("val_loss_epoch", avg_val_loss, prog_bar=True)
             self.log("val_cosine_sim_epoch", avg_val_sim, prog_bar=True)
 
-    def on_before_optimizer_step(self, optimizer):
-        """
-        Called by PyTorch Lightning after loss.backward() but before optimizer.step().
-        This hook inspects gradients, fixes non-finite values, and updates a
-        cumulative count in self.stats.
-        """
-        non_finite_found_this_step = False
+    # TODO: Remove
+    # def on_before_optimizer_step(self, optimizer):
+    #     """
+    #     Called by PyTorch Lightning after loss.backward() but before optimizer.step().
+    #     This hook inspects gradients, fixes non-finite values, and updates a
+    #     cumulative count in self.stats.
+    #     """
+    #     non_finite_found_this_step = False
         
-        for group in optimizer.param_groups:
-            for param in group['params']:
-                if param.grad is not None:
-                    if not torch.isfinite(param.grad).all():
-                        non_finite_found_this_step = True
-                        param.grad.nan_to_num_(nan=0.0, posinf=0.0, neginf=0.0)
+    #     for group in optimizer.param_groups:
+    #         for param in group['params']:
+    #             if param.grad is not None:
+    #                 if not torch.isfinite(param.grad).all():
+    #                     non_finite_found_this_step = True
+    #                     param.grad.nan_to_num_(nan=0.0, posinf=0.0, neginf=0.0)
 
-        if non_finite_found_this_step:
-            # Increment the counter in our stats dictionary
-            self.stats['train']['non_finite_grad_count'] += 1
+    #     if non_finite_found_this_step:
+    #         # Increment the counter in our stats dictionary
+    #         self.stats['train']['non_finite_grad_count'] += 1
             
-            # Log the new cumulative count for the current epoch to TensorBoard
-            self.log(
-                "instability/epoch_non_finite_grad_count",
-                float(self.stats['train']['non_finite_grad_count']),
-                on_step=True,
-                on_epoch=False, # We log on the step to see it update live
-                prog_bar=False,
-                logger=True
-            )
+    #         # Log the new cumulative count for the current epoch to TensorBoard
+    #         self.log(
+    #             "instability/epoch_non_finite_grad_count",
+    #             float(self.stats['train']['non_finite_grad_count']),
+    #             on_step=True,
+    #             on_epoch=False, # We log on the step to see it update live
+    #             prog_bar=False,
+    #             logger=True
+    #         )
 
     def configure_optimizers(self):
         """Sets up the AdamW optimizer and a learning rate scheduler with a warm-up phase."""
