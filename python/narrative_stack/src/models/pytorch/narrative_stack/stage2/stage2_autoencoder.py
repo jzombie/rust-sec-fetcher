@@ -9,27 +9,26 @@ from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR
 
 class AnchorFusion(nn.Module):
     """
-    Fuses a sequence of anchor vectors using self-attention to create a 
-    single shared latent vector.
+    Fuses a sequence of anchor vectors using a learnable [CLS] token
+    to create a single shared latent vector.
     """
     def __init__(self, embed_dim: int, nhead: int, dropout_rate: float, depth: int):
         super().__init__()
-        # A standard Transformer Encoder Layer is perfect for this.
-        # It contains self-attention and a feed-forward network.
+        
+        # 1. Define the learnable [CLS] token
+        # Shape: [1, 1, Dim] so it can be easily prepended to a batch
+        self.cls_token = nn.Parameter(torch.randn(1, 1, embed_dim))
+
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=embed_dim,
             nhead=nhead,
             dim_feedforward=embed_dim * 4,
             dropout=dropout_rate,
             activation=F.gelu,
-            batch_first=True, # Important!
+            batch_first=True,
             norm_first=True
         )
         self.attention_block = nn.TransformerEncoder(encoder_layer, num_layers=depth)
-        
-        # A final linear layer to project the processed sequence to the final desired dimension
-        # This is optional but can be useful. Here, we'll just average the outputs.
-        # self.output_proj = nn.Linear(embed_dim, embed_dim)
 
     def forward(self, anchor_vectors: torch.Tensor) -> torch.Tensor:
         """
@@ -39,13 +38,24 @@ class AnchorFusion(nn.Module):
         Returns:
             torch.Tensor: A single shared latent vector of shape [B, Dim].
         """
-        # The attention block processes the full sequence.
-        # The output will have the same shape as the input: [B, Num Stacks, Dim]
-        processed_anchors = self.attention_block(anchor_vectors)
+        # Get the batch size from the input
+        B = anchor_vectors.shape[0]
+
+        # 2. Expand the [CLS] token to match the batch size
+        cls_tokens = self.cls_token.expand(B, -1, -1)
         
-        # The most common way to get a single vector from a sequence is to average it.
-        # This is analogous to how BERT uses the [CLS] token output.
-        shared_latent = processed_anchors.mean(dim=1)
+        # 3. Prepend the [CLS] token to the input sequence
+        # New shape: [B, 1 + Num Stacks, Dim]
+        x = torch.cat((cls_tokens, anchor_vectors), dim=1)
+
+        # Process the full sequence through the attention block
+        processed_sequence = self.attention_block(x)
+
+        # 4. The shared latent is now just the output of the first token
+        # Shape of processed_sequence: [B, 1 + Num Stacks, Dim]
+        # We take all batches, the 0-th token, and all dimensions.
+        shared_latent = processed_sequence[:, 0]
+        # Final shape: [B, Dim]
         
         return shared_latent
 
