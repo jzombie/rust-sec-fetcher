@@ -265,6 +265,21 @@ class Stage2Autoencoder(pl.LightningModule):
     ):
         super().__init__()
         self.save_hyperparameters()
+
+        self.loss_alpha = loss_alpha
+        self.dropout_rate = dropout_rate
+        self.weight_decay = weight_decay
+        self.warmup_steps = warmup_steps
+        self.num_categories = num_categories
+        self.input_dim = input_dim
+        self.encoder_latent_dim = encoder_latent_dim
+        self.shared_latent_dim = shared_latent_dim
+        self.num_latents = num_latents
+        self.encoder_depth = encoder_depth
+        self.query_dim = query_dim
+        self.decoder_depth = decoder_depth
+        self.batch_size = batch_size
+        self.lr = lr
         
         self.stats = {
             'train': self._get_initial_stats_dict(),
