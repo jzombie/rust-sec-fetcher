@@ -261,7 +261,7 @@ class Stage2Autoencoder(pl.LightningModule):
         loss_alpha: float = 0.79,
         dropout_rate: float = 0.1,
         weight_decay: float = 1.8e-5, 
-        warmup_steps: int = 1000,
+        warmup_steps: int = 20000,
         num_categories: int = 6,
         input_dim: int = 256,
         encoder_latent_dim: int = 128,
