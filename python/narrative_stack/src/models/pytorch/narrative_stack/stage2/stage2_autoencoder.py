@@ -258,20 +258,20 @@ class Stage2Autoencoder(pl.LightningModule):
     """
     def __init__(
         self,
-        loss_alpha: float = 0.5,
+        loss_alpha: float = 0.79,
         dropout_rate: float = 0.1,
-        weight_decay: float = 1e-4,
-        warmup_steps: int = 500,
+        weight_decay: float = 1.8e-5, 
+        warmup_steps: int = 1000,
         num_categories: int = 6,
         input_dim: int = 256,
         encoder_latent_dim: int = 128,
-        shared_latent_dim: int = 512, # The dimension of the single vector
+        shared_latent_dim: int = 1024, # The dimension of the single vector
         num_latents: int = 64,
-        encoder_depth: int = 2,
-        query_dim: int = 256,
-        decoder_depth: int = 2,
+        encoder_depth: int = 5,
+        query_dim: int = 192,
+        decoder_depth: int = 3,
         batch_size: int = 4,
-        lr: float = 1e-4,
+        lr: float = 8.5e-4,
     ):
         super().__init__()
         self.save_hyperparameters()
