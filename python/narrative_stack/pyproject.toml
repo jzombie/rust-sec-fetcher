@@ -105,6 +105,7 @@ dependencies = [
     "pexpect==4.9.0",
     "pillow==11.0.0",
     "platformdirs==4.3.7",
+    "plotly>=6.2.0",
     "prometheus_client==0.21.1",
     "prompt_toolkit==3.0.50",
     "propcache==0.3.0",
