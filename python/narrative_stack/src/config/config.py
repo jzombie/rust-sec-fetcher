@@ -13,6 +13,7 @@ def init_config():
     Note: Subsequent invocations will be ignored.
     """
 
+    global is_config_init
     if is_config_init:
         return
 
@@ -27,7 +28,7 @@ def init_config():
     # Choose correct .env file
     env_filename = ".env.test" if is_test else ".env"
     env_path = os.path.join(script_dir, f"../../{env_filename}")
-
+    
     # Load the .env file
     load_dotenv(dotenv_path=env_path)
 
@@ -60,3 +61,5 @@ def init_config():
 
     # Add the handler to the logger
     logger.addHandler(handler)
+
+    is_config_init = True
