@@ -588,6 +588,10 @@ class Stage2Autoencoder(pl.LightningModule):
         losses = self._shared_step(batch)
         batch_total_loss = losses["loss"]
 
+        # Log the current learning rate from the first param group
+        current_lr = self.trainer.optimizers[0].param_groups[0]["lr"]
+        self.log("lr", current_lr, on_step=True, prog_bar=False, logger=True)
+
         if not torch.isfinite(batch_total_loss):
             self.log("train_step_skipped", 1, on_step=True)
             # Return a dummy tensor
