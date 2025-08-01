@@ -73,7 +73,11 @@ class Stage1Autoencoder(pl.LightningModule):
         x_emb = x[:, :-1]
         x_val = x[:, -1].unsqueeze(1)
         z = self.encoder(x_emb, x_val)
-        return F.normalize(z, p=2, dim=1)
+
+        # Unit norm
+        # return F.normalize(z, p=2, dim=1)
+        
+        return z
 
     def decode(self, z):
         return self.decoder(z)
