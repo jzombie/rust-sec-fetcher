@@ -113,7 +113,7 @@ class FullCellData(BaseModel):
     concept: str = Field(..., description="The financial concept (e.g., 'Assets', 'Revenues').")
     uom: str = Field(..., description="The unit of measure (e.g., 'USD', 'shares').")
     unscaled_value: float = Field(..., description="The original, unscaled numerical value.")
-    scaled_value: Optional[float] = Field(..., description="The value after QuantileTransformer normalization.")
+    scaled_value: Optional[float] = Field(..., description="The value after scaler normalization.")
 
     # TODO: Rename to `semantic_embedding`
     embedding: np.ndarray = Field(..., description="The PCA-reduced semantic embedding of the concept/unit pair.")
@@ -287,16 +287,17 @@ class UsGaapStore:
             if n_q < 2 and len(all_values_for_pair) >= 2:
                 n_q = 2
 
-            if len(all_values_for_pair) < 2:
-                # Fallback to a StandardScaler for numeric stability
-                scaler = StandardScaler()
-            else:
-                scaler = QuantileTransformer(
-                    output_distribution="normal",
-                    n_quantiles=n_q,
-                    subsample=len(all_values_for_pair),  # Use all values for fitting
-                    random_state=42,
-                )
+            # if len(all_values_for_pair) < 2:
+            #     # Fallback to a StandardScaler for numeric stability
+            #     scaler = StandardScaler()
+            # else:
+            #     scaler = QuantileTransformer(
+            #         output_distribution="normal",
+            #         n_quantiles=n_q,
+            #         subsample=len(all_values_for_pair),  # Use all values for fitting
+            #         random_state=42,
+            #     )
+            scaler = StandardScaler()
 
             # Fit and transform all values at once
             scaled_vals = scaler.fit_transform(vals_np).flatten()
