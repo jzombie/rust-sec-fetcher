@@ -9,7 +9,7 @@ from collections import defaultdict
 from tqdm import tqdm
 from pydantic import BaseModel, Field, ConfigDict
 import numpy as np
-from sklearn.preprocessing import  RobustScaler # StandardScaler, QuantileTransformer
+from sklearn.preprocessing import  StandardScaler # QuantileTransformer
 from sklearn.decomposition import PCA
 from typing import Tuple, Iterator, Optional, Any, DefaultDict
 from utils.pytorch import model_hash, get_device, seed_everything
@@ -297,7 +297,7 @@ class UsGaapStore:
             #         subsample=len(all_values_for_pair),  # Use all values for fitting
             #         random_state=42,
             #     )
-            scaler = RobustScaler()
+            scaler = StandardScaler()
 
             # Fit and transform all values at once
             scaled_vals = scaler.fit_transform(vals_np).flatten()
