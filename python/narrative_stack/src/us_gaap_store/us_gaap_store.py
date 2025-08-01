@@ -9,7 +9,7 @@ from collections import defaultdict
 from tqdm import tqdm
 from pydantic import BaseModel, Field, ConfigDict
 import numpy as np
-from sklearn.preprocessing import QuantileTransformer, StandardScaler
+from sklearn.preprocessing import StandardScaler # QuantileTransformer
 from sklearn.decomposition import PCA
 from typing import Tuple, Iterator, Optional, Any, DefaultDict
 from utils.pytorch import model_hash, get_device, seed_everything
