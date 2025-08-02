@@ -283,10 +283,10 @@ class UsGaapStore:
             # --- Step 2: Fit a single scaler to all values for this pair ---
             vals_np = np.array(all_values_for_pair).reshape(-1, 1)
 
-            n_q = min(len(all_values_for_pair), 1000)
-            if n_q < 2 and len(all_values_for_pair) >= 2:
-                n_q = 2
-
+            # n_q = min(len(all_values_for_pair), 1000)
+            # if n_q < 2 and len(all_values_for_pair) >= 2:
+            #     n_q = 2
+            #
             # if len(all_values_for_pair) < 2:
             #     # Fallback to a StandardScaler for numeric stability
             #     scaler = StandardScaler()
@@ -621,9 +621,12 @@ class UsGaapStore:
 
         return final_results
     
-    # TODO: Implement ability to ingest triplet vectors from stage1 model
     # TODO: Document
     def cache_stage1_inference_batch(self, batch: list[Stage1InferenceRecord]) -> None:
+        """
+        Ingests triplet vectors from Stage 1 model.
+        """
+
         # TODO: Refactor; add more tests
         # print(batch)
         # batch_latent_bytes = [
