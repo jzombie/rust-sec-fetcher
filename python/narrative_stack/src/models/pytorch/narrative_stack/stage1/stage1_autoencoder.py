@@ -4,7 +4,7 @@ from torch import nn
 import pytorch_lightning as pl
 
 from torch.nn.functional import cosine_similarity
-import torch.nn.functional as F
+# import torch.nn.functional as F
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from .helpers import AggregateStats, DecoderWithAttention, EncoderWithAttention
