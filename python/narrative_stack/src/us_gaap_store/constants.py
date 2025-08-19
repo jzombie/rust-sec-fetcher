@@ -1,3 +1,6 @@
+# Note: Debugging hardcoded value instead of using `torch.finfo(torch.float32).eps`
+EPSILON = 1e-8
+
 STAGE2_CATEGORY_STACKS: list[str] = [
     "credit::instant",
     "credit::duration",

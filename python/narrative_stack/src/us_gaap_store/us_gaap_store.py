@@ -19,7 +19,7 @@ from models.pytorch.narrative_stack.stage1.preprocessing import (
 )
 from db import DbUsGaap
 from .binary_codec import encode_string_to_bytes, decode_string_from_bytes, encode_u32_to_raw_bytes, decode_u32_from_raw_bytes, encode_float_to_raw_bytes, decode_float_from_bytes, encode_numpy_array_to_raw_bytes, decode_numpy_array_from_bytes, encode_joblib_object_to_bytes, decode_joblib_object_from_bytes
-from .constants import STAGE2_CATEGORY_STACKS
+from .constants import STAGE2_CATEGORY_STACKS, EPSILON
 
 # Note: This is used here for the semantic modeling (BGE model)
 seed_everything()
@@ -139,7 +139,7 @@ class Stage2FilingQuery(BaseModel):
 
 # --- UsGaapStore Class ---
 class UsGaapStore:
-    EPSILON = torch.finfo(torch.float32).eps
+    EPSILON = EPSILON
 
     def __init__(self, data_store: DataStoreWsClient):
         self.data_store = data_store

@@ -1,5 +1,6 @@
 import numpy as np
 from collections import defaultdict
+from us_gaap_store.constants import EPSILON
 
 
 class AggregateStats:
@@ -25,7 +26,7 @@ class AggregateStats:
         """
 
         self.device = device
-        self._eps = 1e-8
+        self._eps = EPSILON
         self._per_tag = defaultdict(
             lambda: {
                 "mae_sum": np.float64(0.0),

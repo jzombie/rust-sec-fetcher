@@ -1,4 +1,5 @@
 from torch import nn
+import torch
 from .value_attention_modulator import ValueAttentionModulator
 
 
@@ -48,6 +49,12 @@ class EncoderWithAttention(nn.Module):
         """
         
         h = self.expand(x_emb)  # [B, 4D]
+        assert torch.isfinite(h).all(), "Non-finite values after expansion layer!"
+
         h = self.attn(h, x_val)  # scalar-conditioned attention
+        assert torch.isfinite(h).all(), "Non-finite values after attention layer!"
+
         z = self.bottleneck(h)  # [B, latent_dim]
+        assert torch.isfinite(z).all(), "Non-finite values after bottleneck layer!"
+
         return z
