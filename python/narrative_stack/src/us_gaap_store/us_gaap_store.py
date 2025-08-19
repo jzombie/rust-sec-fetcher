@@ -117,7 +117,7 @@ class FullCellData(BaseModel):
         "The numerical value after scaler normalization, with a log transform "
         "applied. Computed as log1p(abs(scaled) + EPSILON) * sign(scaled)."
     )),
-    # scaled_value: Optional[float] = Field(..., description="The value after scaler normalization.")
+    scaled_value: Optional[float] = Field(..., description="The value after scaler normalization.")
 
     # TODO: Rename to `semantic_embedding`
     embedding: np.ndarray = Field(..., description="The PCA-reduced semantic embedding of the concept/unit pair.")
@@ -625,7 +625,7 @@ class UsGaapStore:
                     uom=uom,
                     unscaled_value=decode_float_from_bytes(unscaled_bytes),
                     log_scaled_value=log_scaled_value,
-                    # scaled_value=scaled_value,
+                    scaled_value=scaled_value,
                     embedding=decode_numpy_array_from_bytes(
                         embedding_bytes, dtype=np.float64
                     ),
