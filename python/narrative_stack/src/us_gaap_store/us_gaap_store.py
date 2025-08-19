@@ -113,8 +113,11 @@ class FullCellData(BaseModel):
     concept: str = Field(..., description="The financial concept (e.g., 'Assets', 'Revenues').")
     uom: str = Field(..., description="The unit of measure (e.g., 'USD', 'shares').")
     unscaled_value: float = Field(..., description="The original, unscaled numerical value.")
-    log_scaled_value: Optional[float] = Field(..., description="The log-scaled value for model training.")
-    scaled_value: Optional[float] = Field(..., description="The value after scaler normalization.")
+    log_scaled_value: Optional[float] = Field(..., description=(
+        "The numerical value after scaler normalization, with a log transform "
+        "applied. Computed as log1p(abs(scaled) + EPSILON) * sign(scaled)."
+    )),
+    # scaled_value: Optional[float] = Field(..., description="The value after scaler normalization.")
 
     # TODO: Rename to `semantic_embedding`
     embedding: np.ndarray = Field(..., description="The PCA-reduced semantic embedding of the concept/unit pair.")
@@ -604,8 +607,15 @@ class UsGaapStore:
                 )
                 self._scaler_cache[scaler_key] = scaler
 
-            unscaled_value = decode_float_from_bytes(unscaled_bytes)
-            log_scaled_value = np.log1p(np.abs(unscaled_value) + self.EPSILON) * np.sign(unscaled_value)
+            scaled_bytes = s1_result["scaled"]
+            if scaled_bytes is None:
+                scaled_value = 0.0  # or None, your call
+            else:
+                scaled_value = decode_float_from_bytes(scaled_bytes)
+
+            # Log transform already scaled value
+            log_scaled_value = np.log1p(np.abs(scaled_value) + self.EPSILON) * np.sign(scaled_value)
+
 
             final_results.append(
                 FullCellData (
@@ -615,10 +625,7 @@ class UsGaapStore:
                     uom=uom,
                     unscaled_value=decode_float_from_bytes(unscaled_bytes),
                     log_scaled_value=log_scaled_value,
-                    scaled_value=(decode_float_from_bytes(s1_result["scaled"])
-                        if s1_result["scaled"]
-                        else None
-                    ),
+                    # scaled_value=scaled_value,
                     embedding=decode_numpy_array_from_bytes(
                         embedding_bytes, dtype=np.float64
                     ),
