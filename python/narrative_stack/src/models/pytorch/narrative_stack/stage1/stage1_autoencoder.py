@@ -90,13 +90,14 @@ class Stage1Autoencoder(pl.LightningModule):
         recon_emb, recon_val = self.decode(z)
         return recon_emb, recon_val, z
 
-    @staticmethod
-    def slog1p(v: torch.Tensor, eps: float) -> torch.Tensor:
-        """
-        Signed log1p used for value preprocessing:
-        y = sign(v) * log1p(abs(v) + eps)
-        """
-        return torch.sign(v) * torch.log1p(torch.abs(v) + eps)
+    # TODO: Remove? This is pre-computed outside of the model
+    # @staticmethod
+    # def slog1p(v: torch.Tensor, eps: float) -> torch.Tensor:
+    #     """
+    #     Signed log1p used for value preprocessing:
+    #     y = sign(v) * log1p(abs(v) + eps)
+    #     """
+    #     return torch.sign(v) * torch.log1p(torch.abs(v) + eps)
 
     @staticmethod
     def slog1p_inv(y: torch.Tensor, eps: float) -> torch.Tensor:
