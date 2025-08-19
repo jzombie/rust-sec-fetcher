@@ -113,6 +113,7 @@ class FullCellData(BaseModel):
     concept: str = Field(..., description="The financial concept (e.g., 'Assets', 'Revenues').")
     uom: str = Field(..., description="The unit of measure (e.g., 'USD', 'shares').")
     unscaled_value: float = Field(..., description="The original, unscaled numerical value.")
+    log_scaled_value: Optional[float] = Field(..., description="The log-scaled value for model training.")
     scaled_value: Optional[float] = Field(..., description="The value after scaler normalization.")
 
     # TODO: Rename to `semantic_embedding`
@@ -138,6 +139,8 @@ class Stage2FilingQuery(BaseModel):
 
 # --- UsGaapStore Class ---
 class UsGaapStore:
+    EPSILON = torch.finfo(torch.float32).eps
+
     def __init__(self, data_store: DataStoreWsClient):
         self.data_store = data_store
         # _pair_to_id_cache is only for ingestion, will be built during ingestion
@@ -601,6 +604,9 @@ class UsGaapStore:
                 )
                 self._scaler_cache[scaler_key] = scaler
 
+            unscaled_value = decode_float_from_bytes(unscaled_bytes)
+            log_scaled_value = np.log1p(np.abs(unscaled_value) + self.EPSILON) * np.sign(unscaled_value)
+
             final_results.append(
                 FullCellData (
                     i_cell=i_cell,
@@ -608,6 +614,7 @@ class UsGaapStore:
                     concept=concept,
                     uom=uom,
                     unscaled_value=decode_float_from_bytes(unscaled_bytes),
+                    log_scaled_value=log_scaled_value,
                     scaled_value=(decode_float_from_bytes(s1_result["scaled"])
                         if s1_result["scaled"]
                         else None

@@ -28,18 +28,18 @@ class AggregateStats:
         self._eps = 1e-8
         self._per_tag = defaultdict(
             lambda: {
-                "mae_sum": 0.0,
-                "abs_sum": 0.0,
+                "mae_sum": np.float64(0.0),
+                "abs_sum": np.float64(0.0),
                 "n": 0,
-                "sum_y_true": 0.0,
-                "sum_y_pred": 0.0,
-                "sum_y_true2": 0.0,
-                "sum_y_pred2": 0.0,
-                "sum_y_true_y_pred": 0.0,
+                "sum_y_true": np.float64(0.0),
+                "sum_y_pred": np.float64(0.0),
+                "sum_y_true2": np.float64(0.0),
+                "sum_y_pred2": np.float64(0.0),
+                "sum_y_true_y_pred": np.float64(0.0),
             }
         )
-        self.z_sum = 0.0
-        self.z_sq_sum = 0.0
+        self.z_sum = np.float64(0.0)
+        self.z_sq_sum = np.float64(0.0)
         self.z_count = 0
 
     def update(self, tags, y_pred_batch, y_true_batch, z_norm_batch):
@@ -64,10 +64,19 @@ class AggregateStats:
         * A small epsilon (=1e-8) avoids divide-by-zero in relative MAE.
         """
 
-        y_pred = y_pred_batch.detach().cpu().numpy().astype(np.float32)
-        y_true = y_true_batch.detach().cpu().numpy().astype(np.float32)
-        z_norm = z_norm_batch.detach().cpu().numpy().astype(np.float32)
+        # Upcast to float64 early to avoid overflow in products/sums
+        y_pred = y_pred_batch.detach().cpu().numpy().astype(np.float64)
+        y_true = y_true_batch.detach().cpu().numpy().astype(np.float64)
+        z_norm = z_norm_batch.detach().cpu().numpy().astype(np.float64)
         tags = np.array(tags)
+
+        # Filter out non-finite values
+        mask = np.isfinite(y_pred) & np.isfinite(y_true)
+        if not np.all(mask):
+            y_pred = y_pred[mask]
+            y_true = y_true[mask]
+            z_norm = z_norm[mask]
+            tags = tags[mask]
 
         # Group indices by unique tag
         unique_tags, tag_indices = np.unique(tags, return_inverse=True)
@@ -78,8 +87,8 @@ class AggregateStats:
             yp = y_pred[idxs]
             yt = y_true[idxs]
 
-            mae_sum = np.abs(yp - yt).sum()
-            abs_sum = np.abs(yt).sum()
+            mae_sum = np.abs(yp - yt).sum(dtype=np.float64)
+            abs_sum = np.abs(yt).sum(dtype=np.float64)
 
             stats = self._per_tag[tuple(tag)]
             stats["mae_sum"] += mae_sum
@@ -93,16 +102,25 @@ class AggregateStats:
             # for other scenarios or tasks.
 
             stats["n"] += len(idxs)
-            stats["sum_y_true"] += yt.sum()
-            stats["sum_y_pred"] += yp.sum()
-            stats["sum_y_true2"] += np.sum(np.square(yt.astype(np.float64)))
-            stats["sum_y_pred2"] += np.sum(np.square(yp.astype(np.float64)))
+            stats["sum_y_true"] += yt.sum(dtype=np.float64)
+            stats["sum_y_pred"] += yp.sum(dtype=np.float64)
+            stats["sum_y_true2"] += np.dot(
+                yt.astype(np.float64), yt.astype(np.float64)
+            )
+            stats["sum_y_pred2"] += np.dot(
+                yp.astype(np.float64), yp.astype(np.float64)
+            )
 
             # TODO: Fix `RuntimeWarning: overflow encountered in multiply` error
-            stats["sum_y_true_y_pred"] += np.sum(yt * yp)
+            # Fix applied: upcast operands to float64 before multiply/dot
+            stats["sum_y_true_y_pred"] += np.dot(
+                yt.astype(np.float64), yp.astype(np.float64)
+            )
 
-        self.z_sum += z_norm.sum()
-        self.z_sq_sum += np.sum(z_norm**2)
+        self.z_sum += z_norm.sum(dtype=np.float64)
+        self.z_sq_sum += np.dot(
+            z_norm.astype(np.float64), z_norm.astype(np.float64)
+        )
         self.z_count += z_norm.shape[0]
 
     def median_relative_mae(self):

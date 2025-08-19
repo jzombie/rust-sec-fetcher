@@ -53,11 +53,7 @@ class Stage1CellDataset(BaseUsGaapIterableDataset):
             # Fill the pre-allocated arrays in a loop
             for idx, item in enumerate(valid_data):
                 embeddings_np[idx] = item.embedding
-                # values_np[idx] = item.scaled_value
-                
-                # Add a log transform to the scaled value before feeding it to the model
-                # We use a small epsilon to avoid log(0) and handle negative numbers
-                values_np[idx] = np.log1p(np.abs(item.scaled_value) + 1e-8) * np.sign(item.scaled_value)
+                values_np[idx] = item.log_scaled_value
 
             # Perform the concatenation as a single, fast matrix operation
             x_data_np = np.concatenate([embeddings_np, values_np], axis=1)

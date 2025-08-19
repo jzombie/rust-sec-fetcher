@@ -89,6 +89,22 @@ class Stage1Autoencoder(pl.LightningModule):
         recon_emb, recon_val = self.decode(z)
         return recon_emb, recon_val, z
 
+    @staticmethod
+    def slog1p(v: torch.Tensor, eps: float) -> torch.Tensor:
+        """
+        Signed log1p used for value preprocessing:
+        y = sign(v) * log1p(abs(v) + eps)
+        """
+        return torch.sign(v) * torch.log1p(torch.abs(v) + eps)
+
+    @staticmethod
+    def slog1p_inv(y: torch.Tensor, eps: float) -> torch.Tensor:
+        """
+        Inverse of slog1p:
+        v = sign(y) * (expm1(abs(y)) - eps)
+        """
+        return torch.sign(y) * (torch.expm1(torch.abs(y)) - eps)
+
     def compute_losses(self, x, target, scaler, concept_units, train=False):
         recon_emb, recon_val, z = self(x)
 
@@ -96,10 +112,17 @@ class Stage1Autoencoder(pl.LightningModule):
         target_val = target[:, -1].unsqueeze(1)
 
         if scaler and isinstance(scaler, (list, tuple)):
-            recon_val_np = recon_val.detach().cpu().numpy()
-            target_val_np = target_val.detach().cpu().numpy()
+            # Invert signed-log to return to linear scaled space:
+            # v = sign(y) * (expm1(abs(y)) - eps)
+            eps = self.EPSILON
+            recon_val_linear_scaled = self.slog1p_inv(recon_val, eps)
+            target_val_linear_scaled = self.slog1p_inv(target_val, eps)
 
-            # Inverse transform per sample
+            # Move to NumPy for scaler operations
+            recon_val_np = recon_val_linear_scaled.detach().cpu().numpy()
+            target_val_np = target_val_linear_scaled.detach().cpu().numpy()
+
+            # Step 2: Use the scaler to inverse the linear scaling and get original values
             recon_val_orig = np.stack(
                 [
                     s.inverse_transform(r.reshape(-1, 1)).flatten()
@@ -123,10 +146,8 @@ class Stage1Autoencoder(pl.LightningModule):
             # FIXME: A more precise error would be beneficial
             raise NotImplementedError("A scaler was not implemented for a concept/unit pair")
 
-        # non-scaled
+        # The loss is still calculated on the log-transformed, scaled values for stability
         embedding_loss = self.loss_fn(recon_emb, target_emb)
-
-        # scaled
         value_loss = self.loss_fn(recon_val, target_val)
 
         total_loss = (
