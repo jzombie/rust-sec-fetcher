@@ -122,7 +122,7 @@ class Stage1Autoencoder(pl.LightningModule):
             recon_val_np = recon_val_linear_scaled.detach().cpu().numpy()
             target_val_np = target_val_linear_scaled.detach().cpu().numpy()
 
-            # Step 2: Use the scaler to inverse the linear scaling and get original values
+            # Use the scaler to inverse the linear scaling and get original values
             recon_val_orig = np.stack(
                 [
                     s.inverse_transform(r.reshape(-1, 1)).flatten()
