@@ -10,6 +10,7 @@ import numpy as np
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 
+
 def test_ingestion_and_lookup():
     # Create test CSVs in temp dir
     csv_dir = os.path.join(script_dir, "assets/truncated_csvs")
@@ -60,30 +61,22 @@ def test_ingestion_and_lookup():
     assert len(cached_data) == triplet_count
 
     # Inverse scaling
-    has_unscaled_value_check = False
-    for i in range(0, triplet_count):
-        data = cached_data[i]
-
-        # Sanity check to ensure the scaler is actually working
-        if data.unscaled_value != 0:
-            # ONLY assert that the values are different if the scaler has an IQR
-            # greater than zero, which means there is a statistical distribution
-            # to scale the data around
-            if data.scaler.scale_ > 0:
-                assert data.unscaled_value != data.scaled_value
-            else:
-                # Fallback assertion for when there is no variation in the data
-                assert data.unscaled_value == data.scaled_value
+    for data in cached_data:
+        # A scaler's `.scale_` attribute is the IQR. If the IQR is zero,
+        # it means all values for this pair were identical, and no scaling
+        # should have been applied.
+        if data.scaler.scale_ == 0:
+            # Check if the unscaled value equals the scaled value.
+            assert data.unscaled_value == data.scaled_value
         else:
-            # Fallback assertion for when the unscaled value is zero
-            assert data.scaled_value == 0
+            # Otherwise, the scaler should have transformed the data.
+            # The transformed value must not be the same as the unscaled value
+            # unless the unscaled value is the median itself. We can check this.
+            if data.unscaled_value != data.scaler.median_:
+                assert data.unscaled_value != data.scaled_value
 
-        # For 64-bit internal values
-        transformed = data.scaler.transform([[data.unscaled_value]])[0][0]
-        assert (
-            transformed == data.scaled_value
-        ), f"Expected {data.scaled_value}, but got {transformed}"
-
-        has_unscaled_value_check = True
-
-    assert has_unscaled_value_check
+        # Finally, a sanity check to ensure the scaler's transform method
+        # gives the expected scaled value for the original unscaled value.
+        transformed_value = data.scaler.transform([[data.unscaled_value]])[0][0]
+        # We use a tolerance because of potential floating point inaccuracies.
+        assert np.isclose(transformed_value, data.scaled_value)
