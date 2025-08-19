@@ -19,7 +19,7 @@ def test_ingestion_and_lookup():
     db = DbUsGaap(db_config)
 
     # Connect to store
-    data_store = DataStoreWsClient(simd_r_drive_server_config.host, simd_r_drive_server_config.port)
+    data_store = DataStoreWsClient(simd_r_drive_ws_server_config.host, simd_r_drive_server_config.port)
 
     us_gaap_store = UsGaapStore(data_store)
 
@@ -61,22 +61,20 @@ def test_ingestion_and_lookup():
     assert len(cached_data) == triplet_count
 
     # Inverse scaling
-    for data in cached_data:
-        # A scaler's `.scale_` attribute is the IQR. If the IQR is zero,
-        # it means all values for this pair were identical, and no scaling
-        # should have been applied.
-        if data.scaler.scale_ == 0:
-            # Check if the unscaled value equals the scaled value.
-            assert data.unscaled_value == data.scaled_value
-        else:
-            # Otherwise, the scaler should have transformed the data.
-            # The transformed value must not be the same as the unscaled value
-            # unless the unscaled value is the median itself. We can check this.
-            if data.unscaled_value != data.scaler.median_:
-                assert data.unscaled_value != data.scaled_value
+    has_unscaled_value_check = False
+    for i in range(0, triplet_count):
+        data = cached_data[i]
 
-        # Finally, a sanity check to ensure the scaler's transform method
-        # gives the expected scaled value for the original unscaled value.
-        transformed_value = data.scaler.transform([[data.unscaled_value]])[0][0]
-        # We use a tolerance because of potential floating point inaccuracies.
-        assert np.isclose(transformed_value, data.scaled_value)
+        # For 64-bit internal values
+        transformed = data.scaler.transform([[data.unscaled_value]])[0][0]
+        assert (
+            transformed == data.scaled_value
+        ), f"Expected {data.scaled_value}, but got {transformed}"
+        
+        # Ensure that the scaler can unscale the data correctly
+        unscaled_value = data.scaler.inverse_transform([[transformed]])[0][0]
+        assert np.isclose(unscaled_value, data.unscaled_value), f"Expected {data.unscaled_value}, but got {unscaled_value}"
+
+        has_unscaled_value_check = True
+
+    assert has_unscaled_value_check
