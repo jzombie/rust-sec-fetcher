@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from torch import nn
 import pytorch_lightning as pl
+from us_gaap_store.constants import EPSILON
 
 from torch.nn.functional import cosine_similarity
 # import torch.nn.functional as F
@@ -12,7 +13,7 @@ from .helpers import AggregateStats, DecoderWithAttention, EncoderWithAttention
 
 
 class Stage1Autoencoder(pl.LightningModule):
-    EPSILON = torch.finfo(torch.float32).eps
+    EPSILON = EPSILON
 
     def __init__(
         self,

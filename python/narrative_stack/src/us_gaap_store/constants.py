@@ -1,4 +1,5 @@
 # Note: Debugging hardcoded value instead of using `torch.finfo(torch.float32).eps`
+# Upside of hardcoding this is to keep it identical between PyTorch and NumPy code.
 EPSILON = 1e-8
 
 STAGE2_CATEGORY_STACKS: list[str] = [
