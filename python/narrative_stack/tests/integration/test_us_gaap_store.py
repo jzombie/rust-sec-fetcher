@@ -66,7 +66,17 @@ def test_ingestion_and_lookup():
 
         # Sanity check to ensure the scaler is actually working
         if data.unscaled_value != 0:
-            assert data.unscaled_value != data.scaled_value
+            # ONLY assert that the values are different if the scaler has an IQR
+            # greater than zero, which means there is a statistical distribution
+            # to scale the data around
+            if data.scaler.scale_ > 0:
+                assert data.unscaled_value != data.scaled_value
+            else:
+                # Fallback assertion for when there is no variation in the data
+                assert data.unscaled_value == data.scaled_value
+        else:
+            # Fallback assertion for when the unscaled value is zero
+            assert data.scaled_value == 0
 
         # For 64-bit internal values
         transformed = data.scaler.transform([[data.unscaled_value]])[0][0]
