@@ -60,6 +60,7 @@ def test_ingestion_and_lookup():
     print(f"Cached data length: {len(cached_data)}")
     assert len(cached_data) == triplet_count
 
+    # TODO: This should be checking for inverse log scaled values as well
     # Inverse scaling
     has_unscaled_value_check = False
     for i in range(0, triplet_count):
