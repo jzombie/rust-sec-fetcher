@@ -452,10 +452,14 @@ class Stage2Autoencoder(pl.LightningModule):
         # Project to the final shared latent dimension.
         shared_latent = self.fusion_to_shared(fused_representation)
 
-        # === Normalize shared latent before decoding ===
+        # === Begin process shared latent before decoding ===
         assert not torch.isnan(shared_latent).any(), "NaN before normalization"
-        shared_latent = F.normalize(shared_latent, p=2, dim=-1, eps=1e-8)
+        
+        # TODO: Keep commented?
+        # shared_latent = F.normalize(shared_latent, p=2, dim=-1, eps=1e-8)
+        
         assert not torch.isnan(shared_latent).any(), "NaN after normalization"
+        # === End process shared latent before decoding ===
 
         # 3. Decode each category using the shared vector AND its specific anchor.
         reconstructions = []
