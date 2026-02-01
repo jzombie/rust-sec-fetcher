@@ -74,12 +74,12 @@ pub fn parse_us_gaap_fundamentals(
     // Perform a single pivot (values include units)
     let mut pivot_df = pivot(
         &df,
-        ["fy", "fp", "form", "filed", "accn"]
+        ["fact_name"]
             .iter()
             .map(|&s| s.to_string())
             .collect::<Vec<String>>(),
         Some(
-            ["fact_name"]
+            ["fy", "fp", "form", "filed", "accn"]
                 .iter()
                 .map(|&s| s.to_string())
                 .collect::<Vec<String>>(),
@@ -94,101 +94,6 @@ pub fn parse_us_gaap_fundamentals(
         Some(col("value").first()), // Just take the first occurrence
         None,
     )?;
-
-    // Transpose to flip rows & columns
-    pivot_df = pivot_df.transpose(Some("fact_name"), None)?;
-
-    // Extract first row as column names
-    let new_column_names = pivot_df
-        .head(Some(1))
-        .transpose(None, None)?
-        .column("column_0")?
-        .str()?
-        .into_iter()
-        .map(|opt| opt.unwrap_or("Unknown").to_string()) // Handle missing values
-        .collect::<Vec<String>>();
-
-    // Drop the first row and assign new column names
-    let mut pivot_df = pivot_df.tail(Some(pivot_df.height() - 1));
-    pivot_df.set_column_names(&new_column_names)?;
-
-    // Extract fact_name details as separate columns
-    let fact_name_series = pivot_df
-        .column("fact_name")?
-        .str()?
-        .into_iter()
-        .map(|opt| {
-            opt.unwrap_or("{0,0,0,0,0}")
-                .trim_matches(&['{', '}'][..])
-                .split(',')
-                .map(|s| s.trim().to_string())
-                .collect::<Vec<String>>()
-        })
-        .collect::<Vec<Vec<String>>>();
-
-    let fy_series = Series::new(
-        "fy".into(),
-        fact_name_series
-            .iter()
-            .map(|x| {
-                x.get(0)
-                    .map(|s| s.trim_matches('"').to_string())
-                    .unwrap_or_default()
-            }) // Safe indexing & cleanup
-            .collect::<Vec<String>>(),
-    );
-    let fp_series = Series::new(
-        "fp".into(),
-        fact_name_series
-            .iter()
-            .map(|x| {
-                x.get(1)
-                    .map(|s| s.trim_matches('"').to_string())
-                    .unwrap_or_default()
-            }) // Safe indexing & cleanup
-            .collect::<Vec<String>>(),
-    );
-    let form_series = Series::new(
-        "form".into(),
-        fact_name_series
-            .iter()
-            .map(|x| {
-                x.get(2)
-                    .map(|s| s.trim_matches('"').to_string())
-                    .unwrap_or_default()
-            }) // Safe indexing & cleanup
-            .collect::<Vec<String>>(),
-    );
-    let filed_series = Series::new(
-        "filed".into(),
-        fact_name_series
-            .iter()
-            .map(|x| {
-                x.get(3)
-                    .map(|s| s.trim_matches('"').to_string())
-                    .unwrap_or_default()
-            }) // Safe indexing & cleanup
-            .collect::<Vec<String>>(),
-    );
-    let accn_series = Series::new(
-        "accn".into(),
-        fact_name_series
-            .iter()
-            .map(|x| {
-                x.get(4)
-                    .map(|s| s.trim_matches('"').to_string())
-                    .unwrap_or_default()
-            }) // Safe indexing & cleanup
-            .collect::<Vec<String>>(),
-    );
-
-    pivot_df.drop_in_place("fact_name")?;
-    pivot_df
-        .with_column(fy_series)?
-        .with_column(fp_series)?
-        .with_column(form_series)?
-        .with_column(filed_series)?
-        .with_column(accn_series)?;
 
     let filed_date_series: Series = pivot_df
         .column("filed")?
