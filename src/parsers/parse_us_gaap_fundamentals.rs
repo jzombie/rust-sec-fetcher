@@ -5,8 +5,24 @@ use std::error::Error;
 
 pub type TickerFundamentalsDataFrame = DataFrame;
 
-// TODO: Document how sorting is performed internally
 // TODO: Include potential support for Form 10-SA or whatever will be used for semi-annual reporting
+
+/// Parses a US GAAP fundamentals JSON object into a Polars DataFrame.
+///
+/// # Sorting and Deduplication Logic
+/// The parser processes the JSON facts list and performs the following steps to ensure
+/// the DataFrame contains the most accurate and up-to-date information:
+///
+/// 1. **Extraction**: All facts are extracted with their metadata (fy, fp, filed, accn).
+/// 2. **Chronological Sorting (Filings)**: The intermediate DataFrame is sorted by the 'filed'
+///    date in descending order (`.sort(["filed"], descending=true)`).
+/// 3. **Deduplication (Last-in Wins)**: When multiple records exist for the same fiscal period
+///    (same `fy` and `fp` keys), the `pivot` operation aggregates using the `.first()` function.
+///    Because the data was pre-sorted by `filed` descending, `.first()` selects the record
+///    from the most recent filing (e.g., an amendment `10-Q/A` filed later will overwrite
+///    the original `10-Q`).
+/// 4. **Row Ordering**: The final DataFrame is sorted by Fiscal Year (`fy`) descending, and
+///    then by Fiscal Period (`fp`) descending (FY > Q3 > Q2 > Q1).
 pub fn parse_us_gaap_fundamentals(
     serde_json_value: Value,
 ) -> Result<TickerFundamentalsDataFrame, Box<dyn Error>> {
