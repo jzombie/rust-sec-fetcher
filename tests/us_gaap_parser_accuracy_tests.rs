@@ -14,7 +14,7 @@ use std::path::PathBuf;
 /// DataFrame is missing a fact that exists in the JSON (unless that fact causes a mismatch in existing cells).
 fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
     // 1. Get list of fact columns (excluding metadata)
-    let meta_cols = vec!["fy", "fp", "filed", "form", "accn"];
+    let meta_cols = vec!["fy", "fp", "filed", "form", "accn", "canonical_order"];
     // df.get_column_names() returns a slice of &PlSmallStr in recent Polars
     let all_cols = df.get_column_names();
     
@@ -407,6 +407,48 @@ fn test_parser_prioritizes_amendments_synthetic() {
     // Check that we captured the metadata of the amendment
     let accn_col = row_df.column("accn").unwrap();
     assert_eq!(accn_col.get(0).unwrap().get_str().unwrap(), "000-AMENDMENT");
+}
+
+#[test]
+fn test_canonical_order_column_exists_and_monotonic() {
+    let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    d.push("tests/fixtures/AAPL_companyfacts.json");
+    
+    let file = File::open(&d).expect("Could not find AAPL fixture");
+    let reader = BufReader::new(file);
+    let json_data: Value = serde_json::from_reader(reader).expect("Failed to parse fixture JSON");
+
+    let df = parse_us_gaap_fundamentals(json_data).expect("Failed to parse dataframe");
+    
+    // Check column existence
+    let index_col = df.column("canonical_order").expect("canonical_order column missing");
+    
+    // Check it is u32 or u64 (Polars row index is usually u32)
+    // We expect it to be 0..N
+    let index_vals: Vec<u32> = index_col
+        .u32()
+        .expect("canonical_order should be u32")
+        .into_no_null_iter()
+        .collect();
+        
+    for (i, &val) in index_vals.iter().enumerate() {
+        assert_eq!(val, i as u32, "Canonical order should be equal to the row index");
+    }
+    
+    // Check that it correlates with FY descending (Reverse Chronological)
+    let fy_col = df.column("fy").unwrap().u64().unwrap();
+    
+    for i in 0..(df.height() - 1) {
+        let current_fy = fy_col.get(i).unwrap();
+        let next_fy = fy_col.get(i+1).unwrap();
+        
+        // Since canonical order 0 is latest, 1 is older...
+        // FY[0] should be >= FY[1]
+        assert!(current_fy >= next_fy, "Rows should be strict reverse chronological (FY desc) but row {} is FY{} and row {} is FY{}", i, current_fy, i+1, next_fy);
+        
+        // Logic check: Canonical Order 0 < Canonical Order 1
+        // Real Time 0 > Real Time 1
+    }
 }
 
 

@@ -211,11 +211,19 @@ pub fn parse_us_gaap_fundamentals(
             .with_nulls_last(true),
     )?;
 
+    // Add a canonical order index (0 = Latest Time Period, 1 = Previous, etc.)
+    // This provides a stable, integer-based reverse chronological sort key.
+    pivot_df = pivot_df
+        .lazy()
+        .with_row_index("canonical_order", None)
+        .collect()?;
+
     // Drop the helper rank column
     let _ = pivot_df.drop_in_place("fp_rank");
 
-    // Reorder columns to place metadata (fy, fp, filed, form, accn) at the start
+    // Reorder columns to place metadata (canonical_order, fy, fp, filed, form, accn) at the start
     let mut desired_cols = vec![
+        "canonical_order".to_string(),
         "fy".to_string(),
         "fp".to_string(),
         "filed".to_string(),
@@ -348,11 +356,12 @@ mod tests {
 
         // 1. Validate Columns: Metadata columns must be first
         let cols = df.get_column_names();
-        assert_eq!(cols[0].as_str(), "fy");
-        assert_eq!(cols[1].as_str(), "fp");
-        assert_eq!(cols[2].as_str(), "filed");
-        assert_eq!(cols[3].as_str(), "form");
-        assert_eq!(cols[4].as_str(), "accn");
+        assert_eq!(cols[0].as_str(), "canonical_order");
+        assert_eq!(cols[1].as_str(), "fy");
+        assert_eq!(cols[2].as_str(), "fp");
+        assert_eq!(cols[3].as_str(), "filed");
+        assert_eq!(cols[4].as_str(), "form");
+        assert_eq!(cols[5].as_str(), "accn");
         assert!(cols.iter().any(|c| c.as_str() == "Revenue"));
 
         // 2. Validate row count: Should be 3 rows (2024 FY, 2024 Q3, 2024 Q2).
