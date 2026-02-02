@@ -77,9 +77,12 @@ fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
                                     };
                                     
                                     let obs_fy = if let Some(f) = obs["fy"].as_u64() {
-                                         // FIX LOGIC:
-                                         if end_year > 0 && f > end_year {
-                                            continue; 
+                                         // FIX LOGIC: Match the parser's mixed strictness checks
+                                         let obs_fp_check = obs["fp"].as_str().unwrap_or("FY");
+                                         if obs_fp_check == "FY" {
+                                             if end_year > 0 && f > end_year { continue; }
+                                         } else {
+                                             if end_year > 0 && f > end_year + 1 { continue; }
                                          }
                                          f
                                     } else {

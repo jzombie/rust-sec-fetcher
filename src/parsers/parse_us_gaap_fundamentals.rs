@@ -59,10 +59,25 @@ pub fn parse_us_gaap_fundamentals(
                                 // Use the 'fy' field from the observation if available.
                                 // Otherwise, derive it from the 'end' date.
                                 let fy_derived = if let Some(fy) = obs["fy"].as_u64() {
-                                    // Sanity check: fy should not be greater than end_year
-                                    // This filters out historical rows incorrectly tagged with the current filing's FY.
-                                    if end_year > 0 && fy > end_year {
-                                        continue;
+                                    let fp_str = obs["fp"].as_str().unwrap_or("FY");
+                                    
+                                    // Sanity check logic based on period type
+                                    if fp_str == "FY" {
+                                        // Annual (FY): Strict Check.
+                                        // Fiscal Year usually matches the Calendar Year of the end date.
+                                        // e.g. Nvidia FY2024 ends Jan 2024 (fy=2024, end_year=2024).
+                                        // If fy > end_year, it's likely a mislabeled future year (e.g. 2023 data labeled as 2024).
+                                        if end_year > 0 && fy > end_year {
+                                            continue;
+                                        }
+                                    } else {
+                                        // Interim (Q1-Q3): Relaxed Check.
+                                        // Quarters often fall in the calendar year prior to the FY assignment.
+                                        // e.g. Nvidia FY2024 Q1 ends April 2023 (fy=2024, end_year=2023).
+                                        // We allow fy to be end_year + 1.
+                                        if end_year > 0 && fy > end_year + 1 {
+                                            continue;
+                                        }
                                     }
                                     fy
                                 } else {
@@ -366,5 +381,72 @@ mod tests {
         assert_eq!(fy_col.get(2), Some(2024));
         assert_eq!(fp_col.get(2), Some("Q2"));
         assert_eq!(revenue_col.get(2), Some("1000::USD"));
+    }
+
+    #[test]
+    fn test_off_calendar_fiscal_year_logic() {
+        // Scenario:
+        // 1. Standard Calendar Year: FY 2023 matches End 2023.
+        // 2. Off-Calendar Year (e.g. Nvidia): FY 2024 ends in early 2023 (or late 2023).
+        //    Logic allows fy <= end_year + 1.
+        // 3. Invalid/Data Error: FY 2025 tagged for End 2023. (fy > end_year + 1). Should be dropped.
+
+        let mock_json = json!({
+            "facts": {
+                "us-gaap": {
+                    "Revenues": {
+                        "label": "Revenues",
+                        "description": "Revenues",
+                        "units": {
+                            "USD": [
+                                // Case 1: Standard (Keep)
+                                {
+                                    "val": 100.0,
+                                    "end": "2023-12-31",
+                                    "fy": 2023,
+                                    "fp": "FY",
+                                    "form": "10-K",
+                                    "filed": "2024-03-01",
+                                    "accn": "standard-2023"
+                                },
+                                // Case 2: Off-Calendar / FY Forward (Keep)
+                                // e.g. FY 2024 Q1 ending in April 2023
+                                {
+                                    "val": 200.0,
+                                    "end": "2023-04-30",
+                                    "fy": 2024,
+                                    "fp": "Q1",
+                                    "form": "10-Q",
+                                    "filed": "2023-06-01",
+                                    "accn": "off-calendar-2024-q1"
+                                },
+                                // Case 3: Invalid Gap (Drop)
+                                // FY 2026 tagged on 2023 data. Gap of > 1 year.
+                                {
+                                    "val": 300.0,
+                                    "end": "2023-12-31",
+                                    "fy": 2026,
+                                    "fp": "FY",
+                                    "form": "10-K",
+                                    "filed": "2024-03-01",
+                                    "accn": "invalid-gap"
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        });
+
+        let df = parse_us_gaap_fundamentals(mock_json).expect("Failed to parse mock JSON with off-calendar dates");
+
+        assert_eq!(df.height(), 2, "Should reserve 2 rows, dropping the invalid gap row");
+
+        let accn_col = df.column("accn").unwrap().str().unwrap();
+        let accn_values: Vec<&str> = accn_col.into_iter().flatten().collect();
+
+        assert!(accn_values.contains(&"standard-2023"));
+        assert!(accn_values.contains(&"off-calendar-2024-q1"));
+        assert!(!accn_values.contains(&"invalid-gap"));
     }
 }
