@@ -100,11 +100,18 @@ fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
                                     continue;
                                 }
 
-                                // Sort candidates by filed date descending
+                                // Sort candidates by filed date descending, then end date descending
                                 candidates.sort_by(|a, b| {
-                                    let da = a["filed"].as_str().unwrap_or("");
-                                    let db = b["filed"].as_str().unwrap_or("");
-                                    db.cmp(da) // Descending
+                                    let filed_a = a["filed"].as_str().unwrap_or("");
+                                    let filed_b = b["filed"].as_str().unwrap_or("");
+                                    let c = filed_b.cmp(filed_a); // Descending filed
+                                    if c == std::cmp::Ordering::Equal {
+                                        let end_a = a["end"].as_str().unwrap_or("");
+                                        let end_b = b["end"].as_str().unwrap_or("");
+                                        end_b.cmp(end_a) // Descending end
+                                    } else {
+                                        c
+                                    }
                                 });
                                 
                                 // Best candidate is the first one

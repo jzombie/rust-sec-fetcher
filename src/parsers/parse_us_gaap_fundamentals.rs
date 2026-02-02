@@ -123,12 +123,17 @@ pub fn parse_us_gaap_fundamentals(
         "accn" => &accn_values
     )?;
 
-    // Sort by 'filed' date descending so that when we pivot and aggregate using .first(),
-    // we take the most recently filed data (amendments/restatements) over older data.
+    // Sort Logic:
+    // 1. 'filed' descending: Prioritize the latest filing date (Amendments > Original).
+    // 2. 'end' descending: Within the same filing (or same filed date), prioritize the Latest Instant/Period End.
+    //    This is CRITICAL for Balance Sheet (Instant) items in quarterly filings.
+    //    A Q1 filing contains both Current Q1 End (2025-03-31) and Prior Year End (2024-12-31).
+    //    Both are tagged 'Q1' by the SEC in some contexts, but we want the '2025-03-31' value for the Q1 row.
+    //    Sorting by 'end' descending ensures the latest date comes first, so .first() picks the actual Q1 balance.
     df = df.sort(
-        ["filed"],
+        ["filed", "end"],
         SortMultipleOptions::default()
-            .with_order_descending(true)
+            .with_order_descending(true) // Descending for both
             .with_nulls_last(true),
     )?;
 
