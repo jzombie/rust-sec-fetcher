@@ -6,6 +6,7 @@ use std::error::Error;
 pub type TickerFundamentalsDataFrame = DataFrame;
 
 // TODO: Document how sorting is performed internally
+// TODO: Include potential support for Form 10-SA or whatever will be used for semi-annual reporting
 pub fn parse_us_gaap_fundamentals(
     serde_json_value: Value,
 ) -> Result<TickerFundamentalsDataFrame, Box<dyn Error>> {
