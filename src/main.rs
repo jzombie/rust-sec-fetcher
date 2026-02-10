@@ -1,3 +1,6 @@
+// TODO: Consider uploading XBRL artifacts to HF as "XBRL_facts_and_figures" (or similar) dataset for easier access and sharing.
+// It would also be helpful to include XBRL US-GAAP fact documentation from the current year taxonomy.
+
 use log::{error, info};
 use polars::prelude::{CsvWriter, SerWriter};
 use sec_fetcher::{
