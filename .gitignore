@@ -4,3 +4,5 @@ sec_fetcher_config.toml
 
 **/out.txt
 **/*.bin
+
+**/temp_*

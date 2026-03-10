@@ -25,7 +25,7 @@ The **SIC codes less than 1000** primarily cover **agriculture, forestry, fishin
 
 ### **Mapping SIC Codes < 1000 to Sectors**
 | **SIC Code Range** | **Industry**                        | **Mapped Sector**    |
-|--------------------|-------------------------------------|----------------------|
+| ------------------ | ----------------------------------- | -------------------- |
 | **0100-0199**      | Agricultural Production – Crops     | **Consumer Staples** |
 | **0200-0299**      | Agricultural Production – Livestock | **Consumer Staples** |
 | **0700-0799**      | Agricultural Services               | **Industrials**      |
@@ -39,7 +39,7 @@ The **SIC codes less than 1000** primarily cover **agriculture, forestry, fishin
 
 ### **11 Common Sectors with SIC Mapping**
 | **Sector**                     | **SIC Code Range**                                                                                |
-|--------------------------------|---------------------------------------------------------------------------------------------------|
+| ------------------------------ | ------------------------------------------------------------------------------------------------- |
 | **Energy**                     | 1000-1499, 2900-2999, 4900-4999                                                                   |
 | **Materials**                  | 2800-2899, 3200-3299, 3300-3399                                                                   |
 | **Industrials**                | 1500-1799, 3400-3499, 3500-3599, 3700-3799                                                        |
@@ -178,7 +178,7 @@ The Entity Name column will reflect these ETF providers.
 ### N-PORT Field Explanations:
 
 | **Field**                         | **Meaning**                                                                                                                                                                         | **Possible Values**                                                                                           |
-|-----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | `<name>`                          | The name of the **issuing entity** (company, fund, etc.).                                                                                                                           | A string, typically the legal name of the company (e.g., `"Everest Group Ltd."`).                             |
 | `<lei>`                           | **Legal Entity Identifier (LEI)** – a unique global identifier for legal entities engaged in financial transactions.                                                                | A 20-character alphanumeric string assigned to the company (e.g., `"549300N24XF2VV0B3570"`).                  |
 | `<title>`                         | The security's title, usually the same as `<name>`.                                                                                                                                 | A string, often the same as `<name>`.                                                                         |
@@ -216,6 +216,14 @@ https://data.sec.gov/submissions/CIK##########.json
 ```
 
 Look for `form == "13F-HR"` (the main holdings report) in the `filings.recent` section.
+
+> _Berkshire Hathaway files 13F statements_
+
+**Who must file Form 13F?**
+
+Institutional investment managers that use the United States mail (or other means or instrumentality of interstate commerce) in the course of their business and that exercise investment discretion over $100 million or more in Section 13(f) securities must file Form 13F.
+
+https://www.sec.gov/rules-regulations/staff-guidance/division-investment-management-frequently-asked-questions/frequently-asked-questions-about-form-13f
 
 #### Filing URL Construction:
 
@@ -268,7 +276,7 @@ https://www.sec.gov/Archives/edgar/data/{CIK}/{ACCESSION_NUMBER}/index.json
 #### Common Fields:
 
 | **Field**              | **Description**                        |
-|------------------------|----------------------------------------|
+| ---------------------- | -------------------------------------- |
 | `transactionDate`      | Date of insider trade                  |
 | `transactionCode`      | Code: `P` = purchase, `S` = sale, etc. |
 | `securitiesTransacted` | Number of shares bought or sold        |

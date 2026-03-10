@@ -1,3 +1,6 @@
+// TODO: Consider uploading XBRL artifacts to HF as "XBRL_facts_and_figures" (or similar) dataset for easier access and sharing.
+// It would also be helpful to include XBRL US-GAAP fact documentation from the current year taxonomy.
+
 use log::{error, info};
 use polars::prelude::{CsvWriter, SerWriter};
 use sec_fetcher::{
@@ -14,6 +17,8 @@ use std::fs::File;
 use std::path::Path;
 use tokio;
 use tokio::fs::create_dir_all;
+
+const STORAGE_VAULT_PATH: &str = "data/01-feb-2026-us-gaap";
 
 // Prototype iterator for investment companies
 // #[tokio::main]
@@ -181,6 +186,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("Total records: {}", company_tickers.len());
     println!("{:?}", company_tickers.head(60));
 
+    // Ensure output directory exists
+    tokio::fs::create_dir_all(STORAGE_VAULT_PATH).await?;
+
     // let ticker_series = tickers_df.column("ticker")?.str()?;
     let mut error_log: HashMap<String, String> = HashMap::new();
 
@@ -202,21 +210,26 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         match fetch_us_gaap_fundamentals(&client, &company_tickers, &ticker_symbol).await {
             Ok(mut fundamentals_df) => {
-                let file_path = format!("data/22-june-us-gaap/{}.csv", &ticker_symbol);
+                let mut file_path = std::path::PathBuf::from(STORAGE_VAULT_PATH);
+                file_path.push(format!("{}.csv", &ticker_symbol));
                 match File::create(&file_path) {
                     Ok(mut file) => {
                         if let Err(e) = CsvWriter::new(&mut file)
                             .include_header(true)
                             .finish(&mut fundamentals_df)
                         {
-                            error_log
-                                .insert(ticker_symbol.clone(), format!("CSV write error: {}", e));
+                            error_log.insert(
+                                ticker_symbol.clone(),
+                                format!("CSV write error: {}", e),
+                            );
                         }
                     }
                     Err(e) => {
                         eprintln!("File creation error: {}", e);
-                        error_log
-                            .insert(ticker_symbol.clone(), format!("File creation error: {}", e));
+                        error_log.insert(
+                            ticker_symbol.clone(),
+                            format!("File creation error: {}", e),
+                        );
                     }
                 }
             }
