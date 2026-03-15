@@ -42,3 +42,5 @@ tokio = { version = "1.43.0", features = ["full"] }
 [dev-dependencies]
 mockito = "1.7.0"
 tempfile = "3.18.0"
+html-to-markdown-rs = "2.28.2"
+regex = "1.12.3"
