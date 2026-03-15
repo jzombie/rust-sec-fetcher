@@ -180,9 +180,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or_else(|| "unknown date".to_string());
 
     eprintln!(
-        "Fetching filing index for {} 8-K ({})",
-        ticker_symbol, date
+        "Fetching filing index for {} 8-K ({})  items={}",
+        ticker_symbol,
+        date,
+        latest.items.join(",")
     );
+
+    let path = if latest.is_earnings_release() {
+        "Path 1 (Earnings Release — Item 2.02)"
+    } else {
+        "Path 2 (Mid-Quarter Event)"
+    };
+    eprintln!("Routing: {}", path);
 
     let index = fetch_filing_index(&client, latest).await?;
     let exhibits = index.exhibits();

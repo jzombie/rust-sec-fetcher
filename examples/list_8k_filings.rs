@@ -36,15 +36,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     println!("{} 8-K filings for {}:\n", filings.len(), ticker_symbol);
-    println!("{:<12}  {}", "Date", "URL");
-    println!("{}", "-".repeat(80));
+    println!("{:<12}  {:<16}  {}", "Date", "Items", "URL");
+    println!("{}", "-".repeat(100));
 
     for filing in &filings {
         let date = filing
             .filing_date
             .map(|d| d.to_string())
             .unwrap_or_else(|| "unknown".to_string());
-        println!("{:<12}  {}", date, filing.as_primary_document_url());
+        let items = filing.items.join(",");
+        println!("{:<12}  {:<16}  {}", date, items, filing.as_primary_document_url());
     }
 
     Ok(())
