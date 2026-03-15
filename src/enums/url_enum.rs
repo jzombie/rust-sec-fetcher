@@ -36,15 +36,21 @@ pub enum Url {
     /// ordered newest-first by their acceptance timestamp — use the `<updated>`
     /// value of the most-recent entry as a high-water mark for delta polling.
     ///
-    /// See [`crate::network::fetch_edgar_feed`].
-    EdgarCurrentFeed { form_type: String, count: usize },
+    /// `before` is the optional `dateb` parameter (format: `"YYYYMMDDHHmmss"`).
+    /// Leave empty for the latest entries. Set to the acceptance timestamp of
+    /// the *oldest* entry in a batch to walk backwards (pagination).
+    ///
+    /// See [`crate::network::fetch_edgar_feed`] and
+    /// [`crate::network::fetch_edgar_feed_page`].
+    EdgarCurrentFeed { form_type: String, count: usize, before: String },
 
     /// Per-company Atom feed for a specific CIK, optionally filtered by form type.
     ///
     /// Useful for tracking a watchlist of companies. Returns richer structured
     /// data per entry than the global feed (company metadata, SIC code, etc.).
     /// Same `count` cap and `updated`-based delta semantics as `EdgarCurrentFeed`.
-    EdgarCompanyFeed { cik: Cik, form_type: String, count: usize },
+    /// Supports the same `before` / `dateb` pagination parameter.
+    EdgarCompanyFeed { cik: Cik, form_type: String, count: usize, before: String },
 }
 
 impl Url {
@@ -84,14 +90,15 @@ impl Url {
                 "https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json",
                 cik.to_string()
             ),
-            Url::EdgarCurrentFeed { form_type, count } => format!(
-                "https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type={}&dateb=&owner=include&count={}&search_text=&output=atom",
-                form_type, count
+            Url::EdgarCurrentFeed { form_type, count, before } => format!(
+                "https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type={}&dateb={}&owner=include&count={}&search_text=&output=atom",
+                form_type, before, count
             ),
-            Url::EdgarCompanyFeed { cik, form_type, count } => format!(
-                "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={}&type={}&dateb=&owner=include&count={}&search_text=&output=atom",
+            Url::EdgarCompanyFeed { cik, form_type, count, before } => format!(
+                "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={}&type={}&dateb={}&owner=include&count={}&search_text=&output=atom",
                 cik.to_string(),
                 form_type,
+                before,
                 count
             ),
         }

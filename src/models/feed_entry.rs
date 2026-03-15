@@ -1,5 +1,5 @@
 use crate::models::Cik;
-use chrono::NaiveDate;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 
 /// A single entry from an SEC EDGAR filing Atom feed.
 ///
@@ -46,12 +46,12 @@ pub struct FeedEntry {
     /// Pass this directly to a browser or use it to construct document URLs.
     pub filing_href: String,
 
-    /// EDGAR acceptance timestamp, ISO 8601 with UTC offset
-    /// (e.g. `"2026-03-13T17:30:01-04:00"`).
+    /// EDGAR acceptance timestamp.
     ///
-    /// Entries are sorted newest-first by this value. Store it as your
-    /// high-water mark for delta polling — see the type-level docs above.
-    pub updated: String,
+    /// Use this as your high-water mark for delta polling — see the type-level
+    /// docs above. Pass it to [`crate::network::fetch_edgar_feed_since`] as
+    /// `since` to receive only entries filed after this point.
+    pub updated: DateTime<FixedOffset>,
 
     /// 8-K item codes parsed from the feed summary (e.g. `["1.01", "9.01"]`).
     /// Empty for non-8-K forms.
@@ -71,5 +71,13 @@ impl FeedEntry {
         !self.is_earnings_release()
             && self.form_type.to_uppercase() == "8-K"
             && self.items.iter().any(|i| i != "9.01" && !i.is_empty())
+    }
+
+    /// Converts [`FeedEntry::updated`] to EDGAR's `dateb` format (`"YYYYMMDDHHmmss"`).
+    ///
+    /// Pass the result to [`crate::network::fetch_edgar_feed_page`] as the
+    /// `before` argument to fetch the next page of older entries.
+    pub fn updated_as_dateb(&self) -> String {
+        self.updated.format("%Y%m%d%H%M%S").to_string()
     }
 }

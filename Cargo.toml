@@ -39,8 +39,10 @@ strum = "0.27.1"
 strum_macros = "0.27.1"
 regex = "1.12.3"
 tokio = { version = "1.43.0", features = ["full"] }
+futures = "0.3.32"
 
 [dev-dependencies]
+indoc = "2.0.7"
 mockito = "1.7.0"
 tempfile = "3.18.0"
 html-to-markdown-rs = "2.28.2"

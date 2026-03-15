@@ -20,7 +20,10 @@ mod fetch_8k_filings;
 pub use fetch_8k_filings::fetch_8k_filings_by_ticker_symbol;
 
 mod fetch_edgar_feed;
-pub use fetch_edgar_feed::{fetch_edgar_feed, parse_edgar_atom_feed};
+pub use fetch_edgar_feed::{
+    fetch_edgar_feed, fetch_edgar_feed_page, fetch_edgar_feed_since, fetch_edgar_feeds_since,
+    parse_edgar_atom_feed, FeedDelta, EDGAR_PAGE_SIZE,
+};
 
 mod fetch_filing_index;
 pub use fetch_filing_index::fetch_filing_index;
