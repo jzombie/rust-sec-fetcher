@@ -142,12 +142,12 @@ pub fn parse_us_gaap_fundamentals(
             .with_nulls_last(true),
     )?;
 
-    // Extract metadata (filed, form, accn) for the latest filing per (fy, fp)
+    // Extract metadata (filed, form, accn, end) for the latest filing per (fy, fp)
     // We clone because we need to reuse df for the pivot
     let meta_df = df
         .clone()
         .lazy()
-        .select([col("fy"), col("fp"), col("filed"), col("form"), col("accn")])
+        .select([col("fy"), col("fp"), col("filed"), col("form"), col("accn"), col("end").alias("period_end")])
         .unique(
             Some(vec!["fy".to_string(), "fp".to_string()]),
             UniqueKeepStrategy::First,
@@ -246,11 +246,12 @@ pub fn parse_us_gaap_fundamentals(
         .collect();
     pivot_df.with_column(Series::new("filing_url".into(), filing_urls))?;
 
-    // Reorder columns to place metadata (canonical_order, fy, fp, filed, form, accn, filing_url) at the start
+    // Reorder columns to place metadata (canonical_order, fy, fp, period_end, filed, form, accn, filing_url) at the start
     let mut desired_cols = vec![
         "canonical_order".to_string(),
         "fy".to_string(),
         "fp".to_string(),
+        "period_end".to_string(),
         "filed".to_string(),
         "form".to_string(),
         "accn".to_string(),
@@ -385,9 +386,10 @@ mod tests {
         assert_eq!(cols[0].as_str(), "canonical_order");
         assert_eq!(cols[1].as_str(), "fy");
         assert_eq!(cols[2].as_str(), "fp");
-        assert_eq!(cols[3].as_str(), "filed");
-        assert_eq!(cols[4].as_str(), "form");
-        assert_eq!(cols[5].as_str(), "accn");
+        assert_eq!(cols[3].as_str(), "period_end");
+        assert_eq!(cols[4].as_str(), "filed");
+        assert_eq!(cols[5].as_str(), "form");
+        assert_eq!(cols[6].as_str(), "accn");
         assert!(cols.iter().any(|c| c.as_str() == "Revenue"));
 
         // 2. Validate row count: Should be 3 rows (2024 FY, 2024 Q3, 2024 Q2).

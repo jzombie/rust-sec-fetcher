@@ -14,7 +14,7 @@ use std::path::PathBuf;
 /// DataFrame is missing a fact that exists in the JSON (unless that fact causes a mismatch in existing cells).
 fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
     // 1. Get list of fact columns (excluding metadata)
-    let meta_cols = vec!["fy", "fp", "filed", "form", "accn", "canonical_order", "filing_url"];
+    let meta_cols = vec!["fy", "fp", "period_end", "filed", "form", "accn", "canonical_order", "filing_url"];
     // df.get_column_names() returns a slice of &PlSmallStr in recent Polars
     let all_cols = df.get_column_names();
     
