@@ -7,6 +7,9 @@ pub use cik::{Cik, CikError};
 mod cik_submission;
 pub use cik_submission::CikSubmission;
 
+mod feed_entry;
+pub use feed_entry::FeedEntry;
+
 mod filing_document;
 pub use filing_document::{FilingDocument, FilingIndex};
 

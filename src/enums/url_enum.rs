@@ -28,6 +28,23 @@ pub enum Url {
 
     /// Points to the `companyfacts` XBRL JSON API for a specific CIK.
     CompanyFacts(Cik),
+
+    /// The EDGAR "current filings" Atom feed, optionally filtered by form type.
+    ///
+    /// Set `form_type` to an empty string to receive all form types (the full
+    /// firehose). EDGAR caps `count` at 40 entries per request. Entries are
+    /// ordered newest-first by their acceptance timestamp — use the `<updated>`
+    /// value of the most-recent entry as a high-water mark for delta polling.
+    ///
+    /// See [`crate::network::fetch_edgar_feed`].
+    EdgarCurrentFeed { form_type: String, count: usize },
+
+    /// Per-company Atom feed for a specific CIK, optionally filtered by form type.
+    ///
+    /// Useful for tracking a watchlist of companies. Returns richer structured
+    /// data per entry than the global feed (company metadata, SIC code, etc.).
+    /// Same `count` cap and `updated`-based delta semantics as `EdgarCurrentFeed`.
+    EdgarCompanyFeed { cik: Cik, form_type: String, count: usize },
 }
 
 impl Url {
@@ -66,6 +83,16 @@ impl Url {
             Url::CompanyFacts(cik) => format!(
                 "https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json",
                 cik.to_string()
+            ),
+            Url::EdgarCurrentFeed { form_type, count } => format!(
+                "https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type={}&dateb=&owner=include&count={}&search_text=&output=atom",
+                form_type, count
+            ),
+            Url::EdgarCompanyFeed { cik, form_type, count } => format!(
+                "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={}&type={}&dateb=&owner=include&count={}&search_text=&output=atom",
+                cik.to_string(),
+                form_type,
+                count
             ),
         }
     }

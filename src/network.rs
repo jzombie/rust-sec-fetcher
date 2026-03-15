@@ -19,6 +19,9 @@ pub use fetch_cik_submissions::fetch_cik_submissions;
 mod fetch_8k_filings;
 pub use fetch_8k_filings::fetch_8k_filings_by_ticker_symbol;
 
+mod fetch_edgar_feed;
+pub use fetch_edgar_feed::{fetch_edgar_feed, parse_edgar_atom_feed};
+
 mod fetch_filing_index;
 pub use fetch_filing_index::fetch_filing_index;
 
