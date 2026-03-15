@@ -19,6 +19,9 @@ pub use fetch_cik_submissions::fetch_cik_submissions;
 mod fetch_8k_filings;
 pub use fetch_8k_filings::fetch_8k_filings_by_ticker_symbol;
 
+mod fetch_filing_index;
+pub use fetch_filing_index::fetch_filing_index;
+
 mod fetch_nport_filing;
 pub use fetch_nport_filing::{
     fetch_nport_filing_by_cik_and_accession_number, fetch_nport_filing_by_ticker_symbol,
