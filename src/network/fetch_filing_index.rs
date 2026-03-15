@@ -108,8 +108,7 @@ pub async fn fetch_filing_index(
     client: &SecClient,
     filing: &CikSubmission,
 ) -> Result<FilingIndex, Box<dyn Error>> {
-    let url =
-        Url::CikAccessionIndex(filing.cik.clone(), filing.accession_number.clone()).value();
+    let url = Url::CikAccessionIndex(filing.cik.clone(), filing.accession_number.clone()).value();
 
     let response = client
         .raw_request(reqwest::Method::GET, &url, None, None)

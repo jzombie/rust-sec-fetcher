@@ -12,7 +12,6 @@
 ///
 /// Example:
 ///   cargo run --example 8k_exhibits_as_markdown -- LLY
-
 use html_to_markdown_rs::{convert, ConversionOptions, HeadingStyle, PreprocessingPreset};
 use regex::Regex;
 use sec_fetcher::config::ConfigManager;
@@ -52,10 +51,11 @@ fn parse_table_row(line: &str) -> Vec<String> {
 }
 
 fn is_separator_row(line: &str) -> bool {
-    line.trim()
-        .trim_matches('|')
-        .split('|')
-        .all(|cell| cell.trim().chars().all(|c| c == '-' || c == ':' || c == ' '))
+    line.trim().trim_matches('|').split('|').all(|cell| {
+        cell.trim()
+            .chars()
+            .all(|c| c == '-' || c == ':' || c == ' ')
+    })
 }
 
 fn table_to_sentences(lines: &[&str]) -> String {
@@ -234,7 +234,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let text = response.text().await?;
             println!("{}", text);
         } else {
-            eprintln!("Skipping binary exhibit: {} ({})", exhibit.name, exhibit_url);
+            eprintln!(
+                "Skipping binary exhibit: {} ({})",
+                exhibit.name, exhibit_url
+            );
             println!("*Binary exhibit — not rendered ({}).*", exhibit_url);
         }
 

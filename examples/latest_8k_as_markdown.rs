@@ -7,7 +7,6 @@
 ///
 /// Example:
 ///   cargo run --example latest_8k_as_markdown -- LLY
-
 use html_to_markdown_rs::{convert, ConversionOptions, HeadingStyle, PreprocessingPreset};
 use regex::Regex;
 use sec_fetcher::config::ConfigManager;
@@ -54,10 +53,11 @@ fn parse_table_row(line: &str) -> Vec<String> {
 }
 
 fn is_separator_row(line: &str) -> bool {
-    line.trim()
-        .trim_matches('|')
-        .split('|')
-        .all(|cell| cell.trim().chars().all(|c| c == '-' || c == ':' || c == ' '))
+    line.trim().trim_matches('|').split('|').all(|cell| {
+        cell.trim()
+            .chars()
+            .all(|c| c == '-' || c == ':' || c == ' ')
+    })
 }
 
 /// Converts a collected block of markdown table lines into sentences.
@@ -196,4 +196,3 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
-

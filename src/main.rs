@@ -218,18 +218,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             .include_header(true)
                             .finish(&mut fundamentals_df)
                         {
-                            error_log.insert(
-                                ticker_symbol.clone(),
-                                format!("CSV write error: {}", e),
-                            );
+                            error_log
+                                .insert(ticker_symbol.clone(), format!("CSV write error: {}", e));
                         }
                     }
                     Err(e) => {
                         eprintln!("File creation error: {}", e);
-                        error_log.insert(
-                            ticker_symbol.clone(),
-                            format!("File creation error: {}", e),
-                        );
+                        error_log
+                            .insert(ticker_symbol.clone(), format!("File creation error: {}", e));
                     }
                 }
             }

@@ -58,7 +58,10 @@ pub async fn fetch_us_gaap_fundamentals(
         }
         Err(e) => {
             // Non-fatal: keep the index-page URLs already set by the parser
-            println!("Warning: could not fetch submissions for {}: {}", ticker_symbol, e);
+            println!(
+                "Warning: could not fetch submissions for {}: {}",
+                ticker_symbol, e
+            );
         }
     }
 

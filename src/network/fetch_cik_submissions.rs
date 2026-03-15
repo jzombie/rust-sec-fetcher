@@ -75,7 +75,12 @@ pub async fn fetch_cik_submissions(
 
     // Parse the primary `recent` block
     if let Some(recent) = data["filings"]["recent"].as_object() {
-        extract_filings_from_block(&Value::Object(recent.clone()), &cik, &entity_type, &mut submissions);
+        extract_filings_from_block(
+            &Value::Object(recent.clone()),
+            &cik,
+            &entity_type,
+            &mut submissions,
+        );
     }
 
     // Follow any paginated files listed in filings.files
@@ -86,11 +91,19 @@ pub async fn fetch_cik_submissions(
                 let page_url = Url::CikSubmissionPage(filename.to_string()).value();
                 match sec_client.fetch_json(&page_url, None).await {
                     Ok(page_data) => {
-                        extract_filings_from_block(&page_data, &cik, &entity_type, &mut submissions);
+                        extract_filings_from_block(
+                            &page_data,
+                            &cik,
+                            &entity_type,
+                            &mut submissions,
+                        );
                     }
                     Err(e) => {
                         // Non-fatal: skip this page rather than failing the whole fetch
-                        eprintln!("Warning: failed to fetch submissions page {}: {}", filename, e);
+                        eprintln!(
+                            "Warning: failed to fetch submissions page {}: {}",
+                            filename, e
+                        );
                     }
                 }
             }

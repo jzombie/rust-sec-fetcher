@@ -6,7 +6,6 @@
 ///
 /// Example:
 ///   cargo run --example list_8k_filings -- LLY
-
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::network::{fetch_8k_filings_by_ticker_symbol, fetch_company_tickers, SecClient};
 use std::env;
@@ -28,7 +27,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let company_tickers = fetch_company_tickers(&client).await?;
 
-    let filings = fetch_8k_filings_by_ticker_symbol(&client, &company_tickers, &ticker_symbol).await?;
+    let filings =
+        fetch_8k_filings_by_ticker_symbol(&client, &company_tickers, &ticker_symbol).await?;
 
     if filings.is_empty() {
         println!("No 8-K filings found for '{}'.", ticker_symbol);
@@ -45,7 +45,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .map(|d| d.to_string())
             .unwrap_or_else(|| "unknown".to_string());
         let items = filing.items.join(",");
-        println!("{:<12}  {:<16}  {}", date, items, filing.as_primary_document_url());
+        println!(
+            "{:<12}  {:<16}  {}",
+            date,
+            items,
+            filing.as_primary_document_url()
+        );
     }
 
     Ok(())
