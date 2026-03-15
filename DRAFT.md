@@ -329,6 +329,7 @@ Since primary documents for 10-Ks are .htm files, you need to:
 
 ### Logos
 
+- Logos are embedded as base64 in many filings.  Maybe extract them?
 - https://www.logo.dev/pricing
 
 ### Related
