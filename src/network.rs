@@ -32,3 +32,6 @@ mod fetch_nport_filing;
 pub use fetch_nport_filing::{
     fetch_nport_filing_by_cik_and_accession_number, fetch_nport_filing_by_ticker_symbol,
 };
+
+mod fetch_13f_filing;
+pub use fetch_13f_filing::fetch_13f_filing;

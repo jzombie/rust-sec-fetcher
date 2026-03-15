@@ -23,6 +23,10 @@ pub enum Url {
     /// CIK and Accession Number.
     CikAccessionPrimaryDocument(Cik, AccessionNumber),
 
+    /// Points to a named document within a specific filing archive.
+    /// Format: https://www.sec.gov/Archives/edgar/data/{CIK}/{accn_unformatted}/{filename}
+    CikAccessionDocument(Cik, AccessionNumber, String),
+
     /// Points to the full company ticker list JSON from the SEC.
     CompanyTickers,
 
@@ -84,6 +88,11 @@ impl Url {
             Url::CikAccessionPrimaryDocument(cik, accession_number ) => format!(
                 "{}/primary_doc.xml",
                 Url::CikAccession(cik.clone(), accession_number.clone()).value(),
+            ),
+            Url::CikAccessionDocument(cik, accession_number, filename) => format!(
+                "{}/{}",
+                Url::CikAccession(cik.clone(), accession_number.clone()).value(),
+                filename,
             ),
             Url::CompanyTickers => "https://www.sec.gov/files/company_tickers.json".to_string(),
             Url::CompanyFacts(cik) => format!(

@@ -21,3 +21,6 @@ pub use investment_company::InvestmentCompany;
 
 mod nport_investment;
 pub use nport_investment::NportInvestment;
+
+mod thirteenf_holding;
+pub use thirteenf_holding::ThirteenfHolding;
