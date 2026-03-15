@@ -18,7 +18,7 @@ use std::path::Path;
 use tokio;
 use tokio::fs::create_dir_all;
 
-const STORAGE_VAULT_PATH: &str = "data/01-feb-2026-us-gaap";
+const STORAGE_VAULT_PATH: &str = "data/14-mar-2026-us-gaap";
 
 // Prototype iterator for investment companies
 // #[tokio::main]

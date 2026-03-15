@@ -1,3 +1,5 @@
+use crate::enums::Url;
+use crate::models::{AccessionNumber, Cik};
 use polars::prelude::pivot::pivot;
 use polars::prelude::*;
 use serde_json::Value;
@@ -27,6 +29,9 @@ pub fn parse_us_gaap_fundamentals(
     serde_json_value: Value,
 ) -> Result<TickerFundamentalsDataFrame, Box<dyn Error>> {
     let data = serde_json_value;
+
+    // Extract CIK from the top-level JSON field for use in filing_url construction.
+    let cik_value: Option<u64> = data["cik"].as_u64();
 
     let mut fact_category_values = Vec::new();
     let mut fact_name_values = Vec::new();
@@ -221,7 +226,27 @@ pub fn parse_us_gaap_fundamentals(
     // Drop the helper rank column
     let _ = pivot_df.drop_in_place("fp_rank");
 
-    // Reorder columns to place metadata (canonical_order, fy, fp, filed, form, accn) at the start
+    // Add filing_url column: initial values are the EDGAR filing index page.
+    // fetch_us_gaap_fundamentals will overwrite these with primary document URLs
+    // for any accession numbers found in the submissions API.
+    let filing_urls: Vec<Option<String>> = pivot_df
+        .column("accn")?
+        .str()?
+        .into_iter()
+        .map(|opt| {
+            opt.map(|accn| {
+                let cik_struct = cik_value.and_then(|v| Cik::from_u64(v).ok());
+                let accn_struct = AccessionNumber::from_str(accn).ok();
+                match (cik_struct, accn_struct) {
+                    (Some(c), Some(a)) => Url::CikAccessionIndex(c, a).value(),
+                    _ => String::new(),
+                }
+            })
+        })
+        .collect();
+    pivot_df.with_column(Series::new("filing_url".into(), filing_urls))?;
+
+    // Reorder columns to place metadata (canonical_order, fy, fp, filed, form, accn, filing_url) at the start
     let mut desired_cols = vec![
         "canonical_order".to_string(),
         "fy".to_string(),
@@ -229,6 +254,7 @@ pub fn parse_us_gaap_fundamentals(
         "filed".to_string(),
         "form".to_string(),
         "accn".to_string(),
+        "filing_url".to_string(),
     ];
     let existing_cols = pivot_df.get_column_names();
 

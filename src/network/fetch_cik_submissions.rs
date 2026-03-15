@@ -5,75 +5,83 @@ use chrono::NaiveDate;
 use serde_json::Value;
 use std::error::Error;
 
+/// Parses a `filings` block (either `recent` or a paginated page) and appends
+/// results into the supplied output vectors.
+fn extract_filings_from_block(
+    block: &Value,
+    cik: &Cik,
+    entity_type: &Option<String>,
+    out: &mut Vec<CikSubmission>,
+) {
+    let accession_numbers = block["accessionNumber"].as_array();
+    let forms = block["form"].as_array();
+    let primary_documents = block["primaryDocument"].as_array();
+    let filing_dates = block["filingDate"].as_array();
+
+    let (Some(accns), Some(forms), Some(docs), Some(dates)) =
+        (accession_numbers, forms, primary_documents, filing_dates)
+    else {
+        return;
+    };
+
+    for (accn_val, form_val, doc_val, date_val) in
+        itertools::izip!(accns, forms, docs, dates)
+    {
+        let accession_number_str = accn_val.as_str().unwrap_or_default();
+        let accession_number = match AccessionNumber::from_str(accession_number_str) {
+            Ok(a) => a,
+            Err(_) => continue,
+        };
+
+        let filing_date_parsed = date_val
+            .as_str()
+            .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
+
+        out.push(CikSubmission {
+            cik: cik.clone(),
+            entity_type: entity_type.clone(),
+            accession_number,
+            form: form_val.as_str().unwrap_or("").to_string(),
+            primary_document: doc_val.as_str().unwrap_or("").to_string(),
+            filing_date: filing_date_parsed,
+        });
+    }
+}
+
 pub async fn fetch_cik_submissions(
     sec_client: &SecClient,
     cik: Cik,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
     let url = Url::CikSubmission(cik.clone()).value();
-
     let data: Value = sec_client.fetch_json(&url, None).await?;
 
-    // TODO: Move the following into `parsers`
+    let entity_type: Option<String> = data["entityType"].as_str().map(|s| s.to_string());
 
-    let entity_type_value: Option<String> = data["entityType"].as_str().map(|s| s.to_string());
+    let mut submissions: Vec<CikSubmission> = Vec::new();
 
-    let mut accession_number_values = Vec::new();
-    let mut form_values = Vec::new();
-    let mut primary_document_values = Vec::new();
-    let mut filing_dates = Vec::new();
+    // Parse the primary `recent` block
+    if let Some(recent) = data["filings"]["recent"].as_object() {
+        extract_filings_from_block(&Value::Object(recent.clone()), &cik, &entity_type, &mut submissions);
+    }
 
-    if let Some(filings) = data["filings"].as_object() {
-        if let Some(recent) = filings["recent"].as_object() {
-            if let Some(accession_numbers) = recent["accessionNumber"].as_array() {
-                for accession_number in accession_numbers {
-                    accession_number_values.push(accession_number);
-                }
-            }
-
-            if let Some(forms) = recent["form"].as_array() {
-                for form in forms {
-                    form_values.push(form);
-                }
-            }
-
-            if let Some(primary_documents) = recent["primaryDocument"].as_array() {
-                for primary_document in primary_documents {
-                    primary_document_values.push(primary_document);
-                }
-            }
-
-            if let Some(filing_dates_array) = recent["filingDate"].as_array() {
-                for filing_date in filing_dates_array {
-                    filing_dates.push(filing_date);
+    // Follow any paginated files listed in filings.files
+    // Each entry: { "name": "CIK0000320193-submissions-001.json", "filingCount": N, ... }
+    if let Some(files) = data["filings"]["files"].as_array() {
+        for file_entry in files {
+            if let Some(filename) = file_entry["name"].as_str() {
+                let page_url = Url::CikSubmissionPage(filename.to_string()).value();
+                match sec_client.fetch_json(&page_url, None).await {
+                    Ok(page_data) => {
+                        extract_filings_from_block(&page_data, &cik, &entity_type, &mut submissions);
+                    }
+                    Err(e) => {
+                        // Non-fatal: skip this page rather than failing the whole fetch
+                        eprintln!("Warning: failed to fetch submissions page {}: {}", filename, e);
+                    }
                 }
             }
         }
     }
 
-    let mut cik_submissions: Vec<CikSubmission> = Vec::with_capacity(accession_number_values.len());
-
-    for (accession_number_value, form, primary_document, filing_date) in itertools::izip!(
-        &accession_number_values,
-        &form_values,
-        &primary_document_values,
-        &filing_dates
-    ) {
-        let filing_date_parsed = filing_date
-            .as_str()
-            .and_then(|date_str| NaiveDate::parse_from_str(date_str, "%Y-%m-%d").ok());
-
-        let accession_number_str = accession_number_value.as_str().unwrap_or_default();
-        let accession_number = AccessionNumber::from_str(accession_number_str)?;
-
-        cik_submissions.push(CikSubmission {
-            cik: cik.clone(),
-            entity_type: entity_type_value.clone(),
-            accession_number,
-            form: form.as_str().unwrap_or("").to_string(),
-            primary_document: primary_document.as_str().unwrap_or("").to_string(),
-            filing_date: filing_date_parsed,
-        });
-    }
-
-    Ok(cik_submissions)
+    Ok(submissions)
 }

@@ -10,7 +10,14 @@ pub enum Url {
     /// Points to the JSON submission metadata for a specific CIK.
     CikSubmission(Cik),
 
+    /// Points to a paginated submissions file (e.g. CIK0000320193-submissions-001.json).
+    CikSubmissionPage(String),
+
     CikAccession(Cik, AccessionNumber),
+
+    /// Points to the human-readable EDGAR filing index page for a specific filing.
+    /// Format: https://www.sec.gov/Archives/edgar/data/{CIK}/{accn_unformatted}/{accn_formatted}-index.htm
+    CikAccessionIndex(Cik, AccessionNumber),
 
     /// Points to the `primary_doc.xml` of a specific filing, using
     /// CIK and Accession Number.
@@ -36,10 +43,20 @@ impl Url {
                 "https://data.sec.gov/submissions/CIK{}.json",
                 cik.to_string()
             ),
-            Url::CikAccession(cik, accession_number ) => format!(
+            Url::CikSubmissionPage(filename) => format!(
+                "https://data.sec.gov/submissions/{}",
+                filename
+            ),
+            Url::CikAccession(cik, accession_number) => format!(
                 "https://www.sec.gov/Archives/edgar/data/{}/{}",
                 cik.to_string(),
                 accession_number.to_unformatted_string()
+            ),
+            Url::CikAccessionIndex(cik, accession_number) => format!(
+                "https://www.sec.gov/Archives/edgar/data/{}/{}/{}-index.htm",
+                cik.to_string(),
+                accession_number.to_unformatted_string(),
+                accession_number.to_string(),
             ),
             Url::CikAccessionPrimaryDocument(cik, accession_number ) => format!(
                 "{}/primary_doc.xml",

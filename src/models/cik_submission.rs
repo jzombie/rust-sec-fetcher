@@ -34,7 +34,23 @@ impl CikSubmission {
         nport_p_submissions.first().cloned()
     }
 
+    pub fn filter_8k_submissions(cik_submissions: &[Self]) -> Vec<Self> {
+        cik_submissions
+            .iter()
+            .filter(|submission| submission.form.to_uppercase() == "8-K")
+            .cloned()
+            .collect()
+    }
+
     pub fn as_edgar_archive_url(&self) -> String {
         Url::CikAccession(self.cik.clone(), self.accession_number.clone()).value()
+    }
+
+    /// Returns the URL of the primary document for this filing.
+    ///
+    /// This points directly to the main document (e.g., the HTML 8-K or 10-K body),
+    /// rather than the filing index directory.
+    pub fn as_primary_document_url(&self) -> String {
+        format!("{}/{}", self.as_edgar_archive_url(), self.primary_document)
     }
 }
