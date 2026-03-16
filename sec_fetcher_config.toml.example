@@ -1,38 +1,21 @@
-# Example configuration for sec-fetcher (copy to sec_fetcher_config.toml)
+# sec-fetcher configuration — copy this file to sec_fetcher_config.toml
+
+# Required. SEC mandates a contact email in every User-Agent header.
 #
-# ── Why is `email` required? ─────────────────────────────────────────────────
-#
-# The SEC requires all automated EDGAR data requests to include a descriptive
-# User-Agent header containing a contact email address.  This allows the SEC
-# to contact you if your client is causing problems with their servers.  See:
-#   https://www.sec.gov/os/accessing-edgar-data
-#
-# Without a valid email address this library cannot construct a compliant
-# User-Agent header and will refuse to make network requests.
-#
-# Your email is included ONLY in the User-Agent header sent to SEC EDGAR
-# servers — it is not transmitted to any other party.  You are responsible
-# for choosing the most secure method of supplying this value for your own
-# use case (e.g. environment variable, restricted-permission config file,
-# secrets manager, etc.).
-#
-# ── How to supply the email (precedence, highest → lowest) ───────────────────
-#
-#   1. This config file    → email = "your.name@example.com"  (below)
-#   2. Environment variable → SEC_FETCHER_EMAIL=your.name@example.com
-#   3. Interactive prompt   → shown automatically when running in a terminal
-#
-# Uncomment and set a real contact address:
+# You have three options — pick whichever suits your workflow:
+#   1. Uncomment the line below and fill in your address (persistent config).
+#   2. Set the environment variable instead: SEC_FETCHER_EMAIL=you@example.com cargo run
+#   3. Leave everything unset: if you run the binary in a terminal the program
+#      will automatically ask you to type your email at startup before it does
+#      anything else. Nothing to configure ahead of time.
 # email = "your.name@example.com"
 
-# ── Optional throttle & retry settings ───────────────────────────────────────
+# The following are optional, to override defaults.
 #
-# The SEC specifies a maximum request rate of 10 requests/second (see link
-# above). This library defaults to a conservative 2 req/s (500 ms delay,
-# 1 concurrent request) to be a good citizen of the public service.
+# The combination of max_concurrent * min_delay_ms should not exceed 10 requests per second
+# as your requests may become rate-limited by the SEC. Defaults are extremely conservative.
 #
-# Uncomment to override:
-# max_concurrent = 1   # concurrent requests; lower = more polite to SEC servers
-# min_delay_ms = 500   # ms between requests (500 ms = 2 req/s)
+# max_concurrent = 1
+# min_delay_ms = 500
 # max_retries = 3
 # http_cache_storage_bin = "custom/path/to/cache.bin"
