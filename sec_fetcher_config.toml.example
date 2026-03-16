@@ -10,6 +10,12 @@
 # Without a valid email address this library cannot construct a compliant
 # User-Agent header and will refuse to make network requests.
 #
+# Your email is included ONLY in the User-Agent header sent to SEC EDGAR
+# servers — it is not transmitted to any other party.  You are responsible
+# for choosing the most secure method of supplying this value for your own
+# use case (e.g. environment variable, restricted-permission config file,
+# secrets manager, etc.).
+#
 # ── How to supply the email (precedence, highest → lowest) ───────────────────
 #
 #   1. This config file    → email = "your.name@example.com"  (below)

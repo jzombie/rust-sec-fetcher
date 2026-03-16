@@ -20,6 +20,20 @@ use std::sync::LazyLock;
 /// Without a valid email address this library cannot construct a compliant
 /// `User-Agent` header and will refuse to make network requests.
 ///
+/// ## Privacy & security
+///
+/// The email address is included **only** in the `User-Agent` header that is
+/// sent to SEC EDGAR servers.  It is not transmitted to any other party.
+/// You are responsible for choosing the most secure method of supplying this
+/// value that is appropriate for your own use case (e.g. an environment
+/// variable, a config file with restricted permissions, a secrets manager,
+/// etc.).
+///
+/// ## Disclaimer
+///
+/// This project is not affiliated with, endorsed by, or associated with the
+/// U.S. Securities and Exchange Commission (SEC) in any way.
+///
 /// ## Precedence (highest → lowest)
 ///
 /// 1. **Config file** — `email = "…"` key in `sec_fetcher_config.toml`

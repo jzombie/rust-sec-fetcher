@@ -1,11 +1,11 @@
-[![Ask DeepWiki][deepwiki-badge]][deepwiki-page]
-
-**This is an experimental research project.**
+**This is an experimental research project. Documentation is currently not provided.**
 
 [deepwiki-page]: https://deepwiki.com/jzombie/rust-sec-fetcher
 [deepwiki-badge]: https://deepwiki.com/badge.svg
 
-## ⚠️ Financial & Data Disclaimer
+## ⚠️ Disclaimers
+
+**Not Affiliated with the SEC:** This project is not affiliated with, endorsed by, or associated with the U.S. Securities and Exchange Commission (SEC) in any way.
 
 **Not Investment Advice:** This software is an experimental research tool for data retrieval only. Nothing produced by this tool should be construed as investment, financial, legal, or tax advice. Stock decisions and financial analysis should be grounded in your own independent research and professional consultation.
 
@@ -26,6 +26,8 @@ Configuration is loaded from `sec_fetcher_config.toml` in the working directory 
 The SEC requires every automated EDGAR request to carry a `User-Agent` header containing a contact email address, so that the SEC can reach out if a client causes problems. See [Accessing EDGAR Data](https://www.sec.gov/os/accessing-edgar-data).
 
 Without a valid email address this library will refuse to make any network requests.
+
+> **Privacy note:** Your email address is included only in the `User-Agent` header sent to SEC EDGAR servers — it is not transmitted to any other party. You are responsible for selecting the most secure method of supplying this value that is appropriate for your own use case (e.g. environment variable, config file with restricted permissions, etc.).
 
 The email is resolved in this order (highest precedence first):
 
