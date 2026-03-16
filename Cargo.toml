@@ -5,6 +5,9 @@ edition = "2021"
 license = "Apache-2.0"
 publish = false
 
+# Make main.rs the default when other bin files exist
+default-run = "sec-fetcher"
+
 [dependencies]
 bincode = "1.3.3"
 bytes = "1.10.1"
