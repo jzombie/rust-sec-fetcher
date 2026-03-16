@@ -37,7 +37,7 @@ You are free to use, modify, and distribute this software for personal or academ
 
 - Use as training data, input, or fine-tuning material for AI/Machine Learning models.
 
-Integration into paid products or services.
+### Integration into paid products or services
 
 **Custom Licensing**: Professional usage and AI-related rights are considered on a case-by-case basis and may require a separate commercial agreement or payment. To request a commercial waiver, please contact info@zenosmosis.com.
 
