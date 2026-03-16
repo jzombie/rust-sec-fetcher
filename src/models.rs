@@ -27,3 +27,6 @@ pub use thirteenf_holding::ThirteenfHolding;
 
 mod form4_transaction;
 pub use form4_transaction::Form4Transaction;
+
+mod master_index_entry;
+pub use master_index_entry::MasterIndexEntry;

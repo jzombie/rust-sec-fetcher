@@ -38,3 +38,6 @@ pub use fetch_13f_filing::fetch_13f_filing;
 
 mod fetch_form4_filing;
 pub use fetch_form4_filing::fetch_form4_filing;
+
+mod fetch_edgar_master_index;
+pub use fetch_edgar_master_index::fetch_edgar_master_index;

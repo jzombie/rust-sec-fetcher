@@ -7,6 +7,9 @@ pub use parse_13f_xml::parse_13f_xml;
 mod parse_form4_xml;
 pub use parse_form4_xml::parse_form4_xml;
 
+mod parse_master_idx;
+pub use parse_master_idx::parse_master_idx;
+
 mod parse_investment_companies_csv;
 pub use parse_investment_companies_csv::parse_investment_companies_csv;
 

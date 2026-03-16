@@ -64,6 +64,27 @@ pub enum Url {
         count: usize,
         before: String,
     },
+
+    /// Points to the EDGAR full-index `master.idx` for a specific year and
+    /// calendar quarter (1–4).
+    ///
+    /// These files cover every filing submitted since Q4 1993.
+    /// Each row is pipe-delimited: `CIK|Company Name|Form Type|Date Filed|Filename`
+    ///
+    /// See [`crate::network::fetch_edgar_master_index`].
+    EdgarFullIndex {
+        year: u16,
+        quarter: u8,
+    },
+
+    /// Points to an arbitrary document within the EDGAR Archives using the
+    /// relative path that appears in `master.idx` rows.
+    ///
+    /// The `path` value is everything after `https://www.sec.gov/Archives/`,
+    /// e.g. `edgar/data/320193/0000320193-94-000002.txt`.
+    ///
+    /// See [`crate::models::MasterIndexEntry::as_url`].
+    EdgarArchive(String),
 }
 
 impl Url {
@@ -119,6 +140,11 @@ impl Url {
                 before,
                 count
             ),
+            Url::EdgarFullIndex { year, quarter } => format!(
+                "https://www.sec.gov/Archives/edgar/full-index/{}/QTR{}/master.idx",
+                year, quarter
+            ),
+            Url::EdgarArchive(path) => format!("https://www.sec.gov/Archives/{}", path),
         }
     }
 }
