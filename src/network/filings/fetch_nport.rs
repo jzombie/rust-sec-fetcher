@@ -1,6 +1,6 @@
 use crate::enums::Url;
 use crate::models::{Cik, CikSubmission, NportInvestment};
-use crate::network::{fetch_cik_submissions, fetch_company_tickers, SecClient};
+use crate::network::{fetch_cik_submissions, fetch_operating_company_tickers, SecClient};
 use crate::parsers::parse_nport_xml;
 use std::error::Error;
 
@@ -48,7 +48,7 @@ pub async fn fetch_nport_filings(
 /// The primary document in an NPORT-P submission is a single XML file
 /// (pointed to by `submission.primary_document`).  This function fetches that
 /// XML and parses each `<invstOrSec>` element into an [`NportInvestment`].
-/// The ticker-symbol lookup table (`fetch_company_tickers`) is used to enrich
+/// The ticker-symbol lookup table ([`fetch_operating_company_tickers`]) is used to enrich
 /// holdings with exchange-listed ticker symbols where available.
 ///
 /// # Example
@@ -74,7 +74,9 @@ pub async fn fetch_nport(
     client: &SecClient,
     submission: &CikSubmission,
 ) -> Result<Vec<NportInvestment>, Box<dyn Error>> {
-    let company_tickers = fetch_company_tickers(client).await?;
+    // include_derived_instruments=true so all instrument symbols (warrants,
+    // units, preferred classes) are available when resolving portfolio holdings.
+    let company_tickers = fetch_operating_company_tickers(client, true).await?;
 
     let url = Url::CikAccessionPrimaryDocument(
         submission.cik.clone(),

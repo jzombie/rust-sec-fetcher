@@ -8,7 +8,7 @@ use polars::prelude::{CsvWriter, SerWriter};
 use sec_fetcher::{
     config::ConfigManager,
     network::{
-        fetch_company_tickers, fetch_investment_company_series_and_class_dataset,
+        fetch_operating_company_tickers, fetch_investment_company_series_and_class_dataset,
         fetch_us_gaap_fundamentals, SecClient,
     },
     utils::VecExtensions,
@@ -184,8 +184,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let client = SecClient::from_config_manager(&config_manager)?;
 
-    let company_tickers = fetch_company_tickers(&client).await?;
-    println!("Total records: {}", company_tickers.len());
+    // include_derived_instruments=false: primary listings only. Derived
+    // instruments (warrants, units, prefs, delisted) share a CIK with their
+    // parent and have no independent XBRL data, so they'd produce duplicates
+    // or empty CSVs in this pipeline.
+    let company_tickers = fetch_operating_company_tickers(&client, false).await?;
+    println!("Total primary listings: {}", company_tickers.len());
     println!("{:?}", company_tickers.head(60));
 
     // Ensure output directory exists

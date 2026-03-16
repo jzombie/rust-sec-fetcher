@@ -3,6 +3,7 @@ use serde::Serialize;
 
 use crate::models::AccessionNumber;
 use crate::models::Ticker;
+use crate::enums::TickerOrigin;
 
 use std::error::Error;
 
@@ -32,7 +33,7 @@ use std::error::Error;
 ///
 /// # Reference:
 /// - [SEC CIK Lookup](https://www.sec.gov/edgar/searchedgar/cik)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct Cik {
     pub value: u64,
 }
@@ -141,10 +142,25 @@ impl Cik {
         ticker_symbol: &str,
     ) -> Result<Cik, Box<dyn Error>> {
         let normalized = Ticker::normalize_symbol(ticker_symbol);
-        company_tickers
+        let found = company_tickers
             .iter()
-            .find(|pred| pred.symbol == normalized)
-            .map(|company_ticker| company_ticker.cik.clone())
-            .ok_or_else(|| format!("Ticker symbol '{}' not found", ticker_symbol).into())
+            .find(|t| t.symbol == normalized)
+            .ok_or_else(|| format!("Ticker symbol '{}' not found", ticker_symbol))?;
+
+        // Derived instruments (warrants, units, preferreds) share their parent
+        // registrant's CIK by SEC convention. Resolve to the confirmed primary
+        // listing so the returned CIK is always a root operating-company entry.
+        // If no primary listing shares the CIK (rare ADR / foreign-issuer edge
+        // case), fall back to the instrument's own CIK.
+        if found.origin == TickerOrigin::DerivedInstrument {
+            if let Some(primary) = company_tickers
+                .iter()
+                .find(|t| t.origin == TickerOrigin::PrimaryListing && t.cik == found.cik)
+            {
+                return Ok(primary.cik.clone());
+            }
+        }
+
+        Ok(found.cik.clone())
     }
 }

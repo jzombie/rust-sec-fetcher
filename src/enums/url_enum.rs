@@ -27,15 +27,29 @@ pub enum Url {
     /// Format: https://www.sec.gov/Archives/edgar/data/{CIK}/{accn_unformatted}/{filename}
     CikAccessionDocument(Cik, AccessionNumber, String),
 
-    /// Points to the full company ticker list JSON from the SEC.
-    CompanyTickers,
-
-    /// Points to the SEC's plain-text ticker-to-CIK mapping file.
+    /// Points to the SEC's primary ticker-to-CIK JSON file.
     ///
-    /// Tab-separated, no header: each line is `symbol\cik` (lowercase symbol,
-    /// plain integer CIK).  Supplements `CompanyTickers` with entries that may
-    /// not appear in the JSON file.
-    TickerTxt,
+    /// Covers exchange-listed **operating companies** only: one entry per
+    /// company's primary common-stock ticker.  Each entry includes the CIK,
+    /// ticker symbol, and company name.  This is the authoritative source for
+    /// company names but does not include warrants, units, preferred share
+    /// classes, or ADRs.
+    ///
+    /// See [`crate::network::fetch_operating_company_tickers`].
+    CompanyTickersJson,
+
+    /// Points to the SEC's supplementary plain-text ticker-to-CIK file.
+    ///
+    /// Tab-separated, no header: each line is `symbol\tcik`.  This file is
+    /// broader than [`CompanyTickersJson`]: it includes warrants (`-WT`),
+    /// units (`-UN`), preferred share classes (`-PA`, `-PB`, …), ADRs, and
+    /// fund share classes that do not appear in the JSON file.  Company names
+    /// are not available here — they are inherited from [`CompanyTickersJson`]
+    /// via CIK lookup during the merge in
+    /// [`fetch_operating_company_tickers`].
+    ///
+    /// See [`crate::network::fetch_operating_company_tickers`].
+    CompanyTickersTxt,
 
     /// Points to the `companyfacts` XBRL JSON API for a specific CIK.
     CompanyFacts(Cik),
@@ -138,8 +152,8 @@ impl Url {
                 Url::CikAccession(cik.clone(), accession_number.clone()).value(),
                 filename,
             ),
-            Url::CompanyTickers => "https://www.sec.gov/files/company_tickers.json".to_string(),
-            Url::TickerTxt => "https://www.sec.gov/include/ticker.txt".to_string(),
+            Url::CompanyTickersJson => "https://www.sec.gov/files/company_tickers.json".to_string(),
+            Url::CompanyTickersTxt => "https://www.sec.gov/include/ticker.txt".to_string(),
             Url::CompanyFacts(cik) => format!(
                 "https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json",
                 cik.to_string()

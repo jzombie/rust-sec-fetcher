@@ -18,7 +18,7 @@ pub fn parse_company_tickers_json(data: &Value) -> Result<Vec<Ticker>, Box<dyn E
                 cik,
                 symbol: Ticker::normalize_symbol(ticker_info["ticker"].as_str().unwrap_or("")),
                 company_name: ticker_info["title"].as_str().unwrap_or("").trim().to_string(),
-                origin: TickerOrigin::CompanyTickers,
+                origin: TickerOrigin::PrimaryListing,
             });
         }
     }
@@ -59,7 +59,7 @@ pub fn parse_ticker_txt(text: &str) -> Vec<Ticker> {
             cik,
             symbol: Ticker::normalize_symbol(symbol_raw),
             company_name: String::new(),
-            origin: TickerOrigin::CompanyTickers,
+            origin: TickerOrigin::DerivedInstrument,
         });
     }
     tickers
