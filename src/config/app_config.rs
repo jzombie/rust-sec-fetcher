@@ -56,10 +56,17 @@ impl Default for AppConfig {
             .path()
             .to_path_buf();
 
+        // SEC guidance (Accessing EDGAR Data) currently states a maximum
+        // request rate of 10 requests/second. See:
+        // https://www.sec.gov/os/accessing-edgar-data
+        //
+        // This project uses a conservative default to avoid throttling and to
+        // be a good citizen: default to 500 ms minimum delay between requests
+        // (i.e., ~2 requests/second) with a single concurrent requester.
         Self {
             email: None,
             max_concurrent: Some(1),
-            min_delay_ms: Some(1000),
+            min_delay_ms: Some(500),
             max_retries: Some(5),
             cache_base_dir: Some(cache_base_dir),
         }

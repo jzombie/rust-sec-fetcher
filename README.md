@@ -17,6 +17,36 @@
 
 **Limitation of Liability:** By using this software, you acknowledge that you do so at your own risk. In no event shall the author be held liable for any financial losses, trading errors, or damages resulting from the use or inability to use this tool, even if advised of the possibility of such damages.
 
+## Configuration
+
+Configuration is loaded from `sec_fetcher_config.toml` in the working directory (or the platform config directory). Copy `sec_fetcher_config.toml.example` as a starting point.
+
+### Required: `email`
+
+The SEC requires every automated EDGAR request to carry a `User-Agent` header containing a contact email address, so that the SEC can reach out if a client causes problems. See [Accessing EDGAR Data](https://www.sec.gov/os/accessing-edgar-data).
+
+Without a valid email address this library will refuse to make any network requests.
+
+The email is resolved in this order (highest precedence first):
+
+| #   | Source               | Example                                                  |
+| --- | -------------------- | -------------------------------------------------------- |
+| 1   | Config file          | `email = "you@example.com"` in `sec_fetcher_config.toml` |
+| 2   | Environment variable | `SEC_FETCHER_EMAIL=you@example.com`                      |
+| 3   | Interactive prompt   | shown automatically when `stdin`/`stdout` are a terminal |
+
+If none of these is available the program exits with an error.
+
+### Rate limiting
+
+The SEC specifies a maximum of [10 requests/second](https://www.sec.gov/os/accessing-edgar-data). The default configuration is intentionally conservative at **2 requests/second** (500 ms minimum delay, 1 concurrent request). Override in the config file:
+
+```toml
+max_concurrent = 1   # concurrent in-flight requests
+min_delay_ms   = 500 # ms gap between requests
+max_retries    = 3
+```
+
 ## Licensing
 
 This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).

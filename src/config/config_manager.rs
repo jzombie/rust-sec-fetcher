@@ -8,6 +8,35 @@ use std::error::Error;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 
+/// Environment variable used to supply the required contact email address.
+///
+/// ## Why email is required
+///
+/// The SEC mandates that all automated EDGAR data requests include a descriptive
+/// `User-Agent` header containing a contact email address so that the SEC can
+/// reach out if a client is causing problems.  See the SEC's official guidance:
+/// <https://www.sec.gov/os/accessing-edgar-data>
+///
+/// Without a valid email address this library cannot construct a compliant
+/// `User-Agent` header and will refuse to make network requests.
+///
+/// ## Precedence (highest → lowest)
+///
+/// 1. **Config file** — `email = "…"` key in `sec_fetcher_config.toml`
+///    (or the path passed to [`ConfigManager::from_config`]).
+/// 2. **This environment variable** — `SEC_FETCHER_EMAIL=your@example.com`
+/// 3. **Interactive prompt** — when `stdin`/`stdout` are a terminal the user
+///    is prompted at startup.
+///
+/// If none of the above supplies an address, [`ConfigManager::from_config`]
+/// returns an error.
+///
+/// # Example
+/// ```sh
+/// SEC_FETCHER_EMAIL=your.name@example.com cargo run
+/// ```
+pub const EMAIL_ENV_VAR: &str = "SEC_FETCHER_EMAIL";
+
 #[derive(Debug)]
 pub struct ConfigManager {
     config: AppConfig,
@@ -24,7 +53,15 @@ impl ConfigManager {
 
     /// Loads configuration from the given file path (if provided) or defaults to the standard config path.
     ///
-    /// If no path is provided, the default configuration path will be used.
+    /// ## Email resolution — precedence (highest → lowest)
+    ///
+    /// 1. **Config file** — `email = "…"` key in `sec_fetcher_config.toml`
+    ///    (or the `path` argument to this function).
+    /// 2. **Environment variable** — [`EMAIL_ENV_VAR`] (`SEC_FETCHER_EMAIL`).
+    /// 3. **Interactive prompt** — when `stdin`/`stdout` are a terminal the
+    ///    user is prompted at startup.
+    ///
+    /// Returns an error if none of the above provides an address.
     pub fn from_config(path: Option<PathBuf>) -> Result<Self, Box<dyn Error>> {
         if let Some(path) = &path {
             if !path.exists() {
@@ -62,7 +99,9 @@ impl ConfigManager {
                 })?;
 
         if settings.email.is_none() && user_settings.email.is_none() {
-            if is_interactive_mode() {
+            if let Ok(email) = std::env::var(EMAIL_ENV_VAR) {
+                user_settings.email = Some(email);
+            } else if is_interactive_mode() {
                 let credential_manager = CredentialManager::from_prompt()?;
                 let email = credential_manager.get_credential().map_err(|err| {
                     format!(
@@ -72,7 +111,10 @@ impl ConfigManager {
                 })?;
                 user_settings.email = Some(email);
             } else {
-                return Err("Could not obtain email credential".into());
+                return Err(format!(
+                    "Could not obtain email credential. Set `email` in the config file or the `{}` environment variable.",
+                    EMAIL_ENV_VAR
+                ).into());
             }
         }
 

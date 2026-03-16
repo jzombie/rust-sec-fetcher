@@ -1,9 +1,15 @@
-use sec_fetcher::config::ConfigManager;
+use sec_fetcher::config::{ConfigManager, EMAIL_ENV_VAR};
 use sec_fetcher::utils::set_interactive_mode_override;
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
+use std::sync::Mutex;
 use tempfile::tempdir;
+
+// Tests that mutate process-level env vars or the interactive-mode override
+// must hold this lock for their entire duration, otherwise concurrent tests
+// will race on shared global state.
+static ENV_MUTEX: Mutex<()> = Mutex::new(());
 
 /// Helper function to create a temporary config file
 fn create_temp_config(contents: &str) -> (tempfile::TempDir, PathBuf) {
@@ -62,6 +68,72 @@ fn test_load_non_existent_config() {
     let result = ConfigManager::from_config(Some(config_path));
 
     assert!(result.is_err());
+}
+
+#[test]
+fn test_fails_if_no_email_available_non_interactive() {
+    let _lock = ENV_MUTEX.lock().unwrap();
+    // Force non-interactive mode and provide an existing but empty config file
+    set_interactive_mode_override(Some(false));
+    std::env::remove_var(EMAIL_ENV_VAR); // ensure env var is not set
+
+    let (_temp_dir, config_path) = create_temp_config("");
+
+    let result = ConfigManager::from_config(Some(config_path));
+
+    assert!(result.is_err());
+    let err = result.unwrap_err().to_string();
+    // Error message should mention both the config file and the env var
+    assert!(
+        err.contains(EMAIL_ENV_VAR),
+        "Error message should mention the env var: {}",
+        err
+    );
+
+    set_interactive_mode_override(None);
+}
+
+#[test]
+fn test_email_from_env_var_non_interactive() {
+    let _lock = ENV_MUTEX.lock().unwrap();
+    set_interactive_mode_override(Some(false));
+    std::env::set_var(EMAIL_ENV_VAR, "env@example.com");
+
+    let (_temp_dir, config_path) = create_temp_config(""); // no email in file
+
+    let result = ConfigManager::from_config(Some(config_path));
+    assert!(
+        result.is_ok(),
+        "Expected Ok when email is set via env var: {:?}",
+        result.err()
+    );
+    assert_eq!(
+        result.unwrap().get_config().email,
+        Some("env@example.com".to_string())
+    );
+
+    std::env::remove_var(EMAIL_ENV_VAR);
+    set_interactive_mode_override(None);
+}
+
+#[test]
+fn test_config_file_email_takes_precedence_over_env_var() {
+    let _lock = ENV_MUTEX.lock().unwrap();
+    set_interactive_mode_override(Some(false));
+    std::env::set_var(EMAIL_ENV_VAR, "env@example.com");
+
+    let (_temp_dir, config_path) = create_temp_config(r#"email = "file@example.com""#);
+
+    let result = ConfigManager::from_config(Some(config_path));
+    assert!(result.is_ok());
+    // Config file email should win
+    assert_eq!(
+        result.unwrap().get_config().email,
+        Some("file@example.com".to_string())
+    );
+
+    std::env::remove_var(EMAIL_ENV_VAR);
+    set_interactive_mode_override(None);
 }
 
 #[test]

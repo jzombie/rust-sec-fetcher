@@ -58,6 +58,13 @@ impl SecClient {
         });
 
         // Example: Custom Fixed Throttle Policy
+        //
+        // NOTE: The SEC's public guidance for EDGAR states a current maximum
+        // request rate of 10 requests/second (see:
+        // https://www.sec.gov/os/accessing-edgar-data). This project chooses a
+        // conservative default (configured in AppConfig) of 500 ms minimum delay
+        // between requests (~2 requests/second) to avoid accidental throttling
+        // and to be a good steward of the public service.
         let throttle_policy = Arc::new(ThrottlePolicy {
             base_delay_ms: min_delay,
             max_concurrent,

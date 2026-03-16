@@ -32,6 +32,18 @@ fn test_invalid_email_panic() {
     client.get_user_agent();
 }
 
+#[test]
+fn test_missing_email_returns_error() {
+    let app_config = AppConfig::default(); // email is None by default
+    let config_manager = ConfigManager::from_app_config(&app_config);
+
+    let result = SecClient::from_config_manager(&config_manager);
+
+    assert!(result.is_err());
+    let err = result.err().expect("Expected error when email missing");
+    assert_eq!(err.to_string(), "Missing required field: email");
+}
+
 #[tokio::test]
 async fn test_fetch_json_without_retry_success() -> Result<(), Box<dyn Error>> {
     let mut server = Server::new_async().await;
