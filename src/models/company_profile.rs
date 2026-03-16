@@ -70,8 +70,9 @@ impl CompanyProfile {
     /// ```
     /// # use sec_fetcher::models::CompanyProfile;
     /// # use sec_fetcher::models::Cik;
+    /// # use chrono::Datelike;
     /// let profile = CompanyProfile {
-    ///     cik: Cik::new(320193),
+    ///     cik: Cik::from_u64(320193).unwrap(),
     ///     name: "Apple Inc.".into(),
     ///     entity_type: None, sic: None, sic_description: None, owner_org: None,
     ///     tickers: vec![], exchanges: vec![], category: None,

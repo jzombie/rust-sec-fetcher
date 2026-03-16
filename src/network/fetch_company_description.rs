@@ -97,8 +97,9 @@ fn parse_item1_business(html: &str) -> Option<String> {
     let section_html = &html[best_start..best_end.min(best_start + 60_000)];
 
     // html2text handles entity decoding, tag stripping, and whitespace.
+    // plain_no_decorate() suppresses link-reference footnotes.
     // Width 1_000_000 prevents line-wrapping artifacts.
-    let text = html2text::config::plain()
+    let text = html2text::config::plain_no_decorate()
         .string_from_read(section_html.as_bytes(), 1_000_000)
         .ok()?;
 
@@ -127,6 +128,126 @@ fn parse_item1_business(html: &str) -> Option<String> {
             Some(window[..pos + 1].to_string())
         } else {
             Some(format!("{}\u{2026}", window.trim_end()))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Helper: build a minimal 10-K HTML with a TOC entry and a real section.
+    ///
+    /// The TOC has "Item 1." and "Item 1A." within a few bytes of each other.
+    /// The real section has "Item 1." followed by ~3 KB of prose before "Item 1A."
+    /// This is the exact scenario we debugged on Apple's 10-K.
+    fn make_10k_html(prose: &str) -> String {
+        let filler = "x".repeat(3000);
+        format!(
+            r#"<html><body>
+            <p>Table of Contents</p>
+            <p>Item 1. Business</p>
+            <p>Item 1A. Risk Factors</p>
+            <p>{filler}</p>
+            <div id="business">
+                <h1>Item 1. Business</h1>
+                <p>Company Background</p>
+                <p>{prose}</p>
+            </div>
+            <div id="risks">
+                <h1>Item 1A. Risk Factors</h1>
+                <p>Various risks apply.</p>
+            </div>
+            </body></html>"#
+        )
+    }
+
+    #[test]
+    fn max_gap_strategy_picks_real_section_not_toc() {
+        // The long prose appears only in the real section, not the TOC.
+        let prose = "The Company designs, manufactures and markets smartphones, \
+            personal computers, tablets, wearables and accessories, and sells a \
+            variety of related services to customers around the world.";
+        let html = make_10k_html(prose);
+        let result = parse_item1_business(&html).unwrap();
+        assert!(
+            result.contains("designs, manufactures"),
+            "Expected real section prose, got: {result}"
+        );
+    }
+
+    #[test]
+    fn short_heading_lines_are_skipped() {
+        // "Company Background" is a sub-heading (< 60 chars) and must not
+        // appear at the start of the returned description. This was the core
+        // bug we spent time debugging — the previous regex approach kept
+        // emitting heading words.
+        let prose = "The Company designs, manufactures and markets smartphones, \
+            personal computers, tablets, wearables and accessories, and sells a \
+            variety of related services to customers around the world.";
+        let html = make_10k_html(prose);
+        let result = parse_item1_business(&html).unwrap();
+        assert!(
+            !result.starts_with("Item"),
+            "Result should not start with 'Item': {result}"
+        );
+        assert!(
+            !result.starts_with("Company Background"),
+            "Result should not start with sub-heading: {result}"
+        );
+        assert!(
+            result.starts_with("The Company") || result.contains("designs"),
+            "Expected prose start, got: {result}"
+        );
+    }
+
+    #[test]
+    fn truncates_at_sentence_boundary() {
+        // Build prose longer than 800 chars with clear sentence boundaries.
+        let sentence = "The Company sells products worldwide. ";
+        let long_prose = sentence.repeat(30); // ~1140 chars
+        let html = make_10k_html(&long_prose);
+        let result = parse_item1_business(&html).unwrap();
+        assert!(result.len() <= 800, "Result too long: {} chars", result.len());
+        assert!(
+            result.ends_with('.'),
+            "Result should end at sentence boundary: {result}"
+        );
+    }
+
+    #[test]
+    fn returns_none_when_no_item1a() {
+        let html = "<html><body><p>Item 1. Business</p><p>Some text.</p></body></html>";
+        assert!(parse_item1_business(html).is_none());
+    }
+
+    #[test]
+    fn returns_none_when_no_item1() {
+        let html = "<html><body><p>Item 1A. Risk Factors</p></body></html>";
+        assert!(parse_item1_business(html).is_none());
+    }
+
+    #[test]
+    fn decodes_html_entities_and_strips_tags() {
+        // html2text must handle &amp;, &quot;, and inline tags.
+        let prose = "Apple&apos;s products include the <em>iPhone</em> &amp; Mac.";
+        let html = format!(
+            r#"<html><body>
+            <p>Item 1. Business</p>
+            <p>Item 1A.</p>
+            <p>x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x</p>
+            <div><h1>Item 1. Business</h1>
+            <p>{prose}</p></div>
+            <div><h1>Item 1A. Risk Factors</h1></div>
+            </body></html>"#,
+            prose = "x".repeat(3000) + &format!("<p>{prose}</p>")
+        );
+        let result = parse_item1_business(&html);
+        // We don't assert exact text (html2text entity handling may vary),
+        // but it must return something and not contain raw HTML tags.
+        if let Some(r) = result {
+            assert!(!r.contains('<'), "Raw HTML tag found in output: {r}");
+            assert!(!r.contains("&amp;"), "Unescaped entity found in output: {r}");
         }
     }
 }

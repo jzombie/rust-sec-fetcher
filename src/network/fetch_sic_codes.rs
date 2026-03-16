@@ -1,8 +1,12 @@
 use crate::enums::Url;
 use crate::models::SicCode;
 use crate::network::SecClient;
+use once_cell::sync::Lazy;
 use regex::Regex;
 use std::error::Error;
+
+static TR_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?s)<tr[\s>](.*?)</tr>").unwrap());
+static TD_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?s)<td[^>]*>(.*?)</td>").unwrap());
 
 /// Fetches and parses the complete SEC EDGAR SIC code list.
 ///
@@ -45,17 +49,19 @@ pub async fn fetch_sic_codes(sec_client: &SecClient) -> Result<Vec<SicCode>, Box
 }
 
 fn parse_sic_codes_html(html: &str) -> Result<Vec<SicCode>, Box<dyn Error>> {
-    // The page has a straightforward table: <tr><td>code</td><td>office</td><td>title</td></tr>
-    let tr_re = Regex::new(r"(?s)<tr[\s>](.*?)</tr>")?;
-    let td_re = Regex::new(r"(?s)<td[^>]*>(.*?)</td>")?;
-    let tag_re = Regex::new(r"<[^>]+>")?;
-
     let mut codes = Vec::new();
 
-    for tr_cap in tr_re.captures_iter(html) {
-        let cells: Vec<String> = td_re
+    for tr_cap in TR_RE.captures_iter(html) {
+        let cells: Vec<String> = TD_RE
             .captures_iter(&tr_cap[1])
-            .map(|c| decode_html_entities(tag_re.replace_all(&c[1], "").trim()))
+            .filter_map(|c| {
+                // html2text handles entity decoding and tag stripping.
+                // plain_no_decorate() suppresses link-reference footnotes.
+                html2text::config::plain_no_decorate()
+                    .string_from_read(c[1].as_bytes(), 1_000_000)
+                    .ok()
+                    .map(|s| s.trim().to_string())
+            })
             .collect();
 
         if cells.len() == 3 {
@@ -72,11 +78,62 @@ fn parse_sic_codes_html(html: &str) -> Result<Vec<SicCode>, Box<dyn Error>> {
     Ok(codes)
 }
 
-fn decode_html_entities(s: &str) -> String {
-    s.replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&quot;", "\"")
-        .replace("&#39;", "'")
-        .replace("&nbsp;", " ")
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_basic_sic_table() {
+        let html = r#"
+            <table>
+                <tr><th>SIC Code</th><th>Office</th><th>Industry Title</th></tr>
+                <tr><td>3571</td><td>Office of Technology</td><td>ELECTRONIC COMPUTERS</td></tr>
+                <tr><td>6020</td><td>Office of Finance</td><td>SAVINGS INSTITUTION, FEDERALLY CHARTERED</td></tr>
+            </table>
+        "#;
+        let codes = parse_sic_codes_html(html).unwrap();
+        assert_eq!(codes.len(), 2);
+        assert_eq!(codes[0].code, 3571);
+        assert_eq!(codes[0].description, "ELECTRONIC COMPUTERS");
+        assert_eq!(codes[0].office, "Office of Technology");
+        assert_eq!(codes[1].code, 6020);
+    }
+
+    #[test]
+    fn decodes_html_entities_in_cells() {
+        let html = r#"
+            <table>
+                <tr><td>0100</td><td>Office of Finance</td><td>CROPS &amp; FARMING</td></tr>
+            </table>
+        "#;
+        let codes = parse_sic_codes_html(html).unwrap();
+        assert_eq!(codes.len(), 1);
+        assert_eq!(codes[0].description, "CROPS & FARMING");
+    }
+
+    #[test]
+    fn strips_nested_tags_from_cells() {
+        let html = r#"
+            <table>
+                <tr><td>7372</td><td><b>Office of Technology</b></td><td>PREPACKAGED SOFTWARE</td></tr>
+            </table>
+        "#;
+        let codes = parse_sic_codes_html(html).unwrap();
+        assert_eq!(codes.len(), 1);
+        assert_eq!(codes[0].office, "Office of Technology");
+    }
+
+    #[test]
+    fn skips_header_and_non_numeric_rows() {
+        let html = r#"
+            <table>
+                <tr><th>SIC</th><th>Office</th><th>Title</th></tr>
+                <tr><td>not-a-number</td><td>x</td><td>y</td></tr>
+                <tr><td>0111</td><td>Office of Finance</td><td>WHEAT</td></tr>
+            </table>
+        "#;
+        let codes = parse_sic_codes_html(html).unwrap();
+        assert_eq!(codes.len(), 1);
+        assert_eq!(codes[0].code, 111);
+    }
 }
