@@ -5,6 +5,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::to_string_pretty;
 use std::path::PathBuf;
 
+#[cfg(not(debug_assertions))]
+use std::sync::OnceLock;
+
 /// Always replace `Some(value)` with `Some(new_value)`
 fn overwrite_option<T>(base: &mut Option<T>, new: Option<T>) {
     if let Some(value) = new {
@@ -31,17 +34,27 @@ pub struct AppConfig {
     pub cache_base_dir: Option<PathBuf>,
 }
 
+#[cfg(not(debug_assertions))]
+static DEFAULT_CACHE_DIR: OnceLock<tempfile::TempDir> = OnceLock::new();
+
 impl Default for AppConfig {
     fn default() -> Self {
-        let cache_base_dir = {
-            // TODO: Use temp
-            // let mut temp_cache = env::temp_dir();
-            // temp_cache.push(format!("{}/http_storage_cache.bin", env!("CARGO_PKG_NAME")));
-            // temp_cache
+        // For testing/example purposes, use a fixed "data" directory in the project root when in debug mode.
+        #[cfg(debug_assertions)]
+        let cache_base_dir = PathBuf::from("data");
 
-            // TODO: Remove
-            PathBuf::from("data")
-        };
+        // simd-r-drive doesn't support safe multi-process access, so each
+        // instance gets its own temp dir within the system temp directory.
+        #[cfg(not(debug_assertions))]
+        let cache_base_dir = DEFAULT_CACHE_DIR
+            .get_or_init(|| {
+                tempfile::Builder::new()
+                    .prefix(env!("CARGO_PKG_NAME"))
+                    .tempdir()
+                    .expect("failed to create temp cache dir")
+            })
+            .path()
+            .to_path_buf();
 
         Self {
             email: None,
