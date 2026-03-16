@@ -33,10 +33,7 @@ pub async fn fetch_company_profile(
     let url = Url::CikSubmission(cik.clone()).value();
     let data = sec_client.fetch_json(&url, None).await?;
 
-    let name = data["name"]
-        .as_str()
-        .unwrap_or_default()
-        .to_string();
+    let name = data["name"].as_str().unwrap_or_default().to_string();
 
     let entity_type = data["entityType"].as_str().map(|s| s.to_string());
     let sic = data["sic"].as_str().map(|s| s.to_string());

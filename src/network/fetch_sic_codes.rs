@@ -37,11 +37,7 @@ pub async fn fetch_sic_codes(sec_client: &SecClient) -> Result<Vec<SicCode>, Box
         .await?;
 
     if !response.status().is_success() {
-        return Err(format!(
-            "SIC codes page returned HTTP {}",
-            response.status()
-        )
-        .into());
+        return Err(format!("SIC codes page returned HTTP {}", response.status()).into());
     }
 
     let html = response.text().await?;

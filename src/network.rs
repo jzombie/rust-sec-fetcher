@@ -23,7 +23,10 @@ pub use fetch_edgar_feed::{
 };
 
 mod filings;
-pub use filings::{fetch_8k_filings, fetch_10k_filings, fetch_10q_filings, fetch_13f, fetch_13f_filings, fetch_form4, fetch_form4_filings, fetch_filing_index, fetch_nport, fetch_nport_filings};
+pub use filings::{
+    fetch_10k_filings, fetch_10q_filings, fetch_13f, fetch_13f_filings, fetch_8k_filings,
+    fetch_filing_index, fetch_form4, fetch_form4_filings, fetch_nport, fetch_nport_filings,
+};
 
 mod fetch_edgar_master_index;
 pub use fetch_edgar_master_index::fetch_edgar_master_index;

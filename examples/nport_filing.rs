@@ -1,6 +1,8 @@
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::CikSubmission;
-use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_nport, SecClient};
+use sec_fetcher::network::{
+    fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_nport, SecClient,
+};
 use sec_fetcher::utils::VecExtensions;
 use std::env;
 use std::error::Error;

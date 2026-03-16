@@ -7,8 +7,29 @@ use std::error::Error;
 /// Fetches all Form 4 and Form 4/A filings for a given CIK, ordered
 /// newest-first.
 ///
-/// Both the original filing (`4`) and amendments (`4/A`) are included.  Pass
-/// each submission to [`fetch_form4`] to retrieve the parsed transactions.
+/// # What is a Form 4?
+///
+/// **Form 4** is the **statement of changes in beneficial ownership** that
+/// company insiders must file within **2 business days** of any change in
+/// their equity stake.  "Insider" here means officers, directors, and any
+/// shareholder who beneficially owns more than 10% of a class of registered
+/// equity.
+///
+/// Changes reported include:
+/// - Open-market purchases and sales
+/// - Option grants and exercises
+/// - RSU vesting and award grants
+/// - Derivative transactions (swaps, forwards on company stock)
+/// - Gifts and estate transfers
+///
+/// Each transaction row shows: transaction date, security type, shares
+/// transacted, price per share, and remaining position after the transaction.
+/// Aggregating buys vs. sells across a period is the basis of most insider-
+/// trading signal strategies.
+///
+/// **Form 4/A** is an amendment correcting a previously filed Form 4.  Both
+/// form types are included and re-sorted newest-first.  Pass each submission
+/// to [`fetch_form4`] to retrieve the parsed transactions.
 pub async fn fetch_form4_filings(
     client: &SecClient,
     cik: Cik,
@@ -32,6 +53,13 @@ pub async fn fetch_form4_filings(
 /// The primary document is the Form 4 XML file listed in the submission.
 /// Returns one [`Form4Transaction`] per transaction row in the filing,
 /// sorted by transaction date descending.
+///
+/// # URL normalization note
+///
+/// The SEC's submissions JSON sometimes contains an XSLT-prefixed path for
+/// Form 4 primary documents (e.g. `"xslF345X05/form4.xml"`).  That URL
+/// returns rendered HTML, not the raw XML.  This function strips any directory
+/// prefix so we always fetch the raw XML from the archive root.
 ///
 /// # Example
 /// ```rust,no_run

@@ -86,6 +86,44 @@ pub fn parse_cik_submissions_json(data: &Value, cik: Cik) -> Vec<CikSubmission> 
     submissions
 }
 
+/// Fetches the complete EDGAR filing history for a registrant, returned as a
+/// flat list of [`CikSubmission`]s ordered **newest-first**.
+///
+/// # What is a CIK submissions response?
+///
+/// The SEC's `https://data.sec.gov/submissions/CIK{cik}.json` endpoint is the
+/// authoritative source of metadata for every filing a registrant has ever made
+/// with EDGAR.  A single JSON response contains:
+///
+/// - Registrant identity fields: `name`, `entityType`, `sic`, `sicDescription`,
+///   `category`, `stateOfIncorporation`, `fiscalYearEnd`, `exchanges`, etc.
+/// - A `filings.recent` block: the most recent ~1,000 filings, each row
+///   carrying `accessionNumber`, `form`, `primaryDocument`, `filingDate`, and
+///   `items` (for 8-Ks).
+/// - An optional `filings.files` array listing additional paginated JSON files
+///   (`CIK{cik}-submissions-001.json`, etc.) for registrants with very long
+///   histories.  This function **follows all pages** automatically.
+///
+/// This function is the common data source for every `fetch_*_filings` helper
+/// (8-K, 10-K, 10-Q, 13F-HR, NPORT-P, Form 4).  The HTTP response is cached
+/// locally, so calling multiple per-form helpers for the same CIK only hits
+/// the network once.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// # use sec_fetcher::network::{fetch_cik_submissions, fetch_cik_by_ticker_symbol, SecClient};
+/// # use sec_fetcher::config::ConfigManager;
+/// # #[tokio::main]
+/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let config = ConfigManager::load()?;
+/// let client = SecClient::from_config_manager(&config)?;
+/// let cik = fetch_cik_by_ticker_symbol(&client, "AAPL").await?;
+/// let submissions = fetch_cik_submissions(&client, cik).await?;
+/// println!("Total filings: {}", submissions.len());
+/// # Ok(())
+/// # }
+/// ```
 pub async fn fetch_cik_submissions(
     sec_client: &SecClient,
     cik: Cik,

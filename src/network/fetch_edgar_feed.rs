@@ -226,6 +226,26 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
 /// Fetches and parses the EDGAR filing Atom feed, returning a list of
 /// [`FeedEntry`] items ordered **newest-first**.
 ///
+/// # What is the EDGAR Atom feed?
+///
+/// EDGAR's real-time Atom feed (`https://efts.sec.gov/LATEST/search-index?q=...`)
+/// delivers newly accepted filings within seconds of EDGAR processing them,
+/// making it the fastest way to detect new disclosures without polling
+/// individual company submission endpoints.  The feed is updated continuously
+/// throughout the trading day and covers all filing types from all registrants.
+///
+/// Key properties of the feed:
+/// - **Not paginated in the traditional sense** — each request returns the
+///   most recent `count` entries (max 40) as of the moment of the request.
+/// - **No guarantee of exactly-once delivery** — amendments, corrections, or
+///   EDGAR reprocessing may cause a filing to reappear.
+/// - The `updated` timestamp on each entry is the SEC's acceptance time, which
+///   is the authoritative ordering key for building a high-water-mark delta.
+/// - Use `form_type = ""` to receive all form types (full firehose), or narrow
+///   to a specific form (e.g. `"8-K"`, `"NPORT-P"`).
+///
+/// For historical back-fill use [`fetch_edgar_master_index`] instead.
+///
 /// # Parameters
 ///
 /// - `form_type` — SEC form type filter, e.g. `"8-K"`, `"10-K"`, `"4"`.
@@ -250,6 +270,8 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
 /// ```
 ///
 /// This gives you exactly the delta — only filings accepted since the last poll.
+///
+/// [`fetch_edgar_master_index`]: crate::network::fetch_edgar_master_index
 pub async fn fetch_edgar_feed(
     client: &SecClient,
     form_type: &str,

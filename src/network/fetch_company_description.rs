@@ -74,7 +74,7 @@ pub async fn fetch_company_description(
 /// of bytes, making it unambiguous.
 ///
 /// `html2text` handles entity decoding, tag stripping, and whitespace
-/// normalisation. Short heading lines at the start are skipped; the result is
+/// normalization. Short heading lines at the start are skipped; the result is
 /// truncated at a sentence boundary near 800 characters.
 fn parse_item1_business(html: &str) -> Option<String> {
     let item1_positions: Vec<usize> = ITEM1_RE.find_iter(html).map(|m| m.start()).collect();
@@ -208,7 +208,11 @@ mod tests {
         let long_prose = sentence.repeat(30); // ~1140 chars
         let html = make_10k_html(&long_prose);
         let result = parse_item1_business(&html).unwrap();
-        assert!(result.len() <= 800, "Result too long: {} chars", result.len());
+        assert!(
+            result.len() <= 800,
+            "Result too long: {} chars",
+            result.len()
+        );
         assert!(
             result.ends_with('.'),
             "Result should end at sentence boundary: {result}"
@@ -247,9 +251,10 @@ mod tests {
         // but it must return something and not contain raw HTML tags.
         if let Some(r) = result {
             assert!(!r.contains('<'), "Raw HTML tag found in output: {r}");
-            assert!(!r.contains("&amp;"), "Unescaped entity found in output: {r}");
+            assert!(
+                !r.contains("&amp;"),
+                "Unescaped entity found in output: {r}"
+            );
         }
     }
 }
-
-

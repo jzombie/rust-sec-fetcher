@@ -1,3 +1,4 @@
+use chrono::Datelike;
 /// Look up the SEC company profile (name, SIC industry, exchange, etc.) for one
 /// or more ticker symbols.
 ///
@@ -35,8 +36,9 @@
 ///   cargo run --example company_profile -- AAPL
 ///   cargo run --example company_profile -- AAPL MSFT NVDA
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_company_description, fetch_company_profile, SecClient};
-use chrono::Datelike;
+use sec_fetcher::network::{
+    fetch_cik_by_ticker_symbol, fetch_company_description, fetch_company_profile, SecClient,
+};
 use std::env;
 use std::error::Error;
 
@@ -74,8 +76,14 @@ async fn lookup(client: &SecClient, ticker: &str) -> Result<(), Box<dyn Error>> 
     if let Some(desc) = fetch_company_description(client, profile.cik.clone()).await? {
         println!("Description:     {desc}");
     }
-    println!("SIC:             {}", profile.sic.as_deref().unwrap_or("n/a"));
-    println!("Industry:        {}", profile.sic_description.as_deref().unwrap_or("n/a"));
+    println!(
+        "SIC:             {}",
+        profile.sic.as_deref().unwrap_or("n/a")
+    );
+    println!(
+        "Industry:        {}",
+        profile.sic_description.as_deref().unwrap_or("n/a")
+    );
     println!("Sector:          {}", profile.sector().unwrap_or("n/a"));
     let unique_exchanges: Vec<&str> = {
         let mut seen = std::collections::HashSet::new();

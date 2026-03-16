@@ -9,8 +9,8 @@ fn load_fixture(name: &str) -> Value {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("tests/fixtures");
     path.push(name);
-    let raw = fs::read_to_string(&path)
-        .unwrap_or_else(|_| panic!("missing fixture: {}", path.display()));
+    let raw =
+        fs::read_to_string(&path).unwrap_or_else(|_| panic!("missing fixture: {}", path.display()));
     serde_json::from_str(&raw).expect("fixture is not valid JSON")
 }
 
@@ -42,7 +42,9 @@ fn submissions_are_newest_first() {
 #[test]
 fn entity_type_propagated_to_every_submission() {
     let subs = aapl_submissions();
-    assert!(subs.iter().all(|s| s.entity_type.as_deref() == Some("operating")));
+    assert!(subs
+        .iter()
+        .all(|s| s.entity_type.as_deref() == Some("operating")));
 }
 
 #[test]
@@ -63,10 +65,7 @@ fn filing_dates_parse_correctly() {
 fn accession_number_round_trips() {
     let subs = aapl_submissions();
     // Formatted form: 0000320193-25-000008
-    assert_eq!(
-        subs[0].accession_number.to_string(),
-        "0000320193-25-000008"
-    );
+    assert_eq!(subs[0].accession_number.to_string(), "0000320193-25-000008");
 }
 
 #[test]
@@ -125,7 +124,10 @@ fn earnings_release_detected_by_items_202() {
 fn non_earnings_8k_is_mid_quarter_event() {
     let subs = aapl_submissions();
     // Index 1: form 8-K, items "5.02,9.01" (no 2.02)
-    let sub = subs.iter().find(|s| s.items.contains(&"5.02".to_string())).unwrap();
+    let sub = subs
+        .iter()
+        .find(|s| s.items.contains(&"5.02".to_string()))
+        .unwrap();
     assert!(!sub.is_earnings_release());
     assert!(sub.is_mid_quarter_event());
 }

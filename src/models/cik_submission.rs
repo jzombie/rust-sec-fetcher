@@ -51,7 +51,10 @@ impl CikSubmission {
 
     /// Returns the most recent submission whose `form` matches any of `form_types`
     /// (case-insensitive).  The list is assumed to be ordered newest-first.
-    pub fn most_recent_by_form<'a>(submissions: &'a [Self], form_types: &[&str]) -> Option<&'a Self> {
+    pub fn most_recent_by_form<'a>(
+        submissions: &'a [Self],
+        form_types: &[&str],
+    ) -> Option<&'a Self> {
         submissions
             .iter()
             .find(|s| form_types.iter().any(|t| s.form.eq_ignore_ascii_case(t)))
@@ -269,6 +272,13 @@ mod tests {
     #[test]
     fn most_recent_10k_prefers_newer() {
         let subs = vec![sub("10-K", 2024), sub("10-K405", 2001)];
-        assert_eq!(CikSubmission::most_recent_10k(&subs).unwrap().filing_date.unwrap().year(), 2024);
+        assert_eq!(
+            CikSubmission::most_recent_10k(&subs)
+                .unwrap()
+                .filing_date
+                .unwrap()
+                .year(),
+            2024
+        );
     }
 }

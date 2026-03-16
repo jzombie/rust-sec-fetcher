@@ -53,11 +53,9 @@ impl CompanyProfile {
     /// `"06 Technology"` → `Some("Technology")`,
     /// `None` → `None`.
     pub fn sector(&self) -> Option<&str> {
-        self.owner_org.as_deref().map(|s| {
-            match s.find(' ') {
-                Some(pos) => s[pos + 1..].trim(),
-                None => s,
-            }
+        self.owner_org.as_deref().map(|s| match s.find(' ') {
+            Some(pos) => s[pos + 1..].trim(),
+            None => s,
         })
     }
 

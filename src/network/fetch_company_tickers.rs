@@ -3,8 +3,30 @@ use crate::models::{Cik, Ticker};
 use crate::network::SecClient;
 use std::error::Error;
 
-// TODO: Make distinction how these are not fund tickers
-// TODO: Rename to `fetch_operating_company_tickers`? https://www.sec.gov/data-research/standard-taxonomies/operating-companies
+/// Fetches the SEC's operating-company ticker-to-CIK mapping.
+///
+/// # What this returns
+///
+/// The file at `https://www.sec.gov/files/company_tickers.json` is the SEC's
+/// canonical list of **exchange-listed operating companies**:
+/// stocks, ETPs, and REITs that trade under a ticker symbol and file as
+/// operating companies rather than under the Investment Company Act.
+///
+/// Each [`Ticker`] entry carries:
+/// - `cik` — the registrant's SEC Central Index Key
+/// - `symbol` — the exchange ticker (e.g. `"AAPL"`)
+/// - `company_name` — the name as it appears in EDGAR
+///
+/// # Coverage gaps
+///
+/// Mutual-fund share classes and ETFs registered under the Investment Company
+/// Act are **not** included here.  Use
+/// [`fetch_investment_company_series_and_class_dataset`] to look up those
+/// tickers, or call [`fetch_cik_by_ticker_symbol`] which searches both sources
+/// automatically.
+///
+/// [`fetch_investment_company_series_and_class_dataset`]: crate::network::fetch_investment_company_series_and_class_dataset
+/// [`fetch_cik_by_ticker_symbol`]: crate::network::fetch_cik_by_ticker_symbol
 pub async fn fetch_company_tickers(sec_client: &SecClient) -> Result<Vec<Ticker>, Box<dyn Error>> {
     // TODO: Also incorporate: https://www.sec.gov/include/ticker.txt
 

@@ -8,7 +8,49 @@ use std::error::Error;
 
 pub type TickerFundamentalsDataFrame = DataFrame;
 
-/// Fetches US-GAAP SEC fundamentals for a given ticker symbol
+/// Fetches all US-GAAP XBRL-tagged financial data for a company as a
+/// structured [`DataFrame`].
+///
+/// # What this fetches
+///
+/// The SEC "company facts" endpoint
+/// (`https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json`) returns the
+/// complete set of **XBRL-tagged values** the company has disclosed in every
+/// periodic filing (10-K, 10-Q, 8-K, and others).  XBRL tagging is mandatory
+/// for all public companies, so this endpoint covers the full financial history
+/// available on EDGAR.
+///
+/// This is **structured financial data** — the numbers extracted from
+/// financial statements.  It is entirely separate from the filings/submissions
+/// API used by `fetch_*_filings`.  You do not need to fetch filing documents
+/// to get financial figures; this endpoint provides them directly.
+///
+/// # Returned DataFrame columns
+///
+/// | Column       | Type     | Description |
+/// |--------------|----------|-------------|
+/// | `concept`    | `Utf8`   | US-GAAP concept name (e.g. `"Revenues"`, `"NetIncomeLoss"`) |
+/// | `label`      | `Utf8`   | Human-readable label from the XBRL taxonomy |
+/// | `unit`       | `Utf8`   | Unit of measure (`"USD"`, `"shares"`, `"USD/shares"`) |
+/// | `start`      | `Date`   | Period start date (absent for instant-type concepts) |
+/// | `end`        | `Date`   | Period end date (balance-sheet date for instants) |
+/// | `val`        | `Float64` | Reported value |
+/// | `form`       | `Utf8`   | SEC form type that carried this tag (`"10-K"`, `"10-Q"`, etc.) |
+/// | `accn`       | `Utf8`   | Accession number of the source filing |
+/// | `filing_url` | `Utf8`   | Direct URL to the filing primary document |
+///
+/// # Common concepts
+///
+/// - `Revenues` / `RevenueFromContractWithCustomerExcludingAssessedTax` — top-line revenue
+/// - `NetIncomeLoss` — bottom-line net income
+/// - `EarningsPerShareBasic` / `EarningsPerShareDiluted`
+/// - `Assets` / `Liabilities` / `StockholdersEquity`
+/// - `CashAndCashEquivalentsAtCarryingValue`
+/// - `OperatingCashFlow` (often tagged as `NetCashProvidedByUsedInOperatingActivities`)
+///
+/// To explore which concepts a company has reported, filter the returned
+/// DataFrame on the `concept` column.  To compare across companies, join on
+/// `concept` + normalised `end` date.
 pub async fn fetch_us_gaap_fundamentals(
     client: &SecClient,
     company_tickers: &[Ticker],

@@ -6,6 +6,30 @@ use std::error::Error;
 
 /// Fetches all NPORT-P filings for a given CIK, ordered newest-first.
 ///
+/// # What is an NPORT-P?
+///
+/// An **NPORT-P** is the **monthly portfolio holdings report** filed by
+/// registered open-end investment companies (mutual funds and ETFs) under
+/// Rule 30b1-9.  Unlike the 13F, which covers only institutional equity
+/// managers, NPORT-P covers the *entire* portfolio of registered funds:
+///
+/// - Domestic and foreign equities
+/// - Fixed income (corporate, government, municipal, ABS)
+/// - Derivatives (futures, swaps, options — including notional amounts and
+///   counterparty names)
+/// - Cash equivalents and repo agreements
+/// - Private / illiquid instruments
+///
+/// Key facts:
+/// - Funds with net assets ≥ **$1 billion** file monthly; smaller funds file
+///   quarterly on Form NPORT-P.
+/// - Reports are due within **30 days** after each month end.
+/// - Only the **third month** of each fiscal quarter is publicly available;
+///   the other two months are filed but kept non-public until the following
+///   quarter.
+/// - The filing XML includes both aggregate portfolio statistics (duration,
+///   credit quality, liquidity breakdown) and line-item holdings.
+///
 /// Returns every [`CikSubmission`] whose form type is `NPORT-P`.  Pass each
 /// submission to [`fetch_nport`] to retrieve the parsed investment holdings.
 pub async fn fetch_nport_filings(
@@ -20,6 +44,12 @@ pub async fn fetch_nport_filings(
 }
 
 /// Fetches and parses an NPORT-P filing given its [`CikSubmission`].
+///
+/// The primary document in an NPORT-P submission is a single XML file
+/// (pointed to by `submission.primary_document`).  This function fetches that
+/// XML and parses each `<invstOrSec>` element into an [`NportInvestment`].
+/// The ticker-symbol lookup table (`fetch_company_tickers`) is used to enrich
+/// holdings with exchange-listed ticker symbols where available.
 ///
 /// # Example
 /// ```rust,no_run
@@ -46,9 +76,11 @@ pub async fn fetch_nport(
 ) -> Result<Vec<NportInvestment>, Box<dyn Error>> {
     let company_tickers = fetch_company_tickers(client).await?;
 
-    let url =
-        Url::CikAccessionPrimaryDocument(submission.cik.clone(), submission.accession_number.clone())
-            .value();
+    let url = Url::CikAccessionPrimaryDocument(
+        submission.cik.clone(),
+        submission.accession_number.clone(),
+    )
+    .value();
 
     let response = client
         .raw_request(reqwest::Method::GET, &url, None, None)
