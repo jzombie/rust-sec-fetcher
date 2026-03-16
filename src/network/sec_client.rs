@@ -195,18 +195,22 @@ impl SecClient {
         Ok(response)
     }
 
-    /// Issues an HTTP request that **always fetches fresh data** while still
-    /// respecting the throttle policy.
+    /// Issues an HTTP request that **bypasses the on-disk cache**, always
+    /// going to the network, while still respecting the throttle policy.
     ///
     /// Uses a zero-TTL cache policy: entries are written to the cache store
     /// (which the throttle middleware requires) but are immediately expired, so
     /// every request is a cache miss and goes to the network. The throttle
     /// semaphore and backoff logic are fully active.
     ///
-    /// Use this for live/polling endpoints — primarily the EDGAR Atom feeds.
-    /// All other EDGAR data should use [`Self::raw_request`] to benefit from
-    /// the default cache TTL.
-    pub async fn raw_request_live(
+    /// **Use sparingly.** Prefer [`Self::raw_request`] for all normal EDGAR
+    /// data — it benefits from the configured cache TTL and avoids hammering
+    /// the SEC servers on repeated calls. Reserve this method for:
+    /// - Live polling endpoints (EDGAR Atom feeds) where stale data is
+    ///   unacceptable.
+    /// - The `refresh_test_fixtures` binary, which must always write the
+    ///   latest data to disk.
+    pub async fn raw_request_nocache(
         &self,
         method: reqwest::Method,
         url: &str,

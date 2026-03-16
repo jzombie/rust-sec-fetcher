@@ -89,7 +89,11 @@ fn test_cik_lookup_derived_instrument_resolves_to_primary() {
 // to its own CIK rather than erroring (e.g. an ADR with a standalone CIK).
 #[test]
 fn test_cik_lookup_derived_instrument_fallback_no_primary() {
-    let tickers = vec![make_ticker("FOO-WT", 999999, TickerOrigin::DerivedInstrument)];
+    let tickers = vec![make_ticker(
+        "FOO-WT",
+        999999,
+        TickerOrigin::DerivedInstrument,
+    )];
     let cik = Cik::get_company_cik_by_ticker_symbol(&tickers, "FOO-WT").unwrap();
     assert_eq!(cik, Cik::from_u64(999999).unwrap());
 }

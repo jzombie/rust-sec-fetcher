@@ -1,9 +1,9 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::enums::TickerOrigin;
 use crate::models::AccessionNumber;
 use crate::models::Ticker;
-use crate::enums::TickerOrigin;
 
 use std::error::Error;
 

@@ -315,8 +315,9 @@ pub async fn fetch_edgar_feed_page(
     }
     .value();
 
+    // Ensure we get the latest data from EDGAR rather than a cached copy
     let response = client
-        .raw_request_live(reqwest::Method::GET, &url, None)
+        .raw_request_nocache(reqwest::Method::GET, &url, None)
         .await?;
 
     let xml = response.text().await?;

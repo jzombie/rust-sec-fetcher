@@ -17,7 +17,11 @@ pub fn parse_company_tickers_json(data: &Value) -> Result<Vec<Ticker>, Box<dyn E
             tickers.push(Ticker {
                 cik,
                 symbol: Ticker::normalize_symbol(ticker_info["ticker"].as_str().unwrap_or("")),
-                company_name: ticker_info["title"].as_str().unwrap_or("").trim().to_string(),
+                company_name: ticker_info["title"]
+                    .as_str()
+                    .unwrap_or("")
+                    .trim()
+                    .to_string(),
                 origin: TickerOrigin::PrimaryListing,
             });
         }

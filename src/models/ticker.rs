@@ -44,10 +44,7 @@ impl Ticker {
     /// symbols through this function so that `BRK.B`, `BRK/B`, `brk-b`,
     /// and `BRK-B` all resolve to the same canonical key `"BRK-B"`.
     pub fn normalize_symbol(s: &str) -> String {
-        s.trim()
-            .to_uppercase()
-            .replace('.', "-")
-            .replace('/', "-")
+        s.trim().to_uppercase().replace('.', "-").replace('/', "-")
     }
 
     // TODO: Move to parsers?

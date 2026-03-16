@@ -10,19 +10,27 @@
 //     Includes S-3 (2024-10-15)
 
 use chrono::NaiveDate;
+use flate2::read::GzDecoder;
 use sec_fetcher::models::{Cik, CikSubmission};
 use sec_fetcher::network::parse_cik_submissions_json;
 use serde_json::Value;
-use std::fs;
+use std::fs::File;
 use std::path::PathBuf;
 
+/// Load a fixture by its logical name (e.g. `"RDDT_submissions.json"`).
+/// The file is stored on disk as `{name}.gz` and decompressed in memory.
+/// Run `cargo run --example refresh_test_fixtures` to update the fixtures.
 fn load_fixture(name: &str) -> Value {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("tests/fixtures");
-    path.push(name);
-    let raw =
-        fs::read_to_string(&path).unwrap_or_else(|_| panic!("missing fixture: {}", path.display()));
-    serde_json::from_str(&raw).expect("fixture is not valid JSON")
+    path.push(format!("{}.gz", name));
+    let file = File::open(&path).unwrap_or_else(|_| {
+        panic!(
+            "missing fixture: {} (run `cargo run --example refresh_test_fixtures`)",
+            path.display()
+        )
+    });
+    serde_json::from_reader(GzDecoder::new(file)).expect("fixture is not valid JSON")
 }
 
 /// Reddit, Inc. — full EDGAR download, CIK 1713445 (ticker: RDDT).
@@ -48,7 +56,11 @@ fn rddt_has_over_400_recent_submissions() {
 fn rddt_fixture_submissions_are_newest_first() {
     let subs = reddit_submissions();
     // DEF 14A (2025-04-28) must precede S-1 (2024-02-22)
-    let def14a_date = subs.iter().find(|s| s.form == "DEF 14A").unwrap().filing_date;
+    let def14a_date = subs
+        .iter()
+        .find(|s| s.form == "DEF 14A")
+        .unwrap()
+        .filing_date;
     let s1_date = subs.iter().find(|s| s.form == "S-1").unwrap().filing_date;
     assert!(def14a_date > s1_date);
 }
@@ -81,7 +93,10 @@ fn s1_has_three_amendments() {
         amendments[0].filing_date,
         NaiveDate::from_ymd_opt(2024, 3, 19)
     );
-    assert_eq!(amendments[0].accession_number.to_string(), "0001628280-24-011789");
+    assert_eq!(
+        amendments[0].accession_number.to_string(),
+        "0001628280-24-011789"
+    );
 }
 
 #[test]
@@ -136,7 +151,10 @@ fn def14a_filing_date_and_accession() {
     let proxies: Vec<_> = CikSubmission::by_form(&subs, "DEF 14A");
     assert_eq!(proxies.len(), 1);
     assert_eq!(proxies[0].filing_date, NaiveDate::from_ymd_opt(2025, 4, 28));
-    assert_eq!(proxies[0].accession_number.to_string(), "0001713445-25-000092");
+    assert_eq!(
+        proxies[0].accession_number.to_string(),
+        "0001713445-25-000092"
+    );
     assert_eq!(proxies[0].primary_document, "rddt-20250428.htm");
 }
 
@@ -155,7 +173,10 @@ fn sc13d_initial_filing_date_and_accession() {
     let filings: Vec<_> = CikSubmission::by_form(&subs, "SC 13D");
     assert_eq!(filings.len(), 1);
     assert_eq!(filings[0].filing_date, NaiveDate::from_ymd_opt(2024, 5, 3));
-    assert_eq!(filings[0].accession_number.to_string(), "0001193125-24-130868");
+    assert_eq!(
+        filings[0].accession_number.to_string(),
+        "0001193125-24-130868"
+    );
     assert_eq!(filings[0].primary_document, "d804372dsc13d.htm");
 }
 
@@ -164,8 +185,14 @@ fn sc13d_amendment_date_and_accession() {
     let subs = reddit_submissions();
     let amendments: Vec<_> = CikSubmission::by_form(&subs, "SC 13D/A");
     assert_eq!(amendments.len(), 1);
-    assert_eq!(amendments[0].filing_date, NaiveDate::from_ymd_opt(2024, 8, 22));
-    assert_eq!(amendments[0].accession_number.to_string(), "0001193125-24-205536");
+    assert_eq!(
+        amendments[0].filing_date,
+        NaiveDate::from_ymd_opt(2024, 8, 22)
+    );
+    assert_eq!(
+        amendments[0].accession_number.to_string(),
+        "0001193125-24-205536"
+    );
 }
 
 #[test]

@@ -1,10 +1,26 @@
+use flate2::read::GzDecoder;
 use polars::prelude::*;
 use sec_fetcher::parsers::parse_us_gaap_fundamentals;
 use serde_json::json;
 use serde_json::Value;
 use std::fs::File;
-use std::io::BufReader;
 use std::path::PathBuf;
+
+/// Load a fixture by its logical name (e.g. `"AAPL_companyfacts.json"`).
+/// Stored on disk as `{name}.gz` and decompressed in memory.
+/// Run `cargo run --bin refresh_test_fixtures` to create or update fixtures.
+fn load_fixture(name: &str) -> Value {
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push("tests/fixtures");
+    path.push(format!("{}.gz", name));
+    let file = File::open(&path).unwrap_or_else(|_| {
+        panic!(
+            "missing fixture: {} (run `cargo run --bin refresh_test_fixtures`)",
+            path.display()
+        )
+    });
+    serde_json::from_reader(GzDecoder::new(file)).expect("fixture is not valid JSON")
+}
 
 /// Helper function to validate EVERY parsed fact in the dataframe against the source JSON.
 ///
@@ -164,16 +180,7 @@ fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
 }
 
 fn run_full_validation_for_ticker(ticker: &str, filename: &str) {
-    let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    d.push("tests/fixtures");
-    d.push(filename);
-
-    let file = File::open(&d).expect(&format!(
-        "Could not find {}. Please ensure the test fixture is present.",
-        filename
-    ));
-    let reader = BufReader::new(file);
-    let json_data: Value = serde_json::from_reader(reader).expect("Failed to parse fixture JSON");
+    let json_data = load_fixture(filename);
 
     println!("Parsing data for {}...", ticker);
     let df = parse_us_gaap_fundamentals(json_data.clone()).expect("Failed to parse JSON dataframe");
@@ -209,15 +216,7 @@ fn test_accuracy_msft_full_exhaustive() {
 
 #[test]
 fn test_accuracy_off_calendar_fiscal_year() {
-    // Load REAL data from the SEC for Nvidia (NVDA)
-    // CIK: 0001045810
-    // This file was downloaded from https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json
-    let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    d.push("tests/fixtures/NVDA_companyfacts.json");
-
-    let file = File::open(&d).expect("Could not find tests/fixtures/NVDA_companyfacts.json. Please ensure the test fixture is present.");
-    let reader = BufReader::new(file);
-    let json_data: Value = serde_json::from_reader(reader).expect("Failed to parse fixture JSON");
+    let json_data = load_fixture("NVDA_companyfacts.json");
 
     let df = parse_us_gaap_fundamentals(json_data).expect("Failed to parse JSON dataframe");
 
@@ -475,12 +474,7 @@ fn test_parser_prioritizes_amendments_synthetic() {
 
 #[test]
 fn test_canonical_order_column_exists_and_monotonic() {
-    let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    d.push("tests/fixtures/AAPL_companyfacts.json");
-
-    let file = File::open(&d).expect("Could not find AAPL fixture");
-    let reader = BufReader::new(file);
-    let json_data: Value = serde_json::from_reader(reader).expect("Failed to parse fixture JSON");
+    let json_data = load_fixture("AAPL_companyfacts.json");
 
     let df = parse_us_gaap_fundamentals(json_data).expect("Failed to parse dataframe");
 

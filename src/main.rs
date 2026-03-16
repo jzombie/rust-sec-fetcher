@@ -10,7 +10,7 @@ use polars::prelude::{CsvWriter, SerWriter};
 use sec_fetcher::{
     config::ConfigManager,
     network::{
-        fetch_operating_company_tickers, fetch_investment_company_series_and_class_dataset,
+        fetch_investment_company_series_and_class_dataset, fetch_operating_company_tickers,
         fetch_us_gaap_fundamentals, SecClient,
     },
     utils::VecExtensions,
