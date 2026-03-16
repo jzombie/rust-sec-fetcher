@@ -1,5 +1,7 @@
 // NOTE: THIS FILE IS A PROTOTYPE/EXPERIMENTAL WORK IN PROGRESS AS I EXPERIMENT WITH THE API.
 
+// TODO: Use this for public API inspiration: https://github.com/r007/edgarkit
+
 // TODO: Consider uploading XBRL artifacts to HF as "XBRL_facts_and_figures" (or similar) dataset for easier access and sharing.
 // It would also be helpful to include XBRL US-GAAP fact documentation from the current year taxonomy.
 
