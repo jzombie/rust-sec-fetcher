@@ -5,9 +5,9 @@ Use of this software for Professional Services, Commercial Products, or AI Model
 
 If you wish to use this software for:
 
-Internal business operations
+- Internal business operations
 
-Training, validating, or optimizing machine learning models
+- Training, validating, or optimizing machine learning models
 
 Inclusion in a paid product
 
