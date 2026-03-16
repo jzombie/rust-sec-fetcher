@@ -44,8 +44,8 @@ use rust_decimal_macros::dec;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::{Cik, CikSubmission, NportInvestment, ThirteenfHolding};
 use sec_fetcher::network::{
-    fetch_13f_filing, fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_form4_filing,
-    fetch_nport_filing_by_cik_and_accession_number, SecClient,
+    fetch_13f, fetch_13f_filings, fetch_cik_by_ticker_symbol, fetch_form4, fetch_form4_filings,
+    fetch_nport, fetch_nport_filings, SecClient,
 };
 use std::collections::HashMap;
 use std::env;
@@ -295,17 +295,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // ── Submission list ───────────────────────────────────────────────────────
     eprintln!("Fetching submission history…");
-    let submissions = fetch_cik_submissions(&client, cik.clone()).await?;
 
     // Detect which form type this issuer uses.
-    let nport_subs: Vec<&CikSubmission> =
-        submissions.iter().filter(|s| s.form == "NPORT-P").collect();
-    let thirteenf_subs: Vec<&CikSubmission> =
-        submissions.iter().filter(|s| s.form == "13F-HR").collect();
-    let form4_subs: Vec<&CikSubmission> = submissions
-        .iter()
-        .filter(|s| s.form == "4" || s.form == "4/A")
-        .collect();
+    let nport_subs = fetch_nport_filings(&client, cik.clone()).await?;
+    let thirteenf_subs = fetch_13f_filings(&client, cik.clone()).await?;
+    let form4_subs = fetch_form4_filings(&client, cik.clone()).await?;
 
     enum FilingKind {
         NPort,
@@ -347,7 +341,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let n = num_filings.unwrap_or(default_n).min(relevant.len());
 
     // Take the N most recent filings. Submissions are returned newest-first.
-    let selected: Vec<&CikSubmission> = relevant.into_iter().take(n).collect();
+    let selected: Vec<&CikSubmission> = relevant.iter().take(n).collect();
 
     // ── Form 4 path — fetch and print, then return early ─────────────────────
     if let FilingKind::Form4 = kind {
@@ -367,7 +361,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         println!("{}", "-".repeat(130));
 
         for sub in &selected {
-            let txns = fetch_form4_filing(&client, sub).await?;
+            let txns = fetch_form4(&client, sub).await?;
             for t in &txns {
                 let role = if t.is_officer {
                     t.officer_title.as_deref().unwrap_or("Officer")
@@ -420,17 +414,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         let positions: Vec<Position> = match kind {
             FilingKind::NPort => {
-                let investments: Vec<NportInvestment> =
-                    fetch_nport_filing_by_cik_and_accession_number(
-                        &client,
-                        sub.cik.clone(),
-                        sub.accession_number.clone(),
-                    )
-                    .await?;
+                let investments: Vec<NportInvestment> = fetch_nport(&client, sub).await?;
                 positions_from_nport(&investments)
             }
             FilingKind::ThirteenF => {
-                let holdings: Vec<ThirteenfHolding> = fetch_13f_filing(&client, sub).await?;
+                let holdings: Vec<ThirteenfHolding> = fetch_13f(&client, sub).await?;
                 positions_from_13f(&holdings)
             }
             FilingKind::Form4 => unreachable!("Form4 path returns early above"),

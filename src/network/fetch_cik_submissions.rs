@@ -62,6 +62,30 @@ fn extract_filings_from_block(
     }
 }
 
+/// Parses a raw SEC submissions JSON value into a list of [`CikSubmission`]s.
+///
+/// This is the pure parsing core of [`fetch_cik_submissions`], exposed for
+/// testing and offline processing.  Pass the full JSON body returned by
+/// `https://data.sec.gov/submissions/CIK{cik}.json` (or a loaded fixture).
+/// Pagination (`filings.files`) is **not** followed; only the `filings.recent`
+/// block present in the value is parsed.
+///
+/// The `cik` argument is stamped onto every returned submission because the
+/// SEC JSON does not repeat the CIK in each filing row.
+pub fn parse_cik_submissions_json(data: &Value, cik: Cik) -> Vec<CikSubmission> {
+    let entity_type: Option<String> = data["entityType"].as_str().map(|s| s.to_string());
+    let mut submissions: Vec<CikSubmission> = Vec::new();
+    if let Some(recent) = data["filings"]["recent"].as_object() {
+        extract_filings_from_block(
+            &Value::Object(recent.clone()),
+            &cik,
+            &entity_type,
+            &mut submissions,
+        );
+    }
+    submissions
+}
+
 pub async fn fetch_cik_submissions(
     sec_client: &SecClient,
     cik: Cik,

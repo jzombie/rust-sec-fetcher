@@ -10,7 +10,7 @@ use std::str::FromStr;
 /// [`Form4Transaction`] per row in the `<nonDerivativeTable>` and
 /// `<derivativeTable>` sections, sorted by `transaction_date` descending.
 ///
-/// Fetch the XML via [`crate::network::fetch_form4_filing`].
+/// Fetch the XML via [`crate::network::fetch_form4`].
 pub fn parse_form4_xml(
     xml: &str,
     filing_date: Option<NaiveDate>,

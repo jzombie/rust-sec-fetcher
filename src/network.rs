@@ -14,10 +14,7 @@ mod fetch_cik_by_ticker_symbol;
 pub use fetch_cik_by_ticker_symbol::fetch_cik_by_ticker_symbol;
 
 mod fetch_cik_submissions;
-pub use fetch_cik_submissions::fetch_cik_submissions;
-
-mod fetch_8k_filings;
-pub use fetch_8k_filings::fetch_8k_filings_by_ticker_symbol;
+pub use fetch_cik_submissions::{fetch_cik_submissions, parse_cik_submissions_json};
 
 mod fetch_edgar_feed;
 pub use fetch_edgar_feed::{
@@ -25,19 +22,8 @@ pub use fetch_edgar_feed::{
     parse_edgar_atom_feed, FeedDelta, EDGAR_PAGE_SIZE,
 };
 
-mod fetch_filing_index;
-pub use fetch_filing_index::fetch_filing_index;
-
-mod fetch_nport_filing;
-pub use fetch_nport_filing::{
-    fetch_nport_filing_by_cik_and_accession_number, fetch_nport_filing_by_ticker_symbol,
-};
-
-mod fetch_13f_filing;
-pub use fetch_13f_filing::fetch_13f_filing;
-
-mod fetch_form4_filing;
-pub use fetch_form4_filing::fetch_form4_filing;
+mod filings;
+pub use filings::{fetch_8k_filings, fetch_10k_filings, fetch_10q_filings, fetch_13f, fetch_13f_filings, fetch_form4, fetch_form4_filings, fetch_filing_index, fetch_nport, fetch_nport_filings};
 
 mod fetch_edgar_master_index;
 pub use fetch_edgar_master_index::fetch_edgar_master_index;

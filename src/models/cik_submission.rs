@@ -41,26 +41,20 @@ pub struct CikSubmission {
 }
 
 impl CikSubmission {
-    pub fn filter_nport_p_submissions(cik_submissions: &[Self]) -> Vec<Self> {
-        cik_submissions
+    /// Returns all submissions whose `form` field matches `form_type` (case-insensitive).
+    pub fn by_form<'a>(submissions: &'a [Self], form_type: &str) -> Vec<&'a Self> {
+        submissions
             .iter()
-            .filter(|submission| submission.form.to_uppercase() == "NPORT-P")
-            .cloned()
+            .filter(|s| s.form.eq_ignore_ascii_case(form_type))
             .collect()
     }
 
-    pub fn most_recent_nport_p_submission(cik_submissions: &[Self]) -> Option<Self> {
-        let nport_p_submissions = Self::filter_nport_p_submissions(cik_submissions);
-
-        nport_p_submissions.first().cloned()
-    }
-
-    pub fn filter_8k_submissions(cik_submissions: &[Self]) -> Vec<Self> {
-        cik_submissions
+    /// Returns the most recent submission whose `form` matches any of `form_types`
+    /// (case-insensitive).  The list is assumed to be ordered newest-first.
+    pub fn most_recent_by_form<'a>(submissions: &'a [Self], form_types: &[&str]) -> Option<&'a Self> {
+        submissions
             .iter()
-            .filter(|submission| submission.form.to_uppercase() == "8-K")
-            .cloned()
-            .collect()
+            .find(|s| form_types.iter().any(|t| s.form.eq_ignore_ascii_case(t)))
     }
 
     /// Returns the most recent 10-K (or 10-K405) submission, if any.
@@ -69,10 +63,7 @@ impl CikSubmission {
     /// already ordered newest-first, so the first match is the latest annual
     /// report.
     pub fn most_recent_10k(cik_submissions: &[Self]) -> Option<&Self> {
-        cik_submissions.iter().find(|s| {
-            let f = s.form.to_uppercase();
-            f == "10-K" || f == "10-K405"
-        })
+        Self::most_recent_by_form(cik_submissions, &["10-K", "10-K405"])
     }
 
     /// Returns `true` if this 8-K is an **earnings release** (Item 2.02).
@@ -205,5 +196,79 @@ impl CikSubmission {
     /// rather than the filing index directory.
     pub fn as_primary_document_url(&self) -> String {
         format!("{}/{}", self.as_edgar_archive_url(), self.primary_document)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::{AccessionNumber, Cik};
+    use chrono::Datelike;
+
+    fn sub(form: &str, year: i32) -> CikSubmission {
+        CikSubmission {
+            cik: Cik::from_u64(1).unwrap(),
+            entity_type: None,
+            accession_number: AccessionNumber::from_str("0001234567-23-000001").unwrap(),
+            form: form.to_string(),
+            primary_document: String::new(),
+            filing_date: chrono::NaiveDate::from_ymd_opt(year, 1, 1),
+            items: vec![],
+        }
+    }
+
+    #[test]
+    fn by_form_matches_exact() {
+        let subs = vec![sub("8-K", 2024), sub("10-K", 2024), sub("10-Q", 2024)];
+        assert_eq!(CikSubmission::by_form(&subs, "8-K").len(), 1);
+        assert_eq!(CikSubmission::by_form(&subs, "10-K").len(), 1);
+        assert_eq!(CikSubmission::by_form(&subs, "13F-HR").len(), 0);
+    }
+
+    #[test]
+    fn by_form_is_case_insensitive() {
+        let subs = vec![sub("8-K", 2024), sub("8-k", 2024), sub("NPORT-P", 2024)];
+        assert_eq!(CikSubmission::by_form(&subs, "8-K").len(), 2);
+        assert_eq!(CikSubmission::by_form(&subs, "nport-p").len(), 1);
+    }
+
+    #[test]
+    fn by_form_empty_list() {
+        assert!(CikSubmission::by_form(&[], "8-K").is_empty());
+    }
+
+    #[test]
+    fn most_recent_by_form_returns_first_match() {
+        // Newest-first ordering: 2024 10-Q is before 2023 10-K
+        let subs = vec![sub("10-Q", 2024), sub("10-K", 2023), sub("10-K", 2022)];
+        let result = CikSubmission::most_recent_by_form(&subs, &["10-K", "10-K405"]);
+        assert_eq!(result.unwrap().filing_date.unwrap().year(), 2023);
+    }
+
+    #[test]
+    fn most_recent_by_form_handles_multiple_types() {
+        let subs = vec![sub("10-K405", 2001), sub("10-K", 2000)];
+        // 10-K405 should be found because it's first in the list
+        let result = CikSubmission::most_recent_by_form(&subs, &["10-K", "10-K405"]);
+        assert_eq!(result.unwrap().form, "10-K405");
+    }
+
+    #[test]
+    fn most_recent_by_form_returns_none_when_absent() {
+        let subs = vec![sub("8-K", 2024), sub("10-Q", 2024)];
+        assert!(CikSubmission::most_recent_by_form(&subs, &["10-K"]).is_none());
+    }
+
+    #[test]
+    fn most_recent_10k_finds_10k405() {
+        let subs = vec![sub("10-Q", 2024), sub("10-K405", 2001)];
+        let result = CikSubmission::most_recent_10k(&subs);
+        assert_eq!(result.unwrap().form, "10-K405");
+    }
+
+    #[test]
+    fn most_recent_10k_prefers_newer() {
+        let subs = vec![sub("10-K", 2024), sub("10-K405", 2001)];
+        assert_eq!(CikSubmission::most_recent_10k(&subs).unwrap().filing_date.unwrap().year(), 2024);
     }
 }

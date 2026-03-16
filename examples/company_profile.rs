@@ -11,7 +11,7 @@
 /// | Name                   | Apple Inc.                      |
 /// | SIC code               | 3571                            |
 /// | SIC description        | Electronic Computers            |
-/// | EDGAR office           | Technology (from siccodes.htm)  |
+
 /// | Owner-org sector       | 06 Technology                   |
 /// | Exchange(s)            | Nasdaq                          |
 /// | Filer category         | Large accelerated filer         |
@@ -35,8 +35,7 @@
 ///   cargo run --example company_profile -- AAPL
 ///   cargo run --example company_profile -- AAPL MSFT NVDA
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::models::SicCode;
-use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_company_description, fetch_company_profile, fetch_sic_codes, SecClient};
+use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_company_description, fetch_company_profile, SecClient};
 use chrono::Datelike;
 use std::env;
 use std::error::Error;
@@ -54,12 +53,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let cfg = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&cfg)?;
 
-    // Fetched once and reused for all tickers. The page is cached so
-    // subsequent runs pay no network cost.
-    let sic_codes = fetch_sic_codes(&client).await?;
-
     for ticker in &tickers {
-        match lookup(&client, ticker, &sic_codes).await {
+        match lookup(&client, ticker).await {
             Ok(()) => {}
             Err(e) => eprintln!("Error for {ticker}: {e}"),
         }
@@ -69,15 +64,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn lookup(client: &SecClient, ticker: &str, sic_codes: &[SicCode]) -> Result<(), Box<dyn Error>> {
+async fn lookup(client: &SecClient, ticker: &str) -> Result<(), Box<dyn Error>> {
     let cik = fetch_cik_by_ticker_symbol(client, ticker).await?;
     let profile = fetch_company_profile(client, cik).await?;
-
-    let sic_entry = profile
-        .sic
-        .as_deref()
-        .and_then(|s| s.parse::<u16>().ok())
-        .and_then(|n| sic_codes.iter().find(|c| c.code == n));
 
     println!("Ticker:          {ticker}");
     println!("CIK:             {}", profile.cik.to_string());
@@ -85,18 +74,9 @@ async fn lookup(client: &SecClient, ticker: &str, sic_codes: &[SicCode]) -> Resu
     if let Some(desc) = fetch_company_description(client, profile.cik.clone()).await? {
         println!("Description:     {desc}");
     }
-    println!(
-        "SIC:             {} — {}",
-        profile.sic.as_deref().unwrap_or("n/a"),
-        profile.sic_description.as_deref().unwrap_or("n/a")
-    );
-    if let Some(entry) = sic_entry {
-        println!("EDGAR office:    {}", entry.office_short());
-    }
-    println!(
-        "Sector:          {}",
-        profile.sector().unwrap_or("n/a")
-    );
+    println!("SIC:             {}", profile.sic.as_deref().unwrap_or("n/a"));
+    println!("Industry:        {}", profile.sic_description.as_deref().unwrap_or("n/a"));
+    println!("Sector:          {}", profile.sector().unwrap_or("n/a"));
     let unique_exchanges: Vec<&str> = {
         let mut seen = std::collections::HashSet::new();
         profile

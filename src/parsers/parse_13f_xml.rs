@@ -9,7 +9,7 @@ use std::error::Error;
 /// [`ThirteenfHolding`] per `<infoTable>` entry, sorted by `value_usd` descending.
 ///
 /// The SEC publishes the informationTable as a separate XML file within the
-/// filing index — fetch via [`crate::network::fetch_13f_filing`] which
+/// filing index — fetch via [`crate::network::fetch_13f`] which
 /// discovers the correct filename from the index before fetching.
 ///
 /// Note: the raw `<value>` element is in **thousands of USD**; this function

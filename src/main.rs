@@ -9,7 +9,7 @@ use sec_fetcher::{
     config::ConfigManager,
     network::{
         fetch_company_tickers, fetch_investment_company_series_and_class_dataset,
-        fetch_nport_filing_by_ticker_symbol, fetch_us_gaap_fundamentals, SecClient,
+        fetch_us_gaap_fundamentals, SecClient,
     },
     utils::VecExtensions,
 };

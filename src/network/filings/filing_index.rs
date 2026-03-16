@@ -1,8 +1,14 @@
 use crate::enums::Url;
 use crate::models::{CikSubmission, FilingDocument, FilingIndex};
 use crate::network::SecClient;
+use once_cell::sync::Lazy;
 use regex::Regex;
 use std::error::Error;
+
+static TR_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?is)<tr[^>]*>(.*?)</tr>").unwrap());
+static TD_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?is)<td[^>]*>(.*?)</td>").unwrap());
+static HREF_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r#"(?i)href="([^"]+)""#).unwrap());
+static TAGS_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"<[^>]*>").unwrap());
 
 /// Parses the EDGAR HTML filing index page into a [`FilingIndex`].
 ///
@@ -14,18 +20,12 @@ use std::error::Error;
 /// Note: some hrefs use EDGAR's iXBRL viewer prefix (`/ix?doc=/Archives/...`);
 /// the actual filename is extracted from those transparently.
 fn parse_filing_index_html(html: &str) -> Result<FilingIndex, Box<dyn Error>> {
-    // Regexes compiled once per call — these are short-lived per request.
-    let tr_re = Regex::new(r"(?is)<tr[^>]*>(.*?)</tr>")?;
-    let td_re = Regex::new(r"(?is)<td[^>]*>(.*?)</td>")?;
-    let href_re = Regex::new(r#"(?i)href="([^"]+)""#)?;
-    let tags_re = Regex::new(r"<[^>]*>")?;
-
     let mut documents = Vec::new();
 
-    for tr_cap in tr_re.captures_iter(html) {
+    for tr_cap in TR_RE.captures_iter(html) {
         let row_html = &tr_cap[1];
 
-        let cells: Vec<String> = td_re
+        let cells: Vec<String> = TD_RE
             .captures_iter(row_html)
             .map(|c| c[1].to_string())
             .collect();
@@ -37,7 +37,7 @@ fn parse_filing_index_html(html: &str) -> Result<FilingIndex, Box<dyn Error>> {
 
         // Cell index 2: the document link.  Extract just the filename from the href.
         let doc_cell = &cells[2];
-        let name = match href_re.captures(doc_cell) {
+        let name = match HREF_RE.captures(doc_cell) {
             Some(cap) => {
                 let href = &cap[1];
                 // iXBRL viewer URLs look like: /ix?doc=/Archives/edgar/data/.../file.htm
@@ -58,7 +58,7 @@ fn parse_filing_index_html(html: &str) -> Result<FilingIndex, Box<dyn Error>> {
 
         // Cell index 3: the SEC document type (e.g. "EX-99.1", "8-K", "GRAPHIC").
         // Strip any HTML tags, then collapse whitespace and HTML entities.
-        let type_stripped = tags_re.replace_all(&cells[3], "");
+        let type_stripped = TAGS_RE.replace_all(&cells[3], "");
         let document_type = type_stripped
             .replace("&nbsp;", "")
             .replace('\u{00a0}', "")
@@ -86,16 +86,16 @@ fn parse_filing_index_html(html: &str) -> Result<FilingIndex, Box<dyn Error>> {
 ///
 /// # Example
 /// ```rust,no_run
-/// # use sec_fetcher::network::{fetch_8k_filings_by_ticker_symbol, fetch_company_tickers, fetch_filing_index, SecClient};
+/// # use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_filing_index, SecClient};
 /// # use sec_fetcher::config::ConfigManager;
+/// # use sec_fetcher::models::CikSubmission;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let config = ConfigManager::load()?;
 /// let client = SecClient::from_config_manager(&config)?;
-/// let tickers = fetch_company_tickers(&client).await?;
-///
-/// let filings = fetch_8k_filings_by_ticker_symbol(&client, &tickers, "AAPL").await?;
-/// let latest = filings.first().unwrap();
+/// let cik = fetch_cik_by_ticker_symbol(&client, "AAPL").await?;
+/// let submissions = fetch_cik_submissions(&client, cik).await?;
+/// let latest = CikSubmission::by_form(&submissions, "8-K").into_iter().next().unwrap();
 ///
 /// let index = fetch_filing_index(&client, latest).await?;
 /// for exhibit in index.exhibits() {
