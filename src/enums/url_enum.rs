@@ -30,6 +30,13 @@ pub enum Url {
     /// Points to the full company ticker list JSON from the SEC.
     CompanyTickers,
 
+    /// Points to the SEC's plain-text ticker-to-CIK mapping file.
+    ///
+    /// Tab-separated, no header: each line is `symbol\cik` (lowercase symbol,
+    /// plain integer CIK).  Supplements `CompanyTickers` with entries that may
+    /// not appear in the JSON file.
+    TickerTxt,
+
     /// Points to the `companyfacts` XBRL JSON API for a specific CIK.
     CompanyFacts(Cik),
 
@@ -132,6 +139,7 @@ impl Url {
                 filename,
             ),
             Url::CompanyTickers => "https://www.sec.gov/files/company_tickers.json".to_string(),
+            Url::TickerTxt => "https://www.sec.gov/include/ticker.txt".to_string(),
             Url::CompanyFacts(cik) => format!(
                 "https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json",
                 cik.to_string()

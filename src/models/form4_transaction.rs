@@ -6,7 +6,7 @@ use rust_decimal::Decimal;
 /// A single Form 4 XML can produce multiple `Form4Transaction` values —
 /// one per row in either the `<nonDerivativeTable>` or `<derivativeTable>`.
 /// Filer identity fields (`filer_name`, `is_officer`, etc.) are the same
-/// across all rows from the same filing and are denormalised here for
+/// across all rows from the same filing and are denormalized here for
 /// convenience.
 #[derive(Debug, Clone)]
 pub struct Form4Transaction {

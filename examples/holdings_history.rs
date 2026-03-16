@@ -64,7 +64,7 @@ const WEIGHT_CHANGE_THRESHOLD: Decimal = dec!(0.10);
 
 // ── common snapshot type ──────────────────────────────────────────────────────
 
-/// A normalised single-position snapshot used for diffing.
+/// A normalized single-position snapshot used for diffing.
 /// Produced from both NportInvestment and ThirteenfHolding.
 #[derive(Clone)]
 struct Position {

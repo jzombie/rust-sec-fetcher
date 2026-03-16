@@ -140,9 +140,10 @@ impl Cik {
         company_tickers: &[Ticker],
         ticker_symbol: &str,
     ) -> Result<Cik, Box<dyn Error>> {
+        let normalized = Ticker::normalize_symbol(ticker_symbol);
         company_tickers
             .iter()
-            .find(|pred| pred.symbol == ticker_symbol)
+            .find(|pred| pred.symbol == normalized)
             .map(|company_ticker| company_ticker.cik.clone())
             .ok_or_else(|| format!("Ticker symbol '{}' not found", ticker_symbol).into())
     }

@@ -1,21 +1,27 @@
-use crate::enums::{TickerOrigin, Url};
-use crate::models::{Cik, Ticker};
+use crate::enums::Url;
+use crate::models::Ticker;
 use crate::network::SecClient;
+use crate::parsers::{parse_company_tickers_json, parse_ticker_txt};
+use std::collections::HashMap;
 use std::error::Error;
 
-/// Fetches the SEC's operating-company ticker-to-CIK mapping.
+/// Fetches the SEC's operating-company ticker-to-CIK mapping from both
+/// available sources, returning a merged, deduplicated, alphabetically-sorted
+/// list of [`Ticker`]s.
 ///
 /// # What this returns
 ///
-/// The file at `https://www.sec.gov/files/company_tickers.json` is the SEC's
-/// canonical list of **exchange-listed operating companies**:
-/// stocks, ETPs, and REITs that trade under a ticker symbol and file as
-/// operating companies rather than under the Investment Company Act.
+/// Two complementary SEC files are fetched in parallel and merged:
 ///
-/// Each [`Ticker`] entry carries:
-/// - `cik` — the registrant's SEC Central Index Key
-/// - `symbol` — the exchange ticker (e.g. `"AAPL"`)
-/// - `company_name` — the name as it appears in EDGAR
+/// 1. **`company_tickers.json`** — the primary JSON source; includes CIK,
+///    ticker symbol, and company name for exchange-listed operating companies.
+/// 2. **`ticker.txt`** — a supplementary plain-text tab-separated file
+///    (`symbol\cik`); may include tickers not present in the JSON.  Company
+///    names are not available from this source.
+///
+/// When the same symbol appears in both sources the JSON entry takes
+/// precedence (it carries the company name).  The final list is sorted
+/// alphabetically by symbol.
 ///
 /// # Coverage gaps
 ///
@@ -28,29 +34,30 @@ use std::error::Error;
 /// [`fetch_investment_company_series_and_class_dataset`]: crate::network::fetch_investment_company_series_and_class_dataset
 /// [`fetch_cik_by_ticker_symbol`]: crate::network::fetch_cik_by_ticker_symbol
 pub async fn fetch_company_tickers(sec_client: &SecClient) -> Result<Vec<Ticker>, Box<dyn Error>> {
-    // TODO: Also incorporate: https://www.sec.gov/include/ticker.txt
+    let json_url = Url::CompanyTickers.value();
+    let txt_url = Url::TickerTxt.value();
 
-    let company_tickers_url = Url::CompanyTickers.value();
-    let company_tickers_data = sec_client.fetch_json(&company_tickers_url, None).await?;
+    let (json_data, txt_response) = tokio::try_join!(
+        sec_client.fetch_json(&json_url, None),
+        sec_client.raw_request(reqwest::Method::GET, &txt_url, None, None),
+    )?;
+    let txt_text = txt_response.text().await?;
 
-    // TODO: Move the following into `parsers`
+    let json_tickers = parse_company_tickers_json(&json_data)?;
+    let txt_tickers = parse_ticker_txt(&txt_text);
 
-    let mut company_tickers: Vec<Ticker> = Vec::new();
-
-    if let Some(ticker_map) = company_tickers_data.as_object() {
-        for (_, ticker_info) in ticker_map.iter() {
-            let cik_u64 = ticker_info["cik_str"].as_u64().unwrap_or_default();
-
-            let cik = Cik::from_u64(cik_u64)?;
-
-            company_tickers.push(Ticker {
-                cik,
-                symbol: ticker_info["ticker"].as_str().unwrap_or("").to_string(),
-                company_name: ticker_info["title"].as_str().unwrap_or("").to_string(),
-                origin: TickerOrigin::CompanyTickers,
-            });
-        }
+    // Merge: txt entries go in first (no company name); JSON entries
+    // overwrite since they carry the authoritative company name.
+    // Both sources are already normalized by the parsers.
+    let mut map: HashMap<String, Ticker> = HashMap::new();
+    for t in txt_tickers {
+        map.insert(t.symbol.clone(), t);
+    }
+    for t in json_tickers {
+        map.insert(t.symbol.clone(), t);
     }
 
-    Ok(company_tickers)
+    let mut result: Vec<Ticker> = map.into_values().collect();
+    result.sort_by(|a, b| a.symbol.cmp(&b.symbol));
+    Ok(result)
 }

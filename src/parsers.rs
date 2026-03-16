@@ -15,3 +15,6 @@ pub use parse_investment_companies_csv::parse_investment_companies_csv;
 
 mod parse_us_gaap_fundamentals;
 pub use parse_us_gaap_fundamentals::parse_us_gaap_fundamentals;
+
+mod parse_company_tickers;
+pub use parse_company_tickers::{parse_company_tickers_json, parse_ticker_txt};

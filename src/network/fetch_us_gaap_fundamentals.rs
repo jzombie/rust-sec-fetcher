@@ -50,7 +50,7 @@ pub type TickerFundamentalsDataFrame = DataFrame;
 ///
 /// To explore which concepts a company has reported, filter the returned
 /// DataFrame on the `concept` column.  To compare across companies, join on
-/// `concept` + normalised `end` date.
+/// `concept` + normalized `end` date.
 pub async fn fetch_us_gaap_fundamentals(
     client: &SecClient,
     company_tickers: &[Ticker],
