@@ -13,6 +13,7 @@ use tokio::time::Duration;
 
 pub struct SecClient {
     email: String,
+    app_name: String,
     http_client: ClientWithMiddleware,
     // TODO: Update live_client to use new reqwest_drive zero-store bypass once available.
     //
@@ -37,6 +38,11 @@ impl SecClient {
             .email
             .as_ref()
             .ok_or_else(|| "Missing required field: email".to_string())?; // Error if missing
+
+        let app_name = config
+            .app_name
+            .clone()
+            .unwrap_or_else(|| env!("CARGO_PKG_NAME").to_string());
 
         let max_concurrent = config
             .max_concurrent
@@ -119,6 +125,7 @@ impl SecClient {
 
         Ok(Self {
             email: email.to_string(),
+            app_name,
             http_client: cache_client,
             live_client,
             cache_policy,
@@ -139,7 +146,7 @@ impl SecClient {
 
         format!(
             "{}/{} (+{})",
-            env!("CARGO_PKG_NAME"),
+            self.app_name,
             env!("CARGO_PKG_VERSION"),
             self.email
         )

@@ -11,6 +11,13 @@
 # email = "your.name@example.com"
 
 # The following are optional, to override defaults.
+
+# Override the app name sent in the User-Agent header to the SEC.
+# Defaults to "sec-fetcher" (the crate name). The SEC's User-Agent format is:
+#   AppName/Version (+contact@email)
+# Only change this if you are embedding sec-fetcher in a larger application and
+# want the SEC to see your application's name instead.
+# app_name = "my-app"
 #
 # The combination of max_concurrent * min_delay_ms should not exceed 10 requests per second
 # as your requests may become rate-limited by the SEC. Defaults are extremely conservative.

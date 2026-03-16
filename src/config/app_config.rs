@@ -21,6 +21,11 @@ pub struct AppConfig {
     #[merge(strategy = overwrite_option)] // Always replace with new value
     pub email: Option<String>,
 
+    /// Optional override for the app name sent in the User-Agent header.
+    /// Defaults to the crate name (`sec-fetcher`) when not set.
+    #[merge(strategy = overwrite_option)]
+    pub app_name: Option<String>,
+
     #[merge(strategy = overwrite_option)]
     pub max_concurrent: Option<usize>,
 
@@ -65,6 +70,7 @@ impl Default for AppConfig {
         // (i.e., ~2 requests/second) with a single concurrent requester.
         Self {
             email: None,
+            app_name: None,
             max_concurrent: Some(1),
             min_delay_ms: Some(500),
             max_retries: Some(5),

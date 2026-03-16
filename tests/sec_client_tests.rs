@@ -21,6 +21,40 @@ fn test_user_agent() {
 }
 
 #[test]
+fn test_user_agent_with_custom_app_name() {
+    let mut app_config = AppConfig::default();
+    app_config.email = Some("test@example.com".into());
+    app_config.app_name = Some("my-custom-app".into());
+    let config_manager = ConfigManager::from_app_config(&app_config);
+
+    let client = SecClient::from_config_manager(&config_manager).unwrap();
+
+    assert_eq!(
+        client.get_user_agent(),
+        format!(
+            "my-custom-app/{} (+test@example.com)",
+            env!("CARGO_PKG_VERSION")
+        )
+    );
+}
+
+#[test]
+fn test_user_agent_default_app_name_when_none() {
+    // When app_name is None, the crate name is used — verify the exact string sent to the SEC
+    let mut app_config = AppConfig::default();
+    app_config.email = Some("test@example.com".into());
+    // app_name not set — stays None
+    let config_manager = ConfigManager::from_app_config(&app_config);
+
+    let client = SecClient::from_config_manager(&config_manager).unwrap();
+
+    assert_eq!(
+        client.get_user_agent(),
+        format!("sec-fetcher/{} (+test@example.com)", env!("CARGO_PKG_VERSION"))
+    );
+}
+
+#[test]
 #[should_panic(expected = "Invalid email format")]
 fn test_invalid_email_panic() {
     let mut app_config = AppConfig::default();
