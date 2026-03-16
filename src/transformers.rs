@@ -1,2 +1,0 @@
-mod distill_us_gaap_fundamental_concepts;
-pub use distill_us_gaap_fundamental_concepts::distill_us_gaap_fundamental_concepts;
