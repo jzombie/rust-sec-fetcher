@@ -1,3 +1,10 @@
+// Fixture: real download from SEC EDGAR
+//   Apple Inc. (CIK 0000320193) — AAPL_submissions.json
+//   Snapshot as of March 2026: 1006 recent filings
+//
+// Assertions are anchored to known accession numbers, not positional indices,
+// so they remain correct as new filings are added to the live EDGAR feed.
+
 use chrono::NaiveDate;
 use sec_fetcher::models::{Cik, CikSubmission};
 use sec_fetcher::network::parse_cik_submissions_json;
@@ -19,22 +26,31 @@ fn aapl_cik() -> Cik {
 }
 
 fn aapl_submissions() -> Vec<CikSubmission> {
-    let data = load_fixture("CIK0000320193_submissions.json");
+    let data = load_fixture("AAPL_submissions.json");
     parse_cik_submissions_json(&data, aapl_cik())
+}
+
+/// Find a submission by its exact accession number or panic with a clear message.
+fn by_accession<'a>(subs: &'a [CikSubmission], acc: &str) -> &'a CikSubmission {
+    subs.iter()
+        .find(|s| s.accession_number.to_string() == acc)
+        .unwrap_or_else(|| panic!("accession {} not found in fixture", acc))
 }
 
 // ── count and ordering ────────────────────────────────────────────────────────
 
 #[test]
-fn parses_all_six_submissions() {
-    assert_eq!(aapl_submissions().len(), 6);
+fn aapl_has_over_1000_recent_submissions() {
+    // The March 2026 snapshot had 1006 filings; use a lower bound so
+    // re-downloading a newer snapshot never breaks this test.
+    assert!(aapl_submissions().len() >= 1000);
 }
 
 #[test]
 fn submissions_are_newest_first() {
     let subs = aapl_submissions();
-    // The Jan 2025 8-K should come before the Nov 2024 10-K
-    assert!(subs[0].filing_date > subs[2].filing_date);
+    // First entry must be strictly newer than the last.
+    assert!(subs[0].filing_date > subs[subs.len() - 1].filing_date);
 }
 
 // ── field parsing ─────────────────────────────────────────────────────────────
@@ -54,60 +70,73 @@ fn cik_propagated_to_every_submission() {
 }
 
 #[test]
-fn filing_dates_parse_correctly() {
+fn filing_date_parses_correctly() {
     let subs = aapl_submissions();
-    assert_eq!(subs[0].filing_date, NaiveDate::from_ymd_opt(2025, 1, 30));
-    assert_eq!(subs[2].filing_date, NaiveDate::from_ymd_opt(2024, 11, 1));
-    assert_eq!(subs[4].filing_date, NaiveDate::from_ymd_opt(2024, 8, 2));
+    // FY2025 10-K — real accession confirmed on EDGAR
+    let ten_k = by_accession(&subs, "0000320193-25-000079");
+    assert_eq!(ten_k.filing_date, NaiveDate::from_ymd_opt(2025, 10, 31));
+}
+
+#[test]
+fn primary_document_parses_correctly() {
+    let subs = aapl_submissions();
+    let ten_k = by_accession(&subs, "0000320193-25-000079");
+    assert_eq!(ten_k.primary_document, "aapl-20250927.htm");
 }
 
 #[test]
 fn accession_number_round_trips() {
     let subs = aapl_submissions();
-    // Formatted form: 0000320193-25-000008
-    assert_eq!(subs[0].accession_number.to_string(), "0000320193-25-000008");
+    // FY2025 10-K
+    let ten_k = by_accession(&subs, "0000320193-25-000079");
+    assert_eq!(ten_k.accession_number.to_string(), "0000320193-25-000079");
 }
 
 #[test]
 fn items_split_correctly_on_comma() {
     let subs = aapl_submissions();
-    // First 8-K: "2.02,9.01"
-    let first_8k = subs.iter().find(|s| s.form == "8-K").unwrap();
-    assert_eq!(first_8k.items, vec!["2.02", "9.01"]);
+    // Jan 29 2026 earnings 8-K: raw items field is "2.02,9.01"
+    let s = by_accession(&subs, "0000320193-26-000005");
+    assert_eq!(s.items, vec!["2.02", "9.01"]);
 }
 
 #[test]
 fn items_empty_for_10k() {
     let subs = aapl_submissions();
-    let ten_k = subs.iter().find(|s| s.form == "10-K").unwrap();
+    let ten_k = by_accession(&subs, "0000320193-25-000079");
     assert!(ten_k.items.is_empty());
 }
 
 // ── form filtering ─────────────────────────────────────────────────────────────
 
 #[test]
-fn by_form_8k_returns_four() {
+fn by_form_8k_returns_many() {
     let subs = aapl_submissions();
-    assert_eq!(CikSubmission::by_form(&subs, "8-K").len(), 4);
+    // 106 in the March 2026 snapshot; use a stable lower bound.
+    assert!(CikSubmission::by_form(&subs, "8-K").len() >= 50);
 }
 
 #[test]
-fn by_form_10k_returns_one() {
+fn by_form_10k_returns_multiple() {
     let subs = aapl_submissions();
-    assert_eq!(CikSubmission::by_form(&subs, "10-K").len(), 1);
+    // 11 in the March 2026 snapshot.
+    assert!(CikSubmission::by_form(&subs, "10-K").len() >= 5);
 }
 
 #[test]
-fn by_form_10q_returns_one() {
+fn by_form_10q_returns_multiple() {
     let subs = aapl_submissions();
-    assert_eq!(CikSubmission::by_form(&subs, "10-Q").len(), 1);
+    // 33 in the March 2026 snapshot.
+    assert!(CikSubmission::by_form(&subs, "10-Q").len() >= 10);
 }
 
 #[test]
-fn most_recent_10k_is_nov_2024() {
+fn most_recent_10k_is_fy2025() {
     let subs = aapl_submissions();
+    // AAPL FY ends in September; FY2025 10-K filed 2025-10-31.
     let ten_k = CikSubmission::most_recent_10k(&subs).unwrap();
-    assert_eq!(ten_k.filing_date, NaiveDate::from_ymd_opt(2024, 11, 1));
+    assert_eq!(ten_k.accession_number.to_string(), "0000320193-25-000079");
+    assert_eq!(ten_k.filing_date, NaiveDate::from_ymd_opt(2025, 10, 31));
 }
 
 // ── 8-K semantic helpers ──────────────────────────────────────────────────────
@@ -115,19 +144,23 @@ fn most_recent_10k_is_nov_2024() {
 #[test]
 fn earnings_release_detected_by_items_202() {
     let subs = aapl_submissions();
-    let earnings: Vec<_> = subs.iter().filter(|s| s.is_earnings_release()).collect();
-    // Fixture has 3 filings with "2.02" — indices 0, 3, 5
-    assert_eq!(earnings.len(), 3);
+    // Jan 29 2026 8-K, items "2.02,9.01" — earnings release.
+    let s = by_accession(&subs, "0000320193-26-000005");
+    assert!(s.is_earnings_release());
+}
+
+#[test]
+fn non_earnings_8k_is_not_earnings_release() {
+    let subs = aapl_submissions();
+    // Jan 2 2026 8-K, items "5.02" (officer change) — not an earnings release.
+    let s = by_accession(&subs, "0001140361-26-000199");
+    assert!(!s.is_earnings_release());
 }
 
 #[test]
 fn non_earnings_8k_is_mid_quarter_event() {
     let subs = aapl_submissions();
-    // Index 1: form 8-K, items "5.02,9.01" (no 2.02)
-    let sub = subs
-        .iter()
-        .find(|s| s.items.contains(&"5.02".to_string()))
-        .unwrap();
-    assert!(!sub.is_earnings_release());
-    assert!(sub.is_mid_quarter_event());
+    // Jan 2 2026 8-K, items "5.02" (officer change).
+    let s = by_accession(&subs, "0001140361-26-000199");
+    assert!(s.is_mid_quarter_event());
 }
