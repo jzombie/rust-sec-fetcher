@@ -63,6 +63,18 @@ impl CikSubmission {
             .collect()
     }
 
+    /// Returns the most recent 10-K (or 10-K405) submission, if any.
+    ///
+    /// The list returned by [`crate::network::fetch_cik_submissions`] is
+    /// already ordered newest-first, so the first match is the latest annual
+    /// report.
+    pub fn most_recent_10k(cik_submissions: &[Self]) -> Option<&Self> {
+        cik_submissions.iter().find(|s| {
+            let f = s.form.to_uppercase();
+            f == "10-K" || f == "10-K405"
+        })
+    }
+
     /// Returns `true` if this 8-K is an **earnings release** (Item 2.02).
     ///
     /// Also matches the pre-August-2004 equivalent: old **Item 12**

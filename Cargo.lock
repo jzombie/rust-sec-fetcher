@@ -1285,6 +1285,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "html2text"
+version = "0.16.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12d23156ea4dbe6b37ad48fab2da56ff27b0f6192fb5db210c44eb07bfe6e787"
+dependencies = [
+ "html5ever",
+ "tendril",
+ "thiserror 2.0.12",
+ "unicode-width",
+]
+
+[[package]]
 name = "html5ever"
 version = "0.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3450,6 +3462,7 @@ dependencies = [
  "env_logger",
  "futures",
  "html-to-markdown-rs",
+ "html2text",
  "indexmap 2.13.0",
  "indoc",
  "itertools",

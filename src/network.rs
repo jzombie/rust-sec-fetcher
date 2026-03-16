@@ -41,3 +41,12 @@ pub use fetch_form4_filing::fetch_form4_filing;
 
 mod fetch_edgar_master_index;
 pub use fetch_edgar_master_index::fetch_edgar_master_index;
+
+mod fetch_company_profile;
+pub use fetch_company_profile::fetch_company_profile;
+
+mod fetch_sic_codes;
+pub use fetch_sic_codes::fetch_sic_codes;
+
+mod fetch_company_description;
+pub use fetch_company_description::fetch_company_description;

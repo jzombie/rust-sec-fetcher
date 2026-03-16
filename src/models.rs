@@ -30,3 +30,9 @@ pub use form4_transaction::Form4Transaction;
 
 mod master_index_entry;
 pub use master_index_entry::MasterIndexEntry;
+
+mod company_profile;
+pub use company_profile::CompanyProfile;
+
+mod sic_code;
+pub use sic_code::SicCode;

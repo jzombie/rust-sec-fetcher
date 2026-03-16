@@ -85,6 +85,13 @@ pub enum Url {
     ///
     /// See [`crate::models::MasterIndexEntry::as_url`].
     EdgarArchive(String),
+
+    /// The SEC EDGAR Standard Industrial Classification (SIC) code list.
+    ///
+    /// Returns an HTML page (`siccodes.htm`) with every SIC code that EDGAR
+    /// recognises, the reviewing office it is assigned to, and its industry
+    /// title. Parse with [`crate::network::fetch_sic_codes`].
+    SicCodes,
 }
 
 impl Url {
@@ -145,6 +152,7 @@ impl Url {
                 year, quarter
             ),
             Url::EdgarArchive(path) => format!("https://www.sec.gov/Archives/{}", path),
+            Url::SicCodes => "https://www.sec.gov/info/edgar/siccodes.htm".to_string(),
         }
     }
 }
