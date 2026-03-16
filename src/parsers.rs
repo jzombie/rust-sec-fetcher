@@ -4,6 +4,9 @@ pub use parse_nport_xml::parse_nport_xml;
 mod parse_13f_xml;
 pub use parse_13f_xml::parse_13f_xml;
 
+mod parse_form4_xml;
+pub use parse_form4_xml::parse_form4_xml;
+
 mod parse_investment_companies_csv;
 pub use parse_investment_companies_csv::parse_investment_companies_csv;
 
