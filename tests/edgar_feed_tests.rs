@@ -1,7 +1,7 @@
 use chrono::DateTime;
 use indoc::formatdoc;
-use sec_fetcher::network::{parse_edgar_atom_feed, FeedDelta, EDGAR_PAGE_SIZE};
 use sec_fetcher::models::FeedEntry;
+use sec_fetcher::network::{parse_edgar_atom_feed, FeedDelta, EDGAR_PAGE_SIZE};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -94,8 +94,14 @@ fn parse_multiple_entries_newest_first() {
     let entries = parse_edgar_atom_feed(&xml).unwrap();
     assert_eq!(entries.len(), 3);
     // Parser preserves the order given in the XML (EDGAR sends newest-first)
-    assert_eq!(entries[0].updated, DateTime::parse_from_rfc3339("2026-03-13T18:00:00-04:00").unwrap());
-    assert_eq!(entries[2].updated, DateTime::parse_from_rfc3339("2026-03-13T17:00:00-04:00").unwrap());
+    assert_eq!(
+        entries[0].updated,
+        DateTime::parse_from_rfc3339("2026-03-13T18:00:00-04:00").unwrap()
+    );
+    assert_eq!(
+        entries[2].updated,
+        DateTime::parse_from_rfc3339("2026-03-13T17:00:00-04:00").unwrap()
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -125,7 +131,10 @@ fn delta_filter_excludes_entries_at_or_before_mark() {
     let since = DateTime::parse_from_rfc3339("2026-03-13T17:30:00-04:00").unwrap();
     let delta = delta_filter(entries, Some(since));
     assert_eq!(delta.len(), 1);
-    assert_eq!(delta[0].updated, DateTime::parse_from_rfc3339("2026-03-13T18:00:00-04:00").unwrap());
+    assert_eq!(
+        delta[0].updated,
+        DateTime::parse_from_rfc3339("2026-03-13T18:00:00-04:00").unwrap()
+    );
 }
 
 #[test]
@@ -174,6 +183,12 @@ fn feed_delta_high_water_is_newest_entry() {
     ]);
     let entries = parse_edgar_atom_feed(&xml).unwrap();
     let high_water = entries.first().map(|e| e.updated);
-    let delta = FeedDelta { entries, high_water };
-    assert_eq!(delta.high_water, Some(DateTime::parse_from_rfc3339("2026-03-13T18:00:00-04:00").unwrap()));
+    let delta = FeedDelta {
+        entries,
+        high_water,
+    };
+    assert_eq!(
+        delta.high_water,
+        Some(DateTime::parse_from_rfc3339("2026-03-13T18:00:00-04:00").unwrap())
+    );
 }

@@ -45,7 +45,15 @@ pub fn parse_form4_xml(
                 let local = local_name_str(e.name().as_ref());
                 match local.as_str() {
                     "nonDerivativeTransaction" | "derivativeTransaction" => {
-                        reset_txn(&mut security_title, &mut transaction_date_str, &mut transaction_code, &mut shares_str, &mut price_str, &mut acq_disp, &mut shares_after_str);
+                        reset_txn(
+                            &mut security_title,
+                            &mut transaction_date_str,
+                            &mut transaction_code,
+                            &mut shares_str,
+                            &mut price_str,
+                            &mut acq_disp,
+                            &mut shares_after_str,
+                        );
                     }
                     _ => {}
                 }
@@ -59,7 +67,9 @@ pub fn parse_form4_xml(
                     continue;
                 }
                 let current = tag_stack.last().map(|s| s.as_str()).unwrap_or("");
-                let parent  = tag_stack.len().checked_sub(2)
+                let parent = tag_stack
+                    .len()
+                    .checked_sub(2)
                     .and_then(|i| tag_stack.get(i))
                     .map(|s| s.as_str())
                     .unwrap_or("");
@@ -68,10 +78,10 @@ pub fn parse_form4_xml(
                 // form an exhaustive else branch so `text` is moved exactly once.
                 if current == "value" {
                     match parent {
-                        "securityTitle"                   => security_title = text,
-                        "transactionDate"                 => transaction_date_str = text,
-                        "transactionShares"               => shares_str = text,
-                        "transactionPricePerShare"        => price_str = text,
+                        "securityTitle" => security_title = text,
+                        "transactionDate" => transaction_date_str = text,
+                        "transactionShares" => shares_str = text,
+                        "transactionPricePerShare" => price_str = text,
                         "transactionAcquiredDisposedCode" => acq_disp = text,
                         "sharesOwnedFollowingTransaction" => shares_after_str = text,
                         _ => {}
@@ -79,12 +89,12 @@ pub fn parse_form4_xml(
                 } else {
                     // Fields with direct text (no <value> wrapper).
                     match current {
-                        "transactionCode"  => transaction_code = text,
-                        "rptOwnerName"     => filer_name = text,
-                        "rptOwnerCik"      => filer_cik = text,
-                        "officerTitle"     => officer_title = Some(text),
-                        "isDirector"       => is_director = text == "1",
-                        "isOfficer"        => is_officer = text == "1",
+                        "transactionCode" => transaction_code = text,
+                        "rptOwnerName" => filer_name = text,
+                        "rptOwnerCik" => filer_cik = text,
+                        "officerTitle" => officer_title = Some(text),
+                        "isDirector" => is_director = text == "1",
+                        "isOfficer" => is_officer = text == "1",
                         "is10PercentOwner" => is_ten_pct_owner = text == "1",
                         _ => {}
                     }
@@ -105,16 +115,30 @@ pub fn parse_form4_xml(
                             is_ten_pct_owner,
                             filing_date,
                             security_title: std::mem::take(&mut security_title),
-                            transaction_date: NaiveDate::parse_from_str(&transaction_date_str, "%Y-%m-%d").ok(),
+                            transaction_date: NaiveDate::parse_from_str(
+                                &transaction_date_str,
+                                "%Y-%m-%d",
+                            )
+                            .ok(),
                             transaction_code: std::mem::take(&mut transaction_code),
                             shares: Decimal::from_str(&shares_str).unwrap_or_default(),
-                            price_per_share: Decimal::from_str(&price_str).ok().filter(|d| !d.is_zero()),
+                            price_per_share: Decimal::from_str(&price_str)
+                                .ok()
+                                .filter(|d| !d.is_zero()),
                             acquired_disposed: std::mem::take(&mut acq_disp),
                             shares_owned_after: Decimal::from_str(&shares_after_str).ok(),
                             is_derivative,
                         });
                         // Clear row state so stale values don't bleed into the next row.
-                        reset_txn(&mut security_title, &mut transaction_date_str, &mut transaction_code, &mut shares_str, &mut price_str, &mut acq_disp, &mut shares_after_str);
+                        reset_txn(
+                            &mut security_title,
+                            &mut transaction_date_str,
+                            &mut transaction_code,
+                            &mut shares_str,
+                            &mut price_str,
+                            &mut acq_disp,
+                            &mut shares_after_str,
+                        );
                     }
                     _ => {}
                 }
@@ -153,5 +177,7 @@ fn reset_txn(
 
 fn local_name_str(name: &[u8]) -> String {
     let s = std::str::from_utf8(name).unwrap_or("");
-    s.rfind(':').map(|i| s[i + 1..].to_string()).unwrap_or_else(|| s.to_string())
+    s.rfind(':')
+        .map(|i| s[i + 1..].to_string())
+        .unwrap_or_else(|| s.to_string())
 }

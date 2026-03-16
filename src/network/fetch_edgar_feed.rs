@@ -28,13 +28,11 @@ static COMPANY_FROM_TITLE: Lazy<Regex> =
 
 /// Extracts the filing date from the decoded summary text.
 /// e.g. "Filed: 2026-03-13 AccNo: ..." → "2026-03-13"
-static FILED_DATE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"Filed:\s*(\d{4}-\d{2}-\d{2})").unwrap());
+static FILED_DATE: Lazy<Regex> = Lazy::new(|| Regex::new(r"Filed:\s*(\d{4}-\d{2}-\d{2})").unwrap());
 
 /// Extracts 8-K item codes from the decoded summary text.
 /// Matches both "Item 1.01:" and legacy "Item 5:" (pre-2004 integer form).
-static ITEM_CODE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"Item (\d+(?:\.\d+)?):").unwrap());
+static ITEM_CODE: Lazy<Regex> = Lazy::new(|| Regex::new(r"Item (\d+(?:\.\d+)?):").unwrap());
 
 /// Strips HTML tags from a string.
 static HTML_TAG: Lazy<Regex> = Lazy::new(|| Regex::new(r"<[^>]*>").unwrap());
@@ -419,10 +417,16 @@ pub async fn fetch_edgar_feeds_since(
         .into_iter()
         .collect::<Result<Vec<_>, _>>()?;
 
-    let mut entries: Vec<FeedEntry> = results.iter().flat_map(|d| d.entries.iter().cloned()).collect();
+    let mut entries: Vec<FeedEntry> = results
+        .iter()
+        .flat_map(|d| d.entries.iter().cloned())
+        .collect();
     entries.sort_by(|a, b| b.updated.cmp(&a.updated));
 
     let high_water = results.iter().filter_map(|d| d.high_water).max();
 
-    Ok(FeedDelta { entries, high_water })
+    Ok(FeedDelta {
+        entries,
+        high_water,
+    })
 }

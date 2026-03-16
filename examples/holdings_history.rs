@@ -39,18 +39,13 @@
 /// which is a completely separate system that is NOT accessible through the SEC.
 /// A Congress member would only appear in Form 4 if they were also a corporate
 /// director or officer of a public company, which is rare.
-
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::{Cik, CikSubmission, NportInvestment, ThirteenfHolding};
 use sec_fetcher::network::{
-    fetch_13f_filing,
-    fetch_cik_by_ticker_symbol,
-    fetch_cik_submissions,
-    fetch_form4_filing,
-    fetch_nport_filing_by_cik_and_accession_number,
-    SecClient,
+    fetch_13f_filing, fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_form4_filing,
+    fetch_nport_filing_by_cik_and_accession_number, SecClient,
 };
 use std::collections::HashMap;
 use std::env;
@@ -60,7 +55,7 @@ use std::error::Error;
 
 /// Default number of filings to fetch when --filings is not specified.
 const DEFAULT_FILINGS_NPORT: usize = 3;
-const DEFAULT_FILINGS_13F:   usize = 4;
+const DEFAULT_FILINGS_13F: usize = 4;
 const DEFAULT_FILINGS_FORM4: usize = 20;
 
 /// Minimum absolute weight change (percentage points for N-PORT, approximate
@@ -73,23 +68,23 @@ const WEIGHT_CHANGE_THRESHOLD: Decimal = dec!(0.10);
 /// Produced from both NportInvestment and ThirteenfHolding.
 #[derive(Clone)]
 struct Position {
-    cusip:   String,
-    name:    String,
+    cusip: String,
+    name: String,
     val_usd: Decimal,
     /// Weight as a percentage of total portfolio (0–100 scale).
     /// For N-PORT this comes directly from the filing; for 13F it is derived
     /// from the position's share of total reported value.
-    weight:  Decimal,
+    weight: Decimal,
 }
 
 fn positions_from_nport(investments: &[NportInvestment]) -> Vec<Position> {
     investments
         .iter()
         .map(|h| Position {
-            cusip:   h.cusip.clone(),
-            name:    h.name.clone(),
+            cusip: h.cusip.clone(),
+            name: h.name.clone(),
             val_usd: h.val_usd,
-            weight:  h.pct_val * dec!(100), // pct_val is 0–1, convert to 0–100
+            weight: h.pct_val * dec!(100), // pct_val is 0–1, convert to 0–100
         })
         .collect()
 }
@@ -99,10 +94,10 @@ fn positions_from_13f(holdings: &[ThirteenfHolding]) -> Vec<Position> {
     holdings
         .iter()
         .map(|h| Position {
-            cusip:   h.cusip.clone(),
-            name:    h.name.clone(),
+            cusip: h.cusip.clone(),
+            name: h.name.clone(),
             val_usd: h.value_usd,
-            weight:  if total.is_zero() {
+            weight: if total.is_zero() {
                 dec!(0)
             } else {
                 (h.value_usd / total * dec!(100)).round_dp(4)
@@ -114,16 +109,14 @@ fn positions_from_13f(holdings: &[ThirteenfHolding]) -> Vec<Position> {
 // ── diff ──────────────────────────────────────────────────────────────────────
 
 struct Diff {
-    added:   Vec<Position>,              // present in new, absent in old
-    removed: Vec<Position>,              // present in old, absent in new
-    changed: Vec<(Position, Position)>,  // (old, new) where |weight delta| ≥ threshold
+    added: Vec<Position>,               // present in new, absent in old
+    removed: Vec<Position>,             // present in old, absent in new
+    changed: Vec<(Position, Position)>, // (old, new) where |weight delta| ≥ threshold
 }
 
 fn diff_snapshots(old: &[Position], new: &[Position]) -> Diff {
-    let old_map: HashMap<&str, &Position> =
-        old.iter().map(|p| (p.cusip.as_str(), p)).collect();
-    let new_map: HashMap<&str, &Position> =
-        new.iter().map(|p| (p.cusip.as_str(), p)).collect();
+    let old_map: HashMap<&str, &Position> = old.iter().map(|p| (p.cusip.as_str(), p)).collect();
+    let new_map: HashMap<&str, &Position> = new.iter().map(|p| (p.cusip.as_str(), p)).collect();
 
     let added: Vec<Position> = new
         .iter()
@@ -159,7 +152,11 @@ fn diff_snapshots(old: &[Position], new: &[Position]) -> Diff {
         d2.cmp(&d1)
     });
 
-    Diff { added, removed, changed }
+    Diff {
+        added,
+        removed,
+        changed,
+    }
 }
 
 // ── formatting ────────────────────────────────────────────────────────────────
@@ -185,48 +182,66 @@ fn print_diff(label_old: &str, label_new: &str, diff: &Diff) {
     if !diff.added.is_empty() {
         println!("  ADDED ({}):", diff.added.len());
         for p in &diff.added {
-            println!("    {:9}  {:<45}  {:>10}  {:>6.2}%",
+            println!(
+                "    {:9}  {:<45}  {:>10}  {:>6.2}%",
                 p.cusip,
                 p.name.chars().take(45).collect::<String>(),
                 fmt_usd(p.val_usd),
-                p.weight);
+                p.weight
+            );
         }
     }
 
     if !diff.removed.is_empty() {
         println!("  REMOVED ({}):", diff.removed.len());
         for p in &diff.removed {
-            println!("    {:9}  {:<45}  {:>10}  {:>6.2}%",
+            println!(
+                "    {:9}  {:<45}  {:>10}  {:>6.2}%",
                 p.cusip,
                 p.name.chars().take(45).collect::<String>(),
                 fmt_usd(p.val_usd),
-                p.weight);
+                p.weight
+            );
         }
     }
 
     if !diff.changed.is_empty() {
-        println!("  WEIGHT CHANGES ≥ {:.2}% ({}):", WEIGHT_CHANGE_THRESHOLD, diff.changed.len());
+        println!(
+            "  WEIGHT CHANGES ≥ {:.2}% ({}):",
+            WEIGHT_CHANGE_THRESHOLD,
+            diff.changed.len()
+        );
         for (old, new) in &diff.changed {
             let delta = new.weight - old.weight;
             let sign = if delta >= dec!(0) { "+" } else { "" };
-            println!("    {:9}  {:<45}  {:>6.2}% → {:>6.2}%  ({}{:.2}%)",
+            println!(
+                "    {:9}  {:<45}  {:>6.2}% → {:>6.2}%  ({}{:.2}%)",
                 new.cusip,
                 new.name.chars().take(45).collect::<String>(),
-                old.weight, new.weight, sign, delta);
+                old.weight,
+                new.weight,
+                sign,
+                delta
+            );
         }
     }
 }
 
 fn print_full(label: &str, positions: &[Position]) {
     println!("\n── {} {}", label, "─".repeat(60));
-    println!("  {:9}  {:<45}  {:>12}  {:>7}", "CUSIP", "Name", "Value", "Weight");
+    println!(
+        "  {:9}  {:<45}  {:>12}  {:>7}",
+        "CUSIP", "Name", "Value", "Weight"
+    );
     println!("  {}", "-".repeat(80));
     for p in positions {
-        println!("  {:9}  {:<45}  {:>12}  {:>6.2}%",
+        println!(
+            "  {:9}  {:<45}  {:>12}  {:>6.2}%",
             p.cusip,
             p.name.chars().take(45).collect::<String>(),
             fmt_usd(p.val_usd),
-            p.weight);
+            p.weight
+        );
     }
 }
 
@@ -263,7 +278,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     if ticker.is_empty() {
         eprintln!("Usage: holdings_history <TICKER> [--filings N] [--all]");
         eprintln!("  <TICKER>     fund, institutional manager, or company, e.g. SPY, BRK-A, AAPL");
-        eprintln!("  --filings N  how many recent filings to fetch (default: 3 NPORT / 4 13F / 20 Form4)");
+        eprintln!(
+            "  --filings N  how many recent filings to fetch (default: 3 NPORT / 4 13F / 20 Form4)"
+        );
         eprintln!("  --all        print full holdings for every filing (N-PORT/13F only), not just the diff");
         std::process::exit(1);
     }
@@ -281,39 +298,51 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let submissions = fetch_cik_submissions(&client, cik.clone()).await?;
 
     // Detect which form type this issuer uses.
-    let nport_subs: Vec<&CikSubmission> = submissions
-        .iter()
-        .filter(|s| s.form == "NPORT-P")
-        .collect();
-    let thirteenf_subs: Vec<&CikSubmission> = submissions
-        .iter()
-        .filter(|s| s.form == "13F-HR")
-        .collect();
+    let nport_subs: Vec<&CikSubmission> =
+        submissions.iter().filter(|s| s.form == "NPORT-P").collect();
+    let thirteenf_subs: Vec<&CikSubmission> =
+        submissions.iter().filter(|s| s.form == "13F-HR").collect();
     let form4_subs: Vec<&CikSubmission> = submissions
         .iter()
         .filter(|s| s.form == "4" || s.form == "4/A")
         .collect();
 
-    enum FilingKind { NPort, ThirteenF, Form4 }
+    enum FilingKind {
+        NPort,
+        ThirteenF,
+        Form4,
+    }
 
     let (kind, relevant) = if !nport_subs.is_empty() {
-        eprintln!("  Found {} NPORT-P filings → using N-PORT path", nport_subs.len());
+        eprintln!(
+            "  Found {} NPORT-P filings → using N-PORT path",
+            nport_subs.len()
+        );
         (FilingKind::NPort, nport_subs)
     } else if !thirteenf_subs.is_empty() {
-        eprintln!("  Found {} 13F-HR filings → using 13F path", thirteenf_subs.len());
+        eprintln!(
+            "  Found {} 13F-HR filings → using 13F path",
+            thirteenf_subs.len()
+        );
         (FilingKind::ThirteenF, thirteenf_subs)
     } else if !form4_subs.is_empty() {
-        eprintln!("  Found {} Form 4/4A filings → showing insider transactions", form4_subs.len());
+        eprintln!(
+            "  Found {} Form 4/4A filings → showing insider transactions",
+            form4_subs.len()
+        );
         (FilingKind::Form4, form4_subs)
     } else {
-        eprintln!("No NPORT-P, 13F-HR, or Form 4 filings found for {}.", ticker);
+        eprintln!(
+            "No NPORT-P, 13F-HR, or Form 4 filings found for {}.",
+            ticker
+        );
         std::process::exit(1);
     };
 
     let default_n = match kind {
-        FilingKind::NPort      => DEFAULT_FILINGS_NPORT,
-        FilingKind::ThirteenF  => DEFAULT_FILINGS_13F,
-        FilingKind::Form4      => DEFAULT_FILINGS_FORM4,
+        FilingKind::NPort => DEFAULT_FILINGS_NPORT,
+        FilingKind::ThirteenF => DEFAULT_FILINGS_13F,
+        FilingKind::Form4 => DEFAULT_FILINGS_FORM4,
     };
     let n = num_filings.unwrap_or(default_n).min(relevant.len());
 
@@ -324,11 +353,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
     if let FilingKind::Form4 = kind {
         eprintln!("Fetching {} Form 4 filings…", n);
         println!();
-        println!("{} (CIK: {})  —  insider transactions (most recent {} filings)",
-            ticker.to_uppercase(), cik.to_string(), n);
+        println!(
+            "{} (CIK: {})  —  insider transactions (most recent {} filings)",
+            ticker.to_uppercase(),
+            cik.to_string(),
+            n
+        );
         println!();
-        println!("{:<12}  {:<12}  {:<30}  {:<20}  {:<12}  {:>12}  {:>10}  {:>14}",
-            "Filed", "Txn Date", "Insider", "Role", "Type", "Shares", "Price", "Owned After");
+        println!(
+            "{:<12}  {:<12}  {:<30}  {:<20}  {:<12}  {:>12}  {:>10}  {:>14}",
+            "Filed", "Txn Date", "Insider", "Role", "Type", "Shares", "Price", "Owned After"
+        );
         println!("{}", "-".repeat(130));
 
         for sub in &selected {
@@ -343,17 +378,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 } else {
                     "Insider"
                 };
-                let action = format!("{} ({})",
-                    t.code_description(), t.transaction_code);
-                let price_str = t.price_per_share
+                let action = format!("{} ({})", t.code_description(), t.transaction_code);
+                let price_str = t
+                    .price_per_share
                     .map(|p| format!("${:.2}", p))
                     .unwrap_or_else(|| "-".to_string());
-                let after_str = t.shares_owned_after
+                let after_str = t
+                    .shares_owned_after
                     .map(|s| format!("{:.0}", s))
                     .unwrap_or_else(|| "-".to_string());
-                println!("{:<12}  {:<12}  {:<30}  {:<20}  {:<12}  {:>12}  {:>10}  {:>14}",
+                println!(
+                    "{:<12}  {:<12}  {:<30}  {:<20}  {:<12}  {:>12}  {:>10}  {:>14}",
                     sub.filing_date.map(|d| d.to_string()).unwrap_or_default(),
-                    t.transaction_date.map(|d| d.to_string()).unwrap_or_default(),
+                    t.transaction_date
+                        .map(|d| d.to_string())
+                        .unwrap_or_default(),
                     t.filer_name.chars().take(30).collect::<String>(),
                     role.chars().take(20).collect::<String>(),
                     action,
@@ -373,7 +412,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut snapshots: Vec<(String, Vec<Position>)> = Vec::with_capacity(n);
 
     for sub in &selected {
-        let date_label = sub.filing_date
+        let date_label = sub
+            .filing_date
             .map(|d| d.to_string())
             .unwrap_or_else(|| sub.accession_number.to_string());
         eprintln!("  {} ({})", date_label, sub.accession_number.to_string());
@@ -382,13 +422,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
             FilingKind::NPort => {
                 let investments: Vec<NportInvestment> =
                     fetch_nport_filing_by_cik_and_accession_number(
-                        &client, sub.cik.clone(), sub.accession_number.clone()
-                    ).await?;
+                        &client,
+                        sub.cik.clone(),
+                        sub.accession_number.clone(),
+                    )
+                    .await?;
                 positions_from_nport(&investments)
             }
             FilingKind::ThirteenF => {
-                let holdings: Vec<ThirteenfHolding> =
-                    fetch_13f_filing(&client, sub).await?;
+                let holdings: Vec<ThirteenfHolding> = fetch_13f_filing(&client, sub).await?;
                 positions_from_13f(&holdings)
             }
             FilingKind::Form4 => unreachable!("Form4 path returns early above"),
@@ -402,7 +444,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // ── Print results ─────────────────────────────────────────────────────────
     println!();
-    println!("{} (CIK: {})  —  {} filings", ticker.to_uppercase(), cik.to_string(), snapshots.len());
+    println!(
+        "{} (CIK: {})  —  {} filings",
+        ticker.to_uppercase(),
+        cik.to_string(),
+        snapshots.len()
+    );
 
     for i in 0..snapshots.len() {
         let (label, positions) = &snapshots[i];

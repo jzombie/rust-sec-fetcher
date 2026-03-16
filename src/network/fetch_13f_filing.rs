@@ -33,7 +33,8 @@ pub async fn fetch_13f_filing(
         submission.cik.clone(),
         submission.accession_number.clone(),
         info_doc.name.clone(),
-    ).value();
+    )
+    .value();
 
     let response = sec_client
         .raw_request(reqwest::Method::GET, &url, None, None)

@@ -17,7 +17,8 @@ pub async fn fetch_form4_filing(
     // Form 4 primary documents (e.g. "xslF345X05/form4.xml"). That URL
     // returns rendered HTML, not the raw XML. Strip any directory prefix so
     // we always fetch the raw XML from the archive root.
-    let doc_name = submission.primary_document
+    let doc_name = submission
+        .primary_document
         .rfind('/')
         .map(|pos| submission.primary_document[pos + 1..].to_string())
         .unwrap_or_else(|| submission.primary_document.clone());
@@ -26,7 +27,8 @@ pub async fn fetch_form4_filing(
         submission.cik.clone(),
         submission.accession_number.clone(),
         doc_name,
-    ).value();
+    )
+    .value();
 
     let response = sec_client
         .raw_request(reqwest::Method::GET, &url, None, None)

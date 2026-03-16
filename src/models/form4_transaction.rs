@@ -66,7 +66,7 @@ impl Form4Transaction {
             "D" => "Disposition to issuer",
             "V" => "Voluntary report",
             "J" => "Other",
-            _   => "Transaction",
+            _ => "Transaction",
         }
     }
 }

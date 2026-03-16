@@ -46,7 +46,11 @@ pub enum Url {
     ///
     /// See [`crate::network::fetch_edgar_feed`] and
     /// [`crate::network::fetch_edgar_feed_page`].
-    EdgarCurrentFeed { form_type: String, count: usize, before: String },
+    EdgarCurrentFeed {
+        form_type: String,
+        count: usize,
+        before: String,
+    },
 
     /// Per-company Atom feed for a specific CIK, optionally filtered by form type.
     ///
@@ -54,7 +58,12 @@ pub enum Url {
     /// data per entry than the global feed (company metadata, SIC code, etc.).
     /// Same `count` cap and `updated`-based delta semantics as `EdgarCurrentFeed`.
     /// Supports the same `before` / `dateb` pagination parameter.
-    EdgarCompanyFeed { cik: Cik, form_type: String, count: usize, before: String },
+    EdgarCompanyFeed {
+        cik: Cik,
+        form_type: String,
+        count: usize,
+        before: String,
+    },
 }
 
 impl Url {
