@@ -1,6 +1,6 @@
 use crate::enums::Url;
+use crate::models::{Cik, CompanyProfile};
 use crate::network::SecClient;
-use crate::types::{Cik, CompanyProfile};
 use std::error::Error;
 
 /// Fetches the company profile for the given CIK from the SEC EDGAR submissions
@@ -17,7 +17,7 @@ use std::error::Error;
 /// ```no_run
 /// # use sec_fetcher::network::{SecClient, fetch_company_profile};
 /// # use sec_fetcher::config::ConfigManager;
-/// # use sec_fetcher::types::Cik;
+/// # use sec_fetcher::models::Cik;
 /// # #[tokio::main] async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let cfg = ConfigManager::load()?;
 /// let client = SecClient::from_config_manager(&cfg)?;

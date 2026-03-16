@@ -4,9 +4,9 @@ use crate::network::fetch_investment_company_series_and_class_dataset;
 use crate::network::fetch_operating_company_tickers;
 use crate::network::SecClient;
 
-use crate::types::InvestmentCompany;
+use crate::models::InvestmentCompany;
 
-use crate::types::Cik;
+use crate::models::Cik;
 
 /// Resolves a ticker symbol to its SEC CIK (Central Index Key).
 ///

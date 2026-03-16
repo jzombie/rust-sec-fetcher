@@ -1,5 +1,5 @@
+use crate::models::{Cik, CikSubmission};
 use crate::network::{fetch_cik_submissions, SecClient};
-use crate::types::{Cik, CikSubmission};
 use std::error::Error;
 
 /// Fetches all 10-K and 10-K405 annual report filings for a given CIK,

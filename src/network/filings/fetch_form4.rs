@@ -1,7 +1,7 @@
 use crate::enums::Url;
+use crate::models::{Cik, CikSubmission, Form4Transaction};
 use crate::network::{fetch_cik_submissions, SecClient};
 use crate::parsers::parse_form4_xml;
-use crate::types::{Cik, CikSubmission, Form4Transaction};
 use std::error::Error;
 
 /// Fetches all Form 4 and Form 4/A filings for a given CIK, ordered
@@ -64,7 +64,7 @@ pub async fn fetch_form4_filings(
 /// # Example
 /// ```rust,no_run
 /// # use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_form4, SecClient};
-/// # use sec_fetcher::types::CikSubmission;
+/// # use sec_fetcher::models::CikSubmission;
 /// # use sec_fetcher::config::ConfigManager;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {

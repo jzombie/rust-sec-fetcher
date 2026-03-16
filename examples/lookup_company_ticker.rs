@@ -1,8 +1,8 @@
 use sec_fetcher::config::ConfigManager;
+use sec_fetcher::models::CikSubmission;
 use sec_fetcher::network::{
     fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_operating_company_tickers, SecClient,
 };
-use sec_fetcher::types::CikSubmission;
 use std::env;
 use std::error::Error;
 use tokio;

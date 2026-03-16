@@ -1,5 +1,5 @@
 use crate::enums::Url;
-use crate::types::{AccessionNumber, Cik};
+use crate::models::{AccessionNumber, Cik};
 use polars::prelude::pivot::pivot;
 use polars::prelude::*;
 use serde_json::Value;

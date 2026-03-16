@@ -1,4 +1,4 @@
-use crate::types::InvestmentCompany;
+use crate::models::InvestmentCompany;
 use bytes::Bytes;
 use csv::ReaderBuilder;
 use std::error::Error;

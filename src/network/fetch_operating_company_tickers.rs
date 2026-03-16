@@ -1,7 +1,7 @@
 use crate::enums::Url;
+use crate::models::{Cik, Ticker};
 use crate::network::SecClient;
 use crate::parsers::{parse_company_tickers_json, parse_ticker_txt};
-use crate::types::{Cik, Ticker};
 use std::collections::HashMap;
 use std::error::Error;
 
@@ -45,7 +45,7 @@ use std::error::Error;
 /// resolve a derived instrument to its parent registrant's CIK; see that
 /// method for details.
 ///
-/// [`Cik::get_company_cik_by_ticker_symbol`]: crate::types::Cik::get_company_cik_by_ticker_symbol
+/// [`Cik::get_company_cik_by_ticker_symbol`]: crate::models::Cik::get_company_cik_by_ticker_symbol
 ///
 /// Derived instruments include warrants (`-WT`), units (`-UN`), preferred
 /// share classes (`-PA`/`-PB`/…), and tickers for defunct, delisted, or

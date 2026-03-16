@@ -1,4 +1,4 @@
-use crate::types::{Cik, Ticker};
+use crate::models::{Cik, Ticker};
 use serde::Deserialize;
 use std::error::Error;
 

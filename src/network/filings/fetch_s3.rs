@@ -1,5 +1,5 @@
+use crate::models::{Cik, CikSubmission};
 use crate::network::{fetch_cik_submissions, SecClient};
-use crate::types::{Cik, CikSubmission};
 use std::error::Error;
 
 /// Fetches all S-3 and S-3/A shelf registration statement filings for a given

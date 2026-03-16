@@ -1,5 +1,5 @@
 use sec_fetcher::enums::TickerOrigin;
-use sec_fetcher::types::{AccessionNumber, Cik, CikError, Ticker};
+use sec_fetcher::models::{AccessionNumber, Cik, CikError, Ticker};
 
 #[test]
 fn test_cik_to_string() {

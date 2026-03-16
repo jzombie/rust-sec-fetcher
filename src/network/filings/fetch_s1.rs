@@ -1,5 +1,5 @@
+use crate::models::{Cik, CikSubmission};
 use crate::network::{fetch_cik_submissions, SecClient};
-use crate::types::{Cik, CikSubmission};
 use std::error::Error;
 
 /// Fetches all S-1 and S-1/A registration statement filings for a given CIK,

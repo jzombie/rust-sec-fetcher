@@ -1,4 +1,4 @@
-use crate::types::Cik;
+use crate::models::Cik;
 use chrono::NaiveDate;
 
 /// Top-level company profile from the SEC EDGAR submissions endpoint.
@@ -66,8 +66,8 @@ impl CompanyProfile {
     /// should use the date only for month/day formatting:
     ///
     /// ```
-    /// # use sec_fetcher::types::CompanyProfile;
-    /// # use sec_fetcher::types::Cik;
+    /// # use sec_fetcher::models::CompanyProfile;
+    /// # use sec_fetcher::models::Cik;
     /// # use chrono::Datelike;
     /// let profile = CompanyProfile {
     ///     cik: Cik::from_u64(320193).unwrap(),

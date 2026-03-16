@@ -1,4 +1,4 @@
-use crate::types::{NportInvestment, Ticker};
+use crate::models::{NportInvestment, Ticker};
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use rust_decimal::Decimal;

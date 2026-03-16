@@ -2,8 +2,8 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::enums::TickerOrigin;
-use crate::types::AccessionNumber;
-use crate::types::Ticker;
+use crate::models::AccessionNumber;
+use crate::models::Ticker;
 
 use std::error::Error;
 
@@ -21,7 +21,7 @@ use std::error::Error;
 ///
 /// # Example:
 /// ```rust
-/// use sec_fetcher::types::Cik;
+/// use sec_fetcher::models::Cik;
 ///
 /// let cik = Cik { value: 320193 };
 /// assert_eq!(cik.to_string(), "0000320193");
@@ -66,7 +66,7 @@ impl Cik {
     ///
     /// # Example:
     /// ```rust
-    /// use sec_fetcher::types::{AccessionNumber, Cik};
+    /// use sec_fetcher::models::{AccessionNumber, Cik};
     ///
     /// let accession = AccessionNumber::from_str("0001234567-23-000045").unwrap();
     /// let cik = Cik::from_accession_number(&accession);

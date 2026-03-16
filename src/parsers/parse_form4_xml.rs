@@ -1,4 +1,4 @@
-use crate::types::Form4Transaction;
+use crate::models::Form4Transaction;
 use chrono::NaiveDate;
 use quick_xml::events::Event;
 use quick_xml::Reader;

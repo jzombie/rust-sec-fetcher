@@ -1,4 +1,4 @@
-use crate::types::{Cik, CikError};
+use crate::models::{Cik, CikError};
 
 /// Represents an SEC **Accession Number**, which is a unique identifier for a filing.
 ///
@@ -13,7 +13,7 @@ use crate::types::{Cik, CikError};
 ///
 /// # Example:
 /// ```rust
-/// use sec_fetcher::types::{AccessionNumber, Cik};
+/// use sec_fetcher::models::{AccessionNumber, Cik};
 ///
 /// let accession_number = AccessionNumber {
 ///     cik: Cik { value: 1234567890 },
@@ -171,7 +171,7 @@ impl AccessionNumber {
     ///
     /// # Example:
     /// ```rust
-    /// use sec_fetcher::types::AccessionNumber;
+    /// use sec_fetcher::models::AccessionNumber;
     ///
     /// let accession = AccessionNumber::from_str("0001234567-23-000045").unwrap();
     /// assert_eq!(accession.to_unformatted_string(), "000123456723000045");

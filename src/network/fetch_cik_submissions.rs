@@ -1,6 +1,6 @@
 use crate::enums::Url;
+use crate::models::{AccessionNumber, Cik, CikSubmission};
 use crate::network::SecClient;
-use crate::types::{AccessionNumber, Cik, CikSubmission};
 use chrono::NaiveDate;
 use serde_json::Value;
 use std::error::Error;

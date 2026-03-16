@@ -1,6 +1,6 @@
 use crate::enums::Url;
+use crate::models::{Cik, FeedEntry};
 use crate::network::SecClient;
-use crate::types::{Cik, FeedEntry};
 use chrono::{DateTime, FixedOffset, NaiveDate};
 use futures::future::join_all;
 use once_cell::sync::Lazy;
