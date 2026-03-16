@@ -1,5 +1,5 @@
 use crate::caches::Caches;
-use crate::config::ConfigManager;
+use crate::config::{ConfigManager, DEFAULT_APP_NAME, DEFAULT_APP_VERSION};
 use email_address::EmailAddress;
 use reqwest;
 use reqwest_drive::{
@@ -14,6 +14,7 @@ use tokio::time::Duration;
 pub struct SecClient {
     email: String,
     app_name: String,
+    app_version: String,
     http_client: ClientWithMiddleware,
     // TODO: Update live_client to use new reqwest_drive zero-store bypass once available.
     //
@@ -42,7 +43,12 @@ impl SecClient {
         let app_name = config
             .app_name
             .clone()
-            .unwrap_or_else(|| env!("CARGO_PKG_NAME").to_string());
+            .unwrap_or_else(|| DEFAULT_APP_NAME.to_string());
+
+        let app_version = config
+            .app_version
+            .clone()
+            .unwrap_or_else(|| DEFAULT_APP_VERSION.to_string());
 
         let max_concurrent = config
             .max_concurrent
@@ -126,6 +132,7 @@ impl SecClient {
         Ok(Self {
             email: email.to_string(),
             app_name,
+            app_version,
             http_client: cache_client,
             live_client,
             cache_policy,
@@ -144,12 +151,7 @@ impl SecClient {
 
         // TODO: Include repository URL
 
-        format!(
-            "{}/{} (+{})",
-            self.app_name,
-            env!("CARGO_PKG_VERSION"),
-            self.email
-        )
+        format!("{}/{} (+{})", self.app_name, self.app_version, self.email)
     }
 
     // pub async fn raw_request(

@@ -15,6 +15,15 @@ The SEC mandates a contact address in every automated request's `User-Agent` hea
 2. **Environment variable** — `SEC_FETCHER_EMAIL=your@example.com cargo run`
 3. **Startup prompt** — if neither of the above is set and you are running in a terminal, the program will ask you to type your email before it does anything else
 
+### App name and version override (optional)
+
+The first two segments of the `User-Agent` string sent to the SEC are the app name and version (`AppName/Version (+email)`). Both default to sec-fetcher's own values at runtime. Override either one in any of these ways:
+
+|         | Config file             | Environment variable            |
+| ------- | ----------------------- | ------------------------------- |
+| Name    | `app_name = "my-app"`   | `SEC_FETCHER_APP_NAME=my-app`   |
+| Version | `app_version = "1.2.3"` | `SEC_FETCHER_APP_VERSION=1.2.3` |
+
 ### Rate limiting
 
 Defaults are conservative (2 req/s, 1 concurrent request) to stay well within the SEC's 10 req/s limit. Override with `min_delay_ms`, `max_concurrent`, and `max_retries` in the config file.

@@ -26,6 +26,11 @@ pub struct AppConfig {
     #[merge(strategy = overwrite_option)]
     pub app_name: Option<String>,
 
+    /// Optional override for the app version sent in the User-Agent header.
+    /// Defaults to the crate version when not set.
+    #[merge(strategy = overwrite_option)]
+    pub app_version: Option<String>,
+
     #[merge(strategy = overwrite_option)]
     pub max_concurrent: Option<usize>,
 
@@ -71,6 +76,7 @@ impl Default for AppConfig {
         Self {
             email: None,
             app_name: None,
+            app_version: None,
             max_concurrent: Some(1),
             min_delay_ms: Some(500),
             max_retries: Some(5),

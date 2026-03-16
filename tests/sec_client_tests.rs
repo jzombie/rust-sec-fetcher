@@ -25,6 +25,7 @@ fn test_user_agent_with_custom_app_name() {
     let mut app_config = AppConfig::default();
     app_config.email = Some("test@example.com".into());
     app_config.app_name = Some("my-custom-app".into());
+    // No app_version set — should still use sec-fetcher's version
     let config_manager = ConfigManager::from_app_config(&app_config);
 
     let client = SecClient::from_config_manager(&config_manager).unwrap();
@@ -33,6 +34,40 @@ fn test_user_agent_with_custom_app_name() {
         client.get_user_agent(),
         format!(
             "my-custom-app/{} (+test@example.com)",
+            env!("CARGO_PKG_VERSION")
+        )
+    );
+}
+
+#[test]
+fn test_user_agent_with_custom_app_name_and_version() {
+    let mut app_config = AppConfig::default();
+    app_config.email = Some("test@example.com".into());
+    app_config.app_name = Some("my-custom-app".into());
+    app_config.app_version = Some("2.0.0".into());
+    let config_manager = ConfigManager::from_app_config(&app_config);
+
+    let client = SecClient::from_config_manager(&config_manager).unwrap();
+
+    assert_eq!(
+        client.get_user_agent(),
+        "my-custom-app/2.0.0 (+test@example.com)"
+    );
+}
+
+#[test]
+fn test_user_agent_default_app_version_when_none() {
+    // app_version not set — falls back to sec-fetcher's crate version
+    let mut app_config = AppConfig::default();
+    app_config.email = Some("test@example.com".into());
+    let config_manager = ConfigManager::from_app_config(&app_config);
+
+    let client = SecClient::from_config_manager(&config_manager).unwrap();
+
+    assert_eq!(
+        client.get_user_agent(),
+        format!(
+            "sec-fetcher/{} (+test@example.com)",
             env!("CARGO_PKG_VERSION")
         )
     );
@@ -50,7 +85,10 @@ fn test_user_agent_default_app_name_when_none() {
 
     assert_eq!(
         client.get_user_agent(),
-        format!("sec-fetcher/{} (+test@example.com)", env!("CARGO_PKG_VERSION"))
+        format!(
+            "sec-fetcher/{} (+test@example.com)",
+            env!("CARGO_PKG_VERSION")
+        )
     );
 }
 

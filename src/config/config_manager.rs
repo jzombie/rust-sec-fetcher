@@ -51,6 +51,42 @@ use std::sync::LazyLock;
 /// ```
 pub const EMAIL_ENV_VAR: &str = "SEC_FETCHER_EMAIL";
 
+/// Environment variable used to override the app name in the `User-Agent` header.
+///
+/// ## Precedence (highest → lowest)
+///
+/// 1. **Config file** — `app_name = "…"` key in `sec_fetcher_config.toml`.
+/// 2. **This environment variable** — `SEC_FETCHER_APP_NAME=my-app`
+/// 3. **Hardcoded default** — `"sec-fetcher"`
+///
+/// # Example
+/// ```sh
+/// SEC_FETCHER_APP_NAME=my-app cargo run
+/// ```
+pub const APP_NAME_ENV_VAR: &str = "SEC_FETCHER_APP_NAME";
+
+/// The default app name sent in the User-Agent header when neither the config
+/// file nor `SEC_FETCHER_APP_NAME` supplies one.
+pub const DEFAULT_APP_NAME: &str = "sec-fetcher";
+
+/// Environment variable used to override the app version in the `User-Agent` header.
+///
+/// ## Precedence (highest → lowest)
+///
+/// 1. **Config file** — `app_version = "…"` key in `sec_fetcher_config.toml`.
+/// 2. **This environment variable** — `SEC_FETCHER_APP_VERSION=1.2.3`
+/// 3. **Hardcoded default** — the sec-fetcher crate version
+///
+/// # Example
+/// ```sh
+/// SEC_FETCHER_APP_VERSION=1.2.3 cargo run
+/// ```
+pub const APP_VERSION_ENV_VAR: &str = "SEC_FETCHER_APP_VERSION";
+
+/// The default app version used in the User-Agent header when neither the config
+/// file nor `SEC_FETCHER_APP_VERSION` supplies one.
+pub const DEFAULT_APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 #[derive(Debug)]
 pub struct ConfigManager {
     config: AppConfig,
@@ -76,6 +112,12 @@ impl ConfigManager {
     ///    user is prompted at startup.
     ///
     /// Returns an error if none of the above provides an address.
+    ///
+    /// ## App name resolution — precedence (highest → lowest)
+    ///
+    /// 1. **Config file** — `app_name = "…"` key.
+    /// 2. **Environment variable** — [`APP_NAME_ENV_VAR`] (`SEC_FETCHER_APP_NAME`).
+    /// 3. **Default** — [`DEFAULT_APP_NAME`] (`"sec-fetcher"`).
     pub fn from_config(path: Option<PathBuf>) -> Result<Self, Box<dyn Error>> {
         if let Some(path) = &path {
             if !path.exists() {
@@ -133,6 +175,22 @@ impl ConfigManager {
         }
 
         settings.merge(user_settings);
+
+        // Resolve app_name: env var fills the gap when neither TOML nor a
+        // direct AppConfig assignment supplied one.
+        if settings.app_name.is_none() {
+            if let Ok(name) = std::env::var(APP_NAME_ENV_VAR) {
+                settings.app_name = Some(name);
+            }
+        }
+
+        // Resolve app_version: env var fills the gap when neither TOML nor a
+        // direct AppConfig assignment supplied one.
+        if settings.app_version.is_none() {
+            if let Ok(version) = std::env::var(APP_VERSION_ENV_VAR) {
+                settings.app_version = Some(version);
+            }
+        }
 
         let instance = Self { config: settings };
 

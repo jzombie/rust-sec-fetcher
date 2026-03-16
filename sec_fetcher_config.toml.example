@@ -11,13 +11,19 @@
 # email = "your.name@example.com"
 
 # The following are optional, to override defaults.
-
-# Override the app name sent in the User-Agent header to the SEC.
-# Defaults to "sec-fetcher" (the crate name). The SEC's User-Agent format is:
+#
+# Override the app name and/or version sent in the User-Agent header to the SEC.
+# The SEC's User-Agent format is:
 #   AppName/Version (+contact@email)
-# Only change this if you are embedding sec-fetcher in a larger application and
-# want the SEC to see your application's name instead.
+# Both default to sec-fetcher's own name and version.
+# Note: even when sec-fetcher is used as a library inside a larger Rust project,
+# the defaults will still be sec-fetcher's values — they are fixed runtime
+# constants, not derived from the calling project's crate.
+# Also accepted via env vars:
+#   SEC_FETCHER_APP_NAME=my-app cargo run
+#   SEC_FETCHER_APP_VERSION=1.2.3 cargo run
 # app_name = "my-app"
+# app_version = "1.2.3"
 #
 # The combination of max_concurrent * min_delay_ms should not exceed 10 requests per second
 # as your requests may become rate-limited by the SEC. Defaults are extremely conservative.
