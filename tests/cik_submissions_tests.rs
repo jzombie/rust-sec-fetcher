@@ -7,7 +7,7 @@
 
 use chrono::NaiveDate;
 use flate2::read::GzDecoder;
-use sec_fetcher::models::{Cik, CikSubmission};
+use sec_fetcher::types::{Cik, CikSubmission};
 use sec_fetcher::network::parse_cik_submissions_json;
 use serde_json::Value;
 use std::fs::File;

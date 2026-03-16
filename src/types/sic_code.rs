@@ -26,7 +26,7 @@ impl SicCode {
     /// prefix stripped.
     ///
     /// ```
-    /// use sec_fetcher::models::SicCode;
+    /// use sec_fetcher::types::SicCode;
     /// let s = SicCode { code: 3571, description: "ELECTRONIC COMPUTERS".into(), office: "Office of Technology".into() };
     /// assert_eq!(s.office_short(), "Technology");
     /// ```

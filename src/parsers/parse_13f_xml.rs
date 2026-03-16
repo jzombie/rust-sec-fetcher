@@ -1,4 +1,4 @@
-use crate::models::ThirteenfHolding;
+use crate::types::ThirteenfHolding;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use rust_decimal::Decimal;

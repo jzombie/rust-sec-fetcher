@@ -1,5 +1,5 @@
 use crate::enums::Url;
-use crate::models::SicCode;
+use crate::types::SicCode;
 use crate::network::SecClient;
 use once_cell::sync::Lazy;
 use regex::Regex;

@@ -1,5 +1,5 @@
 use crate::enums::Url;
-use crate::models::{Cik, CikSubmission, NportInvestment};
+use crate::types::{Cik, CikSubmission, NportInvestment};
 use crate::network::{fetch_cik_submissions, fetch_operating_company_tickers, SecClient};
 use crate::parsers::parse_nport_xml;
 use std::error::Error;
@@ -54,7 +54,7 @@ pub async fn fetch_nport_filings(
 /// # Example
 /// ```rust,no_run
 /// # use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_nport, SecClient};
-/// # use sec_fetcher::models::CikSubmission;
+/// # use sec_fetcher::types::CikSubmission;
 /// # use sec_fetcher::config::ConfigManager;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {

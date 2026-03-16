@@ -1,4 +1,4 @@
-use crate::models::MasterIndexEntry;
+use crate::types::MasterIndexEntry;
 use chrono::NaiveDate;
 use std::error::Error;
 

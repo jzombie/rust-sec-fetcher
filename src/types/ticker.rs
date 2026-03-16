@@ -1,5 +1,5 @@
 use crate::enums::{CacheNamespacePrefix, TickerOrigin};
-use crate::models::Cik;
+use crate::types::Cik;
 use crate::Caches;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};

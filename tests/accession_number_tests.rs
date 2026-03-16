@@ -1,4 +1,4 @@
-use sec_fetcher::models::{AccessionNumber, AccessionNumberError};
+use sec_fetcher::types::{AccessionNumber, AccessionNumberError};
 
 #[test]
 fn test_accession_number_from_str_valid() {

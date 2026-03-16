@@ -52,7 +52,7 @@
 ///   --top N           Maximum rows to display (default: 50; 0 = no limit)
 use chrono::{Datelike, Local};
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::models::MasterIndexEntry;
+use sec_fetcher::types::MasterIndexEntry;
 use sec_fetcher::network::{fetch_edgar_master_index, SecClient};
 use std::env;
 use std::error::Error;

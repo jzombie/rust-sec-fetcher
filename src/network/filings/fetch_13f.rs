@@ -1,5 +1,5 @@
 use crate::enums::Url;
-use crate::models::{Cik, CikSubmission, ThirteenfHolding};
+use crate::types::{Cik, CikSubmission, ThirteenfHolding};
 use crate::network::filings::fetch_filing_index;
 use crate::network::{fetch_cik_submissions, SecClient};
 use crate::parsers::parse_13f_xml;
@@ -58,7 +58,7 @@ pub async fn fetch_13f_filings(
 /// # Example
 /// ```rust,no_run
 /// # use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_13f, SecClient};
-/// # use sec_fetcher::models::CikSubmission;
+/// # use sec_fetcher::types::CikSubmission;
 /// # use sec_fetcher::config::ConfigManager;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {

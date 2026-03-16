@@ -1,5 +1,5 @@
 use crate::enums::Url;
-use crate::models::{AccessionNumber, Cik, Ticker};
+use crate::types::{AccessionNumber, Cik, Ticker};
 use crate::network::{fetch_cik_submissions, SecClient};
 use polars::prelude::*;
 use serde_json::Value;

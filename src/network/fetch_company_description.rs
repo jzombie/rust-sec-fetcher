@@ -1,5 +1,5 @@
 use crate::enums::Url;
-use crate::models::{Cik, CikSubmission};
+use crate::types::{Cik, CikSubmission};
 use crate::network::{fetch_cik_submissions, SecClient};
 use once_cell::sync::Lazy;
 use regex::Regex;

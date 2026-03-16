@@ -2,7 +2,7 @@ mod caches;
 pub mod config;
 pub mod enums;
 pub mod fs;
-pub mod models;
+pub mod types;
 pub mod network;
 pub mod parsers;
 pub mod utils;

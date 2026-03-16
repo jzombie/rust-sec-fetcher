@@ -1,5 +1,5 @@
 use crate::enums::Url;
-use crate::models::{CikSubmission, FilingDocument, FilingIndex};
+use crate::types::{CikSubmission, FilingDocument, FilingIndex};
 use crate::network::SecClient;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -88,7 +88,7 @@ fn parse_filing_index_html(html: &str) -> Result<FilingIndex, Box<dyn Error>> {
 /// ```rust,no_run
 /// # use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_filing_index, SecClient};
 /// # use sec_fetcher::config::ConfigManager;
-/// # use sec_fetcher::models::CikSubmission;
+/// # use sec_fetcher::types::CikSubmission;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let config = ConfigManager::load()?;

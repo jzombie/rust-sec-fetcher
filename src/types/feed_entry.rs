@@ -1,4 +1,4 @@
-use crate::models::Cik;
+use crate::types::Cik;
 use chrono::{DateTime, FixedOffset, NaiveDate};
 
 /// A single entry from an SEC EDGAR filing Atom feed.
@@ -24,9 +24,9 @@ use chrono::{DateTime, FixedOffset, NaiveDate};
 #[derive(Debug, Clone)]
 pub struct FeedEntry {
     /// Accession number string (e.g. `"0001104659-26-027766"`).
-    /// Use with [`crate::models::AccessionNumber::from_str`] if you need the
+    /// Use with [`crate::types::AccessionNumber::from_str`] if you need the
     /// structured form, or pass directly to [`crate::network::fetch_filing_index`]
-    /// via a [`crate::models::CikSubmission`].
+    /// via a [`crate::types::CikSubmission`].
     pub accession_number: String,
 
     /// CIK of the filing entity, extracted from the filing index URL.

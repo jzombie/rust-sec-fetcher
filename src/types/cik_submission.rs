@@ -1,5 +1,5 @@
 use crate::enums::Url;
-use crate::models::{AccessionNumber, Cik};
+use crate::types::{AccessionNumber, Cik};
 use chrono::NaiveDate;
 
 #[derive(Clone, Debug)]
@@ -205,7 +205,7 @@ impl CikSubmission {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{AccessionNumber, Cik};
+    use crate::types::{AccessionNumber, Cik};
     use chrono::Datelike;
 
     fn sub(form: &str, year: i32) -> CikSubmission {

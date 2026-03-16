@@ -1,4 +1,4 @@
-use crate::models::{AccessionNumber, Cik};
+use crate::types::{AccessionNumber, Cik};
 pub type Year = usize;
 
 /// A convenience enum for accessing structured SEC URLs.
@@ -104,7 +104,7 @@ pub enum Url {
     /// The `path` value is everything after `https://www.sec.gov/Archives/`,
     /// e.g. `edgar/data/320193/0000320193-94-000002.txt`.
     ///
-    /// See [`crate::models::MasterIndexEntry::as_url`].
+    /// See [`crate::types::MasterIndexEntry::as_url`].
     EdgarArchive(String),
 
     /// The SEC EDGAR Standard Industrial Classification (SIC) code list.

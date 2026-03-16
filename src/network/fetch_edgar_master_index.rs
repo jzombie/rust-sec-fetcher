@@ -1,5 +1,5 @@
 use crate::enums::Url;
-use crate::models::MasterIndexEntry;
+use crate::types::MasterIndexEntry;
 use crate::network::SecClient;
 use crate::parsers::parse_master_idx;
 use std::error::Error;
