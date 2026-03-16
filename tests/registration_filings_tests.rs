@@ -11,8 +11,8 @@
 
 use chrono::NaiveDate;
 use flate2::read::GzDecoder;
-use sec_fetcher::types::{Cik, CikSubmission};
 use sec_fetcher::network::parse_cik_submissions_json;
+use sec_fetcher::types::{Cik, CikSubmission};
 use serde_json::Value;
 use std::fs::File;
 use std::path::PathBuf;

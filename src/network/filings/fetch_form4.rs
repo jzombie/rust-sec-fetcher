@@ -1,7 +1,7 @@
 use crate::enums::Url;
-use crate::types::{Cik, CikSubmission, Form4Transaction};
 use crate::network::{fetch_cik_submissions, SecClient};
 use crate::parsers::parse_form4_xml;
+use crate::types::{Cik, CikSubmission, Form4Transaction};
 use std::error::Error;
 
 /// Fetches all Form 4 and Form 4/A filings for a given CIK, ordered

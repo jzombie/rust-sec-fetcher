@@ -1,7 +1,7 @@
 use crate::enums::Url;
-use crate::types::{Cik, CikSubmission, NportInvestment};
 use crate::network::{fetch_cik_submissions, fetch_operating_company_tickers, SecClient};
 use crate::parsers::parse_nport_xml;
+use crate::types::{Cik, CikSubmission, NportInvestment};
 use std::error::Error;
 
 /// Fetches all NPORT-P filings for a given CIK, ordered newest-first.

@@ -1,6 +1,6 @@
 use crate::enums::Url;
-use crate::types::{Cik, CompanyProfile};
 use crate::network::SecClient;
+use crate::types::{Cik, CompanyProfile};
 use std::error::Error;
 
 /// Fetches the company profile for the given CIK from the SEC EDGAR submissions

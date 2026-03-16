@@ -1,7 +1,7 @@
 use chrono::DateTime;
 use indoc::formatdoc;
-use sec_fetcher::types::FeedEntry;
 use sec_fetcher::network::{parse_edgar_atom_feed, FeedDelta, EDGAR_PAGE_SIZE};
+use sec_fetcher::types::FeedEntry;
 
 // ---------------------------------------------------------------------------
 // Helpers

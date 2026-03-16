@@ -1,5 +1,5 @@
-use crate::types::{Cik, CikSubmission};
 use crate::network::{fetch_cik_submissions, SecClient};
+use crate::types::{Cik, CikSubmission};
 use std::error::Error;
 
 /// Fetches all 10-Q quarterly report filings for a given CIK, ordered

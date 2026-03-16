@@ -1,6 +1,6 @@
 use crate::enums::Url;
-use crate::types::{AccessionNumber, Cik, Ticker};
 use crate::network::{fetch_cik_submissions, SecClient};
+use crate::types::{AccessionNumber, Cik, Ticker};
 use polars::prelude::*;
 use serde_json::Value;
 use std::collections::HashMap;

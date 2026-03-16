@@ -1,7 +1,7 @@
 use crate::enums::Url;
-use crate::types::{Cik, Ticker};
 use crate::network::SecClient;
 use crate::parsers::{parse_company_tickers_json, parse_ticker_txt};
+use crate::types::{Cik, Ticker};
 use std::collections::HashMap;
 use std::error::Error;
 

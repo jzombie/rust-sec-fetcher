@@ -1,7 +1,7 @@
 use crate::enums::{CacheNamespacePrefix, Url};
-use crate::types::InvestmentCompany;
 use crate::network::SecClient;
 use crate::parsers::parse_investment_companies_csv;
+use crate::types::InvestmentCompany;
 use crate::Caches;
 use chrono::{Datelike, Utc};
 use simd_r_drive_extensions::{NamespaceHasher, StorageCacheExt};

@@ -1,6 +1,6 @@
 use crate::enums::Url;
-use crate::types::{Cik, CikSubmission};
 use crate::network::{fetch_cik_submissions, SecClient};
+use crate::types::{Cik, CikSubmission};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::error::Error;

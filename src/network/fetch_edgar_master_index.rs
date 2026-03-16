@@ -1,7 +1,7 @@
 use crate::enums::Url;
-use crate::types::MasterIndexEntry;
 use crate::network::SecClient;
 use crate::parsers::parse_master_idx;
+use crate::types::MasterIndexEntry;
 use std::error::Error;
 
 /// Downloads and parses the EDGAR full-index `master.idx` for the requested

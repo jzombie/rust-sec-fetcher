@@ -1,6 +1,6 @@
 use crate::enums::Url;
-use crate::types::SicCode;
 use crate::network::SecClient;
+use crate::types::SicCode;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::error::Error;

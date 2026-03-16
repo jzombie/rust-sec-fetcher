@@ -1,8 +1,8 @@
 use crate::enums::Url;
-use crate::types::{Cik, CikSubmission, ThirteenfHolding};
 use crate::network::filings::fetch_filing_index;
 use crate::network::{fetch_cik_submissions, SecClient};
 use crate::parsers::parse_13f_xml;
+use crate::types::{Cik, CikSubmission, ThirteenfHolding};
 use std::error::Error;
 
 /// Fetches all 13F-HR filings for a given CIK, ordered newest-first.
