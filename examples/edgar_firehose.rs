@@ -1,3 +1,5 @@
+// TODO: Convert into a stream producer that can be consumed by other tools...
+
 /// Demonstrates delta polling of the SEC EDGAR filing Atom feed.
 ///
 /// # How it works
