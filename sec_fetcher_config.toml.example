@@ -1,7 +1,47 @@
-# All of these are optional
+# sec-fetcher configuration — copy this file to sec_fetcher_config.toml
 
-# email = "user@example.com"
-# max_concurrent = 4
+# Required. SEC mandates a contact email in every User-Agent header.
+#
+# You have three options — pick whichever suits your workflow:
+#   1. Uncomment the line below and fill in your address (persistent config).
+#   2. Set the environment variable instead: SEC_FETCHER_EMAIL=you@example.com cargo run
+#   3. Leave everything unset: if you run the binary in a terminal the program
+#      will automatically ask you to type your email at startup before it does
+#      anything else. Nothing to configure ahead of time.
+# email = "your.name@example.com"
+
+# The following are optional, to override defaults.
+#
+# Override the app name and/or version sent in the User-Agent header to the SEC.
+# The SEC's User-Agent format is:
+#   AppName/Version (+contact@email)
+# Both default to sec-fetcher's own name and version.
+# Note: even when sec-fetcher is used as a library inside a larger Rust project,
+# the defaults will still be sec-fetcher's values — they are fixed runtime
+# constants, not derived from the calling project's crate.
+# Also accepted via env vars:
+#   SEC_FETCHER_APP_NAME=my-app cargo run
+#   SEC_FETCHER_APP_VERSION=1.2.3 cargo run
+# app_name = "my-app"
+# app_version = "1.2.3"
+#
+# Rate limiting
+#
+# Effective throughput (req/s) = max_concurrent / (min_delay_ms / 1000)
+#
+# Each semaphore slot sleeps min_delay_ms before sending and holds its permit
+# for the full round-trip, so concurrency multiplies throughput — it is not a cap.
+# There is no built-in hard ceiling; the library does exactly what you configure.
+#
+# The three canonical configurations that each deliver exactly 10 req/s:
+#
+#   max_concurrent = 1,  min_delay_ms = 100   #  1 slot  × 100 ms = 10 req/s
+#   max_concurrent = 5,  min_delay_ms = 500   #  5 slots × 500 ms = 10 req/s
+#   max_concurrent = 10, min_delay_ms = 1000  # 10 slots × 1000 ms = 10 req/s
+#
+# The defaults below deliver 2 req/s (very conservative).
+#
+# max_concurrent = 1
 # min_delay_ms = 500
 # max_retries = 3
 # http_cache_storage_bin = "custom/path/to/cache.bin"

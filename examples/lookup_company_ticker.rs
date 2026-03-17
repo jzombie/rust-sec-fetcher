@@ -1,7 +1,7 @@
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::CikSubmission;
 use sec_fetcher::network::{
-    fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_company_tickers, SecClient,
+    fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_operating_company_tickers, SecClient,
 };
 use std::env;
 use std::error::Error;
@@ -20,7 +20,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;
 
-    let company_tickers = fetch_company_tickers(&client).await.unwrap();
+    let company_tickers = fetch_operating_company_tickers(&client, true)
+        .await
+        .unwrap();
 
     let found = company_tickers
         .iter()

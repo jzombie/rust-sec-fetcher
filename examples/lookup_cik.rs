@@ -43,7 +43,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let cik_submissions = fetch_cik_submissions(&client, cik).await?;
 
         if let Some(most_recent_nport_p_submission) =
-            CikSubmission::most_recent_nport_p_submission(&cik_submissions)
+            CikSubmission::most_recent_by_form(&cik_submissions, &["NPORT-P"])
         {
             println!(
                 "Most recent NPORT-P submission: {:?}",

@@ -1,5 +1,6 @@
 **/target
 **/data
+**/data.old
 sec_fetcher_config.toml
 
 **/out.txt

@@ -1,4 +1,4 @@
-use crate::models::Cik;
+use crate::models::{Cik, Ticker};
 use serde::Deserialize;
 use std::error::Error;
 
@@ -53,16 +53,20 @@ impl InvestmentCompany {
         investment_companies: &[InvestmentCompany],
         ticker_symbol: &str,
     ) -> Result<Cik, Box<dyn Error>> {
+        let normalized = Ticker::normalize_symbol(ticker_symbol);
         for result in investment_companies.iter() {
-            if result.class_ticker == Some(ticker_symbol.to_string()) {
+            let stored = result
+                .class_ticker
+                .as_deref()
+                .map(Ticker::normalize_symbol)
+                .unwrap_or_default();
+            if stored == normalized {
                 if let Some(cik_str) = &result.cik_number {
-                    let cik = Cik::from_str(&cik_str)?;
-
+                    let cik = Cik::from_str(cik_str)?;
                     return Ok(cik);
                 }
             }
         }
-
         Err("CIK not found".into())
     }
 }

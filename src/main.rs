@@ -1,3 +1,7 @@
+// NOTE: THIS FILE IS A PROTOTYPE/EXPERIMENTAL WORK IN PROGRESS AS I EXPERIMENT WITH THE API.
+
+// TODO: Use these for public API inspiration: https://github.com/r007/edgarkit, https://api-ninjas.com/api/sec, and https://github.com/Haut/edgar-rs
+
 // TODO: Consider uploading XBRL artifacts to HF as "XBRL_facts_and_figures" (or similar) dataset for easier access and sharing.
 // It would also be helpful to include XBRL US-GAAP fact documentation from the current year taxonomy.
 
@@ -6,8 +10,8 @@ use polars::prelude::{CsvWriter, SerWriter};
 use sec_fetcher::{
     config::ConfigManager,
     network::{
-        fetch_company_tickers, fetch_investment_company_series_and_class_dataset,
-        fetch_nport_filing_by_ticker_symbol, fetch_us_gaap_fundamentals, SecClient,
+        fetch_investment_company_series_and_class_dataset, fetch_operating_company_tickers,
+        fetch_us_gaap_fundamentals, SecClient,
     },
     utils::VecExtensions,
 };
@@ -18,7 +22,7 @@ use std::path::Path;
 use tokio;
 use tokio::fs::create_dir_all;
 
-const STORAGE_VAULT_PATH: &str = "data/01-feb-2026-us-gaap";
+const STORAGE_VAULT_PATH: &str = "data/14-mar-2026-us-gaap";
 
 // Prototype iterator for investment companies
 // #[tokio::main]
@@ -182,8 +186,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let client = SecClient::from_config_manager(&config_manager)?;
 
-    let company_tickers = fetch_company_tickers(&client).await?;
-    println!("Total records: {}", company_tickers.len());
+    // include_derived_instruments=false: primary listings only. Derived
+    // instruments (warrants, units, prefs, delisted) share a CIK with their
+    // parent and have no independent XBRL data, so they'd produce duplicates
+    // or empty CSVs in this pipeline.
+    let company_tickers = fetch_operating_company_tickers(&client, false).await?;
+    println!("Total primary listings: {}", company_tickers.len());
     println!("{:?}", company_tickers.head(60));
 
     // Ensure output directory exists
@@ -218,18 +226,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             .include_header(true)
                             .finish(&mut fundamentals_df)
                         {
-                            error_log.insert(
-                                ticker_symbol.clone(),
-                                format!("CSV write error: {}", e),
-                            );
+                            error_log
+                                .insert(ticker_symbol.clone(), format!("CSV write error: {}", e));
                         }
                     }
                     Err(e) => {
                         eprintln!("File creation error: {}", e);
-                        error_log.insert(
-                            ticker_symbol.clone(),
-                            format!("File creation error: {}", e),
-                        );
+                        error_log
+                            .insert(ticker_symbol.clone(), format!("File creation error: {}", e));
                     }
                 }
             }

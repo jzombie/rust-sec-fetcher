@@ -1,10 +1,10 @@
 use crate::caches::Caches;
-use crate::config::ConfigManager;
+use crate::config::{ConfigManager, DEFAULT_APP_NAME, DEFAULT_APP_VERSION};
 use email_address::EmailAddress;
 use reqwest;
 use reqwest_drive::{
-    init_cache_with_drive_and_throttle, init_client_with_cache_and_throttle, CachePolicy,
-    ClientWithMiddleware, ThrottlePolicy,
+    init_cache_with_drive_and_throttle, init_client_with_cache_and_throttle, CacheBypass,
+    CachePolicy, ClientWithMiddleware, ThrottlePolicy,
 };
 use serde_json::Value;
 use std::error::Error;
@@ -13,6 +13,8 @@ use tokio::time::Duration;
 
 pub struct SecClient {
     email: String,
+    app_name: String,
+    app_version: String,
     http_client: ClientWithMiddleware,
     cache_policy: Arc<CachePolicy>,
     throttle_policy: Arc<ThrottlePolicy>,
@@ -29,6 +31,16 @@ impl SecClient {
             .email
             .as_ref()
             .ok_or_else(|| "Missing required field: email".to_string())?; // Error if missing
+
+        let app_name = config
+            .app_name
+            .clone()
+            .unwrap_or_else(|| DEFAULT_APP_NAME.to_string());
+
+        let app_version = config
+            .app_version
+            .clone()
+            .unwrap_or_else(|| DEFAULT_APP_VERSION.to_string());
 
         let max_concurrent = config
             .max_concurrent
@@ -50,6 +62,22 @@ impl SecClient {
         });
 
         // Example: Custom Fixed Throttle Policy
+        //
+        // NOTE: The SEC's public guidance for EDGAR states a current maximum
+        // request rate of 10 requests/second (see:
+        // https://www.sec.gov/os/accessing-edgar-data).
+        //
+        // Effective throughput = max_concurrent / (min_delay_ms / 1000) req/s.
+        // Each semaphore slot sleeps min_delay_ms before sending and holds its
+        // permit for the full round-trip, so concurrency *multiplies* throughput
+        // rather than capping it.  The three canonical 10 req/s configurations:
+        //
+        //   max_concurrent =  1, base_delay_ms =  100  →  1 /  0.1 = 10 req/s
+        //   max_concurrent =  5, base_delay_ms =  500  →  5 /  0.5 = 10 req/s
+        //   max_concurrent = 10, base_delay_ms = 1000  → 10 /  1.0 = 10 req/s
+        //
+        // This project chooses a conservative default of max_concurrent=1,
+        // min_delay_ms=500 (~2 req/s) to be a good steward of the public service.
         let throttle_policy = Arc::new(ThrottlePolicy {
             base_delay_ms: min_delay,
             max_concurrent,
@@ -58,30 +86,19 @@ impl SecClient {
             adaptive_jitter_ms: 500,
         });
 
-        // let (cache, throttle) = init_cache_with_throttle(
-        //     &config_manager.get_config().get_http_cache_storage_bin(),
-        //     cache_policy,
-        //     throttle_policy,
-        // );
-
-        // // Build client with both cache and throttle middleware
-        // let cache_client = ClientBuilder::new(Client::new())
-        //     .with_arc(cache) // Cache middleware
-        //     .with_arc(throttle) // Throttle middleware (cache linked)
-        //     .build();
-
         let http_cache = Caches::get_http_cache_store();
 
         let (drive_cache, throttle_cache) = init_cache_with_drive_and_throttle(
-            http_cache,
+            Arc::clone(&http_cache),
             cache_policy.as_ref().clone(),
             throttle_policy.as_ref().clone(),
         );
-
         let cache_client = init_client_with_cache_and_throttle(drive_cache, throttle_cache);
 
         Ok(Self {
             email: email.to_string(),
+            app_name,
+            app_version,
             http_client: cache_client,
             cache_policy,
             throttle_policy,
@@ -99,12 +116,7 @@ impl SecClient {
 
         // TODO: Include repository URL
 
-        format!(
-            "{}/{} (+{})",
-            env!("CARGO_PKG_NAME"),
-            env!("CARGO_PKG_VERSION"),
-            self.email
-        )
+        format!("{}/{} (+{})", self.app_name, self.app_version, self.email)
     }
 
     // pub async fn raw_request(
@@ -159,6 +171,44 @@ impl SecClient {
         if let Some(policy) = custom_throttle_policy {
             request_builder.extensions().insert(policy);
         }
+
+        let response = request_builder.send().await?;
+        Ok(response)
+    }
+
+    /// Issues an HTTP request that **bypasses the on-disk cache**, always
+    /// going to the network, while still respecting the throttle policy.
+    ///
+    /// Uses [`CacheBypass`] to skip both cache reads and cache writes for this
+    /// request, so a fresh network response is always fetched. The throttle
+    /// semaphore and backoff logic remain fully active.
+    ///
+    /// **Use sparingly.** Prefer [`Self::raw_request`] for all normal EDGAR
+    /// data — it benefits from the configured cache TTL and avoids hammering
+    /// the SEC servers on repeated calls. Reserve this method for:
+    /// - Live polling endpoints (EDGAR Atom feeds) where stale data is
+    ///   unacceptable.
+    /// - The `refresh_test_fixtures` binary, which must always write the
+    ///   latest data to disk.
+    pub async fn raw_request_nocache(
+        &self,
+        method: reqwest::Method,
+        url: &str,
+        headers: Option<Vec<(&str, &str)>>,
+    ) -> Result<reqwest::Response, Box<dyn Error>> {
+        let mut request_builder = self
+            .http_client
+            .request(method, url)
+            .header("User-Agent", self.get_user_agent());
+
+        if let Some(hdrs) = headers {
+            for (key, value) in hdrs {
+                request_builder = request_builder.header(key, value);
+            }
+        }
+
+        // Ensure the cache is bypassed for this request
+        request_builder.extensions().insert(CacheBypass(true));
 
         let response = request_builder.send().await?;
         Ok(response)

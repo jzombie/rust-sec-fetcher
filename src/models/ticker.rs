@@ -3,7 +3,8 @@ use crate::models::Cik;
 use crate::Caches;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
-use simd_r_drive_extensions::{NamespaceHasher, StorageCacheExt};
+use simd_r_drive::utils::NamespaceHasher;
+use simd_r_drive_extensions::StorageCacheExt;
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock};
 
@@ -32,6 +33,21 @@ const CIK_FREQUENCY_BOOST: f64 = 2.0;
 const TICKER_SYMBOL_LENGTH_PENALTY: f64 = -1.0;
 
 impl Ticker {
+    /// Normalizes a raw ticker symbol string to a canonical form.
+    ///
+    /// Rules applied in order:
+    /// 1. Trim leading/trailing ASCII whitespace.
+    /// 2. Convert to uppercase.
+    /// 3. Replace `.` and `/` with `-` (e.g. `BRK.B` → `BRK-B`,
+    ///    `BRK/B` → `BRK-B`).
+    ///
+    /// All SEC data processing — parsing, storage, and lookup — passes
+    /// symbols through this function so that `BRK.B`, `BRK/B`, `brk-b`,
+    /// and `BRK-B` all resolve to the same canonical key `"BRK-B"`.
+    pub fn normalize_symbol(s: &str) -> String {
+        s.trim().to_uppercase().replace('.', "-").replace('/', "-")
+    }
+
     // TODO: Move to parsers?
     // TODO: Rename to `from_fuzzy_matched_name`?
     pub fn get_by_fuzzy_matched_name(

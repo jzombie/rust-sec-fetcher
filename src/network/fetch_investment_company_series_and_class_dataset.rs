@@ -4,7 +4,8 @@ use crate::network::SecClient;
 use crate::parsers::parse_investment_companies_csv;
 use crate::Caches;
 use chrono::{Datelike, Utc};
-use simd_r_drive_extensions::{NamespaceHasher, StorageCacheExt};
+use simd_r_drive::utils::NamespaceHasher;
+use simd_r_drive_extensions::StorageCacheExt;
 use std::error::Error;
 use std::sync::{Arc, LazyLock};
 
@@ -17,17 +18,29 @@ static NAMESPACE_HASHER_LATEST_FUNDS_YEAR: LazyLock<Arc<NamespaceHasher>> = Lazy
 /// Attempts to fetch the latest Investment Company Series and Class dataset,
 /// falling back to previous years if the request fails.
 ///
+/// # What this returns
+///
+/// The SEC publishes an annual CSV of every registered investment company
+/// series and *class* (share class) on record.  This is the authoritative
+/// source for mutual-fund and ETF tickers that are **not** in the operating-
+/// company tickers file (`company_tickers.json`):
+///
+/// - Mutual fund share classes (e.g. `VFINX`, `FXAIX`)
+/// - ETF share classes registered under the Investment Company Act
+///   (as opposed to grantor trusts like `GLD`)
+/// - Closed-end fund tickers
+/// - Money-market fund classes
+///
+/// Each [`InvestmentCompany`] entry carries the registrant CIK, series ID,
+/// class ID, class-level ticker symbol, and entity name.  The file is large
+/// (~several MB) and is cached locally to avoid repeated downloads.
+///
+/// # Year-fallback logic
+///
 /// This function starts from the **current year** and attempts to fetch data.
-/// If the request fails (e.g., 404 error), it retries with the previous year,
-/// continuing until successful or reaching a reasonable fallback limit.
-///
-/// # Arguments
-/// - `sec_client` - A reference to an instance of `SecClient` used for HTTP requests.
-///
-/// # Returns
-/// Returns `Result<Vec<InvestmentCompany>, Box<dyn Error>>`, where:
-/// - `Ok(Vec<InvestmentCompany>)` contains the parsed investment companies.
-/// - `Err(Box<dyn Error>)` if all attempts fail.
+/// If the request fails (e.g., 404 error because the new year's file is not
+/// yet available), it retries with the previous year, continuing until
+/// successful or reaching a reasonable fallback limit.
 pub async fn fetch_investment_company_series_and_class_dataset(
     sec_client: &SecClient,
 ) -> Result<Vec<InvestmentCompany>, Box<dyn Error>> {

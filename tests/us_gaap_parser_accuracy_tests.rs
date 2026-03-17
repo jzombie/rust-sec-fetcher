@@ -1,23 +1,48 @@
+use flate2::read::GzDecoder;
 use polars::prelude::*;
 use sec_fetcher::parsers::parse_us_gaap_fundamentals;
-use serde_json::Value;
 use serde_json::json;
+use serde_json::Value;
 use std::fs::File;
-use std::io::BufReader;
 use std::path::PathBuf;
 
+/// Load a fixture by its logical name (e.g. `"AAPL_companyfacts.json"`).
+/// Stored on disk as `{name}.gz` and decompressed in memory.
+/// Run `cargo run --bin refresh_test_fixtures` to create or update fixtures.
+fn load_fixture(name: &str) -> Value {
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push("tests/fixtures");
+    path.push(format!("{}.gz", name));
+    let file = File::open(&path).unwrap_or_else(|_| {
+        panic!(
+            "missing fixture: {} (run `cargo run --bin refresh_test_fixtures`)",
+            path.display()
+        )
+    });
+    serde_json::from_reader(GzDecoder::new(file)).expect("fixture is not valid JSON")
+}
+
 /// Helper function to validate EVERY parsed fact in the dataframe against the source JSON.
-/// 
+///
 /// Note: This validates **accuracy** (precision), ensuring every value in the DataFrame
 /// can be traced back to an exact match in the source JSON.
 /// It does not strictly validate **completeness** (recall), i.e., it does not fail if the
 /// DataFrame is missing a fact that exists in the JSON (unless that fact causes a mismatch in existing cells).
 fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
     // 1. Get list of fact columns (excluding metadata)
-    let meta_cols = vec!["fy", "fp", "filed", "form", "accn", "canonical_order"];
+    let meta_cols = vec![
+        "fy",
+        "fp",
+        "period_end",
+        "filed",
+        "form",
+        "accn",
+        "canonical_order",
+        "filing_url",
+    ];
     // df.get_column_names() returns a slice of &PlSmallStr in recent Polars
     let all_cols = df.get_column_names();
-    
+
     // Iterate and filter
     let fact_cols: Vec<String> = all_cols
         .iter()
@@ -28,21 +53,26 @@ fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
     // We need to access individual columns to iterate rows
     let fy_col = df.column("fy").expect("fy column missing");
     let fp_col = df.column("fp").expect("fp column missing");
-    
+
     // Iterate over every row
     for i in 0..df.height() {
         let fy = fy_col.get(i).expect("fy val").try_extract::<u64>().unwrap(); // Polars AnyValue extract
-        let fp = fp_col.get(i).expect("fp val").get_str().unwrap().to_string();
+        let fp = fp_col
+            .get(i)
+            .expect("fp val")
+            .get_str()
+            .unwrap()
+            .to_string();
 
         // For each fact in this row
         for fact_name in &fact_cols {
             let df_col = df.column(fact_name).unwrap();
             let cell_val = df_col.get(i).unwrap();
-            
+
             if let AnyValue::Null = cell_val {
                 continue;
             }
-            
+
             let val_str = cell_val.get_str().unwrap().to_string();
             // Value format: "1234.56::Unit"
             let parts: Vec<&str> = val_str.split("::").collect();
@@ -52,11 +82,11 @@ fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
 
             // Now Find this in JSON
             // Path: facts -> "us-gaap" (or "dei"?) -> fact_name -> units -> unit
-            
+
             let facts_obj = json_data["facts"].as_object().expect("No facts object");
-            
+
             let mut correct_match_found = false;
-            
+
             // We search through all taxonomies because we don't know which one this fact belongs to from the DF column name alone
             // (The DF fact_name is unique enough usually, but strictly it falls under a taxonomy)
             for (_taxonomy, tax_data) in facts_obj {
@@ -66,7 +96,7 @@ fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
                             if let Some(obs_array) = observations.as_array() {
                                 // Gather valid candidates
                                 let mut candidates = Vec::new();
-                                
+
                                 for obs in obs_array {
                                     // REPLICATE PARSER LOGIC FOR FY
                                     let end_str = obs["end"].as_str().unwrap_or("").to_string();
@@ -75,27 +105,31 @@ fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
                                     } else {
                                         0
                                     };
-                                    
+
                                     let obs_fy = if let Some(f) = obs["fy"].as_u64() {
-                                         // FIX LOGIC: Match the parser's mixed strictness checks
-                                         let obs_fp_check = obs["fp"].as_str().unwrap_or("FY");
-                                         if obs_fp_check == "FY" {
-                                             if end_year > 0 && f > end_year { continue; }
-                                         } else {
-                                             if end_year > 0 && f > end_year + 1 { continue; }
-                                         }
-                                         f
+                                        // FIX LOGIC: Match the parser's mixed strictness checks
+                                        let obs_fp_check = obs["fp"].as_str().unwrap_or("FY");
+                                        if obs_fp_check == "FY" {
+                                            if end_year > 0 && f > end_year {
+                                                continue;
+                                            }
+                                        } else {
+                                            if end_year > 0 && f > end_year + 1 {
+                                                continue;
+                                            }
+                                        }
+                                        f
                                     } else {
                                         end_year
                                     };
-                                    
+
                                     let obs_fp = obs["fp"].as_str().unwrap_or("");
-                                    
+
                                     if obs_fy == fy && obs_fp == fp {
                                         candidates.push(obs);
                                     }
                                 }
-                                
+
                                 if candidates.is_empty() {
                                     continue;
                                 }
@@ -113,11 +147,11 @@ fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
                                         c
                                     }
                                 });
-                                
+
                                 // Best candidate is the first one
                                 let best_match = candidates[0];
                                 let best_val = best_match["val"].as_f64().unwrap_or(0.0);
-                                
+
                                 // Compare values with epsilon for float logic? Or exact?
                                 // JSON float parsing vs string parsing might have tiny diffs.
                                 // But usually exact for these financial numbers.
@@ -125,18 +159,19 @@ fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
                                     correct_match_found = true;
                                     break;
                                 } else {
-                                     // Found the right FY/FP bucket, but value mismatch
-                                     // This implies the parser chose a different value than our logic?
-                                     // OR there are multiple entries with same filed date?
-                                     // Or the unit search found a different unit? (We are inside unit loop).
+                                    // Found the right FY/FP bucket, but value mismatch
+                                    // This implies the parser chose a different value than our logic?
+                                    // OR there are multiple entries with same filed date?
+                                    // Or the unit search found a different unit? (We are inside unit loop).
                                 }
                             }
                         }
                     }
                 }
             }
-            
-            assert!(correct_match_found, 
+
+            assert!(
+                correct_match_found,
                 "Failed to verify fact '{}' for FY{} {}. Value in DF: {} ({}). Could not find matching source data in JSON following parser rules.",
                 fact_name, fy, fp, val_num, unit
             );
@@ -145,18 +180,16 @@ fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
 }
 
 fn run_full_validation_for_ticker(ticker: &str, filename: &str) {
-    let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    d.push("tests/fixtures");
-    d.push(filename);
-    
-    let file = File::open(&d).expect(&format!("Could not find {}. Please ensure the test fixture is present.", filename));
-    let reader = BufReader::new(file);
-    let json_data: Value = serde_json::from_reader(reader).expect("Failed to parse fixture JSON");
+    let json_data = load_fixture(filename);
 
     println!("Parsing data for {}...", ticker);
     let df = parse_us_gaap_fundamentals(json_data.clone()).expect("Failed to parse JSON dataframe");
-    
-    println!("Validating every fact for {} (Rows: {})...", ticker, df.height());
+
+    println!(
+        "Validating every fact for {} (Rows: {})...",
+        ticker,
+        df.height()
+    );
     validate_dataframe_against_json(&df, &json_data);
     println!("Validation passed for {}!", ticker);
 }
@@ -183,26 +216,18 @@ fn test_accuracy_msft_full_exhaustive() {
 
 #[test]
 fn test_accuracy_off_calendar_fiscal_year() {
-    // Load REAL data from the SEC for Nvidia (NVDA)
-    // CIK: 0001045810
-    // This file was downloaded from https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json
-    let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    d.push("tests/fixtures/NVDA_companyfacts.json");
-    
-    let file = File::open(&d).expect("Could not find tests/fixtures/NVDA_companyfacts.json. Please ensure the test fixture is present.");
-    let reader = BufReader::new(file);
-    let json_data: Value = serde_json::from_reader(reader).expect("Failed to parse fixture JSON");
+    let json_data = load_fixture("NVDA_companyfacts.json");
 
     let df = parse_us_gaap_fundamentals(json_data).expect("Failed to parse JSON dataframe");
 
     // Filter for FY2024 (Which ended Jan 2024)
     // The parser should correctly identify this as FY2024 because the SEC source data says "fy": 2024.
-    // If it relies on the calendar year of the end date (2024-01-28), it might erroneously think it is 2024, 
+    // If it relies on the calendar year of the end date (2024-01-28), it might erroneously think it is 2024,
     // but we need to ensure it's not grabbing the *wrong* 2024 data or labeling 2023 data as 2024.
     // Actually, for NVDA:
     // FY2024 ended Jan 28, 2024. Revenue was ~60.9B.
     // FY2023 ended Jan 29, 2023. Revenue was ~26.9B.
-    
+
     let fy_2024 = df
         .clone()
         .lazy()
@@ -214,7 +239,8 @@ fn test_accuracy_off_calendar_fiscal_year() {
     // The 'parse_us_gaap_fundamentals' returns a pivoted info where one row = one fy/fp.
     assert!(
         fy_2024.height() >= 1,
-        "Should have at least one row for FY2024. Got {}", fy_2024.height()
+        "Should have at least one row for FY2024. Got {}",
+        fy_2024.height()
     );
 
     // Get the Revenue value. Note: The column name might be "Revenues" or "RevenueFromContractWithCustomerExcludingAssessedTax"
@@ -244,18 +270,24 @@ fn test_accuracy_off_calendar_fiscal_year() {
         revenues_str
     );
 
-     // Filter for FY2023 (Ended Jan 2023)
-     // Value: 26,974,000,000
+    // Filter for FY2023 (Ended Jan 2023)
+    // Value: 26,974,000,000
     let fy_2023 = df
         .lazy()
         .filter(col("fy").eq(lit(2023)).and(col("fp").eq(lit("FY"))))
         .collect()
         .expect("Collect failed");
-        
-    let revenues_2023 = fy_2023.column(revenues_col).unwrap().str().unwrap().get(0).unwrap();
+
+    let revenues_2023 = fy_2023
+        .column(revenues_col)
+        .unwrap()
+        .str()
+        .unwrap()
+        .get(0)
+        .unwrap();
     println!("Found FY2023 Revenue: {}", revenues_2023);
     assert!(
-        revenues_2023.starts_with("26974000000"), 
+        revenues_2023.starts_with("26974000000"),
         "Revenue for FY2023 must match the official 10-K value of 26,974,000,000. Got: {}",
         revenues_2023
     );
@@ -263,7 +295,6 @@ fn test_accuracy_off_calendar_fiscal_year() {
 
 #[test]
 fn test_accuracy_restatement_handling() {
-
     // Scenario: A company restates Q3 earnings.
     // We expect the parser to pick the LATEST filing.
     let json_data = json!({
@@ -301,18 +332,38 @@ fn test_accuracy_restatement_handling() {
     });
 
     let df = parse_us_gaap_fundamentals(json_data).expect("Failed to parse");
-    
-    let q3_data = df.lazy()
+
+    let q3_data = df
+        .lazy()
         .filter(col("fy").eq(lit(2024)).and(col("fp").eq(lit("Q3"))))
         .collect()
         .expect("Collect failed");
 
     // Metadata correctness check
-    let accn = q3_data.column("accn").unwrap().str().unwrap().get(0).unwrap();
-    let val = q3_data.column("NetIncomeLoss").unwrap().str().unwrap().get(0).unwrap();
-    
-    assert_eq!(accn, "AMEND-FILING", "Should pick the accession number of the latest filing");
-    assert!(val.starts_with("80"), "Should pick the restated value (80) not original (100). Got: {}", val);
+    let accn = q3_data
+        .column("accn")
+        .unwrap()
+        .str()
+        .unwrap()
+        .get(0)
+        .unwrap();
+    let val = q3_data
+        .column("NetIncomeLoss")
+        .unwrap()
+        .str()
+        .unwrap()
+        .get(0)
+        .unwrap();
+
+    assert_eq!(
+        accn, "AMEND-FILING",
+        "Should pick the accession number of the latest filing"
+    );
+    assert!(
+        val.starts_with("80"),
+        "Should pick the restated value (80) not original (100). Got: {}",
+        val
+    );
 }
 
 #[test]
@@ -345,9 +396,13 @@ fn test_accuracy_missing_fy_fallback() {
     });
 
     let df = parse_us_gaap_fundamentals(json_data).expect("Parsing failed");
-    
+
     let fy_col = df.column("fy").unwrap().u64().unwrap();
-    assert_eq!(fy_col.get(0), Some(2020), "Should derive FY 2020 from end date 2020-12-31");
+    assert_eq!(
+        fy_col.get(0),
+        Some(2020),
+        "Should derive FY 2020 from end date 2020-12-31"
+    );
 }
 
 #[test]
@@ -389,21 +444,29 @@ fn test_parser_prioritizes_amendments_synthetic() {
     });
 
     let df = parse_us_gaap_fundamentals(json_data).expect("Parse failed");
-    
+
     // Filter for FY 2020
     let row_df = df.lazy().filter(col("fy").eq(lit(2020))).collect().unwrap();
-    
-    assert_eq!(row_df.height(), 1, "Should have collapsed into a single row");
+
+    assert_eq!(
+        row_df.height(),
+        1,
+        "Should have collapsed into a single row"
+    );
 
     // The value should be 200 (Amendment), not 100.
     // The parser creates strings "val::unit", so "200::USD"
     let assets_col = row_df.column("Assets").unwrap();
     // Safety: we know column exists and rows>0
     let val_any = assets_col.get(0).unwrap();
-    let val_str = val_any.get_str().unwrap(); 
-    
-    assert!(val_str.starts_with("200"), "Expected Amended value 200, got {}", val_str);
-    
+    let val_str = val_any.get_str().unwrap();
+
+    assert!(
+        val_str.starts_with("200"),
+        "Expected Amended value 200, got {}",
+        val_str
+    );
+
     // Check that we captured the metadata of the amendment
     let accn_col = row_df.column("accn").unwrap();
     assert_eq!(accn_col.get(0).unwrap().get_str().unwrap(), "000-AMENDMENT");
@@ -411,18 +474,15 @@ fn test_parser_prioritizes_amendments_synthetic() {
 
 #[test]
 fn test_canonical_order_column_exists_and_monotonic() {
-    let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    d.push("tests/fixtures/AAPL_companyfacts.json");
-    
-    let file = File::open(&d).expect("Could not find AAPL fixture");
-    let reader = BufReader::new(file);
-    let json_data: Value = serde_json::from_reader(reader).expect("Failed to parse fixture JSON");
+    let json_data = load_fixture("AAPL_companyfacts.json");
 
     let df = parse_us_gaap_fundamentals(json_data).expect("Failed to parse dataframe");
-    
+
     // Check column existence
-    let index_col = df.column("canonical_order").expect("canonical_order column missing");
-    
+    let index_col = df
+        .column("canonical_order")
+        .expect("canonical_order column missing");
+
     // Check it is u32 or u64 (Polars row index is usually u32)
     // We expect it to be 0..N
     let index_vals: Vec<u32> = index_col
@@ -430,25 +490,26 @@ fn test_canonical_order_column_exists_and_monotonic() {
         .expect("canonical_order should be u32")
         .into_no_null_iter()
         .collect();
-        
+
     for (i, &val) in index_vals.iter().enumerate() {
-        assert_eq!(val, i as u32, "Canonical order should be equal to the row index");
+        assert_eq!(
+            val, i as u32,
+            "Canonical order should be equal to the row index"
+        );
     }
-    
+
     // Check that it correlates with FY descending (Reverse Chronological)
     let fy_col = df.column("fy").unwrap().u64().unwrap();
-    
+
     for i in 0..(df.height() - 1) {
         let current_fy = fy_col.get(i).unwrap();
-        let next_fy = fy_col.get(i+1).unwrap();
-        
+        let next_fy = fy_col.get(i + 1).unwrap();
+
         // Since canonical order 0 is latest, 1 is older...
         // FY[0] should be >= FY[1]
         assert!(current_fy >= next_fy, "Rows should be strict reverse chronological (FY desc) but row {} is FY{} and row {} is FY{}", i, current_fy, i+1, next_fy);
-        
+
         // Logic check: Canonical Order 0 < Canonical Order 1
         // Real Time 0 > Real Time 1
     }
 }
-
-

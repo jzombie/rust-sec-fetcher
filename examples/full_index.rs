@@ -1,0 +1,216 @@
+/// Browse EDGAR's quarterly full-index (`master.idx`) files.
+///
+/// # What is the full-index?
+///
+/// The SEC publishes a `master.idx` file for every calendar quarter going back
+/// to **Q4 1993**. Each file is a pipe-delimited text file that lists *every
+/// filing* accepted by EDGAR during that quarter — typically 200,000–500,000
+/// entries per quarter in recent years.
+///
+/// This is fundamentally different from the live Atom feed:
+///
+/// | Source          | Depth          | Update frequency | Use case                     |
+/// |-----------------|---------------|------------------|------------------------------|
+/// | Atom feed       | ~days/weeks    | near-real-time   | alerting, delta polling      |
+/// | `master.idx`    | **30+ years**  | nightly          | historical research, backfill|
+///
+/// Each row contains:
+/// ```text
+/// CIK | Company Name | Form Type | Date Filed | Filename (→ URL)
+/// ```
+///
+/// # Usage
+///
+///   cargo run --example full_index
+///       → 50 filings from the current quarter (2026 Q1 as of today)
+///
+///   cargo run --example full_index -- --form 10-K
+///       → first 50 annual reports from this quarter
+///
+///   cargo run --example full_index -- --year 2024 --quarter 4 --form 8-K
+///       → first 50 8-K filings from Q4 2024
+///
+///   cargo run --example full_index -- --year 1994 --quarter 1
+///       → oldest available data (Q1 1994; Q4 1993 is earliest)
+///
+///   cargo run --example full_index -- --form 10-K --company apple
+///       → Apple's 10-K filings this quarter
+///
+///   cargo run --example full_index -- --form 10-K --top 200
+///       → 200 annual reports from this quarter
+///
+///   cargo run --example full_index -- --form 10-K --top 0
+///       → ALL 10-K filings from this quarter (no limit)
+///
+/// # Options
+///
+///   --year YYYY       Calendar year (default: current year)
+///   --quarter Q       Quarter 1–4 (default: current quarter)
+///   --form TYPE       Filter by form type substring, case-insensitive
+///                       e.g. "10-K", "8-K", "10-K/A", "NPORT-P", "4"
+///   --company NAME    Filter by company name substring, case-insensitive
+///   --top N           Maximum rows to display (default: 50; 0 = no limit)
+use chrono::{Datelike, Local};
+use sec_fetcher::config::ConfigManager;
+use sec_fetcher::models::MasterIndexEntry;
+use sec_fetcher::network::{fetch_edgar_master_index, SecClient};
+use std::env;
+use std::error::Error;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    // ── Parse CLI arguments ────────────────────────────────────────────────
+    let args: Vec<String> = env::args().skip(1).collect();
+
+    let today = Local::now().date_naive();
+    let default_year = today.year() as u16;
+    let default_quarter = ((today.month0() / 3) + 1) as u8;
+
+    let mut year: u16 = default_year;
+    let mut quarter: u8 = default_quarter;
+    let mut form_filter: Option<String> = None;
+    let mut company_filter: Option<String> = None;
+    let mut top: Option<usize> = None; // None = use default of 50
+
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--year" => {
+                i += 1;
+                year = args
+                    .get(i)
+                    .and_then(|s| s.parse().ok())
+                    .unwrap_or(default_year);
+            }
+            "--quarter" => {
+                i += 1;
+                quarter = args
+                    .get(i)
+                    .and_then(|s| s.parse().ok())
+                    .unwrap_or(default_quarter);
+            }
+            "--form" => {
+                i += 1;
+                form_filter = args.get(i).map(|s| s.to_lowercase());
+            }
+            "--company" => {
+                i += 1;
+                company_filter = args.get(i).map(|s| s.to_lowercase());
+            }
+            "--top" => {
+                i += 1;
+                top = args.get(i).and_then(|s| s.parse().ok());
+            }
+            "--help" | "-h" => {
+                eprintln!("Usage: full_index [--year YYYY] [--quarter Q] [--form TYPE] [--company NAME] [--top N]");
+                eprintln!("  --top 0  means no limit");
+                return Ok(());
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+
+    if quarter < 1 || quarter > 4 {
+        eprintln!("Error: --quarter must be 1–4");
+        std::process::exit(1);
+    }
+
+    // ── Fetch ──────────────────────────────────────────────────────────────
+    eprintln!("Fetching EDGAR full-index for {year} Q{quarter}…");
+    let cfg = ConfigManager::load()?;
+    let client = SecClient::from_config_manager(&cfg)?;
+    let all_entries = fetch_edgar_master_index(&client, year, quarter).await?;
+    eprintln!("  Total filings in index: {}", fmt_count(all_entries.len()));
+
+    // ── Filter ─────────────────────────────────────────────────────────────
+    let filtered: Vec<&MasterIndexEntry> = all_entries
+        .iter()
+        .filter(|e| {
+            if let Some(ref f) = form_filter {
+                if !e.form_type.to_lowercase().contains(f.as_str()) {
+                    return false;
+                }
+            }
+            if let Some(ref c) = company_filter {
+                if !e.company_name.to_lowercase().contains(c.as_str()) {
+                    return false;
+                }
+            }
+            true
+        })
+        .collect();
+
+    let filter_desc = match (&form_filter, &company_filter) {
+        (Some(f), Some(c)) => format!("form: {f}  company: {c}"),
+        (Some(f), None) => format!("form: {f}"),
+        (None, Some(c)) => format!("company: {c}"),
+        (None, None) => String::new(),
+    };
+    if !filter_desc.is_empty() {
+        eprintln!(
+            "  After filter ({filter_desc}): {}",
+            fmt_count(filtered.len())
+        );
+    }
+
+    // Default to top 50 when the user hasn't asked for a specific limit.
+    let limit = top.unwrap_or(50);
+    let display: Vec<&MasterIndexEntry> = if limit == 0 {
+        filtered.iter().copied().collect()
+    } else {
+        filtered.iter().copied().take(limit).collect()
+    };
+
+    if limit > 0 && display.len() < filtered.len() {
+        eprintln!(
+            "  Showing first {} of {} (use --top 0 for all)",
+            display.len(),
+            fmt_count(filtered.len())
+        );
+    }
+
+    // ── Display ────────────────────────────────────────────────────────────
+    println!();
+    println!(
+        "EDGAR full-index — {year} Q{quarter}{}",
+        if filter_desc.is_empty() {
+            String::new()
+        } else {
+            format!("   [{filter_desc}]")
+        }
+    );
+    println!();
+    println!(
+        "{:<12}  {:<12}  {:<45}  {:<18}  {}",
+        "Filed", "CIK", "Company", "Form", "URL"
+    );
+    println!("{}", "-".repeat(150));
+
+    for entry in &display {
+        println!(
+            "{:<12}  {:<12}  {:<45}  {:<18}  {}",
+            entry.date_filed.to_string(),
+            entry.cik,
+            entry.company_name.chars().take(45).collect::<String>(),
+            entry.form_type,
+            entry.as_url(),
+        );
+    }
+
+    println!();
+    Ok(())
+}
+
+fn fmt_count(n: usize) -> String {
+    // Format with thousands separators for readability.
+    let s = n.to_string();
+    let mut out = String::new();
+    for (i, ch) in s.chars().rev().enumerate() {
+        if i > 0 && i % 3 == 0 {
+            out.push(',');
+        }
+        out.push(ch);
+    }
+    out.chars().rev().collect()
+}

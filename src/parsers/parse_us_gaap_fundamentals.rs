@@ -1,3 +1,5 @@
+use crate::enums::Url;
+use crate::models::{AccessionNumber, Cik};
 use polars::prelude::pivot::pivot;
 use polars::prelude::*;
 use serde_json::Value;
@@ -27,6 +29,9 @@ pub fn parse_us_gaap_fundamentals(
     serde_json_value: Value,
 ) -> Result<TickerFundamentalsDataFrame, Box<dyn Error>> {
     let data = serde_json_value;
+
+    // Extract CIK from the top-level JSON field for use in filing_url construction.
+    let cik_value: Option<u64> = data["cik"].as_u64();
 
     let mut fact_category_values = Vec::new();
     let mut fact_name_values = Vec::new();
@@ -60,7 +65,7 @@ pub fn parse_us_gaap_fundamentals(
                                 // Otherwise, derive it from the 'end' date.
                                 let fy_derived = if let Some(fy) = obs["fy"].as_u64() {
                                     let fp_str = obs["fp"].as_str().unwrap_or("FY");
-                                    
+
                                     // Sanity check logic based on period type
                                     if fp_str == "FY" {
                                         // Annual (FY): Strict Check.
@@ -137,12 +142,19 @@ pub fn parse_us_gaap_fundamentals(
             .with_nulls_last(true),
     )?;
 
-    // Extract metadata (filed, form, accn) for the latest filing per (fy, fp)
+    // Extract metadata (filed, form, accn, end) for the latest filing per (fy, fp)
     // We clone because we need to reuse df for the pivot
     let meta_df = df
         .clone()
         .lazy()
-        .select([col("fy"), col("fp"), col("filed"), col("form"), col("accn")])
+        .select([
+            col("fy"),
+            col("fp"),
+            col("filed"),
+            col("form"),
+            col("accn"),
+            col("end").alias("period_end"),
+        ])
         .unique(
             Some(vec!["fy".to_string(), "fp".to_string()]),
             UniqueKeepStrategy::First,
@@ -198,10 +210,7 @@ pub fn parse_us_gaap_fundamentals(
         .otherwise(lit(0))
         .alias("fp_rank");
 
-    pivot_df = pivot_df
-        .lazy()
-        .with_column(fp_rank_expr)
-        .collect()?;
+    pivot_df = pivot_df.lazy().with_column(fp_rank_expr).collect()?;
 
     // Sort by FY descending, then by our custom fp rank descending
     pivot_df = pivot_df.sort(
@@ -221,14 +230,36 @@ pub fn parse_us_gaap_fundamentals(
     // Drop the helper rank column
     let _ = pivot_df.drop_in_place("fp_rank");
 
-    // Reorder columns to place metadata (canonical_order, fy, fp, filed, form, accn) at the start
+    // Add filing_url column: initial values are the EDGAR filing index page.
+    // fetch_us_gaap_fundamentals will overwrite these with primary document URLs
+    // for any accession numbers found in the submissions API.
+    let filing_urls: Vec<Option<String>> = pivot_df
+        .column("accn")?
+        .str()?
+        .into_iter()
+        .map(|opt| {
+            opt.map(|accn| {
+                let cik_struct = cik_value.and_then(|v| Cik::from_u64(v).ok());
+                let accn_struct = AccessionNumber::from_str(accn).ok();
+                match (cik_struct, accn_struct) {
+                    (Some(c), Some(a)) => Url::CikAccessionIndex(c, a).value(),
+                    _ => String::new(),
+                }
+            })
+        })
+        .collect();
+    pivot_df.with_column(Series::new("filing_url".into(), filing_urls))?;
+
+    // Reorder columns to place metadata (canonical_order, fy, fp, period_end, filed, form, accn, filing_url) at the start
     let mut desired_cols = vec![
         "canonical_order".to_string(),
         "fy".to_string(),
         "fp".to_string(),
+        "period_end".to_string(),
         "filed".to_string(),
         "form".to_string(),
         "accn".to_string(),
+        "filing_url".to_string(),
     ];
     let existing_cols = pivot_df.get_column_names();
 
@@ -359,14 +390,19 @@ mod tests {
         assert_eq!(cols[0].as_str(), "canonical_order");
         assert_eq!(cols[1].as_str(), "fy");
         assert_eq!(cols[2].as_str(), "fp");
-        assert_eq!(cols[3].as_str(), "filed");
-        assert_eq!(cols[4].as_str(), "form");
-        assert_eq!(cols[5].as_str(), "accn");
+        assert_eq!(cols[3].as_str(), "period_end");
+        assert_eq!(cols[4].as_str(), "filed");
+        assert_eq!(cols[5].as_str(), "form");
+        assert_eq!(cols[6].as_str(), "accn");
         assert!(cols.iter().any(|c| c.as_str() == "Revenue"));
 
         // 2. Validate row count: Should be 3 rows (2024 FY, 2024 Q3, 2024 Q2).
         // The duplicate Q3 should be consolidated.
-        assert_eq!(df.height(), 3, "DataFrame should have 3 rows after consolidation");
+        assert_eq!(
+            df.height(),
+            3,
+            "DataFrame should have 3 rows after consolidation"
+        );
 
         // 3. Validate Sorting: Reverse chronological (FY > Q3 > Q2) within the year
         // Row 0: 2024 FY
@@ -452,9 +488,14 @@ mod tests {
             }
         });
 
-        let df = parse_us_gaap_fundamentals(mock_json).expect("Failed to parse mock JSON with off-calendar dates");
+        let df = parse_us_gaap_fundamentals(mock_json)
+            .expect("Failed to parse mock JSON with off-calendar dates");
 
-        assert_eq!(df.height(), 2, "Should reserve 2 rows, dropping the invalid gap row");
+        assert_eq!(
+            df.height(),
+            2,
+            "Should reserve 2 rows, dropping the invalid gap row"
+        );
 
         let accn_col = df.column("accn").unwrap().str().unwrap();
         let accn_values: Vec<&str> = accn_col.into_iter().flatten().collect();
