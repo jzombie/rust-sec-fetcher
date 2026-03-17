@@ -47,7 +47,7 @@ pub enum FilingContentType {
 ///
 /// impl FilingView for PlainTextView {
 ///     fn render_html(&self, html: &str) -> Result<String, Box<dyn Error>> {
-///         Ok(html2text::from_read(html.as_bytes(), 120))
+///         Ok(html2text::from_read(html.as_bytes(), 120)?)
 ///     }
 /// }
 /// ```

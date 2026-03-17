@@ -31,7 +31,7 @@ use std::error::Error;
 /// # let client = SecClient::from_config_manager(&config)?;
 /// # let cik = fetch_cik_by_ticker_symbol(&client, "AAPL").await?;
 /// // Using FormType enum variants — no magic strings.
-/// let mut filings = fetch_filings(&client, cik, &FormType::EightK).await?;
+/// let mut filings = fetch_filings(&client, cik.clone(), &FormType::EightK).await?;
 /// let mut amendments = fetch_filings(&client, cik, &FormType::EightKA).await?;
 /// filings.append(&mut amendments);
 /// filings.sort_by(|a, b| b.filing_date.cmp(&a.filing_date));

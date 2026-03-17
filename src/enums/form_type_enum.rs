@@ -59,7 +59,7 @@ use strum_macros::{EnumIter, EnumProperty};
 /// ```rust
 /// use sec_fetcher::enums::FormType;
 /// assert_eq!(FormType::EightK.to_string(), "8-K");
-/// assert_eq!(FormType::Sc13G.to_string(), "SC 13G");
+/// assert_eq!(FormType::Sc13G.to_string(), "SCHEDULE 13G");
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, EnumIter, EnumProperty)]
 pub enum FormType {
