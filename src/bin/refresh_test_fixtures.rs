@@ -32,6 +32,7 @@ use flate2::write::GzEncoder;
 use flate2::Compression;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::enums::Url;
+use sec_fetcher::models::TickerSymbol;
 use sec_fetcher::network::{
     fetch_8k_filings, fetch_cik_by_ticker_symbol, fetch_filing_index, SecClient,
 };
@@ -150,7 +151,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         print!("  {} ({}) ... ", fixture.output, fixture.ticker);
         std::io::stdout().flush()?;
 
-        let cik = fetch_cik_by_ticker_symbol(&client, fixture.ticker).await?;
+        let cik = fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new(fixture.ticker)).await?;
 
         let url: String = match fixture.kind {
             FixtureKind::Submissions => Url::CikSubmission(cik).value(),

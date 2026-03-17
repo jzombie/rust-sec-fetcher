@@ -97,10 +97,10 @@ pub async fn fetch_company_tickers(
                 t.company_name = name.clone();
             }
         }
-        map.insert(t.symbol.clone(), t);
+        map.insert(t.symbol.to_string(), t);
     }
     for t in json_tickers {
-        map.insert(t.symbol.clone(), t);
+        map.insert(t.symbol.to_string(), t);
     }
 
     let mut result: Vec<Ticker> = map.into_values().collect();

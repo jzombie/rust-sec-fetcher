@@ -136,7 +136,7 @@ pub fn parse_nport_xml(
 
         // investment.company_ticker = company_ticker;
         if let Some(company_ticker) = company_ticker {
-            investment.mapped_ticker_symbol = Some(company_ticker.symbol.clone());
+            investment.mapped_ticker_symbol = Some(company_ticker.symbol.to_string());
             investment.mapped_company_name = Some(company_ticker.company_name.clone());
             investment.mapped_company_cik_number = Some(company_ticker.cik.to_string());
         }

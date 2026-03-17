@@ -1,6 +1,6 @@
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::models::{CikSubmission, NportInvestment};
+use sec_fetcher::models::{CikSubmission, NportInvestment, TickerSymbol};
 use sec_fetcher::network::{
     fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_nport, SecClient,
 };
@@ -41,12 +41,12 @@ impl<'a> fmt::Display for NportInvestmentRow<'a> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    let ticker_symbol = &args.ticker;
+    let ticker_symbol = TickerSymbol::new(&args.ticker);
 
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;
 
-    let cik = fetch_cik_by_ticker_symbol(&client, ticker_symbol).await?;
+    let cik = fetch_cik_by_ticker_symbol(&client, &ticker_symbol).await?;
     let submissions = fetch_cik_submissions(&client, cik).await?;
     let latest = CikSubmission::by_form(&submissions, "NPORT-P")
         .into_iter()

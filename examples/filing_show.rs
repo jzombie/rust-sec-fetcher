@@ -46,6 +46,7 @@
 ///   cargo run --example filing_show -- AMZN --part exhibits > amzn_exhibits.txt
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
+use sec_fetcher::models::TickerSymbol;
 use sec_fetcher::network::{
     fetch_and_render, fetch_cik_by_ticker_symbol, fetch_filing_index, fetch_filings, SecClient,
 };
@@ -101,7 +102,7 @@ async fn run<V: FilingView>(
     args: &Args,
     view: &V,
 ) -> Result<(), Box<dyn Error>> {
-    let ticker = args.ticker.to_uppercase();
+    let ticker = TickerSymbol::new(&args.ticker);
 
     let cik = fetch_cik_by_ticker_symbol(client, &ticker).await?;
     let filings = fetch_filings(client, cik, &args.form).await?;

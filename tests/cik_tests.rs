@@ -1,5 +1,5 @@
 use sec_fetcher::enums::TickerOrigin;
-use sec_fetcher::models::{AccessionNumber, Cik, CikError, Ticker};
+use sec_fetcher::models::{AccessionNumber, Cik, CikError, Ticker, TickerSymbol};
 
 #[test]
 fn test_cik_to_string() {
@@ -57,7 +57,7 @@ fn test_from_accession_number() {
 
 fn make_ticker(symbol: &str, cik: u64, origin: TickerOrigin) -> Ticker {
     Ticker {
-        symbol: symbol.to_string(),
+        symbol: TickerSymbol::new(symbol),
         cik: Cik::from_u64(cik).unwrap(),
         company_name: String::new(),
         origin,
@@ -68,7 +68,7 @@ fn make_ticker(symbol: &str, cik: u64, origin: TickerOrigin) -> Ticker {
 #[test]
 fn test_cik_lookup_primary_listing() {
     let tickers = vec![make_ticker("MS", 895421, TickerOrigin::PrimaryListing)];
-    let cik = Cik::get_company_cik_by_ticker_symbol(&tickers, "MS").unwrap();
+    let cik = Cik::get_company_cik_by_ticker_symbol(&tickers, &TickerSymbol::new("MS")).unwrap();
     assert_eq!(cik, Cik::from_u64(895421).unwrap());
 }
 
@@ -80,8 +80,10 @@ fn test_cik_lookup_derived_instrument_resolves_to_primary() {
         make_ticker("MS", 895421, TickerOrigin::PrimaryListing),
         make_ticker("MS-PA", 895421, TickerOrigin::DerivedInstrument),
     ];
-    let primary_cik = Cik::get_company_cik_by_ticker_symbol(&tickers, "MS").unwrap();
-    let derived_cik = Cik::get_company_cik_by_ticker_symbol(&tickers, "MS-PA").unwrap();
+    let primary_cik =
+        Cik::get_company_cik_by_ticker_symbol(&tickers, &TickerSymbol::new("MS")).unwrap();
+    let derived_cik =
+        Cik::get_company_cik_by_ticker_symbol(&tickers, &TickerSymbol::new("MS-PA")).unwrap();
     assert_eq!(primary_cik, derived_cik);
 }
 
@@ -94,7 +96,8 @@ fn test_cik_lookup_derived_instrument_fallback_no_primary() {
         999999,
         TickerOrigin::DerivedInstrument,
     )];
-    let cik = Cik::get_company_cik_by_ticker_symbol(&tickers, "FOO-WT").unwrap();
+    let cik =
+        Cik::get_company_cik_by_ticker_symbol(&tickers, &TickerSymbol::new("FOO-WT")).unwrap();
     assert_eq!(cik, Cik::from_u64(999999).unwrap());
 }
 
@@ -103,8 +106,8 @@ fn test_cik_lookup_derived_instrument_fallback_no_primary() {
 fn test_cik_lookup_case_insensitive() {
     let tickers = vec![make_ticker("AAPL", 320193, TickerOrigin::PrimaryListing)];
     assert_eq!(
-        Cik::get_company_cik_by_ticker_symbol(&tickers, "aapl").unwrap(),
-        Cik::get_company_cik_by_ticker_symbol(&tickers, "AAPL").unwrap(),
+        Cik::get_company_cik_by_ticker_symbol(&tickers, &TickerSymbol::new("aapl")).unwrap(),
+        Cik::get_company_cik_by_ticker_symbol(&tickers, &TickerSymbol::new("AAPL")).unwrap(),
     );
 }
 
@@ -112,5 +115,5 @@ fn test_cik_lookup_case_insensitive() {
 #[test]
 fn test_cik_lookup_not_found() {
     let tickers = vec![make_ticker("AAPL", 320193, TickerOrigin::PrimaryListing)];
-    assert!(Cik::get_company_cik_by_ticker_symbol(&tickers, "NOPE").is_err());
+    assert!(Cik::get_company_cik_by_ticker_symbol(&tickers, &TickerSymbol::new("NOPE")).is_err());
 }

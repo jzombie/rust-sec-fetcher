@@ -1,6 +1,7 @@
 use chrono::Datelike;
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
+use sec_fetcher::models::TickerSymbol;
 use sec_fetcher::network::{
     fetch_cik_by_ticker_symbol, fetch_company_description, fetch_company_profile, SecClient,
 };
@@ -67,7 +68,7 @@ impl fmt::Display for CompanyProfileDisplay {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    let tickers: Vec<String> = args.tickers.iter().map(|s| s.to_uppercase()).collect();
+    let tickers: Vec<TickerSymbol> = args.tickers.iter().map(|s| TickerSymbol::new(s)).collect();
 
     let cfg = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&cfg)?;
@@ -85,7 +86,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
 async fn fetch_profile_display(
     client: &SecClient,
-    ticker: &str,
+    ticker: &TickerSymbol,
 ) -> Result<CompanyProfileDisplay, Box<dyn Error>> {
     let cik = fetch_cik_by_ticker_symbol(client, ticker).await?;
     let profile = fetch_company_profile(client, cik).await?;

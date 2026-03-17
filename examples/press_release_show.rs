@@ -34,6 +34,7 @@
 ///   cargo run --example press_release_show -- GOOGL --earnings-only --include-body
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
+use sec_fetcher::models::TickerSymbol;
 use sec_fetcher::network::{
     fetch_8k_filings, fetch_and_render, fetch_cik_by_ticker_symbol, fetch_filing_index, SecClient,
 };
@@ -78,7 +79,7 @@ async fn run<V: FilingView>(
     args: &Args,
     view: &V,
 ) -> Result<(), Box<dyn Error>> {
-    let ticker = args.ticker.to_uppercase();
+    let ticker = TickerSymbol::new(&args.ticker);
 
     let cik = fetch_cik_by_ticker_symbol(client, &ticker).await?;
     let all_8ks = fetch_8k_filings(client, cik).await?;

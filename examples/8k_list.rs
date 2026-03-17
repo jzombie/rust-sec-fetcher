@@ -8,6 +8,7 @@
 ///   cargo run --example list_8k_filings -- LLY
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
+use sec_fetcher::models::TickerSymbol;
 use sec_fetcher::network::{fetch_8k_filings, fetch_cik_by_ticker_symbol, SecClient};
 use std::error::Error;
 use std::fmt;
@@ -38,7 +39,7 @@ impl fmt::Display for FilingRow {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    let ticker_symbol = args.ticker.to_uppercase();
+    let ticker_symbol = TickerSymbol::new(&args.ticker);
 
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;

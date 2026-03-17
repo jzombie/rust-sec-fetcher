@@ -43,7 +43,7 @@ use clap::Parser;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::models::{Cik, CikSubmission, NportInvestment, ThirteenfHolding};
+use sec_fetcher::models::{Cik, CikSubmission, NportInvestment, ThirteenfHolding, TickerSymbol};
 use sec_fetcher::network::{
     fetch_13f, fetch_13f_filings, fetch_cik_by_ticker_symbol, fetch_form4, fetch_form4_filings,
     fetch_nport, fetch_nport_filings, SecClient,
@@ -292,7 +292,7 @@ fn print_full(label: &str, positions: &[Position]) {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    let ticker = args.ticker.to_uppercase();
+    let ticker = TickerSymbol::new(&args.ticker);
     let show_all = args.all;
 
     let config_manager = ConfigManager::load()?;
@@ -359,9 +359,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         println!();
         println!(
             "{} (CIK: {})  —  insider transactions (most recent {} filings)",
-            ticker.to_uppercase(),
-            cik,
-            n
+            ticker, cik, n
         );
         println!();
         println!(
@@ -440,12 +438,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // ── Print results ─────────────────────────────────────────────────────────
     println!();
-    println!(
-        "{} (CIK: {})  —  {} filings",
-        ticker.to_uppercase(),
-        cik,
-        snapshots.len()
-    );
+    println!("{} (CIK: {})  —  {} filings", ticker, cik, snapshots.len());
 
     for i in 0..snapshots.len() {
         let (label, positions) = &snapshots[i];

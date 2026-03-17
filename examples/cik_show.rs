@@ -1,6 +1,6 @@
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::models::CikSubmission;
+use sec_fetcher::models::{CikSubmission, TickerSymbol};
 use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_cik_submissions, SecClient};
 use std::error::Error;
 
@@ -14,12 +14,12 @@ struct Args {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    let ticker_symbol = &args.ticker;
+    let ticker_symbol = TickerSymbol::new(&args.ticker);
 
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;
 
-    let result_cik = fetch_cik_by_ticker_symbol(&client, ticker_symbol)
+    let result_cik = fetch_cik_by_ticker_symbol(&client, &ticker_symbol)
         .await
         .ok();
 

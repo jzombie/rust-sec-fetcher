@@ -4,6 +4,7 @@ use serde::Serialize;
 use crate::enums::TickerOrigin;
 use crate::models::AccessionNumber;
 use crate::models::Ticker;
+use crate::models::TickerSymbol;
 
 use std::error::Error;
 
@@ -141,13 +142,12 @@ impl Cik {
     ///   or if the data is incorrectly formatted.
     pub fn get_company_cik_by_ticker_symbol(
         company_tickers: &[Ticker],
-        ticker_symbol: &str,
+        ticker: &TickerSymbol,
     ) -> Result<Cik, Box<dyn Error>> {
-        let normalized = Ticker::normalize_symbol(ticker_symbol);
         let found = company_tickers
             .iter()
-            .find(|t| t.symbol == normalized)
-            .ok_or_else(|| format!("Ticker symbol '{}' not found", ticker_symbol))?;
+            .find(|t| t.symbol == *ticker)
+            .ok_or_else(|| format!("Ticker symbol '{}' not found", ticker))?;
 
         // Derived instruments (warrants, units, preferreds) share their parent
         // registrant's CIK by SEC convention. Resolve to the confirmed primary

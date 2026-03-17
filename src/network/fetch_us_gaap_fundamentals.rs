@@ -1,5 +1,5 @@
 use crate::enums::Url;
-use crate::models::{AccessionNumber, Cik, Ticker};
+use crate::models::{AccessionNumber, Cik, Ticker, TickerSymbol};
 use crate::network::{fetch_cik_submissions, SecClient};
 use polars::prelude::*;
 use serde_json::Value;
@@ -54,10 +54,10 @@ pub type TickerFundamentalsDataFrame = DataFrame;
 pub async fn fetch_us_gaap_fundamentals(
     client: &SecClient,
     company_tickers: &[Ticker],
-    ticker_symbol: &str,
+    ticker: &TickerSymbol,
 ) -> Result<TickerFundamentalsDataFrame, Box<dyn Error>> {
     // Get the formatted CIK for the ticker
-    let cik = Cik::get_company_cik_by_ticker_symbol(company_tickers, ticker_symbol)?;
+    let cik = Cik::get_company_cik_by_ticker_symbol(company_tickers, ticker)?;
 
     let url = Url::CompanyFacts(cik.clone()).value();
 
@@ -100,10 +100,7 @@ pub async fn fetch_us_gaap_fundamentals(
         }
         Err(e) => {
             // Non-fatal: keep the index-page URLs already set by the parser
-            println!(
-                "Warning: could not fetch submissions for {}: {}",
-                ticker_symbol, e
-            );
+            println!("Warning: could not fetch submissions for {}: {}", ticker, e);
         }
     }
 
