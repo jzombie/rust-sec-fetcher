@@ -4,10 +4,12 @@ version = "0.1.0-alpha"
 edition = "2021"
 license = "Apache-2.0"
 publish = false
+autobins = false
 
 [dependencies]
 bytes = "1.11.1"
 chrono = "0.4.44"
+clap = { version = "4.6.0", features = ["derive"] }
 config = "0.15.9"
 csv = "1.4.0"
 dashmap = { version = "6.1.0", features = ["rayon"] }
@@ -46,6 +48,28 @@ flate2 = "1.1"
 html-to-markdown-rs = "2.28.2"
 
 [dev-dependencies]
-clap = { version = "4.6.0", features = ["derive"] }
 indoc = "2.0.7"
 mockito = "1.7.0"
+
+# ── Stabilised utility bins ───────────────────────────────────────────────────
+
+[[bin]]
+name = "refresh-test-fixtures"
+path = "src/bin/refresh_test_fixtures.rs"
+
+[[bin]]
+name = "check-form-type-coverage"
+path = "src/bin/check_form_type_coverage.rs"
+
+# ── Debug data-pull bins (src/bin/pulls/) ─────────────────────────────────────
+# Experimental/in-progress scripts used to bulk-pull and explore SEC data
+# locally.  Kept in a sub-directory to distinguish them from the stabilised
+# bins above.
+
+[[bin]]
+name = "pull-us-gaap-bulk"
+path = "src/bin/pulls/us_gaap_bulk.rs"
+
+[[bin]]
+name = "pull-fund-holdings"
+path = "src/bin/pulls/fund_holdings.rs"
