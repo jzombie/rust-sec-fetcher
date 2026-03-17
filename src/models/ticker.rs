@@ -3,7 +3,8 @@ use crate::models::Cik;
 use crate::Caches;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
-use simd_r_drive_extensions::{NamespaceHasher, StorageCacheExt};
+use simd_r_drive::utils::NamespaceHasher;
+use simd_r_drive_extensions::StorageCacheExt;
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock};
 

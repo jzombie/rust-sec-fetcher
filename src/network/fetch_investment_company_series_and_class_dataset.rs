@@ -4,7 +4,8 @@ use crate::network::SecClient;
 use crate::parsers::parse_investment_companies_csv;
 use crate::Caches;
 use chrono::{Datelike, Utc};
-use simd_r_drive_extensions::{NamespaceHasher, StorageCacheExt};
+use simd_r_drive::utils::NamespaceHasher;
+use simd_r_drive_extensions::StorageCacheExt;
 use std::error::Error;
 use std::sync::{Arc, LazyLock};
 
