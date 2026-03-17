@@ -7,6 +7,7 @@
 
 use log::{error, info};
 use polars::prelude::{CsvWriter, SerWriter};
+use tracing_subscriber::EnvFilter;
 use sec_fetcher::{
     config::ConfigManager,
     network::{
@@ -22,7 +23,92 @@ use std::path::Path;
 use tokio;
 use tokio::fs::create_dir_all;
 
-const STORAGE_VAULT_PATH: &str = "data/14-mar-2026-us-gaap";
+const STORAGE_VAULT_PATH: &str = "data/16-mar-2026-us-gaap";
+
+// RUST_LOG=sec_fetcher=info,reqwest_drive=debug cargo run --release
+// Prototype iterator for US-GAAP fundamentals
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| EnvFilter::new("info")),
+        )
+        .init();
+
+    let config_manager = ConfigManager::load()?;
+
+    let client = SecClient::from_config_manager(&config_manager)?;
+
+    // include_derived_instruments=false: primary listings only. Derived
+    // instruments (warrants, units, prefs, delisted) share a CIK with their
+    // parent and have no independent XBRL data, so they'd produce duplicates
+    // or empty CSVs in this pipeline.
+    let company_tickers = fetch_operating_company_tickers(&client, false).await?;
+    println!("Total primary listings: {}", company_tickers.len());
+    println!("{:?}", company_tickers.head(60));
+
+    // Ensure output directory exists
+    tokio::fs::create_dir_all(STORAGE_VAULT_PATH).await?;
+
+    // let ticker_series = tickers_df.column("ticker")?.str()?;
+    let mut error_log: HashMap<String, String> = HashMap::new();
+
+    for (i, company_ticker) in company_tickers.iter().enumerate() {
+        let ticker_symbol = &company_ticker.symbol;
+
+        println!(
+            "Processing ticker: {} ({} of {})",
+            company_ticker.symbol,
+            i + 1,
+            company_tickers.len()
+        );
+
+        // print!(
+        //     "{}",
+        //     fetch_us_gaap_fundamentals(&client, &tickers_df, &ticker).await?
+        // );
+        // break;
+
+        match fetch_us_gaap_fundamentals(&client, &company_tickers, &ticker_symbol).await {
+            Ok(mut fundamentals_df) => {
+                let mut file_path = std::path::PathBuf::from(STORAGE_VAULT_PATH);
+                file_path.push(format!("{}.csv", &ticker_symbol));
+                match File::create(&file_path) {
+                    Ok(mut file) => {
+                        if let Err(e) = CsvWriter::new(&mut file)
+                            .include_header(true)
+                            .finish(&mut fundamentals_df)
+                        {
+                            error_log
+                                .insert(ticker_symbol.clone(), format!("CSV write error: {}", e));
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("File creation error: {}", e);
+                        error_log
+                            .insert(ticker_symbol.clone(), format!("File creation error: {}", e));
+                    }
+                }
+            }
+            Err(e) => {
+                error_log.insert(ticker_symbol.clone(), format!("Fetch error: {}", e));
+            }
+        }
+    }
+
+    // Print summary report
+    if !error_log.is_empty() {
+        println!("\nSummary of errors:");
+        for (ticker, err) in &error_log {
+            println!("- {}: {}", ticker, err);
+        }
+    } else {
+        println!("\nAll tickers processed successfully.");
+    }
+
+    Ok(())
+}
 
 // Prototype iterator for investment companies
 // #[tokio::main]
@@ -179,79 +265,3 @@ const STORAGE_VAULT_PATH: &str = "data/14-mar-2026-us-gaap";
 //     Ok(())
 // }
 
-// Prototype iterator for US-GAAP fundamentals
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let config_manager = ConfigManager::load()?;
-
-    let client = SecClient::from_config_manager(&config_manager)?;
-
-    // include_derived_instruments=false: primary listings only. Derived
-    // instruments (warrants, units, prefs, delisted) share a CIK with their
-    // parent and have no independent XBRL data, so they'd produce duplicates
-    // or empty CSVs in this pipeline.
-    let company_tickers = fetch_operating_company_tickers(&client, false).await?;
-    println!("Total primary listings: {}", company_tickers.len());
-    println!("{:?}", company_tickers.head(60));
-
-    // Ensure output directory exists
-    tokio::fs::create_dir_all(STORAGE_VAULT_PATH).await?;
-
-    // let ticker_series = tickers_df.column("ticker")?.str()?;
-    let mut error_log: HashMap<String, String> = HashMap::new();
-
-    for (i, company_ticker) in company_tickers.iter().enumerate() {
-        let ticker_symbol = &company_ticker.symbol;
-
-        println!(
-            "Processing ticker: {} ({} of {})",
-            company_ticker.symbol,
-            i + 1,
-            company_tickers.len()
-        );
-
-        // print!(
-        //     "{}",
-        //     fetch_us_gaap_fundamentals(&client, &tickers_df, &ticker).await?
-        // );
-        // break;
-
-        match fetch_us_gaap_fundamentals(&client, &company_tickers, &ticker_symbol).await {
-            Ok(mut fundamentals_df) => {
-                let mut file_path = std::path::PathBuf::from(STORAGE_VAULT_PATH);
-                file_path.push(format!("{}.csv", &ticker_symbol));
-                match File::create(&file_path) {
-                    Ok(mut file) => {
-                        if let Err(e) = CsvWriter::new(&mut file)
-                            .include_header(true)
-                            .finish(&mut fundamentals_df)
-                        {
-                            error_log
-                                .insert(ticker_symbol.clone(), format!("CSV write error: {}", e));
-                        }
-                    }
-                    Err(e) => {
-                        eprintln!("File creation error: {}", e);
-                        error_log
-                            .insert(ticker_symbol.clone(), format!("File creation error: {}", e));
-                    }
-                }
-            }
-            Err(e) => {
-                error_log.insert(ticker_symbol.clone(), format!("Fetch error: {}", e));
-            }
-        }
-    }
-
-    // Print summary report
-    if !error_log.is_empty() {
-        println!("\nSummary of errors:");
-        for (ticker, err) in &error_log {
-            println!("- {}: {}", ticker, err);
-        }
-    } else {
-        println!("\nAll tickers processed successfully.");
-    }
-
-    Ok(())
-}
