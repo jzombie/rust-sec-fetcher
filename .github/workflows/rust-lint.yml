@@ -18,6 +18,10 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@nightly
 
+      # The `keyring` feature links against libdbus on Linux.
+      - name: Install Linux system dependencies (keyring feature)
+        run: sudo apt-get update -q && sudo apt-get install -y libdbus-1-dev pkg-config
+
       - name: Calculate lockfile hash
         id: lockfile
         shell: bash
@@ -96,6 +100,10 @@ jobs:
           key: ${{ runner.os }}-lint-${{ steps.lockfile.outputs.hash }}
           restore-keys: |
             ${{ runner.os }}-lint-
+
+      # The `keyring` feature links against libdbus on Linux.
+      - name: Install Linux system dependencies (keyring feature)
+        run: sudo apt-get update -q && sudo apt-get install -y libdbus-1-dev pkg-config
 
       # Note: This is a workaround for an issue that just started appearing in lint checks
       # and I'm not yet sure if it's due to GitHub Actions having updated something behind

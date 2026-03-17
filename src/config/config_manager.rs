@@ -1,4 +1,7 @@
-use crate::config::{AppConfig, CredentialManager, CredentialProvider};
+use crate::config::AppConfig;
+#[cfg(feature = "keyring")]
+use crate::config::{CredentialManager, CredentialProvider};
+#[cfg(feature = "keyring")]
 use crate::utils::is_interactive_mode;
 use crate::Caches;
 use config::{Config, File};
@@ -157,16 +160,22 @@ impl ConfigManager {
         if settings.email.is_none() && user_settings.email.is_none() {
             if let Ok(email) = std::env::var(EMAIL_ENV_VAR) {
                 user_settings.email = Some(email);
-            } else if is_interactive_mode() {
-                let credential_manager = CredentialManager::from_prompt()?;
-                let email = credential_manager.get_credential().map_err(|err| {
-                    format!(
-                        "Could not obtain credential from credential manager: {:?}",
-                        err
-                    )
-                })?;
-                user_settings.email = Some(email);
             } else {
+                #[cfg(feature = "keyring")]
+                if is_interactive_mode() {
+                    let credential_manager = CredentialManager::from_prompt()?;
+                    let email = credential_manager.get_credential().map_err(|err| {
+                        format!(
+                            "Could not obtain credential from credential manager: {:?}",
+                            err
+                        )
+                    })?;
+                    user_settings.email = Some(email);
+                }
+            }
+            // Without the keyring feature the interactive prompt is not available;
+            // the error branch below handles the no-email case.
+            if user_settings.email.is_none() {
                 return Err(format!(
                     "Could not obtain email credential. Set `email` in the config file or the `{}` environment variable.",
                     EMAIL_ENV_VAR
