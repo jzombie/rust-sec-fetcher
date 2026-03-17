@@ -6,52 +6,7 @@ license = "Apache-2.0"
 publish = false
 autobins = false
 
-[dependencies]
-bytes = "1.11.1"
-chrono = "0.4.44"
-clap = { version = "4.6.0", features = ["derive"] }
-config = "0.15.9"
-csv = "1.4.0"
-dashmap = { version = "6.1.0", features = ["rayon"] }
-dirs = "6.0.0"
-email_address = "0.2.9"
-env_logger = "0.11.9"
-indexmap = "2.13.0"
-itertools = "0.14.0"
-keyring = { version = "3.6.2", features = ["apple-native", "windows-native", "sync-secret-service"] }
-log = "0.4.29"
-merge = "0.2.0"
-once_cell = "1.21.4"
-polars = { version = "0.46.0", features = ["json", "lazy", "pivot"] }
-quick-xml = "0.39.2"
-rand = "0.10.0"
-rayon = "1.11.0"
-reqwest = { version = "0.13.2", features = ["json"] }
-reqwest-drive = "0.13.2-alpha"
-rust_decimal = { version = "1.40.0", features = ["serde"] }
-rust_decimal_macros = "1.40.0"
-schemars = "1.2.1"
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
-serde_with = "3.18.0"
-simd-r-drive = "0.15.5-alpha"
-simd-r-drive-extensions = "0.15.5-alpha"
-strum = "0.28.0"
-strum_macros = "0.28.0"
-regex = "1.12.3"
-tokio = { version = "1.50.0", features = ["full"] }
-tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
-futures = "0.3.32"
-tempfile = "3.27.0"
-html2text = "0.16.7"
-flate2 = "1.1"
-html-to-markdown-rs = "2.28.2"
-
-[dev-dependencies]
-indoc = "2.0.7"
-mockito = "1.7.0"
-
-# ── Stabilised utility bins ───────────────────────────────────────────────────
+# ── Stabilized utility bins ───────────────────────────────────────────────────
 
 [[bin]]
 name = "refresh-test-fixtures"
@@ -73,3 +28,48 @@ path = "src/bin/pulls/us_gaap_bulk.rs"
 [[bin]]
 name = "pull-fund-holdings"
 path = "src/bin/pulls/fund_holdings.rs"
+
+[dependencies]
+bytes = "1.11.1"
+chrono = "0.4.44"
+clap = { version = "4.6.0", features = ["derive"] }
+config = "0.15.9"
+csv = "1.4.0"
+dashmap = { version = "6.1.0", features = ["rayon"] }
+dirs = "6.0.0"
+email_address = "0.2.9"
+env_logger = "0.11.9"
+flate2 = "1.1"
+futures = "0.3.32"
+html-to-markdown-rs = "2.28.2"
+html2text = "0.16.7"
+indexmap = "2.13.0"
+itertools = "0.14.0"
+keyring = { version = "3.6.2", features = ["apple-native", "windows-native", "sync-secret-service"] }
+log = "0.4.29"
+merge = "0.2.0"
+once_cell = "1.21.4"
+polars = { version = "0.46.0", features = ["json", "lazy", "pivot"] }
+quick-xml = "0.39.2"
+rand = "0.10.0"
+rayon = "1.11.0"
+regex = "1.12.3"
+reqwest = { version = "0.13.2", features = ["json"] }
+reqwest-drive = "0.13.2-alpha"
+rust_decimal = { version = "1.40.0", features = ["serde"] }
+rust_decimal_macros = "1.40.0"
+schemars = "1.2.1"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+serde_with = "3.18.0"
+simd-r-drive = "0.15.5-alpha"
+simd-r-drive-extensions = "0.15.5-alpha"
+strum = "0.28.0"
+strum_macros = "0.28.0"
+tempfile = "3.27.0"
+tokio = { version = "1.50.0", features = ["full"] }
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+
+[dev-dependencies]
+indoc = "2.0.7"
+mockito = "1.7.0"
