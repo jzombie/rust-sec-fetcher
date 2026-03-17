@@ -26,7 +26,28 @@ The first two segments of the `User-Agent` string sent to the SEC are the app na
 
 ### Rate limiting
 
-Defaults are conservative (2 req/s, 1 concurrent request) to stay well within the SEC's 10 req/s limit. Override with `min_delay_ms`, `max_concurrent`, and `max_retries` in the config file.
+The SEC's public guidance limits automated requests to **10 req/s** ([policy](https://www.sec.gov/os/accessing-edgar-data)).
+
+Throttle behaviour is controlled by two config values:
+
+- `max_concurrent` — number of simultaneous in-flight requests (semaphore slots)
+- `min_delay_ms` — minimum sleep each slot applies before sending
+
+Effective throughput = `max_concurrent ÷ (min_delay_ms ÷ 1000)` req/s. Because each slot sleeps `min_delay_ms` before sending and holds its permit for the full round-trip, concurrency multiplies throughput — it is not a cap.
+
+The three canonical configurations that each deliver **exactly 10 req/s**:
+
+| `max_concurrent` | `min_delay_ms` | Effective req/s |
+| ---------------: | -------------: | --------------: |
+|                1 |            100 |              10 |
+|                5 |            500 |              10 |
+|               10 |           1000 |              10 |
+
+The **default** (`max_concurrent = 1, min_delay_ms = 500`) delivers **2 req/s**, which is conservative and well under the SEC limit.
+
+> **Note:** There is no built-in hard cap at 10 req/s. Setting `max_concurrent = 10, min_delay_ms = 50` would produce 200 req/s. The library does exactly what you configure — staying within the SEC limit is your responsibility.
+
+Override the defaults with `min_delay_ms`, `max_concurrent`, and `max_retries` in the config file.
 
 ## License
 

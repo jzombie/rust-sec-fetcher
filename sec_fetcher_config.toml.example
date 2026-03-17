@@ -25,8 +25,21 @@
 # app_name = "my-app"
 # app_version = "1.2.3"
 #
-# The combination of max_concurrent * min_delay_ms should not exceed 10 requests per second
-# as your requests may become rate-limited by the SEC. Defaults are extremely conservative.
+# Rate limiting
+#
+# Effective throughput (req/s) = max_concurrent / (min_delay_ms / 1000)
+#
+# Each semaphore slot sleeps min_delay_ms before sending and holds its permit
+# for the full round-trip, so concurrency multiplies throughput — it is not a cap.
+# There is no built-in hard ceiling; the library does exactly what you configure.
+#
+# The three canonical configurations that each deliver exactly 10 req/s:
+#
+#   max_concurrent = 1,  min_delay_ms = 100   #  1 slot  × 100 ms = 10 req/s
+#   max_concurrent = 5,  min_delay_ms = 500   #  5 slots × 500 ms = 10 req/s
+#   max_concurrent = 10, min_delay_ms = 1000  # 10 slots × 1000 ms = 10 req/s
+#
+# The defaults below deliver 2 req/s (very conservative).
 #
 # max_concurrent = 1
 # min_delay_ms = 500

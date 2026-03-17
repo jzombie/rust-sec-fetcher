@@ -65,10 +65,19 @@ impl SecClient {
         //
         // NOTE: The SEC's public guidance for EDGAR states a current maximum
         // request rate of 10 requests/second (see:
-        // https://www.sec.gov/os/accessing-edgar-data). This project chooses a
-        // conservative default (configured in AppConfig) of 500 ms minimum delay
-        // between requests (~2 requests/second) to avoid accidental throttling
-        // and to be a good steward of the public service.
+        // https://www.sec.gov/os/accessing-edgar-data).
+        //
+        // Effective throughput = max_concurrent / (min_delay_ms / 1000) req/s.
+        // Each semaphore slot sleeps min_delay_ms before sending and holds its
+        // permit for the full round-trip, so concurrency *multiplies* throughput
+        // rather than capping it.  The three canonical 10 req/s configurations:
+        //
+        //   max_concurrent =  1, base_delay_ms =  100  →  1 /  0.1 = 10 req/s
+        //   max_concurrent =  5, base_delay_ms =  500  →  5 /  0.5 = 10 req/s
+        //   max_concurrent = 10, base_delay_ms = 1000  → 10 /  1.0 = 10 req/s
+        //
+        // This project chooses a conservative default of max_concurrent=1,
+        // min_delay_ms=500 (~2 req/s) to be a good steward of the public service.
         let throttle_policy = Arc::new(ThrottlePolicy {
             base_delay_ms: min_delay,
             max_concurrent,

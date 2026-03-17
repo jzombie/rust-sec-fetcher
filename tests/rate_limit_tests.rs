@@ -13,10 +13,10 @@
 /// 2. **Concurrency cap** — the peak number of simultaneous in-flight
 ///    requests (acquired semaphore permits) never exceeds `max_concurrent`.
 ///
-/// 3. **Multiple configurations** — conservative defaults (1 req/s), the
-///    10 req/s target (5 concurrent × 100 ms delay, 10 concurrent × 100 ms
-///    delay), and a deliberately aggressive config that *should* exceed the
-///    limit to confirm the upper-bound invariant fires.
+/// 3. **Multiple configurations** — conservative defaults (2 req/s), the
+///    three canonical 10 req/s configurations (1×100 ms, 5×500 ms,
+///    10×1000 ms), and a deliberately aggressive config that *should*
+///    exceed the limit to confirm the upper-bound invariant fires.
 ///
 /// 4. **Throughput formula** — asserts `effective_rps ≤
 ///    max_concurrent / (min_delay_ms / 1000)` for every observed window.
@@ -247,7 +247,10 @@ async fn test_rate_limit_5_concurrent_100ms_documents_formula() -> Result<(), Bo
 async fn test_rate_limit_1_concurrent_100ms_is_at_most_10rps() -> Result<(), Box<dyn Error>> {
     let mut server = Server::new_async().await;
     let _mock = server
-        .mock("GET", "/test")
+        .mock(
+            "GET",
+            mockito::Matcher::Regex(r"^/test/\d+$".to_string()),
+        )
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body("{}")
@@ -586,15 +589,22 @@ fn test_throughput_formula_identifies_unsafe_configs() {
 /// tolerance).  We fire 4 sequential requests and check every consecutive
 /// pair.
 ///
-/// Note: The middleware sleeps *before* sending, so `t[i+1] - t[i]` captures
-/// the gap between when task i entered the middleware and when task i+1 did
-/// — which, with `max_concurrent=1`, equals the time task i spent waiting
-/// for the permit + sleeping.
+/// Uses `raw_request_nocache` (CacheBypass=true) so that:
+/// a) the throttle is always exercised regardless of DataStore state, and
+/// b) port recycling between test runs cannot produce stale cache hits on
+///    the `/delay/{i}` paths used here.
+///
+/// Timestamps are captured *before* each call so the gap `t[i+1] − t[i]`
+/// equals the wall-clock time spent inside the throttle middleware for
+/// request i (sleep + network round-trip to the local mock server).
 #[tokio::test]
 async fn test_sequential_requests_respect_min_delay() -> Result<(), Box<dyn Error>> {
     let mut server = Server::new_async().await;
     let _mock = server
-        .mock("GET", mockito::Matcher::Regex(r"^/test/\d+$".to_string()))
+        .mock(
+            "GET",
+            mockito::Matcher::Regex(r"^/delay/\d+$".to_string()),
+        )
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body("{}")
@@ -610,9 +620,12 @@ async fn test_sequential_requests_respect_min_delay() -> Result<(), Box<dyn Erro
     for i in 0..4usize {
         let t = Instant::now();
         times.push(t);
-        // Unique URL per iteration so the cache is never hit
-        let url = format!("{base_url}/test/{i}");
-        let _ = client.fetch_json(&url, None).await;
+        // /delay/{i} is unique to this test; raw_request_nocache bypasses
+        // any cached entry so the throttle is always applied.
+        let url = format!("{base_url}/delay/{i}");
+        let _ = client
+            .raw_request_nocache(reqwest::Method::GET, &url, None)
+            .await;
     }
 
     // Every consecutive pair must be separated by at least min_delay_ms.
@@ -716,6 +729,11 @@ async fn test_total_elapsed_time_for_sequential_requests() -> Result<(), Box<dyn
         elapsed >= expected_min,
         "total elapsed {elapsed:?} is less than expected minimum {expected_min:?}; \
          the throttle delay may not be applied"
+    );
+    assert!(
+        elapsed <= expected_max,
+        "total elapsed {elapsed:?} is greater than expected maximum {expected_max:?}; \
+         the throttle may be applied more than once per request"
     );
     Ok(())
 }
@@ -932,6 +950,87 @@ async fn test_mixed_raw_request_and_nocache_nocache_remains_throttled() -> Resul
         "mixed raw_request+nocache: elapsed {elapsed:?} > {max_expected:?}; \
          something serialised beyond the {max_concurrent}-concurrent limit"
     );
+
+    Ok(())
+}
+
+// --- 14. Canonical ≤ 10 req/s configurations --------------------------------
+
+/// Verifies the three (max_concurrent, min_delay_ms) pairs that together
+/// satisfy `max_concurrent / (min_delay_ms / 1000) = 10 req/s` exactly:
+///
+/// | max_concurrent | min_delay_ms | req/s |
+/// |---------------:|-------------:|------:|
+/// |              1 |          100 |    10 |
+/// |              5 |          500 |    10 |
+/// |             10 |         1000 |    10 |
+///
+/// The formula is: `effective_rps = max_concurrent / (min_delay_ms / 1000)`.
+/// Each semaphore slot sleeps `min_delay_ms` before sending, so concurrency
+/// multiplies throughput — not a cap.
+///
+/// Uses `raw_request_nocache` (CacheBypass=true) so every request goes
+/// through the throttle semaphore regardless of any cached DataStore state.
+/// The sliding-window assertion confirms the observed rate never exceeds
+/// 12 req/s (10 + 20 % jitter headroom).
+#[tokio::test]
+async fn test_canonical_10rps_configurations() -> Result<(), Box<dyn Error>> {
+    // The three (max_concurrent, min_delay_ms) pairs that each yield ≤ 10 req/s
+    let configs: &[(usize, u64)] = &[
+        (1, 100),   // 1 slot  × 100 ms/slot  = 10 req/s
+        (5, 500),   // 5 slots × 500 ms/slot  = 10 req/s
+        (10, 1000), // 10 slots × 1000 ms/slot = 10 req/s
+    ];
+
+    for (cfg_idx, &(max_concurrent, min_delay_ms)) in configs.iter().enumerate() {
+        let mut server = Server::new_async().await;
+        let _mock = server
+            .mock(
+                "GET",
+                mockito::Matcher::Regex(format!(r"^/{cfg_idx}/\d+$")),
+            )
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body("{}")
+            .expect_at_least(1)
+            .create_async()
+            .await;
+
+        let n: usize = 20;
+        let client = Arc::new(make_client(max_concurrent, min_delay_ms));
+        let base_url = server.url();
+        let timestamps: Arc<Mutex<Vec<Instant>>> = Arc::new(Mutex::new(Vec::with_capacity(n)));
+
+        let handles: Vec<_> = (0..n)
+            .map(|i| {
+                let client = Arc::clone(&client);
+                let ts_ref = Arc::clone(&timestamps);
+                // Embed cfg_idx so port recycling across loop iterations cannot
+                // produce cache hits; raw_request_nocache bypasses the cache
+                // entirely anyway, but belt-and-suspenders.
+                let url = format!("{base_url}/{cfg_idx}/{i}");
+                async move {
+                    let _ = client
+                        .raw_request_nocache(reqwest::Method::GET, &url, None)
+                        .await;
+                    ts_ref.lock().unwrap().push(Instant::now());
+                }
+            })
+            .collect();
+
+        join_all(handles).await;
+
+        let mut ts = timestamps.lock().unwrap().clone();
+        ts.sort();
+        let max_in_window = max_requests_in_any_one_second_window(&ts);
+        let allowed: usize = 12; // 10 req/s + 20 % jitter headroom
+
+        assert!(
+            max_in_window <= allowed,
+            "canonical config ({max_concurrent}×{min_delay_ms}ms): observed {max_in_window} req/s \
+             in the busiest 1-second window; expected ≤ {allowed} (10 req/s + 20% jitter)"
+        );
+    }
 
     Ok(())
 }
