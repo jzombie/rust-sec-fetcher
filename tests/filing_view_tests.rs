@@ -344,14 +344,11 @@ fn load_gz_fixture(name: &str) -> Option<String> {
 fn assert_table_headers_preserved(html: &str, rendered: &str, source: &str) {
     // Extract text between <th> and </th> (case-insensitive, minimal match)
     let re = regex::Regex::new(r"(?i)<th[^>]*>(.*?)</th>").unwrap();
+    let strip_re = regex::Regex::new(r"<[^>]+>").unwrap();
     for cap in re.captures_iter(html) {
         let raw_header = &cap[1];
         // Strip any sub-tags and trim
-        let clean = regex::Regex::new(r"<[^>]+>")
-            .unwrap()
-            .replace_all(raw_header, "")
-            .trim()
-            .to_string();
+        let clean = strip_re.replace_all(raw_header, "").trim().to_string();
         if clean.is_empty() {
             continue; // blank first header is the row-label pattern — skip
         }

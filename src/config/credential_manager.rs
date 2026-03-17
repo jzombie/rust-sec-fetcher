@@ -100,7 +100,7 @@ impl CredentialProvider for CredentialManager {
                 let credential = input.trim().to_string();
 
                 if let Err(err) = instance.store_credential(&credential) {
-                    if let Some(cached_credential) = instance.get_credential().ok() {
+                    if let Ok(cached_credential) = instance.get_credential() {
                         if cached_credential == credential {
                             eprintln!("Using cached credential for this session, but caught the following error: {}", err);
                         }

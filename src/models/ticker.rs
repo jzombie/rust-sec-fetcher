@@ -45,7 +45,7 @@ impl Ticker {
     /// symbols through this function so that `BRK.B`, `BRK/B`, `brk-b`,
     /// and `BRK-B` all resolve to the same canonical key `"BRK-B"`.
     pub fn normalize_symbol(s: &str) -> String {
-        s.trim().to_uppercase().replace('.', "-").replace('/', "-")
+        s.trim().to_uppercase().replace(['.', '/'], "-")
     }
 
     // TODO: Move to parsers?
@@ -104,7 +104,7 @@ impl Ticker {
                 score += EXACT_MATCH_BOOST;
             }
 
-            if query_tokens.contains(&ticker_symbol) {
+            if query_tokens.contains(ticker_symbol) {
                 score += TICKER_SYMBOL_MATCH_BOOST;
             }
 

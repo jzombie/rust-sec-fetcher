@@ -2,7 +2,6 @@ use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::network::{fetch_company_tickers, SecClient};
 use std::error::Error;
-use tokio;
 
 #[derive(Parser)]
 #[command(about = "Find a company ticker entry by exact symbol match")]

@@ -57,7 +57,7 @@ pub async fn fetch_cik_by_ticker_symbol(
     // include_derived_instruments=true so that warrant, unit, and preferred
     // symbols (-WT, -UN, -PA…) are searchable. get_company_cik_by_ticker_symbol
     // resolves any derived instrument to its parent registrant's CIK.
-    let company_tickers = fetch_company_tickers(&sec_client, true).await?;
+    let company_tickers = fetch_company_tickers(sec_client, true).await?;
     if let Ok(company_cik) = Cik::get_company_cik_by_ticker_symbol(&company_tickers, ticker_symbol)
     {
         return Ok(company_cik);
@@ -65,7 +65,7 @@ pub async fn fetch_cik_by_ticker_symbol(
 
     // Then, look at funds
     let investment_companies =
-        fetch_investment_company_series_and_class_dataset(&sec_client).await?;
+        fetch_investment_company_series_and_class_dataset(sec_client).await?;
     let fund_cik =
         InvestmentCompany::get_fund_cik_by_ticker_symbol(&investment_companies, ticker_symbol)?;
 

@@ -5,8 +5,10 @@ use std::error::Error;
 
 #[test]
 fn test_user_agent() {
-    let mut app_config = AppConfig::default();
-    app_config.email = Some("test@example.com".into());
+    let app_config = AppConfig {
+        email: Some("test@example.com".into()),
+        ..Default::default()
+    };
     let config_manager = ConfigManager::from_app_config(&app_config);
 
     let client = SecClient::from_config_manager(&config_manager).unwrap();
@@ -22,10 +24,12 @@ fn test_user_agent() {
 
 #[test]
 fn test_user_agent_with_custom_app_name() {
-    let mut app_config = AppConfig::default();
-    app_config.email = Some("test@example.com".into());
-    app_config.app_name = Some("my-custom-app".into());
     // No app_version set — should still use sec-fetcher's version
+    let app_config = AppConfig {
+        email: Some("test@example.com".into()),
+        app_name: Some("my-custom-app".into()),
+        ..Default::default()
+    };
     let config_manager = ConfigManager::from_app_config(&app_config);
 
     let client = SecClient::from_config_manager(&config_manager).unwrap();
@@ -41,10 +45,12 @@ fn test_user_agent_with_custom_app_name() {
 
 #[test]
 fn test_user_agent_with_custom_app_name_and_version() {
-    let mut app_config = AppConfig::default();
-    app_config.email = Some("test@example.com".into());
-    app_config.app_name = Some("my-custom-app".into());
-    app_config.app_version = Some("2.0.0".into());
+    let app_config = AppConfig {
+        email: Some("test@example.com".into()),
+        app_name: Some("my-custom-app".into()),
+        app_version: Some("2.0.0".into()),
+        ..Default::default()
+    };
     let config_manager = ConfigManager::from_app_config(&app_config);
 
     let client = SecClient::from_config_manager(&config_manager).unwrap();
@@ -58,8 +64,10 @@ fn test_user_agent_with_custom_app_name_and_version() {
 #[test]
 fn test_user_agent_default_app_version_when_none() {
     // app_version not set — falls back to sec-fetcher's crate version
-    let mut app_config = AppConfig::default();
-    app_config.email = Some("test@example.com".into());
+    let app_config = AppConfig {
+        email: Some("test@example.com".into()),
+        ..Default::default()
+    };
     let config_manager = ConfigManager::from_app_config(&app_config);
 
     let client = SecClient::from_config_manager(&config_manager).unwrap();
@@ -76,9 +84,11 @@ fn test_user_agent_default_app_version_when_none() {
 #[test]
 fn test_user_agent_default_app_name_when_none() {
     // When app_name is None, the crate name is used — verify the exact string sent to the SEC
-    let mut app_config = AppConfig::default();
-    app_config.email = Some("test@example.com".into());
     // app_name not set — stays None
+    let app_config = AppConfig {
+        email: Some("test@example.com".into()),
+        ..Default::default()
+    };
     let config_manager = ConfigManager::from_app_config(&app_config);
 
     let client = SecClient::from_config_manager(&config_manager).unwrap();
@@ -95,8 +105,10 @@ fn test_user_agent_default_app_name_when_none() {
 #[test]
 #[should_panic(expected = "Invalid email format")]
 fn test_invalid_email_panic() {
-    let mut app_config = AppConfig::default();
-    app_config.email = Some("invalid-email".into());
+    let app_config = AppConfig {
+        email: Some("invalid-email".into()),
+        ..Default::default()
+    };
     let config_manager = ConfigManager::from_app_config(&app_config);
 
     let client = SecClient::from_config_manager(&config_manager).unwrap();
@@ -128,8 +140,10 @@ async fn test_fetch_json_without_retry_success() -> Result<(), Box<dyn Error>> {
         .create_async()
         .await;
 
-    let mut app_config = AppConfig::default();
-    app_config.email = Some("test@example.com".into());
+    let app_config = AppConfig {
+        email: Some("test@example.com".into()),
+        ..Default::default()
+    };
     let config_manager = ConfigManager::from_app_config(&app_config);
 
     let client = SecClient::from_config_manager(&config_manager).unwrap();
@@ -157,8 +171,10 @@ async fn test_fetch_json_with_retry_success() -> Result<(), Box<dyn Error>> {
         .create_async()
         .await;
 
-    let mut app_config = AppConfig::default();
-    app_config.email = Some("test@example.com".into());
+    let app_config = AppConfig {
+        email: Some("test@example.com".into()),
+        ..Default::default()
+    };
     let config_manager = ConfigManager::from_app_config(&app_config);
 
     let client = SecClient::from_config_manager(&config_manager).unwrap();
@@ -185,9 +201,11 @@ async fn test_fetch_json_with_retry_failure() -> Result<(), Box<dyn Error>> {
         .create_async()
         .await;
 
-    let mut app_config = AppConfig::default();
-    app_config.email = Some("test@example.com".into());
-    app_config.max_retries = Some(2);
+    let app_config = AppConfig {
+        email: Some("test@example.com".into()),
+        max_retries: Some(2),
+        ..Default::default()
+    };
     let config_manager = ConfigManager::from_app_config(&app_config);
 
     let client = SecClient::from_config_manager(&config_manager).unwrap();
@@ -223,9 +241,11 @@ async fn test_fetch_json_with_retry_backoff() -> Result<(), Box<dyn Error>> {
         .create_async()
         .await;
 
-    let mut app_config = AppConfig::default();
-    app_config.email = Some("test@example.com".into());
-    app_config.max_retries = Some(2);
+    let app_config = AppConfig {
+        email: Some("test@example.com".into()),
+        max_retries: Some(2),
+        ..Default::default()
+    };
     let config_manager = ConfigManager::from_app_config(&app_config);
 
     let client = SecClient::from_config_manager(&config_manager).unwrap();

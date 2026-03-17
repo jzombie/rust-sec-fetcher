@@ -52,7 +52,7 @@ pub fn parse_nport_xml(
                     if let Some(investment) = &mut current_investment {
                         if let Some(attr) = e
                             .attributes()
-                            .find(|a| a.as_ref().map_or(false, |a| a.key.as_ref() == b"value"))
+                            .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"value"))
                         {
                             investment.isin = attr?.unescape_value()?.to_string();
                         }
@@ -124,14 +124,14 @@ pub fn parse_nport_xml(
 
     NportInvestment::sort_by_pct_val_desc(&mut investments);
 
-    for (i, investment) in investments.iter_mut().enumerate() {
+    for investment in investments.iter_mut() {
         // TODO: Remove
         // println!("{}, Investment name: {}", i, investment.name);
 
         let company_ticker =
-            match Ticker::get_by_fuzzy_matched_name(&company_tickers, &investment.title, true) {
+            match Ticker::get_by_fuzzy_matched_name(company_tickers, &investment.title, true) {
                 Some(company_ticker) => Some(company_ticker),
-                None => Ticker::get_by_fuzzy_matched_name(&company_tickers, &investment.name, true),
+                None => Ticker::get_by_fuzzy_matched_name(company_tickers, &investment.name, true),
             };
 
         // investment.company_ticker = company_ticker;

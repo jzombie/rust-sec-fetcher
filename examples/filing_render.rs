@@ -28,7 +28,6 @@ use sec_fetcher::config::ConfigManager;
 use sec_fetcher::network::{fetch_and_render, SecClient};
 use sec_fetcher::views::{EmbeddingTextView, MarkdownView};
 use std::error::Error;
-use tokio;
 
 #[derive(Parser)]
 #[command(

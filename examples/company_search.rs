@@ -3,7 +3,6 @@ use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::Ticker;
 use sec_fetcher::network::{fetch_company_tickers, SecClient};
 use std::error::Error;
-use tokio;
 
 #[derive(Parser)]
 #[command(
@@ -64,9 +63,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             Some(ticker) => {
                 println!("Exact match: {:?}", ticker);
 
-                let company_name = ticker.company_name.to_string();
-
-                company_name
+                ticker.company_name.to_string()
             }
             None => search_string.to_string(),
         };

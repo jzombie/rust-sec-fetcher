@@ -126,7 +126,7 @@ impl Url {
             ),
             Url::CikSubmission(cik) => format!(
                 "https://data.sec.gov/submissions/CIK{}.json",
-                cik.to_string()
+                cik
             ),
             Url::CikSubmissionPage(filename) => format!(
                 "https://data.sec.gov/submissions/{}",
@@ -134,14 +134,14 @@ impl Url {
             ),
             Url::CikAccession(cik, accession_number) => format!(
                 "https://www.sec.gov/Archives/edgar/data/{}/{}",
-                cik.to_string(),
+                cik,
                 accession_number.to_unformatted_string()
             ),
             Url::CikAccessionIndex(cik, accession_number) => format!(
                 "https://www.sec.gov/Archives/edgar/data/{}/{}/{}-index.htm",
-                cik.to_string(),
+                cik,
                 accession_number.to_unformatted_string(),
-                accession_number.to_string(),
+                accession_number,
             ),
             Url::CikAccessionPrimaryDocument(cik, accession_number ) => format!(
                 "{}/primary_doc.xml",
@@ -156,7 +156,7 @@ impl Url {
             Url::CompanyTickersTxt => "https://www.sec.gov/include/ticker.txt".to_string(),
             Url::CompanyFacts(cik) => format!(
                 "https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json",
-                cik.to_string()
+                cik
             ),
             Url::EdgarCurrentFeed { form_type, count, before } => format!(
                 "https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type={}&dateb={}&owner=include&count={}&search_text=&output=atom",
@@ -164,7 +164,7 @@ impl Url {
             ),
             Url::EdgarCompanyFeed { cik, form_type, count, before } => format!(
                 "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={}&type={}&dateb={}&owner=include&count={}&search_text=&output=atom",
-                cik.to_string(),
+                cik,
                 form_type,
                 before,
                 count

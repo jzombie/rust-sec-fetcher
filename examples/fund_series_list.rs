@@ -2,7 +2,6 @@ use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::network::{fetch_investment_company_series_and_class_dataset, SecClient};
 use std::error::Error;
-use tokio;
 
 #[derive(Parser)]
 #[command(about = "List SEC-registered investment company series and class records")]

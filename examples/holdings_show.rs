@@ -4,11 +4,11 @@
 ///
 /// Supports any ticker:
 ///   - **NPORT-P** — ETFs and mutual funds (monthly, ~60-day lag)
-///                   e.g. SPY, QQQ, IVV, ARKK
+///     e.g. SPY, QQQ, IVV, ARKK
 ///   - **13F-HR**  — Institutional managers ≥ $100 M AUM (quarterly, 45-day lag)
-///                   e.g. BRK-A
+///     e.g. BRK-A
 ///   - **Form 4**  — Insider transactions for any public company (≤ 2 business days lag)
-///                   e.g. AAPL, TSLA, NVDA
+///     e.g. AAPL, TSLA, NVDA
 ///
 /// For N-PORT and 13F, consecutive filings are diffed to show adds, removes,
 /// and weight changes. For Form 4, recent insider buy/sell activity is listed.
@@ -301,7 +301,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // ── CIK lookup ────────────────────────────────────────────────────────────
     eprintln!("Looking up CIK for {}…", ticker);
     let cik: Cik = fetch_cik_by_ticker_symbol(&client, &ticker).await?;
-    eprintln!("  CIK: {}", cik.to_string());
+    eprintln!("  CIK: {}", cik);
 
     // ── Submission list ───────────────────────────────────────────────────────
     eprintln!("Fetching submission history…");
@@ -360,7 +360,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         println!(
             "{} (CIK: {})  —  insider transactions (most recent {} filings)",
             ticker.to_uppercase(),
-            cik.to_string(),
+            cik,
             n
         );
         println!();
@@ -418,7 +418,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .filing_date
             .map(|d| d.to_string())
             .unwrap_or_else(|| sub.accession_number.to_string());
-        eprintln!("  {} ({})", date_label, sub.accession_number.to_string());
+        eprintln!("  {} ({})", date_label, sub.accession_number);
 
         let positions: Vec<Position> = match kind {
             FilingKind::NPort => {
@@ -443,7 +443,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!(
         "{} (CIK: {})  —  {} filings",
         ticker.to_uppercase(),
-        cik.to_string(),
+        cik,
         snapshots.len()
     );
 

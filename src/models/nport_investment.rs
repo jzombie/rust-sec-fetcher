@@ -39,7 +39,7 @@ pub struct NportInvestment {
 
 impl NportInvestment {
     /// Sorts a list of investments by `pct_val` in descending order.
-    pub fn sort_by_pct_val_desc(investments: &mut Vec<NportInvestment>) {
+    pub fn sort_by_pct_val_desc(investments: &mut [NportInvestment]) {
         investments.sort_by(|a, b| b.pct_val.cmp(&a.pct_val));
     }
 }

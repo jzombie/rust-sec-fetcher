@@ -33,18 +33,14 @@ fn count_column_occurrences(dir: &str) -> HashMap<String, usize> {
     let files: Vec<_> = fs::read_dir(dir)
         .expect("Failed to read directory")
         .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "csv"))
+        .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "csv"))
         .collect();
 
     let results: Vec<HashMap<String, usize>> = files
         .par_iter()
         .map(|entry| {
             let path = entry.path();
-            if let Some(counts) = process_csv(&path) {
-                counts
-            } else {
-                HashMap::new()
-            }
+            process_csv(&path).unwrap_or_default()
         })
         .collect();
 
@@ -64,7 +60,7 @@ fn process_csv(path: &Path) -> Option<HashMap<String, usize>> {
     let file = fs::File::open(path).ok()?;
     let mut rdr = ReaderBuilder::new().has_headers(true).from_reader(file);
 
-    if let Some(headers) = rdr.headers().ok() {
+    if let Ok(headers) = rdr.headers() {
         for col in headers.iter() {
             *counts.entry(col.to_string()).or_insert(0) += 1;
         }

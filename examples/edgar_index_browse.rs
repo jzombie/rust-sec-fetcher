@@ -108,7 +108,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let year = args.year.unwrap_or(today.year() as u16);
     let quarter = args.quarter.unwrap_or(((today.month0() / 3) + 1) as u8);
 
-    if quarter < 1 || quarter > 4 {
+    if !(1..=4).contains(&quarter) {
         eprintln!("Error: --quarter must be 1–4");
         std::process::exit(1);
     }
@@ -157,7 +157,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Default to top 50 when the user hasn't asked for a specific limit.
     let limit = args.top.unwrap_or(50);
     let display: Vec<&MasterIndexEntry> = if limit == 0 {
-        filtered.iter().copied().collect()
+        filtered.to_vec()
     } else {
         filtered.iter().copied().take(limit).collect()
     };
@@ -182,8 +182,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
     println!();
     println!(
-        "{:<12}  {:<12}  {:<45}  {:<18}  {}",
-        "Filed", "CIK", "Company", "Form", "URL"
+        "{:<12}  {:<12}  {:<45}  {:<18}  URL",
+        "Filed", "CIK", "Company", "Form"
     );
     println!("{}", "-".repeat(150));
 

@@ -56,8 +56,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let investments = fetch_nport(&client, latest).await?;
 
     println!(
-        "{:>4}   {:<9}  {:<45}  {:>10}  {:>9}  {} {}",
-        "#", "CUSIP", "Name", "Value USD", "Weight", "CCY", "Country"
+        "{:>4}   {:<9}  {:<45}  {:>10}  {:>9}  CCY Country",
+        "#", "CUSIP", "Name", "Value USD", "Weight"
     );
     println!("{}", "-".repeat(100));
     for (i, investment) in investments.head(510).iter().enumerate() {

@@ -70,7 +70,6 @@ use sec_fetcher::models::FeedEntry;
 use sec_fetcher::network::{fetch_edgar_feeds_since, SecClient, EDGAR_PAGE_SIZE};
 use std::error::Error;
 use std::fmt;
-use tokio;
 
 /// When --since is given without --pages, paginate up to this many pages.
 const SINCE_DEFAULT_MAX_PAGES: usize = 25;
@@ -193,8 +192,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     println!(
-        "{:<12}  {:<8}  {:<12}  {:<45}  {:<28}  {}",
-        "Filed", "Form", "CIK", "Company", "Accession", "Items / Route"
+        "{:<12}  {:<8}  {:<12}  {:<45}  {:<28}  Items / Route",
+        "Filed", "Form", "CIK", "Company", "Accession"
     );
     println!("{}", "-".repeat(145));
 
@@ -219,17 +218,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
         );
     }
 
-    if since.is_some() {
+    if let Some(since_val) = since {
         if all_entries.is_empty() {
             eprintln!(
                 "No new filing(s) since {}. Mark unchanged.",
-                since.unwrap().to_rfc3339()
+                since_val.to_rfc3339()
             );
         } else {
             eprintln!(
                 "Delta complete: {} new filing(s) since {}.",
                 all_entries.len(),
-                since.unwrap().to_rfc3339()
+                since_val.to_rfc3339()
             );
         }
     }

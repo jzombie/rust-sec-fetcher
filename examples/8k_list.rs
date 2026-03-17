@@ -11,7 +11,6 @@ use sec_fetcher::config::ConfigManager;
 use sec_fetcher::network::{fetch_8k_filings, fetch_cik_by_ticker_symbol, SecClient};
 use std::error::Error;
 use std::fmt;
-use tokio;
 
 #[derive(Parser)]
 #[command(
@@ -53,7 +52,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     println!("{} 8-K filings for {}:\n", filings.len(), ticker_symbol);
-    println!("{:<12}  {:<16}  {}", "Date", "Items", "URL");
+    println!("{:<12}  {:<16}  URL", "Date", "Items");
     println!("{}", "-".repeat(100));
 
     for filing in &filings {

@@ -135,7 +135,7 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
                 b"link" if current.is_some() => {
                     if let Some(attr) = e
                         .attributes()
-                        .find(|a| a.as_ref().map_or(false, |a| a.key.as_ref() == b"href"))
+                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"href"))
                     {
                         if let Some(ref mut p) = current {
                             p.link_href = attr?.unescape_value()?.to_string();
@@ -145,7 +145,7 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
                 b"category" if current.is_some() => {
                     if let Some(attr) = e
                         .attributes()
-                        .find(|a| a.as_ref().map_or(false, |a| a.key.as_ref() == b"term"))
+                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"term"))
                     {
                         if let Some(ref mut p) = current {
                             if p.form_type.is_empty() {
@@ -162,7 +162,7 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
                 b"link" if current.is_some() => {
                     if let Some(attr) = e
                         .attributes()
-                        .find(|a| a.as_ref().map_or(false, |a| a.key.as_ref() == b"href"))
+                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"href"))
                     {
                         if let Some(ref mut p) = current {
                             p.link_href = attr?.unescape_value()?.to_string();
@@ -172,7 +172,7 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
                 b"category" if current.is_some() => {
                     if let Some(attr) = e
                         .attributes()
-                        .find(|a| a.as_ref().map_or(false, |a| a.key.as_ref() == b"term"))
+                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"term"))
                     {
                         if let Some(ref mut p) = current {
                             if p.form_type.is_empty() {

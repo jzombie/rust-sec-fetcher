@@ -4,7 +4,6 @@ use sec_fetcher::models::Ticker;
 use sec_fetcher::network::{fetch_company_tickers, SecClient};
 use std::error::Error;
 use std::fmt;
-use tokio;
 
 #[derive(Parser)]
 #[command(
@@ -28,9 +27,7 @@ impl<'a> fmt::Display for TickerRow<'a> {
         write!(
             f,
             "{}\t{}\t{}",
-            self.0.symbol,
-            self.0.cik.to_string(),
-            self.0.company_name,
+            self.0.symbol, self.0.cik, self.0.company_name,
         )
     }
 }

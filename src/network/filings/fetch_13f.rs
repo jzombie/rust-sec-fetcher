@@ -88,7 +88,7 @@ pub async fn fetch_13f(
         .ok_or_else(|| {
             format!(
                 "No INFORMATION TABLE document found in 13F index for {}",
-                submission.accession_number.to_string()
+                submission.accession_number
             )
         })?;
 

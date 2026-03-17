@@ -51,7 +51,6 @@ use sec_fetcher::network::{
 };
 use sec_fetcher::views::{EmbeddingTextView, FilingView, MarkdownView};
 use std::error::Error;
-use tokio;
 
 #[derive(Parser)]
 #[command(

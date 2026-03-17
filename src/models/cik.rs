@@ -61,6 +61,12 @@ impl From<std::num::ParseIntError> for CikError {
     }
 }
 
+impl std::fmt::Display for Cik {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:010}", self.value)
+    }
+}
+
 impl Cik {
     /// Creates a `Cik` instance from a `AccessionNumber` instance.
     ///
@@ -93,6 +99,7 @@ impl Cik {
     /// # Errors
     /// - Returns `CikError::InvalidLength` if the string exceeds 10 characters.
     /// - Returns `CikError::ParseError` if the string is not a valid number.
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(cik_str: &str) -> Result<Self, CikError> {
         if cik_str.len() > 10 {
             return Err(CikError::InvalidLength);
@@ -100,11 +107,6 @@ impl Cik {
 
         let value = cik_str.parse::<u64>()?;
         Ok(Self { value })
-    }
-
-    /// Converts the CIK to a zero-padded 10-digit string.
-    pub fn to_string(&self) -> String {
-        format!("{:010}", self.value)
     }
 
     /// Converts the CIK to a u64.

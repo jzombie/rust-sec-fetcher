@@ -75,6 +75,12 @@ impl From<CikError> for AccessionNumberError {
     }
 }
 
+impl std::fmt::Display for AccessionNumber {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}-{:02}-{:06}", self.cik, self.year, self.sequence)
+    }
+}
+
 impl AccessionNumber {
     /// Parses an **Accession Number** string (with or without dashes).
     ///
@@ -84,6 +90,7 @@ impl AccessionNumber {
     /// # Errors
     /// - Returns `AccessionNumberError::InvalidLength` if the cleaned string is not **18 digits**.
     /// - Returns `AccessionNumberError::ParseError` if parsing fails.
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(accession_str: &str) -> Result<Self, AccessionNumberError> {
         // Remove dashes so we can handle both formatted and unformatted cases
         // let clean_str: String = accession_str.chars().filter(|c| c.is_ascii_digit()).collect();
@@ -153,18 +160,6 @@ impl AccessionNumber {
             year,
             sequence,
         })
-    }
-
-    /// Converts the Accession Number to its **standard dash-separated format**.
-    ///
-    /// - Example Output: `"0001234567-23-000045"`
-    pub fn to_string(&self) -> String {
-        format!(
-            "{:010}-{:02}-{:06}",
-            self.cik.to_string(),
-            self.year,
-            self.sequence
-        )
     }
 
     /// Returns the Accession Number as a **plain numeric string** (without dashes).

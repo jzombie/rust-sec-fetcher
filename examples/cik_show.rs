@@ -3,7 +3,6 @@ use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::CikSubmission;
 use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_cik_submissions, SecClient};
 use std::error::Error;
-use tokio;
 
 #[derive(Parser)]
 #[command(about = "Look up the CIK for a ticker and inspect its recent submissions")]
@@ -24,14 +23,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await
         .ok();
 
-    if result_cik.is_none() {
-        println!("No matching record found for ticker '{}'.", ticker_symbol);
-    } else {
-        let cik = result_cik.unwrap();
-
+    if let Some(cik) = result_cik {
         println!(
             "Submissions URL: https://data.sec.gov/submissions/CIK{}.json",
-            cik.to_string()
+            cik
         );
 
         // // TODO: Lookup filings -> recent -> accessionNumber, strip out the dahes, and paste in
@@ -70,6 +65,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
             }
         }
+    } else {
+        println!("No matching record found for ticker '{}'.", ticker_symbol);
     }
 
     Ok(())

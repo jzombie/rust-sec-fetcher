@@ -1,4 +1,6 @@
-use html_to_markdown_rs::{convert, ConversionOptions, HeadingStyle, PreprocessingPreset};
+use html_to_markdown_rs::{
+    convert, ConversionOptions, HeadingStyle, PreprocessingOptions, PreprocessingPreset,
+};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::error::Error;
@@ -41,10 +43,15 @@ pub(super) fn strip_xbrl_noise(html: &str) -> String {
 pub(super) fn render_html_to_clean_markdown(html: &str) -> Result<String, Box<dyn Error>> {
     let clean = strip_xbrl_noise(html);
 
-    let mut options = ConversionOptions::default();
-    options.heading_style = HeadingStyle::Atx;
-    options.preprocessing.enabled = true;
-    options.preprocessing.preset = PreprocessingPreset::Aggressive;
+    let options = ConversionOptions {
+        heading_style: HeadingStyle::Atx,
+        preprocessing: PreprocessingOptions {
+            enabled: true,
+            preset: PreprocessingPreset::Aggressive,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
 
     let md = convert(&clean, Some(options))
         .map_err(|e| format!("HTML→Markdown conversion failed: {}", e))?;
@@ -169,7 +176,7 @@ fn table_to_sentences(lines: &[&str]) -> String {
 
         let sentence = if first_header_empty {
             // Row-label pattern: cells[0] is the metric name
-            let row_label = row.get(0).map(|s| s.trim()).unwrap_or("");
+            let row_label = row.first().map(|s| s.trim()).unwrap_or("");
             let col_pairs: Vec<String> = headers[1..]
                 .iter()
                 .enumerate()

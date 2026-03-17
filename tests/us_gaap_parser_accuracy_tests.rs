@@ -30,7 +30,7 @@ fn load_fixture(name: &str) -> Value {
 /// DataFrame is missing a fact that exists in the JSON (unless that fact causes a mismatch in existing cells).
 fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
     // 1. Get list of fact columns (excluding metadata)
-    let meta_cols = vec![
+    let meta_cols = [
         "fy",
         "fp",
         "period_end",
@@ -113,10 +113,8 @@ fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
                                             if end_year > 0 && f > end_year {
                                                 continue;
                                             }
-                                        } else {
-                                            if end_year > 0 && f > end_year + 1 {
-                                                continue;
-                                            }
+                                        } else if end_year > 0 && f > end_year + 1 {
+                                            continue;
                                         }
                                         f
                                     } else {
