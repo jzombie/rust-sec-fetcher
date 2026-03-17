@@ -62,77 +62,103 @@
 ///   "SC 13G"         — passive ownership crossing 5%
 ///   "SC 13D"         — active ownership crossing 5%
 use chrono::DateTime;
+use clap::Parser;
 use sec_fetcher::config::ConfigManager;
+use sec_fetcher::models::FeedEntry;
 use sec_fetcher::network::{fetch_edgar_feeds_since, SecClient, EDGAR_PAGE_SIZE};
-use std::env;
 use std::error::Error;
+use std::fmt;
 use tokio;
 
 /// When --since is given without --pages, paginate up to this many pages.
-/// 25 pages × 40 entries = 1 000 entries, which covers several days of normal
-/// SEC filing volume. Increase with --pages if you need to catch up after a
-/// longer gap.
 const SINCE_DEFAULT_MAX_PAGES: usize = 25;
+
+#[derive(Parser)]
+#[command(
+    about = "Delta-poll the SEC EDGAR filing Atom feed",
+    long_about = "Fetches recent EDGAR filings. Without --since, prints the newest page(s). \
+                  With --since, prints only entries strictly newer than the given ISO-8601 \
+                  timestamp and outputs the new high-water mark for the next run."
+)]
+struct Args {
+    /// Comma-separated form-type filter (e.g. \"8-K,NPORT-P\"). No filter = all types.
+    #[arg(long, alias = "type", default_value = "")]
+    filter: String,
+
+    /// Only show filings strictly after this ISO-8601 timestamp (e.g. \"2026-03-13T17:30:01-04:00\")
+    #[arg(long, alias = "after")]
+    since: Option<String>,
+
+    /// Number of 40-entry pages to fetch. Default: 1 without --since, 25 with --since.
+    #[arg(long)]
+    pages: Option<usize>,
+}
+
+/// A single feed entry formatted as a table row.
+struct FeedEntryRow<'a>(&'a FeedEntry);
+
+impl<'a> fmt::Display for FeedEntryRow<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let e = self.0;
+        let route = if matches!(e.form_type.to_uppercase().as_str(), "8-K" | "8-K/A") {
+            if e.is_earnings_release() {
+                "→ Path 1 (Earnings / 2.02)"
+            } else if e.is_mid_quarter_event() {
+                "→ Path 2 (Mid-quarter event)"
+            } else {
+                "→ 8-K (no items of interest)"
+            }
+        } else {
+            ""
+        };
+
+        let items_str = if e.items.is_empty() {
+            String::new()
+        } else {
+            format!("[{}]  ", e.items.join(","))
+        };
+
+        write!(
+            f,
+            "{:<12}  {:<8}  {:<12}  {:<45}  {:<28}  {}{}",
+            e.filing_date.map(|d| d.to_string()).unwrap_or_default(),
+            e.form_type,
+            e.cik
+                .as_ref()
+                .map(|c| c.to_string())
+                .unwrap_or_default(),
+            e.company_name.chars().take(45).collect::<String>(),
+            e.accession_number,
+            items_str,
+            route,
+        )
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let args: Vec<String> = env::args().collect();
+    let args = Args::parse();
 
-    let mut filter_arg = String::new();
-    let mut since_str = String::new();
-    let mut explicit_pages: Option<usize> = None;
-
-    let mut i = 1;
-    while i < args.len() {
-        match args[i].as_str() {
-            "--filter" | "--type" => {
-                i += 1;
-                if let Some(v) = args.get(i) {
-                    filter_arg = v.clone();
-                }
-            }
-            "--since" | "--after" => {
-                i += 1;
-                if let Some(v) = args.get(i) {
-                    since_str = v.clone();
-                }
-            }
-            "--pages" => {
-                i += 1;
-                if let Some(v) = args.get(i) {
-                    explicit_pages = Some(v.parse().unwrap_or(1).max(1));
-                }
-            }
-            other => {
-                eprintln!("Unknown argument: {}", other);
-                eprintln!("Usage: edgar_firehose [--filter \"8-K,NPORT-P\"] [--since \"<ISO-8601>\"] [--pages N]");
-                std::process::exit(1);
-            }
-        }
-        i += 1;
-    }
-
-    let since: Option<DateTime<chrono::FixedOffset>> = if since_str.is_empty() {
-        None
-    } else {
-        match DateTime::parse_from_rfc3339(&since_str) {
+    let since: Option<DateTime<chrono::FixedOffset>> = match &args.since {
+        None => None,
+        Some(s) => match DateTime::parse_from_rfc3339(s) {
             Ok(dt) => Some(dt),
             Err(_) => {
-                eprintln!("Invalid --since timestamp: '{}'", since_str);
+                eprintln!("Invalid --since timestamp: '{}'", s);
                 eprintln!("Expected ISO 8601, e.g. \"2026-03-13T17:30:01-04:00\"");
                 std::process::exit(1);
             }
-        }
+        },
     };
 
-    let type_filter: Vec<&str> = filter_arg
+    let type_filter: Vec<&str> = args
+        .filter
         .split(',')
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
         .collect();
 
-    // --since auto-paginates; --pages alone fetches that many pages with no delta filter.
-    let max_pages = explicit_pages.unwrap_or(if since.is_some() {
+    let max_pages = args.pages.unwrap_or(if since.is_some() {
         SINCE_DEFAULT_MAX_PAGES
     } else {
         1
@@ -145,10 +171,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         eprintln!("Delta mode — entries filed after: {}", s.to_rfc3339());
     }
 
-    // One fetch_edgar_feed_since call per type, fired in parallel.
-    // For no filter, use a single unified request (type="").
-    // One fetch per type in parallel, merged into a single newest-first FeedDelta.
-    // Pass "" as the sole type for the unified firehose when no filter is given.
     let types: Vec<&str> = if type_filter.is_empty() {
         vec![""]
     } else {
@@ -180,39 +202,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut type_counts: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
     for entry in all_entries {
         *type_counts.entry(entry.form_type.as_str()).or_insert(0) += 1;
-
-        let route = if matches!(entry.form_type.to_uppercase().as_str(), "8-K" | "8-K/A") {
-            if entry.is_earnings_release() {
-                "→ Path 1 (Earnings / 2.02)"
-            } else if entry.is_mid_quarter_event() {
-                "→ Path 2 (Mid-quarter event)"
-            } else {
-                "→ 8-K (no items of interest)"
-            }
-        } else {
-            ""
-        };
-
-        let items_str = if entry.items.is_empty() {
-            String::new()
-        } else {
-            format!("[{}]  ", entry.items.join(","))
-        };
-
-        println!(
-            "{:<12}  {:<8}  {:<12}  {:<45}  {:<28}  {}{}",
-            entry.filing_date.map(|d| d.to_string()).unwrap_or_default(),
-            entry.form_type,
-            entry
-                .cik
-                .as_ref()
-                .map(|c| c.to_string())
-                .unwrap_or_default(),
-            entry.company_name.chars().take(45).collect::<String>(),
-            entry.accession_number,
-            items_str,
-            route,
-        );
+        println!("{}", FeedEntryRow(entry));
     }
 
     eprintln!();
@@ -245,13 +235,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // Show the next-run command only when the mark has actually advanced.
     if new_high_water != since {
         if let Some(mark) = new_high_water {
-            let filter_part = if filter_arg.is_empty() {
+            let filter_part = if args.filter.is_empty() {
                 String::new()
             } else {
-                format!("--filter \"{}\" ", filter_arg)
+                format!("--filter \"{}\" ", args.filter)
             };
             let mark_str = mark.to_rfc3339();
             eprintln!();

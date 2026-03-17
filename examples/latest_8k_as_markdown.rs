@@ -7,13 +7,23 @@
 ///
 /// Example:
 ///   cargo run --example latest_8k_as_markdown -- LLY
+use clap::Parser;
 use html_to_markdown_rs::{convert, ConversionOptions, HeadingStyle, PreprocessingPreset};
 use regex::Regex;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::network::{fetch_8k_filings, fetch_cik_by_ticker_symbol, SecClient};
-use std::env;
 use std::error::Error;
 use tokio;
+
+#[derive(Parser)]
+#[command(
+    about = "Fetch the latest 8-K filing for a ticker and render it as embedding-friendly Markdown",
+    long_about = None
+)]
+struct Args {
+    /// Ticker symbol (e.g. LLY)
+    ticker: String,
+}
 
 // ---------------------------------------------------------------------------
 // XBRL noise removal
@@ -141,13 +151,8 @@ fn flatten_tables(markdown: &str) -> String {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        eprintln!("Usage: {} <TICKER_SYMBOL>", args[0]);
-        std::process::exit(1);
-    }
-
-    let ticker_symbol = args[1].to_uppercase();
+    let args = Args::parse();
+    let ticker_symbol = args.ticker.to_uppercase();
 
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;

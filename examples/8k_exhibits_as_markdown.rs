@@ -12,15 +12,25 @@
 ///
 /// Example:
 ///   cargo run --example 8k_exhibits_as_markdown -- LLY
+use clap::Parser;
 use html_to_markdown_rs::{convert, ConversionOptions, HeadingStyle, PreprocessingPreset};
 use regex::Regex;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::network::{
     fetch_8k_filings, fetch_cik_by_ticker_symbol, fetch_filing_index, SecClient,
 };
-use std::env;
 use std::error::Error;
 use tokio;
+
+#[derive(Parser)]
+#[command(
+    about = "Fetch all EX-* exhibits from the latest 8-K for a ticker and render as Markdown",
+    long_about = None
+)]
+struct Args {
+    /// Ticker symbol (e.g. LLY)
+    ticker: String,
+}
 
 // ---------------------------------------------------------------------------
 // XBRL noise removal  (same helper used by latest_8k_as_markdown)
@@ -154,13 +164,8 @@ fn html_to_markdown(html: &str) -> Result<String, Box<dyn Error>> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        eprintln!("Usage: {} <TICKER_SYMBOL>", args[0]);
-        std::process::exit(1);
-    }
-
-    let ticker_symbol = args[1].to_uppercase();
+    let args = Args::parse();
+    let ticker_symbol = args.ticker.to_uppercase();
 
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;

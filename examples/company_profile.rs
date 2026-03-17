@@ -1,63 +1,80 @@
 use chrono::Datelike;
-/// Look up the SEC company profile (name, SIC industry, exchange, etc.) for one
-/// or more ticker symbols.
-///
-/// # What this returns
-///
-/// The SEC EDGAR submissions endpoint (`/submissions/CIK{cik}.json`) exposes
-/// all the company-level metadata SEC filers must maintain:
-///
-/// | Field                  | Example                         |
-/// |------------------------|---------------------------------|
-/// | Name                   | Apple Inc.                      |
-/// | SIC code               | 3571                            |
-/// | SIC description        | Electronic Computers            |
-
-/// | Owner-org sector       | 06 Technology                   |
-/// | Exchange(s)            | Nasdaq                          |
-/// | Filer category         | Large accelerated filer         |
-/// | State of incorporation | CA                              |
-/// | Fiscal year end        | 0926 (= September 26)           |
-/// | Website / IR site      | https://www.apple.com           |
-///
-/// The SIC description is the SEC's own industry classification. The
-/// `owner_org` field provides a coarser grouping (sector level) that the SEC
-/// uses internally. Neither maps directly to GICS or SIC standard tables, but
-/// they are stable, authoritative, and free.
-///
-/// # Cache note
-///
-/// `fetch_company_profile` and `fetch_cik_submissions` both call the same URL,
-/// so the second call for a given CIK is served from the local cache at no
-/// cost.
-///
-/// # Usage
-///
-///   cargo run --example company_profile -- AAPL
-///   cargo run --example company_profile -- AAPL MSFT NVDA
+use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::network::{
     fetch_cik_by_ticker_symbol, fetch_company_description, fetch_company_profile, SecClient,
 };
-use std::env;
 use std::error::Error;
+use std::fmt;
+
+#[derive(Parser)]
+#[command(
+    about = "Look up the SEC company profile for one or more ticker symbols",
+    long_about = None
+)]
+struct Args {
+    /// One or more ticker symbols (e.g. AAPL MSFT NVDA)
+    #[arg(required = true)]
+    tickers: Vec<String>,
+}
+
+/// All company-level metadata for a single filer, ready for display.
+struct CompanyProfileDisplay {
+    ticker: String,
+    cik: String,
+    name: String,
+    description: Option<String>,
+    sic: String,
+    industry: String,
+    sector: String,
+    exchanges: String,
+    category: String,
+    state_of_incorporation: String,
+    fiscal_year_end: String,
+    website: Option<String>,
+    investor_website: Option<String>,
+    phone: Option<String>,
+}
+
+impl fmt::Display for CompanyProfileDisplay {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Ticker:          {}", self.ticker)?;
+        writeln!(f, "CIK:             {}", self.cik)?;
+        writeln!(f, "Name:            {}", self.name)?;
+        if let Some(ref desc) = self.description {
+            writeln!(f, "Description:     {}", desc)?;
+        }
+        writeln!(f, "SIC:             {}", self.sic)?;
+        writeln!(f, "Industry:        {}", self.industry)?;
+        writeln!(f, "Sector:          {}", self.sector)?;
+        writeln!(f, "Exchange(s):     {}", self.exchanges)?;
+        writeln!(f, "Filer category:  {}", self.category)?;
+        writeln!(f, "Incorporated in: {}", self.state_of_incorporation)?;
+        writeln!(f, "Fiscal year end: {}", self.fiscal_year_end)?;
+        if let Some(ref url) = self.website {
+            writeln!(f, "Website:         {}", url)?;
+        }
+        if let Some(ref url) = self.investor_website {
+            writeln!(f, "Investor site:   {}", url)?;
+        }
+        if let Some(ref phone) = self.phone {
+            write!(f, "Phone:           {}", phone)?;
+        }
+        Ok(())
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let tickers: Vec<String> = env::args().skip(1).map(|s| s.to_uppercase()).collect();
-
-    if tickers.is_empty() {
-        eprintln!("Usage: company_profile <TICKER> [TICKER ...]");
-        eprintln!("  e.g. cargo run --example company_profile -- AAPL MSFT NVDA");
-        std::process::exit(1);
-    }
+    let args = Args::parse();
+    let tickers: Vec<String> = args.tickers.iter().map(|s| s.to_uppercase()).collect();
 
     let cfg = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&cfg)?;
 
     for ticker in &tickers {
-        match lookup(&client, ticker).await {
-            Ok(()) => {}
+        match fetch_profile_display(&client, ticker).await {
+            Ok(profile) => println!("{}", profile),
             Err(e) => eprintln!("Error for {ticker}: {e}"),
         }
         println!();
@@ -66,66 +83,51 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn lookup(client: &SecClient, ticker: &str) -> Result<(), Box<dyn Error>> {
+async fn fetch_profile_display(
+    client: &SecClient,
+    ticker: &str,
+) -> Result<CompanyProfileDisplay, Box<dyn Error>> {
     let cik = fetch_cik_by_ticker_symbol(client, ticker).await?;
     let profile = fetch_company_profile(client, cik).await?;
+    let description = fetch_company_description(client, profile.cik.clone()).await?;
 
-    println!("Ticker:          {ticker}");
-    println!("CIK:             {}", profile.cik.to_string());
-    println!("Name:            {}", profile.name);
-    if let Some(desc) = fetch_company_description(client, profile.cik.clone()).await? {
-        println!("Description:     {desc}");
-    }
-    println!(
-        "SIC:             {}",
-        profile.sic.as_deref().unwrap_or("n/a")
-    );
-    println!(
-        "Industry:        {}",
-        profile.sic_description.as_deref().unwrap_or("n/a")
-    );
-    println!("Sector:          {}", profile.sector().unwrap_or("n/a"));
-    let unique_exchanges: Vec<&str> = {
+    // Compute all values that borrow `profile` before consuming any fields.
+    let unique_exchanges: String = {
         let mut seen = std::collections::HashSet::new();
-        profile
+        let v: Vec<&str> = profile
             .exchanges
             .iter()
             .filter(|e| seen.insert(e.as_str()))
             .map(|e| e.as_str())
-            .collect()
-    };
-    println!(
-        "Exchange(s):     {}",
-        if unique_exchanges.is_empty() {
+            .collect();
+        if v.is_empty() {
             "n/a".to_string()
         } else {
-            unique_exchanges.join(", ")
+            v.join(", ")
         }
-    );
-    println!(
-        "Filer category:  {}",
-        profile.category.as_deref().unwrap_or("n/a")
-    );
-    println!(
-        "Incorporated in: {}",
-        profile.state_of_incorporation.as_deref().unwrap_or("n/a")
-    );
-    println!(
-        "Fiscal year end: {}",
-        profile
-            .fiscal_year_end_date()
-            .map(|d| format!("{} {}", d.format("%b"), d.day()))
-            .unwrap_or_else(|| "n/a".to_string())
-    );
-    if let Some(url) = &profile.website {
-        println!("Website:         {url}");
-    }
-    if let Some(url) = &profile.investor_website {
-        println!("Investor site:   {url}");
-    }
-    if let Some(phone) = &profile.phone {
-        println!("Phone:           {phone}");
-    }
+    };
+    let sector = profile.sector().unwrap_or("n/a").to_string();
+    let fiscal_year_end = profile
+        .fiscal_year_end_date()
+        .map(|d| format!("{} {}", d.format("%b"), d.day()))
+        .unwrap_or_else(|| "n/a".to_string());
 
-    Ok(())
+    Ok(CompanyProfileDisplay {
+        ticker: ticker.to_string(),
+        cik: profile.cik.to_string(),
+        name: profile.name,
+        description,
+        sic: profile.sic.unwrap_or_else(|| "n/a".to_string()),
+        industry: profile.sic_description.unwrap_or_else(|| "n/a".to_string()),
+        sector,
+        exchanges: unique_exchanges,
+        category: profile.category.unwrap_or_else(|| "n/a".to_string()),
+        state_of_incorporation: profile
+            .state_of_incorporation
+            .unwrap_or_else(|| "n/a".to_string()),
+        fiscal_year_end,
+        website: profile.website,
+        investor_website: profile.investor_website,
+        phone: profile.phone,
+    })
 }

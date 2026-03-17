@@ -1,11 +1,18 @@
+use clap::Parser;
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::models::{CikSubmission, Ticker};
-use sec_fetcher::network::{
-    fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_operating_company_tickers, SecClient,
-};
-use std::env;
+use sec_fetcher::models::Ticker;
+use sec_fetcher::network::{fetch_operating_company_tickers, SecClient};
 use std::error::Error;
 use tokio;
+
+#[derive(Parser)]
+#[command(
+    about = "Fuzzy-match a company name or ticker symbol against the SEC operating company list"
+)]
+struct Args {
+    /// Search string: a company name, ticker symbol, or partial match (e.g. \"Apple\", \"AAPL\")
+    query: String,
+}
 
 // TODO: Add unit tests for (at least)
 //  - Container: SPYV
@@ -30,13 +37,8 @@ use tokio;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        eprintln!("Usage: {} \"<SEARCH_STRING>\"", args[0]);
-        std::process::exit(1);
-    }
-
-    let search_string = &args[1];
+    let args = Args::parse();
+    let search_string = &args.query;
 
     println!("Searching for: {}", search_string);
 

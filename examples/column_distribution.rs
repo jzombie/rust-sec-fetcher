@@ -1,8 +1,30 @@
+use clap::Parser;
 use csv::ReaderBuilder;
 use rayon::prelude::*;
 use std::collections::HashMap;
+use std::fmt;
 use std::fs;
 use std::path::Path;
+
+#[derive(Parser)]
+#[command(about = "Count column-header frequencies across all CSV files in a directory")]
+struct Args {
+    /// Directory containing the CSV files to analyze
+    #[arg(default_value = "data/us-gaap")]
+    dir: String,
+}
+
+/// A column name together with the number of CSV files it appears in.
+struct ColumnCount {
+    name: String,
+    count: usize,
+}
+
+impl fmt::Display for ColumnCount {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.name, self.count)
+    }
+}
 
 /// Reads all CSV files in the given directory and counts occurrences of column headers.
 fn count_column_occurrences(dir: &str) -> HashMap<String, usize> {
@@ -52,14 +74,17 @@ fn process_csv(path: &Path) -> Option<HashMap<String, usize>> {
 }
 
 fn main() {
-    let dir = "data/us-gaap"; // Change this to your directory path
-    let column_distribution = count_column_occurrences(dir);
+    let args = Args::parse();
+    let column_distribution = count_column_occurrences(&args.dir);
 
-    let mut sorted_columns: Vec<_> = column_distribution.iter().collect();
-    sorted_columns.sort_by(|a, b| b.1.cmp(a.1)); // Sort by frequency (descending)
+    let mut sorted_columns: Vec<ColumnCount> = column_distribution
+        .into_iter()
+        .map(|(name, count)| ColumnCount { name, count })
+        .collect();
+    sorted_columns.sort_by(|a, b| b.count.cmp(&a.count));
 
     println!("Column Distribution:");
-    for (col, count) in sorted_columns {
-        println!("{}: {}", col, count);
+    for col in &sorted_columns {
+        println!("{}", col);
     }
 }

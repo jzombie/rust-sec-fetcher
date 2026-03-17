@@ -1,45 +1,83 @@
+use clap::Parser;
 use csv::Reader;
-use std::env;
 use std::error::Error;
+use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const DATA_DIR: &str = "data/june-us-gaap";
+const DEFAULT_DATA_DIR: &str = "data/june-us-gaap";
+
+#[derive(Parser)]
+#[command(about = "Search US GAAP CSV files for rows containing a given XBRL tag")]
+struct Args {
+    /// The XBRL tag / column header to search for (e.g. Assets, Revenues)
+    tag: String,
+
+    /// Directory of US GAAP CSV files
+    #[arg(long, default_value = DEFAULT_DATA_DIR)]
+    dir: String,
+
+    /// Maximum values to display per file (0 = no limit)
+    #[arg(long, default_value_t = 20)]
+    max_values: usize,
+}
+
+/// A file that contains non-empty values for the requested XBRL tag.
+struct TagMatch {
+    path: PathBuf,
+    tag: String,
+    values: Vec<String>,
+    max_display: usize,
+}
+
+impl fmt::Display for TagMatch {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "\nFile: {}", self.path.display())?;
+        writeln!(f, "Values for '{}':", self.tag)?;
+        let limit = if self.max_display == 0 {
+            self.values.len()
+        } else {
+            self.max_display.min(self.values.len())
+        };
+        for v in &self.values[..limit] {
+            writeln!(f, "  - {}", v)?;
+        }
+        if limit < self.values.len() {
+            write!(f, "  ... ({} more)", self.values.len() - limit)?;
+        }
+        Ok(())
+    }
+}
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        eprintln!("Usage: {} <US_GAAP_TAG>", args[0]);
-        std::process::exit(1);
-    }
+    let args = Args::parse();
+    let data_dir = Path::new(&args.dir);
 
-    let target_tag = &args[1];
-    let data_dir = Path::new(DATA_DIR);
-
-    let mut matches: Vec<(PathBuf, Vec<String>)> = Vec::new();
+    let mut matches: Vec<TagMatch> = Vec::new();
 
     for entry in fs::read_dir(data_dir)? {
         let entry = entry?;
         let path = entry.path();
 
         if path.extension().map(|ext| ext == "csv").unwrap_or(false) {
-            match search_csv_for_tag(&path, target_tag) {
-                Ok(Some(values)) => matches.push((path.clone(), values)),
+            match search_csv_for_tag(&path, &args.tag) {
+                Ok(Some(values)) => matches.push(TagMatch {
+                    path,
+                    tag: args.tag.clone(),
+                    values,
+                    max_display: args.max_values,
+                }),
                 Ok(None) => continue,
-                Err(e) => eprintln!("⚠️ Skipped {} due to error: {}", path.display(), e),
+                Err(e) => eprintln!("Skipped {} due to error: {}", path.display(), e),
             }
         }
     }
 
     if matches.is_empty() {
-        println!("No files found with tag '{}'.", target_tag);
+        println!("No files found with tag '{}'.", args.tag);
     } else {
-        for (path, values) in matches {
-            println!("\n📄 File: {}", path.display());
-            println!("🔍 Values for '{}':", target_tag);
-            for v in values.iter().take(20) {
-                println!("  - {}", v);
-            }
+        for m in &matches {
+            println!("{}", m);
         }
     }
 
