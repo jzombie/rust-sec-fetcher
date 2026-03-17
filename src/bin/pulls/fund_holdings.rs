@@ -53,7 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let msg = format!("Failed to load ConfigManager: {}", e);
             error!("{}", msg);
             error_log.push(msg);
-            return Err(e.into());
+            return Err(e);
         }
     };
 
@@ -63,7 +63,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let msg = format!("Failed to initialize SecClient: {}", e);
             error!("{}", msg);
             error_log.push(msg);
-            return Err(e.into());
+            return Err(e);
         }
     };
 
@@ -74,7 +74,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let msg = format!("Failed to fetch investment companies: {}", e);
                 error!("{}", msg);
                 error_log.push(msg);
-                return Err(e.into());
+                return Err(e);
             }
         };
 
