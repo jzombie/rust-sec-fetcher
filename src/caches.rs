@@ -15,6 +15,17 @@ impl Caches {
     pub fn init(config_manager: &ConfigManager) {
         let cache_base_path = config_manager.get_config().cache_base_dir.as_ref().unwrap(); // Fetch from config
 
+        // TODO: Use cache-manager crate instead and let it handle
+        // Ensure the cache directory exists (important in CI / fresh environments
+        // where the default debug path "data/" may not be present yet).
+        if let Err(err) = std::fs::create_dir_all(cache_base_path) {
+            panic!(
+                "Failed to create cache directory '{}': {}",
+                cache_base_path.display(),
+                err
+            );
+        }
+
         // HTTP Cache
         {
             let http_cache_path = cache_base_path.join("http_storage_cache.bin");
