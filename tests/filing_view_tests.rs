@@ -1,4 +1,4 @@
-/// Integration tests for the `sec_fetcher::rendering` module.
+/// Integration tests for the `sec_fetcher::views` module.
 ///
 /// # Test strategy
 ///
@@ -24,10 +24,10 @@
 /// a fresh clone.
 ///
 /// Fixture files expected at:
-///   tests/fixtures/rendering/<TICKER>_8k_primary.html
-///   tests/fixtures/rendering/<TICKER>_8k_exhibit.html
+///   tests/fixtures/<TICKER>_8k_primary.html
+///   tests/fixtures/<TICKER>_8k_exhibit.html
 use flate2::read::GzDecoder;
-use sec_fetcher::rendering::{EmbeddingTextView, FilingView, MarkdownView};
+use sec_fetcher::views::{EmbeddingTextView, FilingView, MarkdownView};
 use std::io::Read;
 
 // ---------------------------------------------------------------------------

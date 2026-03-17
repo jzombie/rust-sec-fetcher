@@ -25,7 +25,7 @@ use std::error::Error;
 ///
 /// Plain-text filings have excess blank lines collapsed (same as [`MarkdownView`]).
 ///
-/// [`MarkdownView`]: crate::rendering::MarkdownView
+/// [`MarkdownView`]: crate::views::MarkdownView
 pub struct EmbeddingTextView;
 
 impl FilingView for EmbeddingTextView {

@@ -1,5 +1,5 @@
 use crate::network::SecClient;
-use crate::rendering::{FilingContentType, FilingView};
+use crate::views::{FilingContentType, FilingView};
 use std::error::Error;
 
 /// Fetches an SEC EDGAR document URL and renders it as text using `view`.
@@ -22,7 +22,7 @@ use std::error::Error;
 /// ```rust,no_run
 /// # use sec_fetcher::config::ConfigManager;
 /// # use sec_fetcher::network::{fetch_and_render, SecClient};
-/// # use sec_fetcher::rendering::MarkdownView;
+/// # use sec_fetcher::views::MarkdownView;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let config = ConfigManager::load()?;

@@ -40,7 +40,7 @@ pub enum FilingContentType {
 /// through unchanged; the default `render_binary` emits a bracketed notice.
 ///
 /// ```rust
-/// use sec_fetcher::rendering::FilingView;
+/// use sec_fetcher::views::FilingView;
 /// use std::error::Error;
 ///
 /// pub struct PlainTextView;

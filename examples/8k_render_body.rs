@@ -9,7 +9,7 @@
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::network::{fetch_8k_filings, fetch_and_render, fetch_cik_by_ticker_symbol, SecClient};
-use sec_fetcher::rendering::{EmbeddingTextView, MarkdownView};
+use sec_fetcher::views::{EmbeddingTextView, MarkdownView};
 use std::error::Error;
 use tokio;
 
