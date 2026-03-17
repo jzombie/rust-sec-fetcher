@@ -35,7 +35,7 @@ use std::error::Error;
 /// (purpose of transaction).  The primary purpose is ownership transparency:
 ///
 /// | Item | Contents |
-/// |------|-----------| 
+/// |------|-----------|
 /// | 2 | Identity and background of the filer |
 /// | 5 | Ownership interest: share count and percentage |
 /// | 6 | Certifications (passive intent) |

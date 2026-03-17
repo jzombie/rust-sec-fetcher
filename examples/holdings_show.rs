@@ -53,7 +53,9 @@ use std::error::Error;
 use std::fmt;
 
 #[derive(Parser)]
-#[command(about = "Show holdings changes or insider transactions across recent filings for a ticker")]
+#[command(
+    about = "Show holdings changes or insider transactions across recent filings for a ticker"
+)]
 struct Args {
     /// Ticker symbol: fund (SPY), institutional manager (BRK-A), or company (AAPL)
     ticker: String,
@@ -382,7 +384,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 };
                 let row = Form4Row {
                     filed: sub.filing_date.map(|d| d.to_string()).unwrap_or_default(),
-                    txn_date: t.transaction_date.map(|d| d.to_string()).unwrap_or_default(),
+                    txn_date: t
+                        .transaction_date
+                        .map(|d| d.to_string())
+                        .unwrap_or_default(),
                     filer_name: t.filer_name.chars().take(30).collect(),
                     role: role.chars().take(20).collect(),
                     action: format!("{} ({})", t.code_description(), t.transaction_code),

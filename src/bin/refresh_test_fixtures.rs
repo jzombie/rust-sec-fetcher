@@ -177,9 +177,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         let n = ex.name.to_ascii_lowercase();
                         !skip.iter().any(|e| n.ends_with(e))
                     })
-                    .ok_or_else(|| {
-                        format!("No renderable exhibit for '{}'", fixture.ticker)
-                    })?;
+                    .ok_or_else(|| format!("No renderable exhibit for '{}'", fixture.ticker))?;
                 format!("{}/{}", base, exhibit.name)
             }
         };

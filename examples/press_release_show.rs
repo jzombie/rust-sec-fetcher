@@ -35,7 +35,7 @@
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::network::{
-    fetch_and_render, fetch_cik_by_ticker_symbol, fetch_filing_index, fetch_8k_filings, SecClient,
+    fetch_8k_filings, fetch_and_render, fetch_cik_by_ticker_symbol, fetch_filing_index, SecClient,
 };
 use sec_fetcher::views::{EmbeddingTextView, FilingView, MarkdownView};
 use std::error::Error;

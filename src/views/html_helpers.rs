@@ -7,9 +7,8 @@ use std::error::Error;
 // Statics
 // ---------------------------------------------------------------------------
 
-static IX_HEADER_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(?is)<ix:header\b[^>]*>.*?</ix:header>").unwrap()
-});
+static IX_HEADER_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?is)<ix:header\b[^>]*>.*?</ix:header>").unwrap());
 
 static HIDDEN_DIV_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(
@@ -90,10 +89,11 @@ fn parse_table_row(line: &str) -> Vec<String> {
 }
 
 fn is_separator_row(line: &str) -> bool {
-    line.trim()
-        .trim_matches('|')
-        .split('|')
-        .all(|cell| cell.trim().chars().all(|c| c == '-' || c == ':' || c == ' '))
+    line.trim().trim_matches('|').split('|').all(|cell| {
+        cell.trim()
+            .chars()
+            .all(|c| c == '-' || c == ':' || c == ' ')
+    })
 }
 
 /// Converts a collected block of markdown table lines to labeled prose sentences.

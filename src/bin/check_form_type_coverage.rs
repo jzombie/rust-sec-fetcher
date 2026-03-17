@@ -94,9 +94,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut recent_counts: HashMap<String, usize> = HashMap::new();
     // Named variants not yet observed in any scanned quarter.
     // Retired variants are excluded — they are not expected in recent EDGAR data.
-    let mut not_yet_found: HashSet<FormType> = FormType::iter()
-        .filter(|ft| !ft.is_retired())
-        .collect();
+    let mut not_yet_found: HashSet<FormType> =
+        FormType::iter().filter(|ft| !ft.is_retired()).collect();
     let active_count = not_yet_found.len();
 
     let (mut year, mut quarter) = (start_year, start_quarter);
@@ -152,11 +151,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         println!(
             "Scanned {} quarters: {} Q{} → {} Q{}",
-            quarters_scanned,
-            start_year,
-            start_quarter,
-            oldest_quarter.0,
-            oldest_quarter.1
+            quarters_scanned, start_year, start_quarter, oldest_quarter.0, oldest_quarter.1
         );
     }
     println!();
@@ -183,8 +178,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if never_found.is_empty() {
         println!(
             "OK   forward: all {} active variants found across {} quarter(s)",
-            active_count,
-            quarters_scanned
+            active_count, quarters_scanned
         );
     } else {
         any_failure = true;

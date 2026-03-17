@@ -87,10 +87,7 @@ impl FilingDocument {
         if !self.is_exhibit() {
             return false;
         }
-        if self.is_sarbanes_oxley_cert()
-            || self.is_auditor_consent()
-            || self.is_xbrl_data()
-        {
+        if self.is_sarbanes_oxley_cert() || self.is_auditor_consent() || self.is_xbrl_data() {
             return false;
         }
         if self.document_type.to_uppercase() == "GRAPHIC" {

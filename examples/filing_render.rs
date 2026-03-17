@@ -63,7 +63,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let config = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config)?;
 
-    eprintln!("Fetching {} (view: {:?})", args.url, args.view.to_possible_value().unwrap().get_name());
+    eprintln!(
+        "Fetching {} (view: {:?})",
+        args.url,
+        args.view.to_possible_value().unwrap().get_name()
+    );
 
     let text = match args.view {
         ViewArg::Markdown => fetch_and_render(&client, &args.url, &MarkdownView).await?,

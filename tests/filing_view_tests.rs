@@ -172,8 +172,16 @@ fn standard_table_all_data_preserved_in_embedding() {
     assert_contains(&out, "Operating Income", "column header: Operating Income");
     // Row values
     assert_contains(&out, "Cloud Services", "row value: Cloud Services");
-    assert_contains(&out, "Enterprise Software", "row value: Enterprise Software");
-    assert_contains(&out, "Professional Services", "row value: Professional Services");
+    assert_contains(
+        &out,
+        "Enterprise Software",
+        "row value: Enterprise Software",
+    );
+    assert_contains(
+        &out,
+        "Professional Services",
+        "row value: Professional Services",
+    );
     // Numeric values
     assert_contains(&out, "7,200", "cell value: 7,200");
     assert_contains(&out, "875", "cell value: 875");
@@ -358,7 +366,9 @@ fn assert_table_headers_preserved(html: &str, rendered: &str, source: &str) {
 #[test]
 fn fixture_aapl_8k_primary_visible_content_preserved() {
     let Some(html) = load_gz_fixture("AAPL_8k_primary.html") else {
-        eprintln!("SKIP: AAPL_8k_primary.html.gz not found — run: cargo run --bin refresh_test_fixtures");
+        eprintln!(
+            "SKIP: AAPL_8k_primary.html.gz not found — run: cargo run --bin refresh_test_fixtures"
+        );
         return;
     };
 
@@ -366,8 +376,14 @@ fn fixture_aapl_8k_primary_visible_content_preserved() {
     let md = markdown(&html);
 
     // Neither output should be empty
-    assert!(!emb.trim().is_empty(), "EmbeddingTextView produced empty output for AAPL primary");
-    assert!(!md.trim().is_empty(), "MarkdownView produced empty output for AAPL primary");
+    assert!(
+        !emb.trim().is_empty(),
+        "EmbeddingTextView produced empty output for AAPL primary"
+    );
+    assert!(
+        !md.trim().is_empty(),
+        "MarkdownView produced empty output for AAPL primary"
+    );
 
     // No raw XBRL machine tokens in output
     for out in [&emb, &md] {
@@ -382,13 +398,18 @@ fn fixture_aapl_8k_primary_visible_content_preserved() {
 #[test]
 fn fixture_aapl_8k_exhibit_table_headers_preserved() {
     let Some(html) = load_gz_fixture("AAPL_8k_exhibit.html") else {
-        eprintln!("SKIP: AAPL_8k_exhibit.html.gz not found — run: cargo run --bin refresh_test_fixtures");
+        eprintln!(
+            "SKIP: AAPL_8k_exhibit.html.gz not found — run: cargo run --bin refresh_test_fixtures"
+        );
         return;
     };
 
     let emb = embedding(&html);
 
-    assert!(!emb.trim().is_empty(), "EmbeddingTextView produced empty output for AAPL exhibit");
+    assert!(
+        !emb.trim().is_empty(),
+        "EmbeddingTextView produced empty output for AAPL exhibit"
+    );
     assert_not_contains(&emb, "<ix:", "raw iXBRL tag in output");
 
     // Property: all non-blank table headers from the raw HTML appear in the embedding
@@ -406,7 +427,9 @@ fn fixture_aapl_8k_exhibit_table_headers_preserved() {
 #[test]
 fn fixture_aapl_8k_exhibit_markdown_preserves_tables() {
     let Some(html) = load_gz_fixture("AAPL_8k_exhibit.html") else {
-        eprintln!("SKIP: AAPL_8k_exhibit.html.gz not found — run: cargo run --bin refresh_test_fixtures");
+        eprintln!(
+            "SKIP: AAPL_8k_exhibit.html.gz not found — run: cargo run --bin refresh_test_fixtures"
+        );
         return;
     };
 

@@ -64,7 +64,6 @@ use strum_macros::{EnumIter, EnumProperty};
 #[derive(Debug, Clone, PartialEq, Eq, Hash, EnumIter, EnumProperty)]
 pub enum FormType {
     // ── Periodic reports ─────────────────────────────────────────────────────
-
     /// Annual report — `"10-K"`.
     #[strum(props(edgar = "10-K"))]
     TenK,
@@ -87,7 +86,6 @@ pub enum FormType {
     TenQA,
 
     // ── Current reports ───────────────────────────────────────────────────────
-
     /// Current report (material event) — `"8-K"`.
     #[strum(props(edgar = "8-K"))]
     EightK,
@@ -96,7 +94,6 @@ pub enum FormType {
     EightKA,
 
     // ── Proxy statements ──────────────────────────────────────────────────────
-
     /// Definitive proxy statement — `"DEF 14A"`.
     #[strum(props(edgar = "DEF 14A"))]
     Def14A,
@@ -110,7 +107,6 @@ pub enum FormType {
     Defa14A,
 
     // ── Registration statements ───────────────────────────────────────────────
-
     /// Registration statement, Form S-1 (full, often an IPO) — `"S-1"`.
     #[strum(props(edgar = "S-1"))]
     S1,
@@ -157,7 +153,6 @@ pub enum FormType {
     S8A,
 
     // ── Insider ownership ─────────────────────────────────────────────────────
-
     /// Initial statement of beneficial ownership (> 10% insiders) — `"3"`.
     #[strum(props(edgar = "3"))]
     Form3,
@@ -175,7 +170,6 @@ pub enum FormType {
     Form5,
 
     // ── Beneficial ownership — Schedule 13 ───────────────────────────────────
-
     /// Activist beneficial ownership > 5% — `"SCHEDULE 13D"`.
     ///
     /// Filed by the **investor** (not the target company) when crossing the
@@ -205,7 +199,6 @@ pub enum FormType {
     Sc13GA,
 
     // ── Institutional / fund forms ────────────────────────────────────────────
-
     /// Institutional investment manager quarterly holdings report — `"13F-HR"`.
     ///
     /// Required from managers with > $100 million AUM.  Lists every long
@@ -251,7 +244,6 @@ pub enum FormType {
     FundAmendment485BPos,
 
     // ── Prospectuses ──────────────────────────────────────────────────────────
-
     /// Rule 424(b)(4) prospectus — `"424B4"`.
     ///
     /// Filed after pricing a firm-commitment underwritten public offering;
@@ -279,7 +271,6 @@ pub enum FormType {
     Prospectus424B5,
 
     // ── Other high-frequency form types ──────────────────────────────────────
-
     /// Notice of proposed sale of restricted securities — `"144"`.
     ///
     /// Filed by insiders and affiliates before selling restricted or control
@@ -339,7 +330,6 @@ pub enum FormType {
     AbsEe,
 
     // ── Catch-all ─────────────────────────────────────────────────────────────
-
     /// Any EDGAR form type not listed above.
     ///
     /// The inner `String` is the original value received from EDGAR,
@@ -390,7 +380,6 @@ impl FormType {
         use strum::EnumProperty;
         self.get_str("retired").is_some()
     }
-
 }
 
 // ── Display ───────────────────────────────────────────────────────────────────
@@ -413,11 +402,9 @@ impl FromStr for FormType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use strum::IntoEnumIterator;
         let trimmed = s.trim();
-        Ok(
-            FormType::iter()
-                .find(|ft| ft.as_edgar_str().eq_ignore_ascii_case(trimmed))
-                .unwrap_or_else(|| FormType::Other(trimmed.to_string())),
-        )
+        Ok(FormType::iter()
+            .find(|ft| ft.as_edgar_str().eq_ignore_ascii_case(trimmed))
+            .unwrap_or_else(|| FormType::Other(trimmed.to_string())))
     }
 }
 

@@ -125,10 +125,7 @@ impl<'a> fmt::Display for FeedEntryRow<'a> {
             "{:<12}  {:<8}  {:<12}  {:<45}  {:<28}  {}{}",
             e.filing_date.map(|d| d.to_string()).unwrap_or_default(),
             e.form_type,
-            e.cik
-                .as_ref()
-                .map(|c| c.to_string())
-                .unwrap_or_default(),
+            e.cik.as_ref().map(|c| c.to_string()).unwrap_or_default(),
             e.company_name.chars().take(45).collect::<String>(),
             e.accession_number,
             items_str,

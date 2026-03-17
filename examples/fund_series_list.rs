@@ -32,7 +32,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if args.limit > 0 && funds.len() > args.limit {
-        eprintln!("(showing {} of {} total; use --limit 0 for all)", args.limit, funds.len());
+        eprintln!(
+            "(showing {} of {} total; use --limit 0 for all)",
+            args.limit,
+            funds.len()
+        );
     }
 
     Ok(())

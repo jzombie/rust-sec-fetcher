@@ -4,6 +4,6 @@ pub mod enums;
 pub mod models;
 pub mod network;
 pub mod parsers;
-pub mod views;
 pub mod utils;
+pub mod views;
 use caches::Caches;

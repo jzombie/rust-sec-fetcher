@@ -96,7 +96,11 @@ fn sniff_content_type(response: &reqwest::Response, url: &str) -> FilingContentT
         .and_then(|v| v.to_str().ok())
     {
         let ct_lower = ct_header.to_ascii_lowercase();
-        let mime: &str = ct_lower.split(';').next().unwrap_or(ct_lower.as_str()).trim();
+        let mime: &str = ct_lower
+            .split(';')
+            .next()
+            .unwrap_or(ct_lower.as_str())
+            .trim();
 
         if mime == "text/html" || mime == "application/xhtml+xml" {
             return FilingContentType::Html;

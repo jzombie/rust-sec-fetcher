@@ -50,9 +50,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;
 
-    let company_tickers = fetch_company_tickers(&client, true)
-        .await
-        .unwrap();
+    let company_tickers = fetch_company_tickers(&client, true).await.unwrap();
 
     // Override search string with company name if using direct symbol
     let search_string = {

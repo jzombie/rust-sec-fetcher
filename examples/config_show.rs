@@ -22,4 +22,3 @@ fn main() {
     let config = config_manager.get_config();
     println!("{}", config.pretty_print());
 }
-

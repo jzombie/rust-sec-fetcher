@@ -66,7 +66,10 @@ fn parsing_is_case_insensitive() {
     assert_eq!("10-k".parse::<FormType>().unwrap(), FormType::TenK);
     assert_eq!("8-k".parse::<FormType>().unwrap(), FormType::EightK);
     assert_eq!("def 14a".parse::<FormType>().unwrap(), FormType::Def14A);
-    assert_eq!("schedule 13g/a".parse::<FormType>().unwrap(), FormType::Sc13GA);
+    assert_eq!(
+        "schedule 13g/a".parse::<FormType>().unwrap(),
+        FormType::Sc13GA
+    );
     assert_eq!("nport-p".parse::<FormType>().unwrap(), FormType::NportP);
 }
 
@@ -126,5 +129,3 @@ fn aapl_fixture_form_type_round_trips() {
         );
     }
 }
-
-

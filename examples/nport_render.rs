@@ -61,7 +61,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
     println!("{}", "-".repeat(100));
     for (i, investment) in investments.head(510).iter().enumerate() {
-        println!("{}", NportInvestmentRow { index: i + 1, investment });
+        println!(
+            "{}",
+            NportInvestmentRow {
+                index: i + 1,
+                investment
+            }
+        );
     }
 
     Ok(())

@@ -7,7 +7,9 @@ use std::fmt;
 use tokio;
 
 #[derive(Parser)]
-#[command(about = "List SEC company tickers (operating companies + optionally derived instruments)")]
+#[command(
+    about = "List SEC company tickers (operating companies + optionally derived instruments)"
+)]
 struct Args {
     /// Filter by ticker symbol or company name substring (case-insensitive)
     #[arg(long)]
