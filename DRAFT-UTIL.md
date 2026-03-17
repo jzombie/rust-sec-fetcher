@@ -1,5 +1,9 @@
 TODO: Keep notice of 10-Q/A and 10-K/A forms (these are amended)
 
+## News and Announcements
+
+EDGAR News and Announcements: https://www.sec.gov/submit-filings/edgar-news-announcements
+
 ## SIC
 
 - SIC code list: https://www.sec.gov/search-filings/standard-industrial-classification-sic-code-list
