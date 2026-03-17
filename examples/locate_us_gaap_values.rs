@@ -5,7 +5,7 @@ use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const DEFAULT_DATA_DIR: &str = "data/june-us-gaap";
+const DEFAULT_DATA_DIR: &str = "data/14-mar-2026-us-gaap";
 
 #[derive(Parser)]
 #[command(about = "Search US GAAP CSV files for rows containing a given XBRL tag")]

@@ -10,7 +10,7 @@ use std::path::Path;
 #[command(about = "Count column-header frequencies across all CSV files in a directory")]
 struct Args {
     /// Directory containing the CSV files to analyze
-    #[arg(default_value = "data/us-gaap")]
+    #[arg(default_value = "data/14-mar-2026-us-gaap")]
     dir: String,
 }
 
