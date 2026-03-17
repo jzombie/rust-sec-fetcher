@@ -247,10 +247,7 @@ async fn test_rate_limit_5_concurrent_100ms_documents_formula() -> Result<(), Bo
 async fn test_rate_limit_1_concurrent_100ms_is_at_most_10rps() -> Result<(), Box<dyn Error>> {
     let mut server = Server::new_async().await;
     let _mock = server
-        .mock(
-            "GET",
-            mockito::Matcher::Regex(r"^/test/\d+$".to_string()),
-        )
+        .mock("GET", mockito::Matcher::Regex(r"^/test/\d+$".to_string()))
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body("{}")
@@ -601,10 +598,7 @@ fn test_throughput_formula_identifies_unsafe_configs() {
 async fn test_sequential_requests_respect_min_delay() -> Result<(), Box<dyn Error>> {
     let mut server = Server::new_async().await;
     let _mock = server
-        .mock(
-            "GET",
-            mockito::Matcher::Regex(r"^/delay/\d+$".to_string()),
-        )
+        .mock("GET", mockito::Matcher::Regex(r"^/delay/\d+$".to_string()))
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body("{}")
@@ -985,10 +979,7 @@ async fn test_canonical_10rps_configurations() -> Result<(), Box<dyn Error>> {
     for (cfg_idx, &(max_concurrent, min_delay_ms)) in configs.iter().enumerate() {
         let mut server = Server::new_async().await;
         let _mock = server
-            .mock(
-                "GET",
-                mockito::Matcher::Regex(format!(r"^/{cfg_idx}/\d+$")),
-            )
+            .mock("GET", mockito::Matcher::Regex(format!(r"^/{cfg_idx}/\d+$")))
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body("{}")
