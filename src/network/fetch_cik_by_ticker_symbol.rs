@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use crate::network::fetch_investment_company_series_and_class_dataset;
-use crate::network::fetch_operating_company_tickers;
+use crate::network::fetch_company_tickers;
 use crate::network::SecClient;
 
 use crate::models::InvestmentCompany;
@@ -57,7 +57,7 @@ pub async fn fetch_cik_by_ticker_symbol(
     // include_derived_instruments=true so that warrant, unit, and preferred
     // symbols (-WT, -UN, -PA…) are searchable. get_company_cik_by_ticker_symbol
     // resolves any derived instrument to its parent registrant's CIK.
-    let company_tickers = fetch_operating_company_tickers(&sec_client, true).await?;
+    let company_tickers = fetch_company_tickers(&sec_client, true).await?;
     if let Ok(company_cik) = Cik::get_company_cik_by_ticker_symbol(&company_tickers, ticker_symbol)
     {
         return Ok(company_cik);

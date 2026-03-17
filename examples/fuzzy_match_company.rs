@@ -1,7 +1,7 @@
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::Ticker;
-use sec_fetcher::network::{fetch_operating_company_tickers, SecClient};
+use sec_fetcher::network::{fetch_company_tickers, SecClient};
 use std::error::Error;
 use tokio;
 
@@ -50,7 +50,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;
 
-    let company_tickers = fetch_operating_company_tickers(&client, true)
+    let company_tickers = fetch_company_tickers(&client, true)
         .await
         .unwrap();
 

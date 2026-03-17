@@ -35,7 +35,7 @@ pub enum Url {
     /// company names but does not include warrants, units, preferred share
     /// classes, or ADRs.
     ///
-    /// See [`crate::network::fetch_operating_company_tickers`].
+    /// See [`crate::network::fetch_company_tickers`].
     CompanyTickersJson,
 
     /// Points to the SEC's supplementary plain-text ticker-to-CIK file.
@@ -46,9 +46,9 @@ pub enum Url {
     /// fund share classes that do not appear in the JSON file.  Company names
     /// are not available here — they are inherited from [`CompanyTickersJson`]
     /// via CIK lookup during the merge in
-    /// [`fetch_operating_company_tickers`].
+    /// [`fetch_company_tickers`].
     ///
-    /// See [`crate::network::fetch_operating_company_tickers`].
+    /// See [`crate::network::fetch_company_tickers`].
     CompanyTickersTxt,
 
     /// Points to the `companyfacts` XBRL JSON API for a specific CIK.

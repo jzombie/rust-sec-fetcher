@@ -11,7 +11,7 @@ use tracing_subscriber::EnvFilter;
 use sec_fetcher::{
     config::ConfigManager,
     network::{
-        fetch_investment_company_series_and_class_dataset, fetch_operating_company_tickers,
+        fetch_investment_company_series_and_class_dataset, fetch_company_tickers,
         fetch_us_gaap_fundamentals, SecClient,
     },
     utils::VecExtensions,
@@ -44,7 +44,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // instruments (warrants, units, prefs, delisted) share a CIK with their
     // parent and have no independent XBRL data, so they'd produce duplicates
     // or empty CSVs in this pipeline.
-    let company_tickers = fetch_operating_company_tickers(&client, false).await?;
+    let company_tickers = fetch_company_tickers(&client, false).await?;
     println!("Total primary listings: {}", company_tickers.len());
     println!("{:?}", company_tickers.head(60));
 
