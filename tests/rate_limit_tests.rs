@@ -353,18 +353,15 @@ async fn test_max_concurrent_cap_respected() -> Result<(), Box<dyn Error>> {
 #[tokio::test]
 async fn test_throughput_formula_multiple_configs() -> Result<(), Box<dyn Error>> {
     // (max_concurrent, min_delay_ms)
-    let configs: &[(usize, u64)] = &[
-        (1, 500),
-        (1, 100),
-        (2, 200),
-        (4, 400),
-        (10, 1000),
-    ];
+    let configs: &[(usize, u64)] = &[(1, 500), (1, 100), (2, 200), (4, 400), (10, 1000)];
 
     for (cfg_idx, &(max_concurrent, min_delay_ms)) in configs.iter().enumerate() {
         let mut server = Server::new_async().await;
         let _mock = server
-            .mock("GET", mockito::Matcher::Regex(r"^/\d+/test/\d+$".to_string()))
+            .mock(
+                "GET",
+                mockito::Matcher::Regex(r"^/\d+/test/\d+$".to_string()),
+            )
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body("{}")
@@ -420,7 +417,10 @@ async fn test_configs_safe_for_10rps_sec_limit() -> Result<(), Box<dyn Error>> {
     for (cfg_idx, &(max_concurrent, min_delay_ms)) in safe_configs.iter().enumerate() {
         let mut server = Server::new_async().await;
         let _mock = server
-            .mock("GET", mockito::Matcher::Regex(r"^/\d+/test/\d+$".to_string()))
+            .mock(
+                "GET",
+                mockito::Matcher::Regex(r"^/\d+/test/\d+$".to_string()),
+            )
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body("{}")
@@ -481,10 +481,14 @@ async fn test_configs_safe_for_10rps_sec_limit() -> Result<(), Box<dyn Error>> {
 ///    a working throttle and `max_concurrent=2, min_delay_ms=100` they must
 ///    span ≥ ceil(10/2) × 100 ms = 500 ms.
 #[tokio::test]
-async fn test_mixed_cached_and_non_cached_non_cached_still_throttled() -> Result<(), Box<dyn Error>> {
+async fn test_mixed_cached_and_non_cached_non_cached_still_throttled() -> Result<(), Box<dyn Error>>
+{
     let mut server = Server::new_async().await;
     let _mock = server
-        .mock("GET", mockito::Matcher::Regex(r"^/(warm|cold)/\d+$".to_string()))
+        .mock(
+            "GET",
+            mockito::Matcher::Regex(r"^/(warm|cold)/\d+$".to_string()),
+        )
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body("{}")
@@ -513,12 +517,18 @@ async fn test_mixed_cached_and_non_cached_non_cached_still_throttled() -> Result
             let url_warm = format!("{base_url}/warm/{i}"); // cache hit — no throttle
             let url_cold = format!("{base_url}/cold/{i}"); // cache miss — throttled
             [
-                tokio::spawn(async move { let _ = client_warm.fetch_json(&url_warm, None).await; }),
-                tokio::spawn(async move { let _ = client_cold.fetch_json(&url_cold, None).await; }),
+                tokio::spawn(async move {
+                    let _ = client_warm.fetch_json(&url_warm, None).await;
+                }),
+                tokio::spawn(async move {
+                    let _ = client_cold.fetch_json(&url_cold, None).await;
+                }),
             ]
         })
         .collect();
-    for h in handles { let _ = h.await; }
+    for h in handles {
+        let _ = h.await;
+    }
     let elapsed = start.elapsed();
 
     // 10 cold (uncached) requests with max_concurrent=2 require
@@ -552,10 +562,10 @@ async fn test_mixed_cached_and_non_cached_non_cached_still_throttled() -> Result
 #[test]
 fn test_throughput_formula_identifies_unsafe_configs() {
     let unsafe_configs: &[(usize, u64)] = &[
-        (5, 100),   // 50 req/s — 5× over limit
-        (10, 100),  // 100 req/s
-        (2, 100),   // 20 req/s
-        (3, 200),   // 15 req/s
+        (5, 100),  // 50 req/s — 5× over limit
+        (10, 100), // 100 req/s
+        (2, 100),  // 20 req/s
+        (3, 200),  // 15 req/s
     ];
 
     for &(max_concurrent, min_delay_ms) in unsafe_configs {
@@ -627,11 +637,7 @@ async fn test_sequential_requests_respect_min_delay() -> Result<(), Box<dyn Erro
 /// → `ThrottlePolicy` without being silently clamped, defaulted, or swapped.
 #[test]
 fn test_throttle_policy_reflects_config() {
-    let cases: &[(usize, u64, usize)] = &[
-        (1, 500, 5),
-        (4, 100, 3),
-        (10, 1000, 2),
-    ];
+    let cases: &[(usize, u64, usize)] = &[(1, 500, 5), (4, 100, 3), (10, 1000, 2)];
 
     for &(max_concurrent, min_delay_ms, max_retries) in cases {
         let mut app_config = AppConfig::default();
@@ -697,7 +703,9 @@ async fn test_total_elapsed_time_for_sequential_requests() -> Result<(), Box<dyn
         // raw_request_nocache: CacheBypass(true) — never reads or writes cache,
         // so the throttle is always applied regardless of prior test state.
         let url = format!("{base_url}/seq/{i}");
-        let _ = client.raw_request_nocache(reqwest::Method::GET, &url, None).await;
+        let _ = client
+            .raw_request_nocache(reqwest::Method::GET, &url, None)
+            .await;
     }
     let elapsed = start.elapsed();
 
@@ -727,7 +735,10 @@ async fn test_total_elapsed_time_for_sequential_requests() -> Result<(), Box<dyn
 async fn test_raw_request_nocache_always_throttled() -> Result<(), Box<dyn Error>> {
     let mut server = Server::new_async().await;
     let _mock = server
-        .mock("GET", mockito::Matcher::Regex(r"^/nocache/\d+$".to_string()))
+        .mock(
+            "GET",
+            mockito::Matcher::Regex(r"^/nocache/\d+$".to_string()),
+        )
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body("{}")
@@ -743,7 +754,9 @@ async fn test_raw_request_nocache_always_throttled() -> Result<(), Box<dyn Error
     // Warm the cache: these use raw_request (cached path).
     for i in 0..n {
         let url = format!("{base_url}/nocache/{i}");
-        let _ = client.raw_request(reqwest::Method::GET, &url, None, None).await;
+        let _ = client
+            .raw_request(reqwest::Method::GET, &url, None, None)
+            .await;
     }
 
     // Now re-request the *same* URLs via raw_request_nocache.
@@ -751,7 +764,9 @@ async fn test_raw_request_nocache_always_throttled() -> Result<(), Box<dyn Error
     let start = Instant::now();
     for i in 0..n {
         let url = format!("{base_url}/nocache/{i}");
-        let _ = client.raw_request_nocache(reqwest::Method::GET, &url, None).await;
+        let _ = client
+            .raw_request_nocache(reqwest::Method::GET, &url, None)
+            .await;
     }
     let elapsed = start.elapsed();
 
@@ -804,14 +819,18 @@ async fn test_raw_request_cache_hits_are_not_throttled() -> Result<(), Box<dyn E
     // Use unique per-request URLs so the cache is fresh
     for i in 0..n {
         let url = format!("{base_url}/cached/{i}");
-        let _ = client.raw_request(reqwest::Method::GET, &url, None, None).await;
+        let _ = client
+            .raw_request(reqwest::Method::GET, &url, None, None)
+            .await;
     }
 
     // Re-request the same URLs: all cache hits, no throttle applied.
     let start = Instant::now();
     for i in 0..n {
         let url = format!("{base_url}/cached/{i}");
-        let _ = client.raw_request(reqwest::Method::GET, &url, None, None).await;
+        let _ = client
+            .raw_request(reqwest::Method::GET, &url, None, None)
+            .await;
     }
     let elapsed = start.elapsed();
 
@@ -840,10 +859,14 @@ async fn test_raw_request_cache_hits_are_not_throttled() -> Result<(), Box<dyn E
 /// responses do not inflate the apparent concurrency and let nocache tasks
 /// slip through unthrottled.
 #[tokio::test]
-async fn test_mixed_raw_request_and_nocache_nocache_remains_throttled() -> Result<(), Box<dyn Error>> {
+async fn test_mixed_raw_request_and_nocache_nocache_remains_throttled() -> Result<(), Box<dyn Error>>
+{
     let mut server = Server::new_async().await;
     let _mock = server
-        .mock("GET", mockito::Matcher::Regex(r"^/(warm|cold)/\d+$".to_string()))
+        .mock(
+            "GET",
+            mockito::Matcher::Regex(r"^/(warm|cold)/\d+$".to_string()),
+        )
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body("{}")
@@ -860,7 +883,9 @@ async fn test_mixed_raw_request_and_nocache_nocache_remains_throttled() -> Resul
     // Warm the cache so /warm/{i} responses are stored.
     for i in 0..n {
         let url = format!("{base_url}/warm/{i}");
-        let _ = client.raw_request(reqwest::Method::GET, &url, None, None).await;
+        let _ = client
+            .raw_request(reqwest::Method::GET, &url, None, None)
+            .await;
     }
 
     // Concurrent burst: warm = cache hits via raw_request,
@@ -874,15 +899,21 @@ async fn test_mixed_raw_request_and_nocache_nocache_remains_throttled() -> Resul
             let url_cold = format!("{base_url}/cold/{i}");
             [
                 tokio::spawn(async move {
-                    let _ = c_warm.raw_request(reqwest::Method::GET, &url_warm, None, None).await;
+                    let _ = c_warm
+                        .raw_request(reqwest::Method::GET, &url_warm, None, None)
+                        .await;
                 }),
                 tokio::spawn(async move {
-                    let _ = c_cold.raw_request_nocache(reqwest::Method::GET, &url_cold, None).await;
+                    let _ = c_cold
+                        .raw_request_nocache(reqwest::Method::GET, &url_cold, None)
+                        .await;
                 }),
             ]
         })
         .collect();
-    for h in handles { let _ = h.await; }
+    for h in handles {
+        let _ = h.await;
+    }
     let elapsed = start.elapsed();
 
     // 10 cold (nocache) tasks with max_concurrent=2 →
