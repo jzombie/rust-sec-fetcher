@@ -59,9 +59,9 @@ pub fn parse_nport_xml(
                     }
                 }
             }
-            Event::Text(ref e) => {
+            Event::Text(e) => {
                 if let Some(investment) = &mut current_investment {
-                    let value = e.unescape()?.trim().to_string(); // Trim whitespace
+                    let value = e.decode()?.trim().to_string(); // Trim whitespace
 
                     // Only update if value is not empty (ignores whitespace-only nodes)
                     if !value.is_empty() {

@@ -60,8 +60,8 @@ pub fn parse_form4_xml(
                 tag_stack.push(local);
             }
 
-            Ok(Event::Text(ref e)) => {
-                let text = e.unescape().unwrap_or_default().trim().to_string();
+            Ok(Event::Text(e)) => {
+                let text = e.decode().unwrap_or_default().trim().to_string();
                 if text.is_empty() {
                     buf.clear();
                     continue;

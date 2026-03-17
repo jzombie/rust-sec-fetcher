@@ -184,9 +184,9 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
                 _ => {}
             },
 
-            Event::Text(ref e) => {
+            Event::Text(e) => {
                 if let (Some(field), Some(ref mut p)) = (current_field.take(), &mut current) {
-                    let text = e.unescape()?.to_string();
+                    let text = e.decode()?.to_string();
                     match field {
                         "title" => p.title = text,
                         "updated" => p.updated = text,

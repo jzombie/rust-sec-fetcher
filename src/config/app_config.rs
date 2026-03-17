@@ -1,5 +1,4 @@
 use merge::Merge;
-use schemars::schema::{Schema, SchemaObject, SingleOrVec};
 use schemars::{schema_for, JsonSchema};
 use serde::{Deserialize, Serialize};
 use serde_json::to_string_pretty;
@@ -93,17 +92,15 @@ impl AppConfig {
     /// Returns a dynamically generated list of valid keys with their types
     pub fn get_valid_keys() -> Vec<(String, String)> {
         let schema = schema_for!(AppConfig);
-
         schema
-            .schema
-            .object
-            .as_ref()
-            .unwrap()
-            .properties
-            .iter()
-            .map(|(key, value)| {
-                let type_name = Self::extract_type_name(value);
-                (key.clone(), type_name)
+            .get("properties")
+            .and_then(|p| p.as_object())
+            .into_iter()
+            .flat_map(|props| {
+                props.iter().map(|(key, value)| {
+                    let type_name = Self::extract_type_name(value);
+                    (key.clone(), type_name)
+                })
             })
             .collect()
     }
@@ -115,41 +112,43 @@ impl AppConfig {
     /// is extracted from the `Schema` object provided by `schemars`.
     ///
     /// # Arguments
-    /// - `schema`: A reference to a `Schema` object describing a field in `AppConfig`.
+    /// - `schema`: A reference to a `serde_json::Value` describing a field in `AppConfig`.
     ///
     /// # Returns
-    /// - A `String` representing the type name. If the schema specifies multiple possible
-    ///   types, they are joined with `|` (e.g., `"String | Null"`).
-    /// - If the type information is unavailable, `"Unknown"` is returned.
-    ///
-    /// # Example
-    /// Given the following schema for a field:
-    /// ```json
-    /// {
-    ///   "type": ["string", "null"]
-    /// }
-    /// ```
-    /// The function would return:
-    /// ```plaintext
-    /// "String | Null"
-    /// ```
-    fn extract_type_name(schema: &Schema) -> String {
-        if let Schema::Object(SchemaObject {
-            instance_type: Some(types),
-            ..
-        }) = schema
-        {
-            match types {
-                SingleOrVec::Single(t) => format!("{:?}", t), // Single type
-                SingleOrVec::Vec(vec) => vec
-                    .iter()
-                    .map(|t| format!("{:?}", t))
-                    .collect::<Vec<_>>()
-                    .join(" | "), // Multiple types
+    /// - A `String` representing the type name(s), joined with ` | ` when multiple.
+    /// - `"Unknown"` when type information is unavailable.
+    fn extract_type_name(schema: &serde_json::Value) -> String {
+        fn title_case(s: &str) -> String {
+            let mut c = s.chars();
+            match c.next() {
+                None => String::new(),
+                Some(f) => f.to_uppercase().to_string() + c.as_str(),
             }
-        } else {
-            "Unknown".to_string()
         }
+        // Direct type field — e.g. { "type": "string" } or { "type": ["string", "null"] }
+        if let Some(type_val) = schema.get("type") {
+            return match type_val {
+                serde_json::Value::String(s) => title_case(s),
+                serde_json::Value::Array(arr) => arr
+                    .iter()
+                    .filter_map(|v| v.as_str())
+                    .map(title_case)
+                    .collect::<Vec<_>>()
+                    .join(" | "),
+                _ => "Unknown".to_string(),
+            };
+        }
+        // schemars 1.x emits Option<T> as anyOf: [T-schema, { "type": "null" }]
+        if let Some(any_of) = schema.get("anyOf").and_then(|a| a.as_array()) {
+            let types: Vec<String> = any_of
+                .iter()
+                .filter_map(|s| s.get("type")?.as_str().map(title_case))
+                .collect();
+            if !types.is_empty() {
+                return types.join(" | ");
+            }
+        }
+        "Unknown".to_string()
     }
 
     // Returns the HTTP cache directory path as a `PathBuf` instance.
