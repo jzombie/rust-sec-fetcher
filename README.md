@@ -1,3 +1,7 @@
+# sec-fetcher
+
+[![made-with-rust][rust-logo]][rust-src-page] [![crates.io][crates-badge]][crates-page] [![PolyForm NC 1.0.0 licensed][polyform-license-badge]][polyform-license-page] [![Coverage][coveralls-badge]][coveralls-page]
+
 > **Experimental research project.** Not affiliated with or endorsed by the SEC. Not investment advice. Use at your own risk.
 
 [deepwiki-page]: https://deepwiki.com/jzombie/rust-sec-fetcher
@@ -422,4 +426,16 @@ cargo run --example us_gaap_column_stats
 
 ## License
 
-Licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). Free for personal and academic research. **Commercial use, and use as AI training data, are prohibited** without a separate agreement — contact info@zenosmosis.com.
+Licensed under the [PolyForm Noncommercial License 1.0.0][polyform-license-page]. Free for personal and academic research. **Commercial use, and use as AI training data, are prohibited** without a separate agreement — contact info@zenosmosis.com.
+
+[rust-src-page]: https://www.rust-lang.org/
+[rust-logo]: https://img.shields.io/badge/Made%20with-Rust-black
+
+[crates-page]: https://crates.io/crates/sec-fetcher
+[crates-badge]: https://img.shields.io/crates/v/sec-fetcher.svg
+
+[polyform-license-page]: https://polyformproject.org/licenses/noncommercial/1.0.0/
+[polyform-license-badge]: https://img.shields.io/badge/license-PolyForm%20NC%201.0.0-blue.svg
+
+[coveralls-page]: https://coveralls.io/github/jzombie/rust-sec-fetcher?branch=main
+[coveralls-badge]: https://img.shields.io/coveralls/github/jzombie/rust-sec-fetcher

@@ -12,6 +12,7 @@ version = 2
 allow = [
     "0BSD",
     "Apache-2.0",
+    "PolyForm-Noncommercial-1.0.0",
     "BSD-2-Clause",
     "BSD-3-Clause",
     "BSL-1.0",
