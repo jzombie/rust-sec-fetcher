@@ -3,6 +3,9 @@ name = "sec-fetcher"
 version = "0.1.0-alpha"
 edition = "2021"
 license = "PolyForm-Noncommercial-1.0.0"
+description = "Async Rust client for SEC EDGAR: fetch filings, fund holdings, XBRL data, and IPO registrations with compliant rate limiting."
+keywords = ["sec", "edgar", "finance", "filings", "stocks"]
+categories = ["api-bindings", "finance", "web-programming"]
 publish = false
 autobins = false
 
