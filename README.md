@@ -10,13 +10,31 @@ Before running examples, complete [setup and configuration](#configuration).
 
 ## Examples
 
-All examples require a [configured email address](#email-required). Set
-`SEC_FETCHER_EMAIL=your@email.com` in your environment to get started.
+All examples require an email address. The SEC mandates it in the `User-Agent` header of every automated request so they can contact you if your client misbehaves ([policy](https://www.sec.gov/os/accessing-edgar-data)). It is sent to the SEC, not to this library's author. See [Email (required)](#email-required) for all the ways to supply one.
 
 ### Client setup
 
-Every program that uses this library starts by loading the configuration and
-constructing a rate-limited HTTP client:
+Every program using this library starts by constructing a `ConfigManager` and a `SecClient`. There are two API entry points depending on how you supply the email:
+
+**`ConfigManager::from_app_config`** — supply values directly in code:
+
+```rust,no_run
+use sec_fetcher::config::{AppConfig, ConfigManager};
+use sec_fetcher::network::SecClient;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let config = ConfigManager::from_app_config(&AppConfig {
+        email: Some("your@example.com".into()),
+        ..Default::default()
+    });
+    let client = SecClient::from_config_manager(&config)?;
+    // pass &client to any fetch_* function below
+    Ok(())
+}
+```
+
+**`ConfigManager::load()`** — reads from config file, environment variable, or interactive prompt (see [Email (required)](#email-required)):
 
 ```rust,no_run
 use sec_fetcher::config::ConfigManager;
@@ -26,7 +44,6 @@ use sec_fetcher::network::SecClient;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config)?;
-    // pass &client to any fetch_* function below
     Ok(())
 }
 ```
@@ -385,11 +402,14 @@ No config file is required to get started. The simplest way to try it out is to 
 
 ### Email (required)
 
-The SEC mandates a contact address in every automated request's `User-Agent` header ([policy](https://www.sec.gov/os/accessing-edgar-data)). The email is resolved in this order:
+The SEC mandates a contact address in every automated request's `User-Agent` header ([policy](https://www.sec.gov/os/accessing-edgar-data)).
 
-1. **Config file** — `email = "your.name@example.com"` in `sec_fetcher_config.toml`
-2. **Environment variable** — `SEC_FETCHER_EMAIL=your@example.com cargo run`
-3. **Startup prompt** — if neither of the above is set and you are running in a terminal, the program will ask you to type your email before it does anything else
+There are four ways to supply it, in precedence order (highest first):
+
+1. **Programmatic** — pass it directly via `ConfigManager::from_app_config(&AppConfig { email: Some("…".into()), ..Default::default() })`. Bypasses file and environment lookup entirely.
+2. **Config file** — `email = "your.name@example.com"` in `sec_fetcher_config.toml` (or the path passed to `ConfigManager::from_config`).
+3. **Environment variable** — set `SEC_FETCHER_EMAIL=your@example.com` before running; `ConfigManager::load()` picks it up automatically.
+4. **Startup prompt** — if none of the above is set and the process is attached to a terminal, the library will ask for the email interactively at startup.
 
 ### App name and version override (optional)
 
