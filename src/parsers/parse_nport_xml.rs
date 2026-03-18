@@ -1,4 +1,5 @@
 use crate::models::{NportInvestment, Ticker};
+use crate::normalize::normalize_nport_weight_pct;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use rust_decimal::Decimal;
@@ -102,7 +103,9 @@ pub fn parse_nport_xml(
                                     Decimal::from_str(&value).unwrap_or_default().round_dp(2)
                             }
                             "pctVal" => {
-                                investment.pct_val = Decimal::from_str(&value).unwrap_or_default()
+                                investment.pct_val = normalize_nport_weight_pct(
+                                    Decimal::from_str(&value).unwrap_or_default(),
+                                );
                             }
                             "payoffProfile" => investment.payoff_profile = value,
                             "assetCat" => investment.asset_cat = value,

@@ -103,5 +103,5 @@ pub async fn fetch_13f(
         .raw_request(reqwest::Method::GET, &url, None, None)
         .await?;
     let xml = response.text().await?;
-    parse_13f_xml(&xml)
+    parse_13f_xml(&xml, submission.filing_date)
 }

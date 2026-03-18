@@ -1,4 +1,6 @@
 use crate::models::ThirteenfHolding;
+use crate::normalize::{compute_13f_weight_pct, normalize_13f_value_usd};
+use chrono::NaiveDate;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use rust_decimal::Decimal;
@@ -8,20 +10,23 @@ use std::error::Error;
 /// Parses a Form 13F-HR `informationTable.xml` document and returns one
 /// [`ThirteenfHolding`] per `<infoTable>` entry, sorted by `value_usd` descending.
 ///
-/// The SEC publishes the informationTable as a separate XML file within the
-/// filing index — fetch via [`crate::network::fetch_13f`] which
-/// discovers the correct filename from the index before fetching.
+/// The `filing_date` parameter is required to resolve the `<value>` unit — the
+/// EDGAR 13F-HR schema changed from thousands-of-USD to actual-USD around
+/// 2023-01-01.  Pass the `filing_date` from the corresponding
+/// [`crate::models::CikSubmission`].  All unit conversion is handled by
+/// [`crate::normalize::normalize_13f_value_usd`]; do not apply any multiplier
+/// at the call site.
 ///
-/// Note: the `<value>` element in the EDGAR 13F-HR `informationTable` XML is
-/// in **actual US dollars** — not thousands.  Empirically confirmed by
-/// inspecting a real filing (BRK-A Q4 2025, accession 0001193125-26-054580):
-/// <https://www.sec.gov/Archives/edgar/data/1067983/000119312526054580/50240.xml>
+/// Portfolio weight percentages (0–100 scale) are computed here via
+/// [`crate::normalize::compute_13f_weight_pct`] and stored in
+/// [`ThirteenfHolding::weight_pct`].
 ///
-/// The EDGAR Filing Manual (Vol. II, §16) and the 13F XML Technical
-/// Specification are the authoritative references:
-/// <https://www.sec.gov/info/edgar/edgarfm-vol2.pdf>
-/// <https://www.sec.gov/info/edgar/forms/edgarform13f/13fxmltechspec.pdf>
-pub fn parse_13f_xml(xml: &str) -> Result<Vec<ThirteenfHolding>, Box<dyn Error>> {
+/// The filing index and the correct informationTable filename are discovered
+/// automatically by [`crate::network::fetch_13f`].
+pub fn parse_13f_xml(
+    xml: &str,
+    filing_date: Option<NaiveDate>,
+) -> Result<Vec<ThirteenfHolding>, Box<dyn Error>> {
     let mut reader = Reader::from_str(xml);
     reader.config_mut().trim_text(true);
 
@@ -88,9 +93,9 @@ pub fn parse_13f_xml(xml: &str) -> Result<Vec<ThirteenfHolding>, Box<dyn Error>>
                         name: std::mem::take(&mut name),
                         cusip: std::mem::take(&mut cusip),
                         title_of_class: std::mem::take(&mut title_of_class),
-                        // The modern EDGAR 13F-HR XML stores <value> in actual
-                        // US dollars (not thousands), so no conversion is needed.
-                        value_usd: value_raw,
+                        // Unit conversion (thousands era vs. actual-USD era) is
+                        // handled exclusively by normalize_13f_value_usd.
+                        value_usd: normalize_13f_value_usd(value_raw, filing_date),
                         shares,
                         shares_type: std::mem::take(&mut shares_type),
                         put_call: put_call.take(),
@@ -111,12 +116,11 @@ pub fn parse_13f_xml(xml: &str) -> Result<Vec<ThirteenfHolding>, Box<dyn Error>>
         buf.clear();
     }
 
-    // Second pass: compute portfolio weights (0-100 percentage scale).
+    // Second pass: compute portfolio weights via normalize::percentage.
+    // All weight math lives in compute_13f_weight_pct — do not replicate it here.
     let total: Decimal = holdings.iter().map(|h| h.value_usd).sum();
-    if !total.is_zero() {
-        for h in holdings.iter_mut() {
-            h.weight_pct = (h.value_usd / total * dec!(100)).round_dp(4);
-        }
+    for h in holdings.iter_mut() {
+        h.weight_pct = compute_13f_weight_pct(h.value_usd, total);
     }
 
     holdings.sort_by(|a, b| b.value_usd.cmp(&a.value_usd));

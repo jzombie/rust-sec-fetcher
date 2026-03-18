@@ -5,7 +5,9 @@
 /// verified by hand.
 ///
 /// Key invariants that every 13F filing must satisfy:
-/// - `value_usd` = raw `<value>` × 1 000 (SEC publishes in thousands of USD).
+/// - `value_usd` is in **actual US dollars** after normalization.  Pre-2023
+///   filings reported `<value>` in thousands; [`sec_fetcher::normalize::normalize_13f_value_usd`]
+///   handles the conversion transparently based on `filing_date`.
 /// - `weight_pct` is on the **0–100 percentage scale** (e.g. `75.0000` means 75%).
 /// - `weight_pct` values across all holdings must sum to **exactly 100.0000**.
 use rust_decimal::Decimal;
@@ -91,7 +93,7 @@ const THREE_POSITION_13F: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 
 #[test]
 fn value_stored_verbatim_as_actual_dollars() {
-    let holdings = parse_13f_xml(TWO_POSITION_13F).unwrap();
+    let holdings = parse_13f_xml(TWO_POSITION_13F, None).unwrap();
     // Parser sorts by value_usd descending, so AAPL ($15 M) is first.
     assert_eq!(holdings[0].cusip, "037833100", "AAPL should be first");
     assert_eq!(
@@ -111,7 +113,7 @@ fn value_stored_verbatim_as_actual_dollars() {
 
 #[test]
 fn weight_pct_is_on_0_to_100_scale() {
-    let holdings = parse_13f_xml(TWO_POSITION_13F).unwrap();
+    let holdings = parse_13f_xml(TWO_POSITION_13F, None).unwrap();
     // AAPL is 75%, MSFT is 25% — none of these values are valid in a 0-1 world.
     let aapl = holdings.iter().find(|h| h.cusip == "037833100").unwrap();
     let msft = holdings.iter().find(|h| h.cusip == "594918104").unwrap();
@@ -133,7 +135,7 @@ fn weight_pct_is_on_0_to_100_scale() {
 #[test]
 fn weight_pct_is_not_multiplied_by_100_again() {
     // Regression guard: weight_pct must never exceed 100.
-    let holdings = parse_13f_xml(TWO_POSITION_13F).unwrap();
+    let holdings = parse_13f_xml(TWO_POSITION_13F, None).unwrap();
     for h in &holdings {
         assert!(
             h.weight_pct <= dec!(100),
@@ -148,14 +150,14 @@ fn weight_pct_is_not_multiplied_by_100_again() {
 
 #[test]
 fn weights_sum_to_100_two_positions() {
-    let holdings = parse_13f_xml(TWO_POSITION_13F).unwrap();
+    let holdings = parse_13f_xml(TWO_POSITION_13F, None).unwrap();
     let sum: Decimal = holdings.iter().map(|h| h.weight_pct).sum();
     assert_eq!(sum, dec!(100.0000), "weights must sum to 100%; got {}", sum);
 }
 
 #[test]
 fn weights_sum_to_100_three_positions() {
-    let holdings = parse_13f_xml(THREE_POSITION_13F).unwrap();
+    let holdings = parse_13f_xml(THREE_POSITION_13F, None).unwrap();
     let sum: Decimal = holdings.iter().map(|h| h.weight_pct).sum();
     assert_eq!(sum, dec!(100.0000), "weights must sum to 100%; got {}", sum);
 }
@@ -164,7 +166,7 @@ fn weights_sum_to_100_three_positions() {
 
 #[test]
 fn three_position_weights_are_correct() {
-    let holdings = parse_13f_xml(THREE_POSITION_13F).unwrap();
+    let holdings = parse_13f_xml(THREE_POSITION_13F, None).unwrap();
     // Sorted by value_usd descending: NVDA 60%, AAPL 25%, MSFT 15%.
     let nvda = holdings.iter().find(|h| h.cusip == "67066G104").unwrap();
     let aapl = holdings.iter().find(|h| h.cusip == "037833100").unwrap();
@@ -179,7 +181,7 @@ fn three_position_weights_are_correct() {
 
 #[test]
 fn holdings_sorted_by_value_usd_descending() {
-    let holdings = parse_13f_xml(THREE_POSITION_13F).unwrap();
+    let holdings = parse_13f_xml(THREE_POSITION_13F, None).unwrap();
     // NVDA (60k) > AAPL (25k) > MSFT (15k)
     assert_eq!(holdings[0].cusip, "67066G104", "NVDA first");
     assert_eq!(holdings[1].cusip, "037833100", "AAPL second");
@@ -190,7 +192,7 @@ fn holdings_sorted_by_value_usd_descending() {
 
 #[test]
 fn shares_and_shares_type_are_parsed() {
-    let holdings = parse_13f_xml(TWO_POSITION_13F).unwrap();
+    let holdings = parse_13f_xml(TWO_POSITION_13F, None).unwrap();
     let aapl = holdings.iter().find(|h| h.cusip == "037833100").unwrap();
     assert_eq!(aapl.shares, dec!(85000));
     assert_eq!(aapl.shares_type, "SH");
@@ -214,7 +216,7 @@ fn single_position_has_100_pct_weight() {
     <investmentDiscretion>SOLE</investmentDiscretion>
   </infoTable>
 </informationTable>"#;
-    let holdings = parse_13f_xml(SINGLE).unwrap();
+    let holdings = parse_13f_xml(SINGLE, None).unwrap();
     assert_eq!(holdings.len(), 1);
     assert_eq!(holdings[0].weight_pct, dec!(100.0000));
 }
@@ -244,7 +246,7 @@ fn fractional_weights_rounded_to_4dp() {
     <investmentDiscretion>SOLE</investmentDiscretion>
   </infoTable>
 </informationTable>"#;
-    let holdings = parse_13f_xml(THIRDS).unwrap();
+    let holdings = parse_13f_xml(THIRDS, None).unwrap();
     // ALPHA: 2/3 * 100 = 66.6667 (rounded), BETA: 1/3 * 100 = 33.3333
     let alpha = holdings.iter().find(|h| h.cusip == "000000001").unwrap();
     let beta = holdings.iter().find(|h| h.cusip == "000000002").unwrap();
