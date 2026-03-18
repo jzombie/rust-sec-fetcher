@@ -350,3 +350,94 @@ fn test_app_version_default_constant() {
     // DEFAULT_APP_VERSION must equal the crate version baked in at compile time
     assert_eq!(DEFAULT_APP_VERSION, env!("CARGO_PKG_VERSION"));
 }
+
+#[test]
+fn test_app_name_string_override_takes_precedence_over_config_and_env() {
+    let _lock = ENV_MUTEX.lock().unwrap();
+    std::env::set_var(APP_NAME_ENV_VAR, "env-app-name");
+
+    let (_temp_dir, config_path) = create_temp_config(
+        r#"email = "test@example.com"
+app_name = "file-app-name""#,
+    );
+
+    let config_manager = ConfigManager::from_config_with_app_identity(
+        Some(config_path),
+        Some("string-app-name"),
+        None,
+    )
+    .expect("Failed to load config with app_name string override");
+
+    assert_eq!(
+        config_manager.get_config().app_name,
+        Some("string-app-name".to_string())
+    );
+
+    let client = SecClient::from_config_manager(&config_manager).unwrap();
+    assert_eq!(
+        client.get_user_agent(),
+        format!("string-app-name/{} (+test@example.com)", env!("CARGO_PKG_VERSION"))
+    );
+
+    std::env::remove_var(APP_NAME_ENV_VAR);
+}
+
+#[test]
+fn test_app_version_string_override_takes_precedence_over_config_and_env() {
+    let _lock = ENV_MUTEX.lock().unwrap();
+    std::env::set_var(APP_VERSION_ENV_VAR, "9.9.9-env");
+
+    let (_temp_dir, config_path) = create_temp_config(
+        r#"email = "test@example.com"
+app_version = "2.0.0-file""#,
+    );
+
+    let config_manager = ConfigManager::from_config_with_app_identity(
+        Some(config_path),
+        None,
+        Some("7.7.7-string"),
+    )
+    .expect("Failed to load config with app_version string override");
+
+    assert_eq!(
+        config_manager.get_config().app_version,
+        Some("7.7.7-string".to_string())
+    );
+
+    let client = SecClient::from_config_manager(&config_manager).unwrap();
+    assert_eq!(
+        client.get_user_agent(),
+        "sec-fetcher/7.7.7-string (+test@example.com)"
+    );
+
+    std::env::remove_var(APP_VERSION_ENV_VAR);
+}
+
+#[test]
+fn test_app_identity_string_overrides_both_name_and_version() {
+    let _lock = ENV_MUTEX.lock().unwrap();
+    std::env::set_var(APP_NAME_ENV_VAR, "env-app");
+    std::env::set_var(APP_VERSION_ENV_VAR, "1.0.0-env");
+
+    let (_temp_dir, config_path) = create_temp_config(
+        r#"email = "test@example.com"
+app_name = "file-app"
+app_version = "2.0.0-file""#,
+    );
+
+    let config_manager = ConfigManager::from_config_with_app_identity(
+        Some(config_path),
+        Some("string-app"),
+        Some("3.0.0-string"),
+    )
+    .expect("Failed to load config with app identity string overrides");
+
+    let client = SecClient::from_config_manager(&config_manager).unwrap();
+    assert_eq!(
+        client.get_user_agent(),
+        "string-app/3.0.0-string (+test@example.com)"
+    );
+
+    std::env::remove_var(APP_NAME_ENV_VAR);
+    std::env::remove_var(APP_VERSION_ENV_VAR);
+}

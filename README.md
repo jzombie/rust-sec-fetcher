@@ -1,6 +1,10 @@
 # sec-fetcher
 
-[![made-with-rust][rust-logo]][rust-src-page] [![crates.io][crates-badge]][crates-page] [![PolyForm NC 1.0.0 licensed][polyform-license-badge]][polyform-license-page] [![Coverage][coveralls-badge]][coveralls-page]
+[![made-with-rust][rust-logo]][rust-src-page] [![crates.io][crates-badge]][crates-page] [![PolyForm NC 1.0.0 licensed][polyform-license-badge]][polyform-license-page] [![DeepWiki][deepwiki-badge]][deepwiki-page] [![Coverage][coveralls-badge]][coveralls-page]
+
+> **Experimental research project.** Not affiliated with or endorsed by the SEC. Not investment advice. Use at your own risk.
+
+Before running examples, complete [setup and configuration](#configuration).
 
 ## Examples
 
@@ -346,11 +350,6 @@ cargo run --example us_gaap_search -- NetIncomeLoss --max-values 5
 cargo run --example us_gaap_column_stats
 ```
 
-> **Experimental research project.** Not affiliated with or endorsed by the SEC. Not investment advice. Use at your own risk.
-
-[deepwiki-page]: https://deepwiki.com/jzombie/rust-sec-fetcher
-[deepwiki-badge]: https://deepwiki.com/badge.svg
-
 ## Feature flags
 
 | Feature   | Default  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -394,10 +393,17 @@ The SEC mandates a contact address in every automated request's `User-Agent` hea
 
 The first two segments of the `User-Agent` string sent to the SEC are the app name and version (`AppName/Version (+email)`). Both default to sec-fetcher's own values at runtime. Override either one in any of these ways:
 
-|         | Config file             | Environment variable            |
-| ------- | ----------------------- | ------------------------------- |
-| Name    | `app_name = "my-app"`   | `SEC_FETCHER_APP_NAME=my-app`   |
-| Version | `app_version = "1.2.3"` | `SEC_FETCHER_APP_VERSION=1.2.3` |
+|         | Programmatic string override                                                 | Config file             | Environment variable            |
+| ------- | ----------------------------------------------------------------------------- | ----------------------- | ------------------------------- |
+| Name    | `ConfigManager::from_config_with_app_identity(path, Some("my-app"), None)` | `app_name = "my-app"`   | `SEC_FETCHER_APP_NAME=my-app`   |
+| Version | `ConfigManager::from_config_with_app_identity(path, None, Some("1.2.3"))`  | `app_version = "1.2.3"` | `SEC_FETCHER_APP_VERSION=1.2.3` |
+
+Precedence for these two fields is:
+
+1. **Programmatic string override** (from `from_config_with_app_identity`)
+2. **Config file** (`app_name` / `app_version`)
+3. **Environment variable** (`SEC_FETCHER_APP_NAME` / `SEC_FETCHER_APP_VERSION`)
+4. **Built-in defaults** (`sec-fetcher` / crate version)
 
 ### Rate limiting
 
@@ -439,3 +445,6 @@ Licensed under the [PolyForm Noncommercial License 1.0.0][polyform-license-page]
 
 [coveralls-page]: https://coveralls.io/github/jzombie/rust-sec-fetcher?branch=main
 [coveralls-badge]: https://img.shields.io/coveralls/github/jzombie/rust-sec-fetcher
+
+[deepwiki-page]: https://deepwiki.com/jzombie/rust-sec-fetcher
+[deepwiki-badge]: https://deepwiki.com/badge.svg
