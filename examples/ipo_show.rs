@@ -62,10 +62,11 @@
 ///   cargo run --example ipo_show -- --ticker RDDT --part all
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
+use sec_fetcher::enums::Url;
 use sec_fetcher::models::{Cik, TickerSymbol};
 use sec_fetcher::network::{
-    fetch_and_render, fetch_cik_by_ticker_symbol, fetch_company_profile, fetch_filings,
-    fetch_filing_index, SecClient,
+    fetch_and_render, fetch_cik_by_ticker_symbol, fetch_company_profile, fetch_filing_index_by_url,
+    fetch_filings, SecClient,
 };
 use sec_fetcher::views::{EmbeddingTextView, FilingView, MarkdownView};
 use std::error::Error;
@@ -185,11 +186,8 @@ async fn run<V: FilingView>(
 
         let doc_url = filing.as_primary_document_url();
         // Index page lists every document in the filing (exhibits, etc.)
-        let index_url = format!(
-            "{}/{}-index.htm",
-            filing.as_edgar_archive_url(),
-            filing.accession_number
-        );
+        let index_url =
+            Url::CikAccessionIndex(filing.cik.clone(), filing.accession_number.clone()).value();
 
         println!("[{}] {}  Filed: {}", i, filing.form, date);
         println!("    Document:  {}", doc_url);
@@ -202,8 +200,15 @@ async fn run<V: FilingView>(
     for f in &all_filings {
         *counts.entry(f.form.as_str()).or_insert(0) += 1;
     }
-    let summary: Vec<String> = counts.iter().map(|(k, v)| format!("{}: {}", k, v)).collect();
-    println!("{} total filing(s)  ({})", all_filings.len(), summary.join(", "));
+    let summary: Vec<String> = counts
+        .iter()
+        .map(|(k, v)| format!("{}: {}", k, v))
+        .collect();
+    println!(
+        "{} total filing(s)  ({})",
+        all_filings.len(),
+        summary.join(", ")
+    );
     println!();
     println!("Tip: use --index <N> --part body to render any filing above.");
 
@@ -253,7 +258,9 @@ async fn run<V: FilingView>(
 
     // ── Exhibits (only when --part=all) ───────────────────────────────────
     if matches!(args.part, FilingPart::All) {
-        let index = fetch_filing_index(client, target).await?;
+        let index_url =
+            Url::CikAccessionIndex(target.cik.clone(), target.accession_number.clone()).value();
+        let index = fetch_filing_index_by_url(client, &index_url).await?;
         let exhibits = index.substantive_exhibits();
 
         if exhibits.is_empty() {
@@ -270,10 +277,13 @@ async fn run<V: FilingView>(
             eprintln!("  {} — {}", ex.document_type, ex.name);
         }
 
-        let base_url = target.as_edgar_archive_url();
-
         for ex in exhibits {
-            let url = format!("{}/{}", base_url, ex.name);
+            let url = Url::CikAccessionDocument(
+                target.cik.clone(),
+                target.accession_number.clone(),
+                ex.name.clone(),
+            )
+            .value();
             eprintln!("Rendering exhibit: {}", url);
 
             println!();

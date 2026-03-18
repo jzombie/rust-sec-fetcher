@@ -26,4 +26,4 @@ pub use fetch_s2::fetch_s2_filings;
 pub use fetch_s3::fetch_s3_filings;
 pub use fetch_schedule_13d::fetch_schedule_13d_filings;
 pub use fetch_schedule_13g::fetch_schedule_13g_filings;
-pub use filing_index::fetch_filing_index;
+pub use filing_index::{fetch_filing_index, fetch_filing_index_by_url};

@@ -2,6 +2,7 @@ use crate::enums::Url;
 use crate::models::{CikSubmission, FilingDocument, FilingIndex};
 use crate::network::SecClient;
 use regex::Regex;
+use reqwest::Method;
 use std::error::Error;
 use std::sync::LazyLock as Lazy;
 
@@ -109,11 +110,39 @@ pub async fn fetch_filing_index(
     filing: &CikSubmission,
 ) -> Result<FilingIndex, Box<dyn Error>> {
     let url = Url::CikAccessionIndex(filing.cik.clone(), filing.accession_number.clone()).value();
+    fetch_filing_index_by_url(client, &url).await
+}
 
-    let response = client
-        .raw_request(reqwest::Method::GET, &url, None, None)
-        .await?;
-
+/// Fetches the EDGAR filing index from a direct index URL, returning the list
+/// of all documents in the filing (primary form, exhibits, stylesheets, etc.).
+///
+/// This is the URL-based counterpart to [`fetch_filing_index`] and accepts any
+/// EDGAR `-index.htm` URL directly.  Use it when you have an index URL from a
+/// source other than a [`CikSubmission`] — e.g. from an atom feed entry's
+/// `filing_href`, a user-supplied URL, or a URL constructed from raw CIK and
+/// accession-number strings.
+///
+/// # Example
+/// ```rust,no_run
+/// # use sec_fetcher::config::ConfigManager;
+/// # use sec_fetcher::network::{fetch_filing_index_by_url, SecClient};
+/// # #[tokio::main]
+/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let config = ConfigManager::load()?;
+/// let client = SecClient::from_config_manager(&config)?;
+/// let url = "https://www.sec.gov/Archives/edgar/data/320193/000110465926027911/0001104659-26-027911-index.htm";
+/// let index = fetch_filing_index_by_url(&client, url).await?;
+/// for doc in index.substantive_exhibits() {
+///     println!("{} — {}", doc.document_type, doc.name);
+/// }
+/// # Ok(())
+/// # }
+/// ```
+pub async fn fetch_filing_index_by_url(
+    client: &SecClient,
+    url: &str,
+) -> Result<FilingIndex, Box<dyn Error>> {
+    let response = client.raw_request(Method::GET, url, None, None).await?;
     let html = response.text().await?;
     parse_filing_index_html(&html)
 }
