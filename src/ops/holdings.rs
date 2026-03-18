@@ -21,9 +21,11 @@ pub struct Position {
     pub val_usd: Decimal,
     /// Portfolio weight as a percentage (0–100 scale).
     ///
-    /// For N-PORT this comes directly from the `pct_val` field (converted from
-    /// 0–1 to 0–100); for 13F it is derived from the position's share of the
-    /// total reported value across all holdings.
+    /// For N-PORT this is the `pct_val` field from the XML `<pctVal>` element,
+    /// which the SEC publishes already on the 0–100 scale (e.g. `7.7546` means
+    /// 7.7546%).  For 13F this is the `weight_pct` field computed by
+    /// [`crate::parsers::parse_13f_xml`] immediately after parsing, using each
+    /// position's share of the total reported value.
     pub weight: Decimal,
 }
 
@@ -58,21 +60,16 @@ pub fn positions_from_nport(investments: &[NportInvestment]) -> Vec<Position> {
 
 /// Converts 13F holdings into normalised [`Position`] snapshots.
 ///
-/// Portfolio weight is derived from each position's share of the total
-/// reported value, since 13F filings do not include a percentage field.
+/// Portfolio weight is read directly from [`ThirteenfHolding::weight_pct`],
+/// which is computed at parse time by [`crate::parsers::parse_13f_xml`].
 pub fn positions_from_13f(holdings: &[ThirteenfHolding]) -> Vec<Position> {
-    let total: Decimal = holdings.iter().map(|h| h.value_usd).sum();
     holdings
         .iter()
         .map(|h| Position {
             cusip: h.cusip.clone(),
             name: h.name.clone(),
             val_usd: h.value_usd,
-            weight: if total.is_zero() {
-                dec!(0)
-            } else {
-                (h.value_usd / total * dec!(100)).round_dp(4)
-            },
+            weight: h.weight_pct,
         })
         .collect()
 }

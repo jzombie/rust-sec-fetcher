@@ -12,8 +12,15 @@ use std::error::Error;
 /// filing index — fetch via [`crate::network::fetch_13f`] which
 /// discovers the correct filename from the index before fetching.
 ///
-/// Note: the raw `<value>` element is in **thousands of USD**; this function
-/// multiplies by 1 000 so all callers see actual dollar values.
+/// Note: the `<value>` element in the EDGAR 13F-HR `informationTable` XML is
+/// in **actual US dollars** — not thousands.  Empirically confirmed by
+/// inspecting a real filing (BRK-A Q4 2025, accession 0001193125-26-054580):
+/// <https://www.sec.gov/Archives/edgar/data/1067983/000119312526054580/50240.xml>
+///
+/// The EDGAR Filing Manual (Vol. II, §16) and the 13F XML Technical
+/// Specification are the authoritative references:
+/// <https://www.sec.gov/info/edgar/edgarfm-vol2.pdf>
+/// <https://www.sec.gov/info/edgar/forms/edgarform13f/13fxmltechspec.pdf>
 pub fn parse_13f_xml(xml: &str) -> Result<Vec<ThirteenfHolding>, Box<dyn Error>> {
     let mut reader = Reader::from_str(xml);
     reader.config_mut().trim_text(true);
@@ -81,12 +88,15 @@ pub fn parse_13f_xml(xml: &str) -> Result<Vec<ThirteenfHolding>, Box<dyn Error>>
                         name: std::mem::take(&mut name),
                         cusip: std::mem::take(&mut cusip),
                         title_of_class: std::mem::take(&mut title_of_class),
-                        // 13F value is in thousands of USD → convert to dollars
-                        value_usd: value_raw * dec!(1000),
+                        // The modern EDGAR 13F-HR XML stores <value> in actual
+                        // US dollars (not thousands), so no conversion is needed.
+                        value_usd: value_raw,
                         shares,
                         shares_type: std::mem::take(&mut shares_type),
                         put_call: put_call.take(),
                         investment_discretion: std::mem::take(&mut investment_discretion),
+                        // Populated in the second pass below.
+                        weight_pct: dec!(0),
                     });
                     in_info_table = false;
                     value_raw = dec!(0);
@@ -99,6 +109,14 @@ pub fn parse_13f_xml(xml: &str) -> Result<Vec<ThirteenfHolding>, Box<dyn Error>>
             _ => {}
         }
         buf.clear();
+    }
+
+    // Second pass: compute portfolio weights (0-100 percentage scale).
+    let total: Decimal = holdings.iter().map(|h| h.value_usd).sum();
+    if !total.is_zero() {
+        for h in holdings.iter_mut() {
+            h.weight_pct = (h.value_usd / total * dec!(100)).round_dp(4);
+        }
     }
 
     holdings.sort_by(|a, b| b.value_usd.cmp(&a.value_usd));

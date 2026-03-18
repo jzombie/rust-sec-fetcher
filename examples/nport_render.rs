@@ -30,11 +30,22 @@ impl<'a> fmt::Display for NportInvestmentRow<'a> {
             self.index,
             inv.cusip,
             inv.name.chars().take(45).collect::<String>(),
-            inv.val_usd,
+            fmt_usd(inv.val_usd),
             inv.pct_val,
             inv.cur_cd,
             inv.inv_country,
         )
+    }
+}
+
+fn fmt_usd(v: rust_decimal::Decimal) -> String {
+    use rust_decimal_macros::dec;
+    if v >= dec!(1_000_000_000) {
+        format!("${:.2}B", v / dec!(1_000_000_000))
+    } else if v >= dec!(1_000_000) {
+        format!("${:.2}M", v / dec!(1_000_000))
+    } else {
+        format!("${:.0}", v)
     }
 }
 

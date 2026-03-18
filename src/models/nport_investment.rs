@@ -28,6 +28,9 @@ pub struct NportInvestment {
     #[serde_as(as = "DisplayFromStr")]
     pub val_usd: Decimal,
 
+    /// Portfolio weight of this position as reported in the `<pctVal>` XML
+    /// element.  **Already on the 0–100 percentage scale** as published by the
+    /// SEC (e.g. `7.7546` means 7.7546%).  Do not multiply by 100.
     #[serde_as(as = "DisplayFromStr")]
     pub pct_val: Decimal,
 
