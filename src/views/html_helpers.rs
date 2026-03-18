@@ -1,7 +1,7 @@
 use html_to_markdown_rs::{
     convert, ConversionOptions, HeadingStyle, PreprocessingOptions, PreprocessingPreset,
 };
-use once_cell::sync::Lazy;
+use std::sync::LazyLock as Lazy;
 use regex::Regex;
 use std::error::Error;
 

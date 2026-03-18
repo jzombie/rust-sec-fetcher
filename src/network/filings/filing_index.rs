@@ -1,7 +1,7 @@
 use crate::enums::Url;
 use crate::models::{CikSubmission, FilingDocument, FilingIndex};
 use crate::network::SecClient;
-use once_cell::sync::Lazy;
+use std::sync::LazyLock as Lazy;
 use regex::Regex;
 use std::error::Error;
 

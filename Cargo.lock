@@ -3649,7 +3649,6 @@ dependencies = [
  "log",
  "merge",
  "mockito",
- "once_cell",
  "polars",
  "quick-xml",
  "rand 0.10.0",
