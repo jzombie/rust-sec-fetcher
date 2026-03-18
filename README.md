@@ -2,7 +2,9 @@
 
 [![made-with-rust][rust-logo]][rust-src-page] [![crates.io][crates-badge]][crates-page] [![PolyForm NC 1.0.0 licensed][polyform-license-badge]][polyform-license-page] [![DeepWiki][deepwiki-badge]][deepwiki-page] [![Coverage][coveralls-badge]][coveralls-page]
 
-> **Experimental research project.** Not affiliated with or endorsed by the SEC. Not investment advice. Use at your own risk.
+`sec-fetcher` is a Rust library for programmatic access to SEC EDGAR: resolve tickers to CIKs, fetch company filings (10-K, 10-Q, 8-K, and more), render filing documents as clean text or Markdown, track fund holdings across N-PORT and 13F filings, monitor IPO registrations, and process bulk US GAAP XBRL datasets — all with configurable rate limiting designed to stay within SEC usage guidelines.
+>
+> **Experimental research project.** Not affiliated with or endorsed by the U.S. Securities and Exchange Commission. Not investment advice. Use at your own risk.
 
 Before running examples, complete [setup and configuration](#configuration).
 
