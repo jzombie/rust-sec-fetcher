@@ -1,3 +1,18 @@
+//! Lists SEC company tickers from the EDGAR company tickers dataset.
+//!
+//! Downloads the full SEC operating company list (and optionally the derived
+//! instruments list) and prints each entry as a tab-separated row of
+//! ticker symbol, CIK, and company name.  Supports filtering by a
+//! case-insensitive substring match on either field.
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example ticker_list
+//! cargo run --example ticker_list -- --filter apple
+//! cargo run --example ticker_list -- --filter MSFT
+//! ```
+
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::Ticker;
@@ -40,6 +55,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let client = SecClient::from_config_manager(&config)?;
 
     let tickers = fetch_company_tickers(&client, args.include_derived).await?;
+    // The SEC publishes thousands of registered company tickers.
+    assert!(
+        !tickers.is_empty(),
+        "SEC company ticker list should not be empty"
+    );
 
     let filtered: Vec<&Ticker> = match &args.filter {
         Some(pat) => {

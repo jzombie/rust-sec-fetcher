@@ -1,55 +1,45 @@
-/// Browse EDGAR's quarterly full-index (`master.idx`) files.
-///
-/// # What is the full-index?
-///
-/// The SEC publishes a `master.idx` file for every calendar quarter going back
-/// to **Q4 1993**. Each file is a pipe-delimited text file that lists *every
-/// filing* accepted by EDGAR during that quarter — typically 200,000–500,000
-/// entries per quarter in recent years.
-///
-/// This is fundamentally different from the live Atom feed:
-///
-/// | Source          | Depth          | Update frequency | Use case                     |
-/// |-----------------|---------------|------------------|------------------------------|
-/// | Atom feed       | ~days/weeks    | near-real-time   | alerting, delta polling      |
-/// | `master.idx`    | **30+ years**  | nightly          | historical research, backfill|
-///
-/// Each row contains:
-/// ```text
-/// CIK | Company Name | Form Type | Date Filed | Filename (→ URL)
-/// ```
-///
-/// # Usage
-///
-///   cargo run --example full_index
-///       → 50 filings from the current quarter (2026 Q1 as of today)
-///
-///   cargo run --example full_index -- --form 10-K
-///       → first 50 annual reports from this quarter
-///
-///   cargo run --example full_index -- --year 2024 --quarter 4 --form 8-K
-///       → first 50 8-K filings from Q4 2024
-///
-///   cargo run --example full_index -- --year 1994 --quarter 1
-///       → oldest available data (Q1 1994; Q4 1993 is earliest)
-///
-///   cargo run --example full_index -- --form 10-K --company apple
-///       → Apple's 10-K filings this quarter
-///
-///   cargo run --example full_index -- --form 10-K --top 200
-///       → 200 annual reports from this quarter
-///
-///   cargo run --example full_index -- --form 10-K --top 0
-///       → ALL 10-K filings from this quarter (no limit)
-///
-/// # Options
-///
-///   --year YYYY       Calendar year (default: current year)
-///   --quarter Q       Quarter 1–4 (default: current quarter)
-///   --form TYPE       Filter by form type substring, case-insensitive
-///                       e.g. "10-K", "8-K", "10-K/A", "NPORT-P", "4"
-///   --company NAME    Filter by company name substring, case-insensitive
-///   --top N           Maximum rows to display (default: 50; 0 = no limit)
+//! Browse EDGAR's quarterly full-index (`master.idx`) files.
+//!
+//! # What is the full-index?
+//!
+//! The SEC publishes a `master.idx` file for every calendar quarter going back
+//! to **Q4 1993**. Each file is a pipe-delimited text file that lists *every
+//! filing* accepted by EDGAR during that quarter — typically 200,000–500,000
+//! entries per quarter in recent years.
+//!
+//! This is fundamentally different from the live Atom feed:
+//!
+//! | Source          | Depth          | Update frequency | Use case                      |
+//! |-----------------|----------------|------------------|-------------------------------|
+//! | Atom feed       | ~days/weeks    | near-real-time   | alerting, delta polling       |
+//! | `master.idx`    | **30+ years**  | nightly          | historical research, backfill |
+//!
+//! Each row contains:
+//! ```text
+//! CIK | Company Name | Form Type | Date Filed | Filename (→ URL)
+//! ```
+//!
+//! # Usage
+//!
+//! ```text
+//! # 50 filings from the current quarter:
+//! cargo run --example edgar_index_browse
+//!
+//! # First 50 annual reports this quarter:
+//! cargo run --example edgar_index_browse -- --form 10-K
+//!
+//! # 8-Ks from Q4 2024:
+//! cargo run --example edgar_index_browse -- --year 2024 --quarter 4 --form 8-K
+//!
+//! # Oldest available data (Q1 1994; Q4 1993 is earliest):
+//! cargo run --example edgar_index_browse -- --year 1994 --quarter 1
+//!
+//! # Apple annual reports this quarter:
+//! cargo run --example edgar_index_browse -- --form 10-K --company apple
+//!
+//! # ALL 10-K filings this quarter (no row limit):
+//! cargo run --example edgar_index_browse -- --form 10-K --top 0
+//! ```
 use chrono::{Datelike, Local};
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;

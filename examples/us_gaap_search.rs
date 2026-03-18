@@ -1,3 +1,23 @@
+//! Searches US GAAP CSV files for rows containing a given XBRL tag (concept name).
+//!
+//! Scans every `.csv` file in the target directory and finds those that have a
+//! column matching the given XBRL tag name.  For each matching file, the
+//! non-empty values in that column are printed, up to `--max-values` per file.
+//!
+//! This is useful for quickly surveying what values a particular GAAP concept
+//! takes across different SEC filers (e.g. `Assets`, `Revenues`, `NetIncomeLoss`).
+//!
+//! The default input directory is `data/14-mar-2026-us-gaap`, which is the
+//! bulk GAAP dataset produced by `pull-us-gaap-bulk`.
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example us_gaap_search -- Assets
+//! cargo run --example us_gaap_search -- Revenues --max-values 5
+//! cargo run --example us_gaap_search -- NetIncomeLoss --dir data/14-mar-2026-us-gaap
+//! ```
+
 use clap::Parser;
 use csv::Reader;
 use std::error::Error;

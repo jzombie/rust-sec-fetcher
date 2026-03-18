@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 mod caches;
 pub mod config;
 pub mod enums;

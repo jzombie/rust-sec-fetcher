@@ -1,45 +1,41 @@
-/// Lists recent IPO registration statement filings from the EDGAR live feed.
-///
-/// IPO-related filings are identified by their SEC form type:
-///
-/// | Form    | Meaning                                                       |
-/// |---------|---------------------------------------------------------------|
-/// | S-1     | Initial registration statement — the primary IPO prospectus   |
-/// | S-1/A   | Amendment filed during SEC review or before pricing           |
-/// | F-1     | Foreign private issuer equivalent of S-1                      |
-/// | F-1/A   | Amendment to an F-1                                           |
-/// | 424B4   | Final prospectus filed after pricing (contains deal terms)    |
-///
-/// This tool polls the EDGAR Atom feed — the fastest publicly available source
-/// for freshly accepted filings — and filters for the above form types.
-/// Because each page of the feed covers the most recent 40 entries *across all
-/// form types*, you typically need multiple pages to surface a meaningful number
-/// of IPO filings.
-///
-/// # Usage
-///
-///   cargo run --example ipo_list
-///   cargo run --example ipo_list -- --pages 10
-///   cargo run --example ipo_list -- --pages 5 --include-finals
-///
-/// # Options
-///
-///   --pages <N>        Number of EDGAR feed pages to scan (default: 5; each page = 40 entries)
-///   --include-finals   Also show 424B4 "pricing" prospectuses (final deal-term filings)
-///   --since <ts>       Only show filings strictly newer than this ISO-8601 timestamp
-///
-/// # Interpreting the output
-///
-///   Filings are printed newest-first. An S-1 is the *start* of the IPO
-///   process; S-1/A amendments follow during SEC review; the 424B4 is filed
-///   at the moment of pricing, after which shares begin trading.
-///
-/// # Notes on coverage
-///
-///   The EDGAR feed covers all registrants. However, not every S-1 leads to
-///   an IPO — some are withdrawn, others are for secondary offerings or SPAC
-///   mergers. Use `ipo_show` to inspect the full prospectus of any filing
-///   that looks interesting.
+//! Lists recent IPO registration statement filings from the EDGAR live feed.
+//!
+//! IPO-related filings are identified by their SEC form type:
+//!
+//! | Form    | Meaning                                                       |
+//! |---------|---------------------------------------------------------------|
+//! | S-1     | Initial registration statement — the primary IPO prospectus   |
+//! | S-1/A   | Amendment filed during SEC review or before pricing           |
+//! | F-1     | Foreign private issuer equivalent of S-1                      |
+//! | F-1/A   | Amendment to an F-1                                           |
+//! | 424B4   | Final prospectus filed after pricing (contains deal terms)    |
+//!
+//! This tool polls the EDGAR Atom feed — the fastest publicly available source
+//! for freshly accepted filings — and filters for the above form types.
+//! Because each page of the feed covers the most recent 40 entries *across all
+//! form types*, you typically need multiple pages to surface a meaningful number
+//! of IPO filings.
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example ipo_list
+//! cargo run --example ipo_list -- --pages 10
+//! cargo run --example ipo_list -- --pages 5 --include-finals
+//! ```
+//!
+//! # Interpreting the output
+//!
+//! Filings are printed newest-first. An S-1 is the *start* of the IPO
+//! process; S-1/A amendments follow during SEC review; the 424B4 is filed
+//! at the moment of pricing, after which shares begin trading.
+//!
+//! # Notes on coverage
+//!
+//! The EDGAR feed covers all registrants. However, not every S-1 leads to
+//! an IPO — some are withdrawn, others are for secondary offerings or SPAC
+//! mergers. Use `ipo_show` to inspect the full prospectus of any filing
+//! that looks interesting.
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::enums::FormType;

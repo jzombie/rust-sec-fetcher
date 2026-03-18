@@ -1,65 +1,45 @@
-/// Shows IPO registration statement filings for a given company.
-///
-/// Fetches all S-1 and S-1/A (or F-1 / F-1/A for foreign issuers) filings
-/// for the company and renders the selected filing's content.
-///
-/// # How to identify a company
-///
-/// Pre-IPO companies **do not yet have a ticker symbol** — that is the entire
-/// point of filing an S-1. Use `ipo_list` to discover the CIK (Central Index
-/// Key) assigned by the SEC, then pass it with `--cik`. Once a company has
-/// completed its IPO and been assigned a ticker you can use `--ticker` instead.
-///
-///   ipo_list output:  "1713445  Reddit, Inc.  …"
-///   → cargo run --example ipo_show -- --cik 1713445  (pre-IPO or post-IPO)
-///   → cargo run --example ipo_show -- --ticker RDDT  (only after IPO)
-///
-/// # What this shows
-///
-/// Unlike a generic filing viewer, this example is IPO-aware: it first prints
-/// the **full IPO filing timeline** (initial S-1, each amendment, and the final
-/// pricing prospectus if present), giving you a clear picture of how far through
-/// the process a company is before rendering the document text.
-///
-/// | Form    | Stage in the IPO process                                      |
-/// |---------|---------------------------------------------------------------|
-/// | S-1     | Initial registration filed with the SEC                       |
-/// | S-1/A   | Amendment — typically responding to SEC comments or updating  |
-/// |         | financials.  The final S-1/A is the definitive prospectus.    |
-/// | 424B4   | Pricing prospectus — filed at deal launch; contains the final |
-/// |         | offer price, size, and underwriter discount.                  |
-/// | F-1     | Foreign private issuer equivalent of S-1                      |
-/// | F-1/A   | Amendment to F-1                                              |
-///
-/// # Usage
-///
-///   cargo run --example ipo_show -- --cik <CIK_NUMBER> [OPTIONS]
-///   cargo run --example ipo_show -- --ticker <TICKER>  [OPTIONS]
-///
-/// # Options
-///
-///   --cik <N>               SEC CIK number (from ipo_list output; works pre- and post-IPO)
-///   --ticker <SYMBOL>       Ticker symbol — only valid after the IPO has completed
-///   --view markdown|embedding  Rendering style (default: markdown)
-///   --part summary|body|all    What to show (default: summary)
-///   --index <N>             Which filing to render (0 = newest; -1 = oldest/initial S-1)
-///
-/// # Examples
-///
-///   ## Lookup by CIK (works for pre-IPO companies discovered via ipo_list)
-///   cargo run --example ipo_show -- --cik 1713445 --part summary
-///
-///   ## Zero-padded CIK also works
-///   cargo run --example ipo_show -- --cik 0002039972 --part summary
-///
-///   ## Lookup by ticker (only valid once the IPO has completed)
-///   cargo run --example ipo_show -- --ticker RDDT --part summary
-///
-///   ## Render the initial S-1 or F-1 (oldest filing)
-///   cargo run --example ipo_show -- --cik 1713445 --index -1 --part body
-///
-///   ## Full prospectus + exhibits
-///   cargo run --example ipo_show -- --ticker RDDT --part all
+//! Shows IPO registration statement filings for a given company.
+//!
+//! Fetches all S-1 and S-1/A (or F-1 / F-1/A for foreign issuers) filings
+//! for the company and renders the selected filing's content.
+//!
+//! # How to identify a company
+//!
+//! Pre-IPO companies **do not yet have a ticker symbol**. Use `ipo_list` to
+//! discover the CIK (Central Index Key) assigned by the SEC, then pass it
+//! with `--cik`. Once a company has completed its IPO and been assigned a
+//! ticker you can use `--ticker` instead.
+//!
+//! ```text
+//! # Discovered by ipo_list:  "1713445  Reddit, Inc.  …"
+//! cargo run --example ipo_show -- --cik 1713445        # pre-IPO or post-IPO
+//! cargo run --example ipo_show -- --ticker RDDT        # only after IPO
+//! ```
+//!
+//! # What this shows
+//!
+//! This example is IPO-aware: it first prints the **full IPO filing timeline**
+//! (initial S-1, each amendment, and the final pricing prospectus if present),
+//! giving a clear picture of how far through the process a company is before
+//! optionally rendering the document text.
+//!
+//! | Form    | Stage in the IPO process                                      |
+//! |---------|---------------------------------------------------------------|
+//! | S-1     | Initial registration filed with the SEC                       |
+//! | S-1/A   | Amendment responding to SEC comments or updated financials    |
+//! | 424B4   | Pricing prospectus — final offer price, size, underwriter     |
+//! | F-1     | Foreign private issuer equivalent of S-1                      |
+//! | F-1/A   | Amendment to F-1                                              |
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example ipo_show -- --cik <CIK_NUMBER> [OPTIONS]
+//! cargo run --example ipo_show -- --ticker <TICKER>   [OPTIONS]
+//! cargo run --example ipo_show -- --cik 1713445 --part summary
+//! cargo run --example ipo_show -- --ticker RDDT --index -1 --part body
+//! cargo run --example ipo_show -- --ticker RDDT --part all
+//! ```
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::enums::Url;

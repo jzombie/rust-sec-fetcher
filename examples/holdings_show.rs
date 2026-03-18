@@ -1,44 +1,34 @@
-/// Shows how the holdings of a fund (N-PORT) or institutional manager (13F)
-/// have changed across consecutive filings, and insider transactions (Form 4)
-/// for operating companies.
-///
-/// Supports any ticker:
-///   - **NPORT-P** — ETFs and mutual funds (monthly, ~60-day lag)
-///     e.g. SPY, QQQ, IVV, ARKK
-///   - **13F-HR**  — Institutional managers ≥ $100 M AUM (quarterly, 45-day lag)
-///     e.g. BRK-A
-///   - **Form 4**  — Insider transactions for any public company (≤ 2 business days lag)
-///     e.g. AAPL, TSLA, NVDA
-///
-/// For N-PORT and 13F, consecutive filings are diffed to show adds, removes,
-/// and weight changes. For Form 4, recent insider buy/sell activity is listed.
-///
-/// # Usage
-///
-///   cargo run --example holdings_history -- SPY
-///       → last 3 NPORT-P filings for SPY, changes only
-///
-///   cargo run --example holdings_history -- BRK-A
-///       → last 4 13F-HR filings for Berkshire Hathaway, changes only
-///
-///   cargo run --example holdings_history -- AAPL
-///       → last 20 Form 4 insider transactions for Apple
-///
-///   cargo run --example holdings_history -- AAPL --filings 50
-///       → last 50 Form 4 filings (may cover many transactions each)
-///
-///   cargo run --example holdings_history -- SPY --all
-///       → show full holdings for each filing, not just the diff
-///
-/// # What you can and cannot see via Form 4
-///
-/// Form 4 covers corporate insiders: directors, officers, and anyone owning
-/// more than 10% of a class of equity. It does NOT cover Members of Congress
-/// or other government officials — those are reported under the STOCK Act to
-/// the House Clerk and Senate Secretary (disclosures.house.gov / efts.senate.gov),
-/// which is a completely separate system that is NOT accessible through the SEC.
-/// A Congress member would only appear in Form 4 if they were also a corporate
-/// director or officer of a public company, which is rare.
+//! Shows how the holdings of a fund (N-PORT) or institutional manager (13F)
+//! have changed across consecutive filings, and insider transactions (Form 4)
+//! for operating companies.
+//!
+//! Supports any ticker:
+//!   - **NPORT-P** — ETFs and mutual funds (monthly, ~60-day lag)
+//!     e.g. SPY, QQQ, IVV, ARKK
+//!   - **13F-HR**  — Institutional managers ≥ $100 M AUM (quarterly, 45-day lag)
+//!     e.g. BRK-A
+//!   - **Form 4**  — Insider transactions for any public company (≤ 2 business days lag)
+//!     e.g. AAPL, TSLA, NVDA
+//!
+//! For N-PORT and 13F, consecutive filings are diffed to show adds, removes,
+//! and weight changes. For Form 4, recent insider buy/sell activity is listed.
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example holdings_show -- SPY
+//! cargo run --example holdings_show -- BRK-A
+//! cargo run --example holdings_show -- AAPL
+//! cargo run --example holdings_show -- AAPL --filings 50
+//! cargo run --example holdings_show -- SPY --all
+//! ```
+//!
+//! # What you can and cannot see via Form 4
+//!
+//! Form 4 covers corporate insiders: directors, officers, and anyone owning
+//! more than 10% of a class of equity. It does NOT cover Members of Congress
+//! or other government officials — those are reported under the STOCK Act to
+//! the House Clerk and Senate Secretary, which is a completely separate system.
 use clap::Parser;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;

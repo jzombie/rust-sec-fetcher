@@ -1,49 +1,39 @@
-/// Renders any SEC filing — body, exhibits, or both — for a given ticker and form type.
-///
-/// This is the general-purpose filing renderer.  It accepts any EDGAR form type
-/// string and renders the most recent matching filing.  Pass `--form 10-K` for
-/// annual reports, `--form DEF 14A` for proxy statements, `--form 8-K` (the
-/// default) for current reports, and so on.
-///
-/// # What gets rendered
-///
-/// | `--part`      | Output                                                         |
-/// |---------------|----------------------------------------------------------------|
-/// | `all`         | Primary document **and** all substantive exhibits (default)    |
-/// | `body`        | Primary document only                                         |
-/// | `exhibits`    | Substantive exhibits only (no primary document)               |
-///
-/// "Substantive" means exhibits that contain human-readable prose or financial
-/// tables.  The following exhibit types are automatically excluded because they
-/// are short legal boilerplate or machine-readable data with no analytical value:
-///
-/// | Excluded exhibit type | Description |
-/// |---|---|
-/// | `EX-31.x` | SOX § 302 CEO/CFO certifications |
-/// | `EX-32.x` | SOX § 906 CEO/CFO certifications |
-/// | `EX-23.x` | Auditor / accountant consent |
-/// | `EX-101.*` | XBRL instance, schema, label, and calculation files |
-/// | `GRAPHIC`  | Image files (logos, signature scans, charts) |
-///
-/// The excluded types represent the vast majority of exhibit count in a typical
-/// 10-K or 10-Q while containing essentially zero prose content.
-///
-/// # Usage
-///
-///   cargo run --example filing_show -- <TICKER> [OPTIONS]
-///
-///   Options:
-///     --form <FORM>        EDGAR form type [default: 8-K]
-///     --view markdown|embedding  Rendering style [default: embedding]
-///     --part all|body|exhibits   What to render [default: all]
-///
-/// # Examples
-///
-///   cargo run --example filing_show -- AAPL
-///   cargo run --example filing_show -- AAPL --form 10-K
-///   cargo run --example filing_show -- LLY --form 10-Q --view markdown
-///   cargo run --example filing_show -- MSFT --form "DEF 14A" --part body
-///   cargo run --example filing_show -- AMZN --part exhibits > amzn_exhibits.txt
+//! Renders any SEC filing — body, exhibits, or both — for a given ticker and form type.
+//!
+//! This is the general-purpose filing renderer.  It accepts any EDGAR form type
+//! string and renders the most recent matching filing.  Pass `--form 10-K` for
+//! annual reports, `--form DEF 14A` for proxy statements, `--form 8-K` (the
+//! default) for current reports, and so on.
+//!
+//! # What gets rendered
+//!
+//! | `--part`      | Output                                                         |
+//! |---------------|----------------------------------------------------------------|
+//! | `all`         | Primary document **and** all substantive exhibits (default)    |
+//! | `body`        | Primary document only                                         |
+//! | `exhibits`    | Substantive exhibits only (no primary document)               |
+//!
+//! "Substantive" means exhibits that contain human-readable prose or financial
+//! tables.  The following exhibit types are automatically excluded:
+//!
+//! | Excluded type | Description |
+//! |---|---|
+//! | `EX-31.x` | SOX § 302 CEO/CFO certifications |
+//! | `EX-32.x` | SOX § 906 CEO/CFO certifications |
+//! | `EX-23.x` | Auditor / accountant consent |
+//! | `EX-101.*` | XBRL instance, schema, label, and calculation files |
+//! | `GRAPHIC`  | Image files (logos, signature scans, charts) |
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example filing_show -- <TICKER> [OPTIONS]
+//! cargo run --example filing_show -- AAPL
+//! cargo run --example filing_show -- AAPL --form 10-K
+//! cargo run --example filing_show -- LLY --form 10-Q --view markdown
+//! cargo run --example filing_show -- MSFT --form "DEF 14A" --part body
+//! cargo run --example filing_show -- AMZN --part exhibits > amzn_exhibits.txt
+//! ```
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::TickerSymbol;

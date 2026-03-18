@@ -1,68 +1,47 @@
-// TODO: Convert into a stream producer that can be consumed by other tools...
-
-/// Demonstrates delta polling of the SEC EDGAR filing Atom feed.
-///
-/// # How it works
-///
-/// EDGAR exposes a live Atom feed. Each "page" contains the 40 most-recently
-/// filed documents. To go further back in time, you pass a `before=` cursor
-/// to get the next oldest page of 40, and so on.
-///
-/// **Without `--since`** the tool just fetches the first page (or `--pages` N
-/// pages) and prints what it finds. There is no filtering.
-///
-/// **With `--since <timestamp>`** the tool works differently:
-///
-///   1. It fetches pages backwards in time, one at a time.
-///   2. It stops as soon as the oldest entry on a page is *at or before* the
-///      timestamp you gave — meaning all newer filings are now in memory.
-///   3. It discards everything at or before the timestamp, then prints only
-///      entries that are strictly newer.
-///   4. It prints the timestamp of the *newest* entry it found. That is the
-///      "high-water mark" — copy it as your `--since` value next time to pick
-///      up exactly where you left off, with no gaps and no duplicates.
-///
-/// So the loop looks like:
-///
-///   First run (no --since):
-///     → prints newest 40 filings
-///     → shows: --since "2026-03-13T21:00:00-04:00"   ← your new mark
-///
-///   Next run (--since "2026-03-13T21:00:00-04:00"):
-///     → fetches pages until it reaches that timestamp
-///     → prints only what is strictly newer  (0 entries on a quiet weekend)
-///     → if anything new was found, shows an updated --since mark
-///
-/// Without `--pages`, `--since` mode auto-paginates up to 25 pages (1 000
-/// entries). That covers several days of normal SEC filing volume. If you
-/// need to backfill further than that, combine `--since` with a large
-/// `--pages N` value, or use the SEC bulk submission dataset instead.
-///
-/// # Usage
-///
-///   cargo run --example edgar_firehose
-///       → newest 40 filings across all form types
-///
-///   cargo run --example edgar_firehose -- --filter "8-K,NPORT-P,SC 13G"
-///       → one parallel request per type, newest 40 of each
-///
-///   cargo run --example edgar_firehose -- --filter "8-K" --since "2026-03-13T17:30:01-04:00"
-///       → only 8-K filings strictly newer than that timestamp
-///       → auto-paginates until the mark is covered (up to 25 pages)
-///
-///   cargo run --example edgar_firehose -- --filter "8-K" --pages 5
-///       → newest 200 8-K filings, no timestamp filter
-///
-///   cargo run --example edgar_firehose -- --filter "8-K" --since "<mark>" --pages 50
-///       → catch up after a long gap (up to 2 000 entries back)
-///
-/// # Recommended form-type filters
-///
-///   "8-K"            — corporate events and earnings releases
-///   "NPORT-P"        — monthly fund portfolio holdings
-///   "13F-HR"         — quarterly institutional holdings
-///   "SC 13G"         — passive ownership crossing 5%
-///   "SC 13D"         — active ownership crossing 5%
+//! Demonstrates delta polling of the SEC EDGAR filing Atom feed.
+//!
+//! # How it works
+//!
+//! EDGAR exposes a live Atom feed. Each "page" contains the 40 most-recently
+//! filed documents. To go further back in time, you pass a `before=` cursor
+//! to get the next oldest page of 40, and so on.
+//!
+//! **Without `--since`** the tool just fetches the first page (or `--pages` N
+//! pages) and prints what it finds. There is no filtering.
+//!
+//! **With `--since <timestamp>`** the tool works differently:
+//!
+//!   1. It fetches pages backwards in time, one at a time.
+//!   2. It stops as soon as the oldest entry on a page is *at or before* the
+//!      timestamp you gave.
+//!   3. It discards everything at or before the timestamp, then prints only
+//!      entries that are strictly newer.
+//!   4. It prints the timestamp of the *newest* entry it found (the
+//!      "high-water mark") — use this as `--since` on the next run.
+//!
+//! # Usage
+//!
+//! ```text
+//! # Newest 40 filings across all form types:
+//! cargo run --example edgar_feed_poll
+//!
+//! # Filter by form type:
+//! cargo run --example edgar_feed_poll -- --filter "8-K,NPORT-P"
+//!
+//! # Delta poll since a known timestamp:
+//! cargo run --example edgar_feed_poll -- --filter "8-K" --since "2026-03-13T17:30:01-04:00"
+//!
+//! # Fetch 200 8-K entries (5 pages × 40):
+//! cargo run --example edgar_feed_poll -- --filter "8-K" --pages 5
+//! ```
+//!
+//! # Recommended form-type filters
+//!
+//! - `"8-K"`      — corporate events and earnings releases
+//! - `"NPORT-P"` — monthly fund portfolio holdings
+//! - `"13F-HR"`  — quarterly institutional holdings
+//! - `"SC 13G"`  — passive ownership crossing 5%
+//! - `"SC 13D"`  — active ownership crossing 5%
 use chrono::DateTime;
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;

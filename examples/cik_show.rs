@@ -1,3 +1,19 @@
+//! Looks up the CIK (Central Index Key) for a ticker symbol and inspects its
+//! most recent SEC filings.
+//!
+//! If the company has filed any NPORT-P reports (mutual funds / ETFs), the most
+//! recent one is shown with its EDGAR archive URL. Otherwise the most recent
+//! 10-K annual report link is printed instead, demonstrating the
+//! [`CikSubmission::most_recent_by_form`] query helper.
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example cik_show -- AAPL
+//! cargo run --example cik_show -- SPY
+//! cargo run --example cik_show -- MSFT
+//! ```
+
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::{CikSubmission, TickerSymbol};
@@ -24,6 +40,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .ok();
 
     if let Some(cik) = result_cik {
+        // SEC CIKs are positive non-zero integers.
+        assert!(cik.value > 0, "CIK must be a positive non-zero integer");
+
         println!(
             "Submissions URL: https://data.sec.gov/submissions/CIK{}.json",
             cik

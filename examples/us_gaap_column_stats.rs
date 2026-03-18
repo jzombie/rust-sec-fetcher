@@ -1,3 +1,20 @@
+//! Counts column-header frequencies across all US GAAP CSV files in a directory.
+//!
+//! Reads every `.csv` file in the target directory in parallel and tallies how
+//! many files each column header (XBRL concept name) appears in.  The result
+//! is a ranked list showing which GAAP concepts are most commonly reported by
+//! SEC filers in the dataset.
+//!
+//! The default input directory is `data/14-mar-2026-us-gaap`, which is the
+//! bulk GAAP dataset produced by `pull-us-gaap-bulk`.
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example us_gaap_column_stats
+//! cargo run --example us_gaap_column_stats -- --dir data/14-mar-2026-us-gaap
+//! ```
+
 use clap::Parser;
 use csv::ReaderBuilder;
 use rayon::prelude::*;
@@ -72,6 +89,16 @@ fn process_csv(path: &Path) -> Option<HashMap<String, usize>> {
 fn main() {
     let args = Args::parse();
     let column_distribution = count_column_occurrences(&args.dir);
+
+    // If the directory exists and contains CSV files, there must be at least
+    // one column present (every valid GAAP CSV has at least one header column).
+    if !column_distribution.is_empty() {
+        let max_count = column_distribution.values().copied().max().unwrap_or(0);
+        assert!(
+            max_count > 0,
+            "Column counts should be positive when CSV files are present"
+        );
+    }
 
     let mut sorted_columns: Vec<ColumnCount> = column_distribution
         .into_iter()

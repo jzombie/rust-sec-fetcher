@@ -1,15 +1,17 @@
-/// Fetches all exhibit documents attached to the latest 8-K filing for a given
-/// ticker symbol and prints each one as rendered text.
-///
-/// HTML exhibits are converted using the chosen view.  Plain-text exhibits are
-/// printed as-is (with blank-line collapsing for `embedding` view).  Binary
-/// formats (PDF, XLSX, images) are represented by a notice string.
-///
-/// Usage:
-///   cargo run --example 8k_exhibits_as_markdown -- <TICKER_SYMBOL> [--view markdown|embedding]
-///
-/// Example:
-///   cargo run --example 8k_exhibits_as_markdown -- LLY
+//! Fetches all exhibit documents attached to the latest 8-K filing for a given
+//! ticker symbol and prints each one as rendered text.
+//!
+//! HTML exhibits are converted using the chosen view.  Plain-text exhibits are
+//! printed as-is (with blank-line collapsing for `embedding` view).  Binary
+//! formats (PDF, XLSX, images) are represented by a notice string.
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example 8k_exhibits_as_markdown -- <TICKER_SYMBOL> [--view markdown|embedding]
+//! cargo run --example 8k_exhibits_as_markdown -- LLY
+//! cargo run --example 8k_exhibits_as_markdown -- AAPL --view markdown
+//! ```
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::TickerSymbol;

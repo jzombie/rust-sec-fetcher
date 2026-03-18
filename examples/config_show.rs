@@ -1,3 +1,16 @@
+//! Displays the active `sec-fetcher` configuration.
+//!
+//! Loads and pretty-prints the resolved configuration, showing which values
+//! came from the config file, environment variables, or compiled-in defaults.
+//! Useful for verifying your setup before running other examples.
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example config_show
+//! cargo run --example config_show -- --config-path /path/to/sec_fetcher_config.toml
+//! ```
+
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use std::path::PathBuf;
