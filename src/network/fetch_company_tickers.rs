@@ -53,8 +53,8 @@ use std::error::Error;
 ///
 /// [`TickerOrigin::PrimaryListing`]: crate::enums::TickerOrigin::PrimaryListing
 /// [`TickerOrigin::DerivedInstrument`]: crate::enums::TickerOrigin::DerivedInstrument
-/// [`fetch_investment_company_series_and_class_dataset`]: crate::network::fetch_investment_company_series_and_class_dataset
-/// [`fetch_cik_by_ticker_symbol`]: crate::network::fetch_cik_by_ticker_symbol
+/// [`fetch_investment_company_series_and_class_dataset`]: crate::network::fetch_investment_company_series_and_class_dataset()
+/// [`fetch_cik_by_ticker_symbol`]: crate::network::fetch_cik_by_ticker_symbol()
 pub async fn fetch_company_tickers(
     sec_client: &SecClient,
     include_derived_instruments: bool,

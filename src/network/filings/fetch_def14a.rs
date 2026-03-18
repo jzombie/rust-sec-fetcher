@@ -35,7 +35,7 @@ use std::error::Error;
 /// returned by this function; they can be retrieved directly via
 /// [`fetch_cik_submissions`] and filtering for `"PRE 14A"`.
 ///
-/// [`fetch_cik_submissions`]: crate::network::fetch_cik_submissions
+/// [`fetch_cik_submissions`]: crate::network::fetch_cik_submissions()
 ///
 /// # Example
 /// ```rust,no_run

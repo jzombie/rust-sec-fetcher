@@ -5,7 +5,9 @@ use std::error::Error;
 /// Fetches all filings of a given form type for a CIK, ordered newest-first.
 ///
 /// This is the generic counterpart to the form-specific fetchers such as
-/// [`fetch_8k_filings`], [`fetch_10k_filings`], and [`fetch_10q_filings`].
+/// [`fetch_8k_filings`][crate::network::filings::fetch_8k_filings()],
+/// [`fetch_10k_filings`][crate::network::filings::fetch_10k_filings()], and
+/// [`fetch_10q_filings`][crate::network::filings::fetch_10q_filings()].
 /// Use it when the form type is determined at runtime, or when you need a
 /// form type that doesn't have a dedicated function.
 ///
@@ -42,8 +44,7 @@ use std::error::Error;
 ///
 /// # Common form types
 ///
-/// Use [`FormType::named_variants`] for the full list, or see the table in
-/// [`FormType`]'s documentation.
+/// For the full list of variants, see [`crate::enums::FormType`]'s documentation.
 ///
 /// # Example — with a runtime string from user input
 /// ```rust,no_run

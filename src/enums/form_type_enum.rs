@@ -336,7 +336,7 @@ pub enum FormType {
     /// preserved verbatim (original case, no trimming beyond leading/trailing
     /// whitespace).
     ///
-    /// This variant is excluded from [`FormType::iter()`] — only named
+    /// This variant is excluded from `FormType::iter()` — only named
     /// variants are yielded by the iterator.
     #[strum(disabled)]
     Other(String),

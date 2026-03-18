@@ -36,8 +36,8 @@ use std::error::Error;
 /// together.  Use [`CikSubmission::most_recent_10k`] if you only need the
 /// latest filing.
 ///
-/// [`fetch_company_description`]: crate::network::fetch_company_description
-/// [`fetch_us_gaap_fundamentals`]: crate::network::fetch_us_gaap_fundamentals
+/// [`fetch_company_description`]: crate::network::fetch_company_description()
+/// [`fetch_us_gaap_fundamentals`]: crate::network::fetch_us_gaap_fundamentals()
 ///
 /// # Example
 /// ```rust,no_run

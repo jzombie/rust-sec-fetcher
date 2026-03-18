@@ -16,7 +16,7 @@ pub enum Url {
     CikAccession(Cik, AccessionNumber),
 
     /// Points to the human-readable EDGAR filing index page for a specific filing.
-    /// Format: https://www.sec.gov/Archives/edgar/data/{CIK}/{accn_unformatted}/{accn_formatted}-index.htm
+    /// Format: <https://www.sec.gov/Archives/edgar/data/>{CIK}/{accn_unformatted}/{accn_formatted}-index.htm
     CikAccessionIndex(Cik, AccessionNumber),
 
     /// Points to the `primary_doc.xml` of a specific filing, using
@@ -24,7 +24,7 @@ pub enum Url {
     CikAccessionPrimaryDocument(Cik, AccessionNumber),
 
     /// Points to a named document within a specific filing archive.
-    /// Format: https://www.sec.gov/Archives/edgar/data/{CIK}/{accn_unformatted}/{filename}
+    /// Format: <https://www.sec.gov/Archives/edgar/data/>{CIK}/{accn_unformatted}/{filename}
     CikAccessionDocument(Cik, AccessionNumber, String),
 
     /// Points to the SEC's primary ticker-to-CIK JSON file.
@@ -41,12 +41,12 @@ pub enum Url {
     /// Points to the SEC's supplementary plain-text ticker-to-CIK file.
     ///
     /// Tab-separated, no header: each line is `symbol\tcik`.  This file is
-    /// broader than [`CompanyTickersJson`]: it includes warrants (`-WT`),
+    /// broader than [`Url::CompanyTickersJson`]: it includes warrants (`-WT`),
     /// units (`-UN`), preferred share classes (`-PA`, `-PB`, …), ADRs, and
     /// fund share classes that do not appear in the JSON file.  Company names
-    /// are not available here — they are inherited from [`CompanyTickersJson`]
+    /// are not available here — they are inherited from [`Url::CompanyTickersJson`]
     /// via CIK lookup during the merge in
-    /// [`fetch_company_tickers`].
+    /// [`crate::network::fetch_company_tickers()`].
     ///
     /// See [`crate::network::fetch_company_tickers`].
     CompanyTickersTxt,

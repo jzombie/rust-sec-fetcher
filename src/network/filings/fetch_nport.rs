@@ -48,7 +48,7 @@ pub async fn fetch_nport_filings(
 /// The primary document in an NPORT-P submission is a single XML file
 /// (pointed to by `submission.primary_document`).  This function fetches that
 /// XML and parses each `<invstOrSec>` element into an [`NportInvestment`].
-/// The ticker-symbol lookup table ([`fetch_company_tickers`]) is used to enrich
+/// The ticker-symbol lookup table ([`fetch_company_tickers()`]) is used to enrich
 /// holdings with exchange-listed ticker symbols where available.
 ///
 /// # Example

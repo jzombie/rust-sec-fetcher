@@ -31,7 +31,7 @@ use tokio::fs::create_dir_all;
 )]
 struct Args {
     /// Output directory (will be created if it does not exist).
-    /// Files are organised as <output-dir>/<letter>/<TICKER>.csv.
+    /// Files are organised as `<output-dir>/<letter>/<TICKER>.csv`.
     /// Example: data/fund-holdings
     #[arg(long, short = 'o')]
     output_dir: std::path::PathBuf,

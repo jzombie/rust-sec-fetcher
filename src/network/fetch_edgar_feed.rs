@@ -271,7 +271,7 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
 ///
 /// This gives you exactly the delta — only filings accepted since the last poll.
 ///
-/// [`fetch_edgar_master_index`]: crate::network::fetch_edgar_master_index
+/// [`fetch_edgar_master_index`]: crate::network::fetch_edgar_master_index()
 pub async fn fetch_edgar_feed(
     client: &SecClient,
     form_type: &str,

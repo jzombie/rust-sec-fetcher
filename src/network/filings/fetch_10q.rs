@@ -21,7 +21,7 @@ use std::error::Error;
 /// income statements, balance sheets, and cash flows.  The XBRL-tagged values
 /// for all quarters are available through [`fetch_us_gaap_fundamentals`].
 ///
-/// [`fetch_us_gaap_fundamentals`]: crate::network::fetch_us_gaap_fundamentals
+/// [`fetch_us_gaap_fundamentals`]: crate::network::fetch_us_gaap_fundamentals()
 ///
 /// # Example
 /// ```rust,no_run

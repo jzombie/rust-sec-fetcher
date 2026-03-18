@@ -28,7 +28,7 @@ use std::error::Error;
 /// For real-time / recent filings, prefer [`fetch_edgar_feed`] which delivers
 /// new submissions within seconds of EDGAR processing them.
 ///
-/// [`fetch_edgar_feed`]: crate::network::fetch_edgar_feed
+/// [`fetch_edgar_feed`]: crate::network::fetch_edgar_feed()
 ///
 /// # Example
 ///
