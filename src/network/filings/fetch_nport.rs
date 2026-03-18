@@ -89,5 +89,9 @@ pub async fn fetch_nport(
         .await?;
     let xml_data = response.text().await?;
 
-    parse_nport_xml(&xml_data, &company_tickers, Some(&client.get_preprocessor_cache()))
+    parse_nport_xml(
+        &xml_data,
+        &company_tickers,
+        Some(&client.get_preprocessor_cache()),
+    )
 }

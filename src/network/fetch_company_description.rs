@@ -1,9 +1,9 @@
 use crate::enums::Url;
 use crate::models::{Cik, CikSubmission};
 use crate::network::{fetch_cik_submissions, SecClient};
-use std::sync::LazyLock as Lazy;
 use regex::Regex;
 use std::error::Error;
+use std::sync::LazyLock as Lazy;
 
 static ITEM1_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)Item\s*1[.\s]").unwrap());
 static ITEM1A_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)Item\s*1\s*A\b").unwrap());

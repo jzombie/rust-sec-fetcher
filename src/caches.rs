@@ -29,12 +29,20 @@ impl Caches {
     pub fn open(base: &Path) -> Result<Self, Box<dyn std::error::Error>> {
         std::fs::create_dir_all(base)?;
         let http_cache = Arc::new(
-            DataStore::open(&base.join("http_storage_cache.bin"))
-                .map_err(|err| format!("Failed to open HTTP DataStore at '{}': {err}", base.display()))?,
+            DataStore::open(&base.join("http_storage_cache.bin")).map_err(|err| {
+                format!(
+                    "Failed to open HTTP DataStore at '{}': {err}",
+                    base.display()
+                )
+            })?,
         );
         let preprocessor_cache = Arc::new(
-            DataStore::open(&base.join("preprocessor_cache.bin"))
-                .map_err(|err| format!("Failed to open preprocessor DataStore at '{}': {err}", base.display()))?,
+            DataStore::open(&base.join("preprocessor_cache.bin")).map_err(|err| {
+                format!(
+                    "Failed to open preprocessor DataStore at '{}': {err}",
+                    base.display()
+                )
+            })?,
         );
         Ok(Self {
             http_cache,

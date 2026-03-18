@@ -1,9 +1,9 @@
 use crate::enums::Url;
 use crate::models::{CikSubmission, FilingDocument, FilingIndex};
 use crate::network::SecClient;
-use std::sync::LazyLock as Lazy;
 use regex::Regex;
 use std::error::Error;
+use std::sync::LazyLock as Lazy;
 
 static TR_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?is)<tr[^>]*>(.*?)</tr>").unwrap());
 static TD_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?is)<td[^>]*>(.*?)</td>").unwrap());

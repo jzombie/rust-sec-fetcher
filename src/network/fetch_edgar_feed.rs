@@ -3,11 +3,11 @@ use crate::models::{Cik, FeedEntry};
 use crate::network::SecClient;
 use chrono::{DateTime, FixedOffset, NaiveDate};
 use futures::future::join_all;
-use std::sync::LazyLock as Lazy;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use regex::Regex;
 use std::error::Error;
+use std::sync::LazyLock as Lazy;
 
 // ---------------------------------------------------------------------------
 // Compiled regexes

@@ -1,5 +1,4 @@
 use crate::config::{ConfigManager, DEFAULT_APP_NAME, DEFAULT_APP_VERSION};
-use simd_r_drive::DataStore;
 use email_address::EmailAddress;
 use reqwest;
 use reqwest_drive::{
@@ -7,6 +6,7 @@ use reqwest_drive::{
     CachePolicy, ClientWithMiddleware, ThrottlePolicy,
 };
 use serde_json::Value;
+use simd_r_drive::DataStore;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::time::Duration;
