@@ -59,12 +59,13 @@ use std::error::Error;
 /// ```rust,no_run
 /// # use sec_fetcher::network::{fetch_schedule_13d_filings, fetch_cik_by_ticker_symbol, SecClient};
 /// # use sec_fetcher::config::ConfigManager;
+/// # use sec_fetcher::models::TickerSymbol;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let config = ConfigManager::load()?;
 /// let client = SecClient::from_config_manager(&config)?;
 /// // Pass the CIK of the beneficial owner (activist investor), not the target company.
-/// let cik = fetch_cik_by_ticker_symbol(&client, "BRK-B").await?;
+/// let cik = fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new("BRK-B")).await?;
 /// let filings = fetch_schedule_13d_filings(&client, cik).await?;
 /// for f in &filings {
 ///     println!("{:?}  {}  {}", f.filing_date, f.form, f.as_primary_document_url());

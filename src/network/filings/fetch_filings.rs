@@ -25,11 +25,12 @@ use std::error::Error;
 /// # use sec_fetcher::network::{fetch_filings, fetch_cik_by_ticker_symbol, SecClient};
 /// # use sec_fetcher::enums::FormType;
 /// # use sec_fetcher::config::ConfigManager;
+/// # use sec_fetcher::models::TickerSymbol;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # let config = ConfigManager::load()?;
 /// # let client = SecClient::from_config_manager(&config)?;
-/// # let cik = fetch_cik_by_ticker_symbol(&client, "AAPL").await?;
+/// # let cik = fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new("AAPL")).await?;
 /// // Using FormType enum variants — no magic strings.
 /// let mut filings = fetch_filings(&client, cik.clone(), &FormType::EightK).await?;
 /// let mut amendments = fetch_filings(&client, cik, &FormType::EightKA).await?;
@@ -48,11 +49,12 @@ use std::error::Error;
 /// ```rust,no_run
 /// # use sec_fetcher::network::{fetch_filings, fetch_cik_by_ticker_symbol, SecClient};
 /// # use sec_fetcher::config::ConfigManager;
+/// # use sec_fetcher::models::TickerSymbol;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let config = ConfigManager::load()?;
 /// let client = SecClient::from_config_manager(&config)?;
-/// let cik = fetch_cik_by_ticker_symbol(&client, "AAPL").await?;
+/// let cik = fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new("AAPL")).await?;
 /// // Plain string also works.
 /// let filings = fetch_filings(&client, cik, "10-K").await?;
 /// for f in &filings {

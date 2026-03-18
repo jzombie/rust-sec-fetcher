@@ -40,6 +40,7 @@ use crate::models::TickerSymbol;
 /// ```rust,no_run
 /// # use sec_fetcher::network::{fetch_cik_by_ticker_symbol, SecClient};
 /// # use sec_fetcher::config::ConfigManager;
+/// # use sec_fetcher::models::TickerSymbol;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let config = ConfigManager::load()?;

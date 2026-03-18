@@ -22,10 +22,11 @@ static ITEM1A_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)Item\s*1\s*A\b").u
 /// ```no_run
 /// # use sec_fetcher::network::{SecClient, fetch_cik_by_ticker_symbol, fetch_company_description};
 /// # use sec_fetcher::config::ConfigManager;
+/// # use sec_fetcher::models::TickerSymbol;
 /// # #[tokio::main] async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let cfg = ConfigManager::load()?;
 /// let client = SecClient::from_config_manager(&cfg)?;
-/// let cik = fetch_cik_by_ticker_symbol(&client, "AAPL").await?;
+/// let cik = fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new("AAPL")).await?;
 /// if let Some(desc) = fetch_company_description(&client, cik).await? {
 ///     println!("{desc}");
 /// }

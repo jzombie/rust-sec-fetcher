@@ -58,13 +58,13 @@ pub async fn fetch_13f_filings(
 /// # Example
 /// ```rust,no_run
 /// # use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_13f, SecClient};
-/// # use sec_fetcher::models::CikSubmission;
+/// # use sec_fetcher::models::{CikSubmission, TickerSymbol};
 /// # use sec_fetcher::config::ConfigManager;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let config = ConfigManager::load()?;
 /// let client = SecClient::from_config_manager(&config)?;
-/// let cik = fetch_cik_by_ticker_symbol(&client, "BRK-B").await?;
+/// let cik = fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new("BRK-B")).await?;
 /// let submissions = fetch_cik_submissions(&client, cik).await?;
 /// let latest = CikSubmission::by_form(&submissions, "13F-HR").into_iter().next().unwrap();
 /// let holdings = fetch_13f(&client, latest).await?;

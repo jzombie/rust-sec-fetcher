@@ -88,12 +88,12 @@ fn parse_filing_index_html(html: &str) -> Result<FilingIndex, Box<dyn Error>> {
 /// ```rust,no_run
 /// # use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_filing_index, SecClient};
 /// # use sec_fetcher::config::ConfigManager;
-/// # use sec_fetcher::models::CikSubmission;
+/// # use sec_fetcher::models::{CikSubmission, TickerSymbol};
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let config = ConfigManager::load()?;
 /// let client = SecClient::from_config_manager(&config)?;
-/// let cik = fetch_cik_by_ticker_symbol(&client, "AAPL").await?;
+/// let cik = fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new("AAPL")).await?;
 /// let submissions = fetch_cik_submissions(&client, cik).await?;
 /// let latest = CikSubmission::by_form(&submissions, "8-K").into_iter().next().unwrap();
 ///
