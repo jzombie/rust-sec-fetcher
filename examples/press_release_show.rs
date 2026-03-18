@@ -38,6 +38,7 @@ use sec_fetcher::models::TickerSymbol;
 use sec_fetcher::network::{
     fetch_8k_filings, fetch_and_render, fetch_cik_by_ticker_symbol, fetch_filing_index, SecClient,
 };
+use sec_fetcher::ops::render_exhibit_doc;
 use sec_fetcher::views::{EmbeddingTextView, FilingView, MarkdownView};
 use std::error::Error;
 
@@ -146,16 +147,16 @@ async fn run<V: FilingView>(
         }
 
         // Render every press release exhibit.
-        let base_url = filing.as_edgar_archive_url();
         for pr in &press_releases {
-            let url = format!("{}/{}", base_url, pr.name);
-            eprintln!("Rendering press release: {} ({})", pr.document_type, url);
-
+            let rendered_pr = render_exhibit_doc(client, filing, pr, view).await?;
+            eprintln!(
+                "Rendering press release: {} ({})",
+                rendered_pr.document_type, rendered_pr.url
+            );
             println!("---");
-            println!("## {} — {}", pr.document_type, pr.name);
+            println!("## {} — {}", rendered_pr.document_type, rendered_pr.name);
             println!();
-            let text = fetch_and_render(client, &url, view).await?;
-            println!("{}", text);
+            println!("{}", rendered_pr.content);
             println!();
         }
 

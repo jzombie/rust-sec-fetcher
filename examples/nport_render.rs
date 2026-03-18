@@ -31,7 +31,7 @@ impl<'a> fmt::Display for NportInvestmentRow<'a> {
             inv.cusip,
             inv.name.chars().take(45).collect::<String>(),
             inv.val_usd,
-            inv.pct_val * rust_decimal_macros::dec!(100),
+            inv.pct_val,
             inv.cur_cd,
             inv.inv_country,
         )

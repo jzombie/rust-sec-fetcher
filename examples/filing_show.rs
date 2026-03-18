@@ -47,9 +47,8 @@
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::TickerSymbol;
-use sec_fetcher::network::{
-    fetch_and_render, fetch_cik_by_ticker_symbol, fetch_filing_index, fetch_filings, SecClient,
-};
+use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_filings, SecClient};
+use sec_fetcher::ops::render_filing;
 use sec_fetcher::views::{EmbeddingTextView, FilingView, MarkdownView};
 use std::error::Error;
 
@@ -121,52 +120,31 @@ async fn run<V: FilingView>(
     println!("# {} {} — {}", ticker, args.form, date);
     println!();
 
-    // ------------------------------------------------------------------
-    // Primary document (body or all)
-    // ------------------------------------------------------------------
-    if matches!(args.part, FilingPart::All | FilingPart::Body) {
-        let primary_url = latest.as_primary_document_url();
-        eprintln!("Rendering primary document: {}", primary_url);
+    let render_body = matches!(args.part, FilingPart::All | FilingPart::Body);
+    let render_exhibits = matches!(args.part, FilingPart::All | FilingPart::Exhibits);
+    let rendered = render_filing(client, latest, render_body, render_exhibits, view).await?;
 
+    if let Some(ref body) = rendered.body {
+        eprintln!(
+            "Rendering primary document: {}",
+            latest.as_primary_document_url()
+        );
         println!("## Primary Document");
         println!();
-        let text = fetch_and_render(client, &primary_url, view).await?;
-        println!("{}", text);
+        println!("{}", body);
     }
 
-    // ------------------------------------------------------------------
-    // Substantive exhibits (exhibits or all)
-    // ------------------------------------------------------------------
-    if matches!(args.part, FilingPart::All | FilingPart::Exhibits) {
-        let index = fetch_filing_index(client, latest).await?;
-        let exhibits = index.substantive_exhibits();
-
-        if exhibits.is_empty() {
-            eprintln!("No substantive exhibits found for this filing.");
-            return Ok(());
-        }
-
-        eprintln!(
-            "Found {} substantive exhibit(s) ({} total in filing):",
-            exhibits.len(),
-            index.documents.len()
-        );
-        for ex in &exhibits {
+    if !rendered.exhibits.is_empty() {
+        eprintln!("Found {} substantive exhibit(s):", rendered.exhibits.len());
+        for ex in &rendered.exhibits {
             eprintln!("  {} — {}", ex.document_type, ex.name);
         }
-
-        let base_url = latest.as_edgar_archive_url();
-
-        for ex in exhibits {
-            let url = format!("{}/{}", base_url, ex.name);
-            eprintln!("Rendering: {}", url);
-
+        for ex in &rendered.exhibits {
+            eprintln!("Rendering: {}", ex.url);
             println!("---");
             println!("## Exhibit: {} ({})", ex.document_type, ex.name);
             println!();
-
-            let text = fetch_and_render(client, &url, view).await?;
-            println!("{}", text);
+            println!("{}", ex.content);
             println!();
         }
     }

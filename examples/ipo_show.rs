@@ -64,10 +64,8 @@ use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::enums::Url;
 use sec_fetcher::models::{Cik, TickerSymbol};
-use sec_fetcher::network::{
-    fetch_and_render, fetch_cik_by_ticker_symbol, fetch_company_profile, fetch_filing_index_by_url,
-    fetch_filings, SecClient,
-};
+use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_company_profile, SecClient};
+use sec_fetcher::ops::{get_ipo_registration_filings, render_filing};
 use sec_fetcher::views::{EmbeddingTextView, FilingView, MarkdownView};
 use std::error::Error;
 
@@ -155,15 +153,8 @@ async fn run<V: FilingView>(
         .map(|t| format!("{} ({})", company_name, t.to_uppercase()))
         .unwrap_or(company_name.clone());
 
-    // Fetch all four IPO registration form types — S-1 and F-1 families —
-    // so the user doesn't need to know whether this is a domestic or foreign issuer.
-    let form_types = ["S-1", "S-1/A", "F-1", "F-1/A"];
-    let mut all_filings = Vec::new();
-    for ft in form_types {
-        let mut filings = fetch_filings(client, cik.clone(), ft).await?;
-        all_filings.append(&mut filings);
-    }
-    all_filings.sort_by(|a, b| b.filing_date.cmp(&a.filing_date));
+    // Fetch all four IPO registration form types — S-1 and F-1 families.
+    let all_filings = get_ipo_registration_filings(client, cik.clone()).await?;
 
     if all_filings.is_empty() {
         eprintln!(
@@ -247,51 +238,30 @@ async fn run<V: FilingView>(
     println!("# {}", label);
     println!();
 
-    // ── Primary document ──────────────────────────────────────────────────
-    let primary_url = target.as_primary_document_url();
-    eprintln!("Primary document: {}", primary_url);
+    let render_exhibits = matches!(args.part, FilingPart::All);
+    let rendered = render_filing(client, target, true, render_exhibits, view).await?;
 
+    // ── Primary document ──────────────────────────────────────────────────
+    eprintln!("Primary document: {}", target.as_primary_document_url());
     println!("## Primary Document");
     println!();
-    let text = fetch_and_render(client, &primary_url, view).await?;
-    println!("{}", text);
+    if let Some(ref body) = rendered.body {
+        println!("{}", body);
+    }
 
     // ── Exhibits (only when --part=all) ───────────────────────────────────
-    if matches!(args.part, FilingPart::All) {
-        let index_url =
-            Url::CikAccessionIndex(target.cik.clone(), target.accession_number.clone()).value();
-        let index = fetch_filing_index_by_url(client, &index_url).await?;
-        let exhibits = index.substantive_exhibits();
-
-        if exhibits.is_empty() {
-            eprintln!("No substantive exhibits found for this filing.");
-            return Ok(());
-        }
-
-        eprintln!(
-            "Found {} substantive exhibit(s) ({} total in filing):",
-            exhibits.len(),
-            index.documents.len()
-        );
-        for ex in &exhibits {
+    if !rendered.exhibits.is_empty() {
+        eprintln!("Found {} substantive exhibit(s):", rendered.exhibits.len());
+        for ex in &rendered.exhibits {
             eprintln!("  {} — {}", ex.document_type, ex.name);
         }
-
-        for ex in exhibits {
-            let url = Url::CikAccessionDocument(
-                target.cik.clone(),
-                target.accession_number.clone(),
-                ex.name.clone(),
-            )
-            .value();
-            eprintln!("Rendering exhibit: {}", url);
-
+        for ex in &rendered.exhibits {
+            eprintln!("Rendering exhibit: {}", ex.url);
             println!();
             println!("---");
             println!("## Exhibit: {} ({})", ex.document_type, ex.name);
             println!();
-            let text = fetch_and_render(client, &url, view).await?;
-            println!("{}", text);
+            println!("{}", ex.content);
         }
     }
 

@@ -114,6 +114,18 @@ pub enum FormType {
     #[strum(props(edgar = "S-1/A"))]
     S1A,
 
+    /// Registration statement, Form F-1 (foreign private issuer IPO) — `"F-1"`.
+    ///
+    /// The non-US equivalent of Form S-1, filed by foreign private issuers to
+    /// register securities in connection with a U.S. public offering.  Common
+    /// for companies incorporated in the Cayman Islands, Israel, or China that
+    /// list on U.S. exchanges.  See also [`S1`][FormType::S1].
+    #[strum(props(edgar = "F-1"))]
+    F1,
+    /// Amendment to Form F-1 — `"F-1/A"`.
+    #[strum(props(edgar = "F-1/A"))]
+    F1A,
+
     /// Registration statement, Form S-3 (shelf, established issuers) — `"S-3"`.
     #[strum(props(edgar = "S-3"))]
     S3,
@@ -380,6 +392,34 @@ impl FormType {
         use strum::EnumProperty;
         self.get_str("retired").is_some()
     }
+
+    /// IPO registration statement form types: S-1 and S-1/A (domestic) plus
+    /// F-1 and F-1/A (foreign private issuers).
+    ///
+    /// Use with [`crate::ops::get_ipo_registration_filings`] and
+    /// [`crate::ops::get_ipo_feed_entries`] to fetch IPO filings without
+    /// hardcoding form-type strings.
+    ///
+    /// ```rust
+    /// use sec_fetcher::enums::FormType;
+    /// assert!(FormType::IPO_REGISTRATION_FORM_TYPES.contains(&FormType::S1));
+    /// assert!(FormType::IPO_REGISTRATION_FORM_TYPES.contains(&FormType::F1));
+    /// ```
+    pub const IPO_REGISTRATION_FORM_TYPES: &'static [Self] =
+        &[Self::S1, Self::S1A, Self::F1, Self::F1A];
+
+    /// IPO pricing prospectus form type: 424B4.
+    ///
+    /// Filed at deal launch after pricing is set; contains the final offer
+    /// price, deal size, and underwriter discount.  Combine with
+    /// [`IPO_REGISTRATION_FORM_TYPES`][Self::IPO_REGISTRATION_FORM_TYPES] when
+    /// polling the EDGAR feed to capture the full IPO lifecycle.
+    ///
+    /// ```rust
+    /// use sec_fetcher::enums::FormType;
+    /// assert!(FormType::IPO_PRICING_FORM_TYPES.contains(&FormType::Prospectus424B4));
+    /// ```
+    pub const IPO_PRICING_FORM_TYPES: &'static [Self] = &[Self::Prospectus424B4];
 }
 
 // ── Display ───────────────────────────────────────────────────────────────────
