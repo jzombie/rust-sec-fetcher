@@ -1,3 +1,4 @@
+use crate::normalize::Pct;
 use rust_decimal::Decimal;
 
 /// One row in a Form 13F-HR informationTable — a single equity position held
@@ -26,10 +27,7 @@ pub struct ThirteenfHolding {
     pub put_call: Option<String>,
     /// Investment discretion: "SOLE", "SHARED", or "OTHER".
     pub investment_discretion: String,
-    /// Portfolio weight on the **canonical 0–100 percentage scale**
-    /// (e.g. `7.7546` means 7.7546%).  Computed by
-    /// [`crate::normalize::compute_13f_weight_pct`] as
-    /// `value_usd / total_value_usd × 100`, rounded to 4 decimal places.
-    /// Set to `0` when total portfolio value is zero.
-    pub weight_pct: Decimal,
+    /// Portfolio weight computed by [`crate::normalize::compute_13f_weight_pct`].
+    /// Stored on the 0–100 scale as a [`Pct`].
+    pub weight_pct: Pct,
 }

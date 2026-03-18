@@ -118,15 +118,15 @@ fn weight_pct_is_on_0_to_100_scale() {
     let aapl = holdings.iter().find(|h| h.cusip == "037833100").unwrap();
     let msft = holdings.iter().find(|h| h.cusip == "594918104").unwrap();
 
-    assert_eq!(aapl.weight_pct, dec!(75.0000), "AAPL should be 75%");
-    assert_eq!(msft.weight_pct, dec!(25.0000), "MSFT should be 25%");
+    assert_eq!(aapl.weight_pct.value(), dec!(75.0000), "AAPL should be 75%");
+    assert_eq!(msft.weight_pct.value(), dec!(25.0000), "MSFT should be 25%");
 
     // Explicitly assert that no weight is ≤ 1.0 (which would indicate 0-1 scale).
     for h in &holdings {
         assert!(
-            h.weight_pct > dec!(1),
+            h.weight_pct.value() > dec!(1),
             "weight_pct > 1 expected on 0-100 scale; got {} for {}",
-            h.weight_pct,
+            h.weight_pct.value(),
             h.name
         );
     }
@@ -134,13 +134,14 @@ fn weight_pct_is_on_0_to_100_scale() {
 
 #[test]
 fn weight_pct_is_not_multiplied_by_100_again() {
-    // Regression guard: weight_pct must never exceed 100.
+    // Regression guard: weight_pct is a derived 0–100 percentage.
+    // Pct enforces scale, not range; this test checks real computed values stay in [0, 100].
     let holdings = parse_13f_xml(TWO_POSITION_13F, None).unwrap();
     for h in &holdings {
         assert!(
-            h.weight_pct <= dec!(100),
-            "weight_pct ({}) exceeds 100 for {} — was it multiplied by 100 twice?",
-            h.weight_pct,
+            h.weight_pct.value() <= dec!(100),
+            "weight_pct ({}) exceeds 100 for {} — was value divided by total?",
+            h.weight_pct.value(),
             h.name
         );
     }
@@ -151,14 +152,14 @@ fn weight_pct_is_not_multiplied_by_100_again() {
 #[test]
 fn weights_sum_to_100_two_positions() {
     let holdings = parse_13f_xml(TWO_POSITION_13F, None).unwrap();
-    let sum: Decimal = holdings.iter().map(|h| h.weight_pct).sum();
+    let sum: Decimal = holdings.iter().map(|h| h.weight_pct.value()).sum();
     assert_eq!(sum, dec!(100.0000), "weights must sum to 100%; got {}", sum);
 }
 
 #[test]
 fn weights_sum_to_100_three_positions() {
     let holdings = parse_13f_xml(THREE_POSITION_13F, None).unwrap();
-    let sum: Decimal = holdings.iter().map(|h| h.weight_pct).sum();
+    let sum: Decimal = holdings.iter().map(|h| h.weight_pct.value()).sum();
     assert_eq!(sum, dec!(100.0000), "weights must sum to 100%; got {}", sum);
 }
 
@@ -172,9 +173,9 @@ fn three_position_weights_are_correct() {
     let aapl = holdings.iter().find(|h| h.cusip == "037833100").unwrap();
     let msft = holdings.iter().find(|h| h.cusip == "594918104").unwrap();
 
-    assert_eq!(nvda.weight_pct, dec!(60.0000), "NVDA should be 60%");
-    assert_eq!(aapl.weight_pct, dec!(25.0000), "AAPL should be 25%");
-    assert_eq!(msft.weight_pct, dec!(15.0000), "MSFT should be 15%");
+    assert_eq!(nvda.weight_pct.value(), dec!(60.0000), "NVDA should be 60%");
+    assert_eq!(aapl.weight_pct.value(), dec!(25.0000), "AAPL should be 25%");
+    assert_eq!(msft.weight_pct.value(), dec!(15.0000), "MSFT should be 15%");
 }
 
 // ── output sorted by value_usd descending ─────────────────────────────────────
@@ -218,7 +219,7 @@ fn single_position_has_100_pct_weight() {
 </informationTable>"#;
     let holdings = parse_13f_xml(SINGLE, None).unwrap();
     assert_eq!(holdings.len(), 1);
-    assert_eq!(holdings[0].weight_pct, dec!(100.0000));
+    assert_eq!(holdings[0].weight_pct.value(), dec!(100.0000));
 }
 
 // ── fractional weights round to 4 decimal places ──────────────────────────────
@@ -251,12 +252,18 @@ fn fractional_weights_rounded_to_4dp() {
     let alpha = holdings.iter().find(|h| h.cusip == "000000001").unwrap();
     let beta = holdings.iter().find(|h| h.cusip == "000000002").unwrap();
 
-    // Scale is 0-100
-    assert!(alpha.weight_pct > dec!(60), "2/3 share should be >60%");
-    assert!(beta.weight_pct > dec!(30), "1/3 share should be >30%");
+    // Scale is 0-100; Pct enforces scale (not bounds).
+    assert!(
+        alpha.weight_pct.value() > dec!(60),
+        "2/3 share should be >60%"
+    );
+    assert!(
+        beta.weight_pct.value() > dec!(30),
+        "1/3 share should be >30%"
+    );
     // 4 decimal places
     assert_eq!(
-        alpha.weight_pct.scale(),
+        alpha.weight_pct.value().scale(),
         4,
         "weight_pct should have 4 dp; got {}",
         alpha.weight_pct

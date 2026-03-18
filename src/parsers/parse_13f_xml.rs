@@ -1,5 +1,5 @@
 use crate::models::ThirteenfHolding;
-use crate::normalize::{compute_13f_weight_pct, normalize_13f_value_usd};
+use crate::normalize::{compute_13f_weight_pct, normalize_13f_value_usd, Pct};
 use chrono::NaiveDate;
 use quick_xml::events::Event;
 use quick_xml::Reader;
@@ -101,7 +101,7 @@ pub fn parse_13f_xml(
                         put_call: put_call.take(),
                         investment_discretion: std::mem::take(&mut investment_discretion),
                         // Populated in the second pass below.
-                        weight_pct: dec!(0),
+                        weight_pct: Pct::ZERO,
                     });
                     in_info_table = false;
                     value_raw = dec!(0);

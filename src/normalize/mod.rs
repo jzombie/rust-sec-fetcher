@@ -18,8 +18,8 @@
 //!
 //! | Module | Responsibility |
 //! |--------|----------------|
-//! | [`thirteenf`] | 13F-HR `<value>` unit crossover (thousands-era vs. actual-USD era) |
-//! | [`percentage`] | Portfolio weight % normalization for all filing types (one canonical 0–100 scale) |
+//! | [`thirteenf`] | 13F-HR `<value>` unit crossover (thousands-era vs. actual-USD era) and weight computation |
+//! | [`pct`] | [`Pct`] — scale-enforcing (0–100), unbounded percentage newtype |
 //!
 //! ## Adding a new filing type
 //!
@@ -27,8 +27,11 @@
 //! requiring any normalization, add the conversion logic here — do **not** put
 //! it in the parser file or the ops layer.
 
-pub mod percentage;
+pub mod pct;
 pub mod thirteenf;
 
-pub use percentage::{compute_13f_weight_pct, normalize_nport_weight_pct};
-pub use thirteenf::{is_13f_thousands_era, normalize_13f_value_usd, THIRTEENF_THOUSANDS_ERA_CUTOFF};
+pub use pct::Pct;
+pub use thirteenf::{
+    compute_13f_weight_pct, is_13f_thousands_era, normalize_13f_value_usd,
+    THIRTEENF_THOUSANDS_ERA_CUTOFF,
+};

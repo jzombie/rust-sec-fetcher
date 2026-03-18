@@ -32,7 +32,7 @@ use flate2::write::GzEncoder;
 use flate2::Compression;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::enums::Url;
-use sec_fetcher::models::TickerSymbol;
+use sec_fetcher::models::{AccessionNumber, CikSubmission, TickerSymbol};
 use sec_fetcher::network::{
     fetch_8k_filings, fetch_cik_by_ticker_symbol, fetch_filing_index, SecClient,
 };
@@ -71,6 +71,20 @@ enum FixtureKind {
     EightKPrimary,
     /// First renderable (non-binary) EX-* exhibit of the latest 8-K.
     EightKFirstHtmlExhibit,
+    /// The `informationTable.xml` from a specific 13F-HR filing.
+    ///
+    /// `accession` must be a full formatted accession number string
+    /// (e.g. `"0000950123-22-012275"`).  The filing's CIK is resolved from
+    /// the `ticker` field of the enclosing [`Fixture`] at runtime.
+    ///
+    /// ## Era fixtures
+    ///
+    /// | Label | Accession | Filed | Era |
+    /// |---|---|---|---|
+    /// | ancient | `0000950123-22-012275` | 2022-11-14 | `<value>` in **thousands** |
+    /// | transition | `0000950123-23-002585` | 2023-02-14 | `<value>` in **actual USD** (first modern) |
+    /// | modern | `0001193125-26-054580` | 2026-02-17 | `<value>` in **actual USD** |
+    ThirteenF { accession: &'static str },
 }
 
 const FIXTURES: &[Fixture] = &[
@@ -121,6 +135,40 @@ const FIXTURES: &[Fixture] = &[
         output: "AAPL_8k_exhibit.html",
         ticker: "AAPL",
         kind: FixtureKind::EightKFirstHtmlExhibit,
+    },
+    // ── 13F-HR information tables (era cross-over fixtures) ────────────────
+    //
+    // Two BRK-B filings bracket the 2023-01-01 crossover date where the
+    // <value> field changed from thousands-of-USD to actual-USD.  A third
+    // recent filing confirms the modern schema.  Integration tests load these
+    // fixtures and call parse_13f_xml with the known filing_date to verify
+    // that normalize_13f_value_usd produces plausible per-share prices in
+    // both eras.
+    Fixture {
+        output: "BRK_B_13f_ancient.xml",
+        ticker: "BRK-B",
+        kind: FixtureKind::ThirteenF {
+            // Q3-2022: filed 2022-11-14.  AAPL raw=95634 → thousands era
+            // → value_usd = $95,634,000 → ~$138/share for 692,000 shares.
+            accession: "0000950123-22-012275",
+        },
+    },
+    Fixture {
+        output: "BRK_B_13f_transition.xml",
+        ticker: "BRK-B",
+        kind: FixtureKind::ThirteenF {
+            // Q4-2022: filed 2023-02-14.  First filing in the actual-USD era.
+            // AAPL raw=133289470 → value_usd = $133,289,470 → ~$130/share for 1,025,856 shares.
+            accession: "0000950123-23-002585",
+        },
+    },
+    Fixture {
+        output: "BRK_B_13f_modern.xml",
+        ticker: "BRK-B",
+        kind: FixtureKind::ThirteenF {
+            // Q4-2025: filed 2026-02-17.  Recent filing confirming modern schema.
+            accession: "0001193125-26-054580",
+        },
     },
 ];
 
@@ -180,6 +228,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     })
                     .ok_or_else(|| format!("No renderable exhibit for '{}'", fixture.ticker))?;
                 format!("{}/{}", base, exhibit.name)
+            }
+            FixtureKind::ThirteenF { accession } => {
+                // Build a minimal CikSubmission with the known accession number
+                // so we can reuse fetch_filing_index to discover the filename.
+                let acc_num = AccessionNumber::from_str(accession)
+                    .map_err(|e| format!("Invalid accession '{}': {}", accession, e))?;
+                let sub = CikSubmission {
+                    cik: cik.clone(),
+                    entity_type: None,
+                    accession_number: acc_num,
+                    form: "13F-HR".to_string(),
+                    primary_document: "primary_doc.xml".to_string(),
+                    filing_date: None,
+                    items: vec![],
+                };
+                let index = fetch_filing_index(&client, &sub).await?;
+                let info_doc = index
+                    .documents
+                    .iter()
+                    .find(|d| d.document_type.to_uppercase().contains("INFORMATION TABLE"))
+                    .ok_or_else(|| {
+                        format!(
+                            "No INFORMATION TABLE document in 13F index for accession {}",
+                            accession
+                        )
+                    })?;
+                Url::CikAccessionDocument(sub.cik, sub.accession_number, info_doc.name.clone())
+                    .value()
             }
         };
 

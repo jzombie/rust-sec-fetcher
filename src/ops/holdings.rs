@@ -1,4 +1,5 @@
 use crate::models::{NportInvestment, ThirteenfHolding};
+use crate::normalize::Pct;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use std::collections::HashMap;
@@ -19,14 +20,11 @@ pub struct Position {
     pub name: String,
     /// Market value in USD.
     pub val_usd: Decimal,
-    /// Portfolio weight as a percentage (0–100 scale).
+    /// Portfolio weight as a [`Pct`] on the 0–100 scale.
     ///
-    /// For N-PORT this is the `pct_val` field from the XML `<pctVal>` element,
-    /// which the SEC publishes already on the 0–100 scale (e.g. `7.7546` means
-    /// 7.7546%).  For 13F this is the `weight_pct` field computed by
-    /// [`crate::parsers::parse_13f_xml`] immediately after parsing, using each
-    /// position's share of the total reported value.
-    pub weight: Decimal,
+    /// For N-PORT sourced from `NportInvestment::pct_val`; for 13F sourced from
+    /// `ThirteenfHolding::weight_pct`.
+    pub weight: Pct,
 }
 
 /// Changes between two consecutive portfolio snapshots.
@@ -51,8 +49,6 @@ pub fn positions_from_nport(investments: &[NportInvestment]) -> Vec<Position> {
             cusip: h.cusip.clone(),
             name: h.name.clone(),
             val_usd: h.val_usd,
-            // pct_val is already a percentage (0–100 scale) parsed directly
-            // from the N-PORT <pctVal> XML element.
             weight: h.pct_val,
         })
         .collect()

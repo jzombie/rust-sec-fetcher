@@ -54,6 +54,8 @@ use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
+use super::pct::Pct;
+
 /// The first filing date (inclusive) on which EDGAR 13F-HR `informationTable`
 /// XML began reporting `<value>` in **actual US dollars**.
 ///
@@ -147,6 +149,38 @@ pub fn normalize_13f_value_usd(raw: Decimal, filing_date: Option<NaiveDate>) -> 
     }
 }
 
+/// Computes the portfolio weight for a single 13F-HR holding, returning a
+/// type-safe [`Pct`] on the 0–100 scale.
+///
+/// The 13F-HR `informationTable` schema has no portfolio-weight field — weight
+/// must be derived from this holding's `value_usd` divided by the sum of all
+/// holdings' `value_usd`.  This is the **single place** in the codebase where
+/// that division is performed; do not replicate it.
+///
+/// Returns [`Pct::ZERO`] when `total_usd` is zero (empty or all-zero portfolio
+/// guard).  Result is rounded to 4 decimal places before wrapping.
+///
+/// # Examples
+///
+/// ```
+/// use rust_decimal_macros::dec;
+/// use sec_fetcher::normalize::compute_13f_weight_pct;
+///
+/// // $15 M out of $20 M total → 75.0000%
+/// assert_eq!(compute_13f_weight_pct(dec!(15_000_000), dec!(20_000_000)).value(), dec!(75.0000));
+/// // $5 M out of $20 M total → 25.0000%
+/// assert_eq!(compute_13f_weight_pct(dec!(5_000_000), dec!(20_000_000)).value(), dec!(25.0000));
+/// // Zero total → 0% (guard against divide-by-zero)
+/// assert_eq!(compute_13f_weight_pct(dec!(999), dec!(0)).value(), dec!(0));
+/// ```
+pub fn compute_13f_weight_pct(value_usd: Decimal, total_usd: Decimal) -> Pct {
+    if total_usd.is_zero() {
+        Pct::ZERO
+    } else {
+        Pct::from_pct((value_usd / total_usd * dec!(100)).round_dp(4))
+    }
+}
+
 // ── Unit tests ────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -210,13 +244,19 @@ mod tests {
     #[test]
     fn ancient_raw_multiplied_by_1000() {
         let ancient = date(2014, 2, 14);
-        assert_eq!(normalize_13f_value_usd(dec!(15000), ancient), dec!(15_000_000));
+        assert_eq!(
+            normalize_13f_value_usd(dec!(15000), ancient),
+            dec!(15_000_000)
+        );
     }
 
     #[test]
     fn modern_raw_passed_through_verbatim() {
         let modern = date(2026, 2, 17);
-        assert_eq!(normalize_13f_value_usd(dec!(15_000_000), modern), dec!(15_000_000));
+        assert_eq!(
+            normalize_13f_value_usd(dec!(15_000_000), modern),
+            dec!(15_000_000)
+        );
     }
 
     #[test]
@@ -225,18 +265,21 @@ mod tests {
         // represented in both filing eras should produce the same value_usd
         // after normalization.
         let ancient = date(2014, 2, 14);
-        let modern  = date(2026, 2, 17);
+        let modern = date(2026, 2, 17);
         // Ancient: raw 15000 (thousands) → $15 000 000
         let ancient_usd = normalize_13f_value_usd(dec!(15000), ancient);
         // Modern: raw 15000000 (actual USD) → $15 000 000
-        let modern_usd  = normalize_13f_value_usd(dec!(15_000_000), modern);
+        let modern_usd = normalize_13f_value_usd(dec!(15_000_000), modern);
         assert_eq!(ancient_usd, modern_usd);
     }
 
     #[test]
     fn unknown_date_passes_through_verbatim() {
         // None → assume modern → no multiplication
-        assert_eq!(normalize_13f_value_usd(dec!(99_000_000), None), dec!(99_000_000));
+        assert_eq!(
+            normalize_13f_value_usd(dec!(99_000_000), None),
+            dec!(99_000_000)
+        );
     }
 
     #[test]
@@ -283,5 +326,54 @@ mod tests {
             "implied $/sh = {} (expected ~$130 for AAPL Q4-2022)",
             price_per_share
         );
+    }
+
+    // ── compute_13f_weight_pct ────────────────────────────────────────────────
+
+    #[test]
+    fn weight_75_25_split() {
+        assert_eq!(
+            compute_13f_weight_pct(dec!(15_000_000), dec!(20_000_000)).value(),
+            dec!(75.0000)
+        );
+        assert_eq!(
+            compute_13f_weight_pct(dec!(5_000_000), dec!(20_000_000)).value(),
+            dec!(25.0000)
+        );
+    }
+
+    #[test]
+    fn weights_sum_to_100() {
+        let total = dec!(20_000_000);
+        let a = compute_13f_weight_pct(dec!(15_000_000), total).value();
+        let b = compute_13f_weight_pct(dec!(5_000_000), total).value();
+        assert_eq!(a + b, dec!(100.0000));
+    }
+
+    #[test]
+    fn zero_total_returns_zero() {
+        assert_eq!(
+            compute_13f_weight_pct(dec!(1_000_000), dec!(0)).value(),
+            dec!(0)
+        );
+    }
+
+    #[test]
+    fn single_position_is_100_pct() {
+        assert_eq!(
+            compute_13f_weight_pct(dec!(42_000_000), dec!(42_000_000)).value(),
+            dec!(100.0000)
+        );
+    }
+
+    #[test]
+    fn thirds_round_correctly() {
+        let total = dec!(30_000_000);
+        let a = compute_13f_weight_pct(dec!(10_000_000), total).value();
+        let b = compute_13f_weight_pct(dec!(10_000_000), total).value();
+        let c = compute_13f_weight_pct(dec!(10_000_000), total).value();
+        assert_eq!(a, dec!(33.3333));
+        assert_eq!(b, dec!(33.3333));
+        assert_eq!(c, dec!(33.3333));
     }
 }

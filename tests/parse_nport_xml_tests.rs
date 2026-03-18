@@ -88,25 +88,22 @@ const MID_WEIGHT_NPORT: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 #[test]
 fn pct_val_is_on_0_to_100_scale_for_large_position() {
     let investments = parse_nport_xml(TWO_POSITION_NPORT, &[] as &[Ticker], None).unwrap();
-    let nvda = investments
-        .iter()
-        .find(|i| i.cusip == "67066G104")
-        .unwrap();
+    let nvda = investments.iter().find(|i| i.cusip == "67066G104").unwrap();
 
     // The XML says pctVal = 7.7546.  That is 7.7546% on the 0-100 scale.
-    assert_eq!(nvda.pct_val, dec!(7.7546));
+    assert_eq!(nvda.pct_val.value(), dec!(7.7546));
 }
 
 #[test]
 fn pct_val_not_multiplied_by_100() {
-    // Regression: pct_val must never exceed 100.  If pctVal = 7.7546 gets
-    // multiplied by 100 anywhere, it becomes 775.46 — clearly absurd.
+    // Regression guard: verify pct_val is already on the 0–100 scale (not 0–1).
+    // Pct enforces scale, not range; this test checks real parsed values stay in [0, 100].
     let investments = parse_nport_xml(TWO_POSITION_NPORT, &[] as &[Ticker], None).unwrap();
     for inv in &investments {
         assert!(
-            inv.pct_val <= dec!(100),
-            "pct_val ({}) exceeds 100 for {} — was it multiplied by 100?",
-            inv.pct_val,
+            inv.pct_val.value() <= dec!(100),
+            "pct_val ({}) exceeds 100 for {} — value was not multiplied by 100, was it?",
+            inv.pct_val.value(),
             inv.name
         );
     }
@@ -115,16 +112,13 @@ fn pct_val_not_multiplied_by_100() {
 #[test]
 fn pct_val_is_on_0_to_100_scale_for_tiny_position() {
     let investments = parse_nport_xml(TWO_POSITION_NPORT, &[] as &[Ticker], None).unwrap();
-    let prologis = investments
-        .iter()
-        .find(|i| i.cusip == "74340XCH2")
-        .unwrap();
+    let prologis = investments.iter().find(|i| i.cusip == "74340XCH2").unwrap();
 
     // Tiny bond position: 0.007357911161% on the 0-100 scale.
     // On a 0-1 scale this would be 0.00007357911161 — parser must NOT divide.
-    assert_eq!(prologis.pct_val, dec!(0.007357911161));
+    assert_eq!(prologis.pct_val.value(), dec!(0.007357911161));
     assert!(
-        prologis.pct_val > dec!(0),
+        prologis.pct_val.value() > dec!(0),
         "pct_val should be a small positive percentage, not zero"
     );
 }
@@ -134,10 +128,10 @@ fn pct_val_mid_weight_exactly_preserved() {
     let investments = parse_nport_xml(MID_WEIGHT_NPORT, &[] as &[Ticker], None).unwrap();
     assert_eq!(investments.len(), 1);
     assert_eq!(
-        investments[0].pct_val,
+        investments[0].pct_val.value(),
         dec!(5.1234),
         "pct_val must be stored verbatim from <pctVal>; got {}",
-        investments[0].pct_val
+        investments[0].pct_val.value()
     );
 }
 
@@ -146,10 +140,7 @@ fn pct_val_mid_weight_exactly_preserved() {
 #[test]
 fn val_usd_stored_verbatim_from_xml() {
     let investments = parse_nport_xml(TWO_POSITION_NPORT, &[] as &[Ticker], None).unwrap();
-    let nvda = investments
-        .iter()
-        .find(|i| i.cusip == "67066G104")
-        .unwrap();
+    let nvda = investments.iter().find(|i| i.cusip == "67066G104").unwrap();
     // valUSD in XML is already in actual USD (not thousands).
     assert_eq!(nvda.val_usd, dec!(7754618000.00));
 }
@@ -175,10 +166,7 @@ fn investments_sorted_by_pct_val_descending() {
 #[test]
 fn name_cusip_and_currency_parsed() {
     let investments = parse_nport_xml(TWO_POSITION_NPORT, &[] as &[Ticker], None).unwrap();
-    let nvda = investments
-        .iter()
-        .find(|i| i.cusip == "67066G104")
-        .unwrap();
+    let nvda = investments.iter().find(|i| i.cusip == "67066G104").unwrap();
 
     assert_eq!(nvda.name, "NVIDIA CORP");
     assert_eq!(nvda.cur_cd, "USD");
