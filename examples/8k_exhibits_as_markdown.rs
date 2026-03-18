@@ -1,32 +1,33 @@
-/// Fetches all exhibit documents attached to the latest 8-K filing for a given
-/// ticker symbol and prints each one as rendered text.
-///
-/// HTML exhibits are converted using the chosen view.  Plain-text exhibits are
-/// printed as-is (with blank-line collapsing for `embedding` view).  Binary
-/// formats (PDF, XLSX, images) are represented by a notice string.
-///
-/// Usage:
-///   cargo run --example 8k_exhibits_as_markdown -- <TICKER_SYMBOL> [--view markdown|embedding]
-///
-/// Example:
-///   cargo run --example 8k_exhibits_as_markdown -- LLY
+//! Fetches all exhibit documents attached to the latest 8-K filing for a given
+//! ticker symbol and prints each one as rendered text.
+//!
+//! HTML exhibits are converted using the chosen view.  Plain-text exhibits are
+//! printed as-is (with blank-line collapsing for `embedding` view).  Binary
+//! formats (PDF, XLSX, images) are represented by a notice string.
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example 8k_exhibits_as_markdown -- <TICKER_SYMBOL> [--view markdown|embedding]
+//! cargo run --example 8k_exhibits_as_markdown -- LLY
+//! cargo run --example 8k_exhibits_as_markdown -- AAPL --view markdown
+//! ```
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::TickerSymbol;
-use sec_fetcher::network::{
-    fetch_8k_filings, fetch_and_render, fetch_cik_by_ticker_symbol, fetch_filing_index, SecClient,
-};
-use sec_fetcher::views::{EmbeddingTextView, MarkdownView};
+use sec_fetcher::network::{SecClient, fetch_8k_filings, fetch_cik_by_ticker_symbol};
+use sec_fetcher::ops::render_all_exhibits;
+use sec_fetcher::views::{EmbeddingTextView, FilingView, MarkdownView};
 use std::error::Error;
 
 #[derive(Parser)]
 #[command(
     about = "Render EX-* exhibit attachments only (not the primary document) for a ticker",
     long_about = "Fetches the latest 8-K and renders every EX-* exhibit — press releases, \n\
-                 earnings tables, executive statements — skipping the primary cover page. \n\
-                 Use `8k_full_render` to render the primary document and all exhibits \n\
-                 together in one output, or `latest_8k_as_markdown` for the primary \n\
-                 document alone."
+                  earnings tables, executive statements — skipping the primary cover page. \n\
+                  Use `8k_full_render` to render the primary document and all exhibits \n\
+                  together in one output, or `latest_8k_as_markdown` for the primary \n\
+                  document alone."
 )]
 struct Args {
     /// Ticker symbol (e.g. LLY)
@@ -43,16 +44,15 @@ enum ViewArg {
     Embedding,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let args = Args::parse();
+async fn run<V: FilingView>(
+    client: &SecClient,
+    args: &Args,
+    view: &V,
+) -> Result<(), Box<dyn Error>> {
     let ticker_symbol = TickerSymbol::new(&args.ticker);
 
-    let config = ConfigManager::load()?;
-    let client = SecClient::from_config_manager(&config)?;
-
-    let cik = fetch_cik_by_ticker_symbol(&client, &ticker_symbol).await?;
-    let filings = fetch_8k_filings(&client, cik).await?;
+    let cik = fetch_cik_by_ticker_symbol(client, &ticker_symbol).await?;
+    let filings = fetch_8k_filings(client, cik).await?;
 
     let latest = filings
         .first()
@@ -70,8 +70,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         latest.items.join(",")
     );
 
-    let index = fetch_filing_index(&client, latest).await?;
-    let exhibits = index.exhibits();
+    let exhibits = render_all_exhibits(client, latest, view).await?;
 
     if exhibits.is_empty() {
         eprintln!("No exhibits found for this filing.");
@@ -84,24 +83,28 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
     eprintln!();
 
-    let base_url = latest.as_edgar_archive_url();
-
-    for exhibit in exhibits {
-        let url = format!("{}/{}", base_url, exhibit.name);
-
+    for ex in exhibits {
+        eprintln!("Rendering: {}", ex.url);
         println!("---");
-        println!("## {} ({})", exhibit.document_type, exhibit.name);
+        println!("## {} ({})", ex.document_type, ex.name);
         println!();
-
-        eprintln!("Rendering: {}", url);
-
-        let text = match args.view {
-            ViewArg::Markdown => fetch_and_render(&client, &url, &MarkdownView).await?,
-            ViewArg::Embedding => fetch_and_render(&client, &url, &EmbeddingTextView).await?,
-        };
-
-        println!("{}", text);
+        println!("{}", ex.content);
         println!();
+    }
+
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let args = Args::parse();
+
+    let config = ConfigManager::load()?;
+    let client = SecClient::from_config_manager(&config)?;
+
+    match args.view {
+        ViewArg::Markdown => run(&client, &args, &MarkdownView).await?,
+        ViewArg::Embedding => run(&client, &args, &EmbeddingTextView).await?,
     }
 
     Ok(())

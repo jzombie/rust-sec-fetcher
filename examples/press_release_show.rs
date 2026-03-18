@@ -1,43 +1,34 @@
-/// Finds the most recent earnings press release for a ticker and renders it.
-///
-/// SEC press releases are `EX-99.x` exhibits attached to 8-K filings.
-/// Companies use them to announce quarterly and annual earnings, Regulation FD
-/// voluntary disclosures, and other material events.
-///
-/// This tool searches the company's 8-K history for the most recent filing
-/// that contains at least one `EX-99.x` exhibit, then renders every press
-/// release exhibit found in that filing.
-///
-/// # Narrowing to earnings releases
-///
-/// Use `--earnings-only` to restrict the search to 8-Ks that reported
-/// operating results (Item 2.02 — "Results of Operations and Financial
-/// Condition", or the legacy Item 12 designation used before 2004).
-/// This filters out voluntary Reg FD disclosures (Item 7.01) and other
-/// announcements that happen to attach an EX-99.x, leaving only true
-/// quarterly/annual earnings releases.
-///
-/// # Usage
-///
-///   cargo run --example press_release_show -- <TICKER> [OPTIONS]
-///
-///   Options:
-///     --view markdown|embedding   Rendering style [default: embedding]
-///     --earnings-only             Restrict to earnings-results 8-Ks (Item 2.02)
-///     --include-body              Also render the 8-K primary document
-///
-/// # Examples
-///
-///   cargo run --example press_release_show -- LLY
-///   cargo run --example press_release_show -- AAPL --view markdown
-///   cargo run --example press_release_show -- MSFT --earnings-only
-///   cargo run --example press_release_show -- GOOGL --earnings-only --include-body
+//! Finds the most recent earnings press release for a ticker and renders it.
+//!
+//! SEC press releases are `EX-99.x` exhibits attached to 8-K filings.
+//! Companies use them to announce quarterly and annual earnings, Regulation FD
+//! voluntary disclosures, and other material events.
+//!
+//! This tool searches the company's 8-K history for the most recent filing
+//! that contains at least one `EX-99.x` exhibit, then renders every press
+//! release exhibit found in that filing.
+//!
+//! Use `--earnings-only` to restrict the search to 8-Ks that reported
+//! operating results (Item 2.02 — "Results of Operations and Financial
+//! Condition"). This filters out voluntary Reg FD disclosures and other
+//! announcements that happen to attach an EX-99.x.
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example press_release_show -- <TICKER> [OPTIONS]
+//! cargo run --example press_release_show -- LLY
+//! cargo run --example press_release_show -- AAPL --view markdown
+//! cargo run --example press_release_show -- MSFT --earnings-only
+//! cargo run --example press_release_show -- GOOGL --earnings-only --include-body
+//! ```
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::TickerSymbol;
 use sec_fetcher::network::{
-    fetch_8k_filings, fetch_and_render, fetch_cik_by_ticker_symbol, fetch_filing_index, SecClient,
+    SecClient, fetch_8k_filings, fetch_and_render, fetch_cik_by_ticker_symbol, fetch_filing_index,
 };
+use sec_fetcher::ops::render_exhibit_doc;
 use sec_fetcher::views::{EmbeddingTextView, FilingView, MarkdownView};
 use std::error::Error;
 
@@ -146,16 +137,16 @@ async fn run<V: FilingView>(
         }
 
         // Render every press release exhibit.
-        let base_url = filing.as_edgar_archive_url();
         for pr in &press_releases {
-            let url = format!("{}/{}", base_url, pr.name);
-            eprintln!("Rendering press release: {} ({})", pr.document_type, url);
-
+            let rendered_pr = render_exhibit_doc(client, filing, pr, view).await?;
+            eprintln!(
+                "Rendering press release: {} ({})",
+                rendered_pr.document_type, rendered_pr.url
+            );
             println!("---");
-            println!("## {} — {}", pr.document_type, pr.name);
+            println!("## {} — {}", rendered_pr.document_type, rendered_pr.name);
             println!();
-            let text = fetch_and_render(client, &url, view).await?;
-            println!("{}", text);
+            println!("{}", rendered_pr.content);
             println!();
         }
 

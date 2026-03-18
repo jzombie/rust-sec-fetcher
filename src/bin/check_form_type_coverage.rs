@@ -24,7 +24,7 @@
 use chrono::Datelike;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::enums::FormType;
-use sec_fetcher::network::{fetch_edgar_master_index, SecClient};
+use sec_fetcher::network::{SecClient, fetch_edgar_master_index};
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use strum::IntoEnumIterator;
@@ -163,7 +163,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Variants found but only in an older quarter (rare, not necessarily wrong).
     let mut found_in_history: Vec<(String, u16, u8)> = found_in
         .iter()
-        .filter(|(_, &(y, q))| (y, q) != (start_year, start_quarter))
+        .filter(|&(_, &(y, q))| (y, q) != (start_year, start_quarter))
         .map(|(ft, &(y, q))| (ft.to_string(), y, q))
         .collect();
     found_in_history.sort();
@@ -227,7 +227,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut unaccounted: Vec<(String, usize)> = recent_counts
         .iter()
-        .filter(|(_, &count)| count >= MINIMUM_FILINGS_THRESHOLD)
+        .filter(|&(_, &count)| count >= MINIMUM_FILINGS_THRESHOLD)
         .filter(|(form, _)| matches!(form.parse::<FormType>().unwrap(), FormType::Other(_)))
         .map(|(form, &count)| (form.clone(), count))
         .collect();
@@ -263,7 +263,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .count();
     let found_in_current = found_in
         .iter()
-        .filter(|(_, &(y, q))| (y, q) == (start_year, start_quarter))
+        .filter(|&(_, &(y, q))| (y, q) == (start_year, start_quarter))
         .count();
 
     println!();

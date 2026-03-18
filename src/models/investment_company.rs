@@ -55,11 +55,11 @@ impl InvestmentCompany {
     ) -> Result<Cik, Box<dyn Error>> {
         for result in investment_companies.iter() {
             let stored = result.class_ticker.as_deref().map(TickerSymbol::new);
-            if stored.as_ref() == Some(ticker) {
-                if let Some(cik_str) = &result.cik_number {
-                    let cik = Cik::from_str(cik_str)?;
-                    return Ok(cik);
-                }
+            if stored.as_ref() == Some(ticker)
+                && let Some(cik_str) = &result.cik_number
+            {
+                let cik = Cik::from_str(cik_str)?;
+                return Ok(cik);
             }
         }
         Err("CIK not found".into())

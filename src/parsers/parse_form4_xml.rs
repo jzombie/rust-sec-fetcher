@@ -1,7 +1,7 @@
 use crate::models::Form4Transaction;
 use chrono::NaiveDate;
-use quick_xml::events::Event;
 use quick_xml::Reader;
+use quick_xml::events::Event;
 use rust_decimal::Decimal;
 use std::error::Error;
 use std::str::FromStr;

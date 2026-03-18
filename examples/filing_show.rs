@@ -1,55 +1,44 @@
-/// Renders any SEC filing — body, exhibits, or both — for a given ticker and form type.
-///
-/// This is the general-purpose filing renderer.  It accepts any EDGAR form type
-/// string and renders the most recent matching filing.  Pass `--form 10-K` for
-/// annual reports, `--form DEF 14A` for proxy statements, `--form 8-K` (the
-/// default) for current reports, and so on.
-///
-/// # What gets rendered
-///
-/// | `--part`      | Output                                                         |
-/// |---------------|----------------------------------------------------------------|
-/// | `all`         | Primary document **and** all substantive exhibits (default)    |
-/// | `body`        | Primary document only                                         |
-/// | `exhibits`    | Substantive exhibits only (no primary document)               |
-///
-/// "Substantive" means exhibits that contain human-readable prose or financial
-/// tables.  The following exhibit types are automatically excluded because they
-/// are short legal boilerplate or machine-readable data with no analytical value:
-///
-/// | Excluded exhibit type | Description |
-/// |---|---|
-/// | `EX-31.x` | SOX § 302 CEO/CFO certifications |
-/// | `EX-32.x` | SOX § 906 CEO/CFO certifications |
-/// | `EX-23.x` | Auditor / accountant consent |
-/// | `EX-101.*` | XBRL instance, schema, label, and calculation files |
-/// | `GRAPHIC`  | Image files (logos, signature scans, charts) |
-///
-/// The excluded types represent the vast majority of exhibit count in a typical
-/// 10-K or 10-Q while containing essentially zero prose content.
-///
-/// # Usage
-///
-///   cargo run --example filing_show -- <TICKER> [OPTIONS]
-///
-///   Options:
-///     --form <FORM>        EDGAR form type [default: 8-K]
-///     --view markdown|embedding  Rendering style [default: embedding]
-///     --part all|body|exhibits   What to render [default: all]
-///
-/// # Examples
-///
-///   cargo run --example filing_show -- AAPL
-///   cargo run --example filing_show -- AAPL --form 10-K
-///   cargo run --example filing_show -- LLY --form 10-Q --view markdown
-///   cargo run --example filing_show -- MSFT --form "DEF 14A" --part body
-///   cargo run --example filing_show -- AMZN --part exhibits > amzn_exhibits.txt
+//! Renders any SEC filing — body, exhibits, or both — for a given ticker and form type.
+//!
+//! This is the general-purpose filing renderer.  It accepts any EDGAR form type
+//! string and renders the most recent matching filing.  Pass `--form 10-K` for
+//! annual reports, `--form DEF 14A` for proxy statements, `--form 8-K` (the
+//! default) for current reports, and so on.
+//!
+//! # What gets rendered
+//!
+//! | `--part`      | Output                                                         |
+//! |---------------|----------------------------------------------------------------|
+//! | `all`         | Primary document **and** all substantive exhibits (default)    |
+//! | `body`        | Primary document only                                         |
+//! | `exhibits`    | Substantive exhibits only (no primary document)               |
+//!
+//! "Substantive" means exhibits that contain human-readable prose or financial
+//! tables.  The following exhibit types are automatically excluded:
+//!
+//! | Excluded type | Description |
+//! |---|---|
+//! | `EX-31.x` | SOX § 302 CEO/CFO certifications |
+//! | `EX-32.x` | SOX § 906 CEO/CFO certifications |
+//! | `EX-23.x` | Auditor / accountant consent |
+//! | `EX-101.*` | XBRL instance, schema, label, and calculation files |
+//! | `GRAPHIC`  | Image files (logos, signature scans, charts) |
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example filing_show -- <TICKER> [OPTIONS]
+//! cargo run --example filing_show -- AAPL
+//! cargo run --example filing_show -- AAPL --form 10-K
+//! cargo run --example filing_show -- LLY --form 10-Q --view markdown
+//! cargo run --example filing_show -- MSFT --form "DEF 14A" --part body
+//! cargo run --example filing_show -- AMZN --part exhibits > amzn_exhibits.txt
+//! ```
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::TickerSymbol;
-use sec_fetcher::network::{
-    fetch_and_render, fetch_cik_by_ticker_symbol, fetch_filing_index, fetch_filings, SecClient,
-};
+use sec_fetcher::network::{SecClient, fetch_cik_by_ticker_symbol, fetch_filings};
+use sec_fetcher::ops::render_filing;
 use sec_fetcher::views::{EmbeddingTextView, FilingView, MarkdownView};
 use std::error::Error;
 
@@ -121,52 +110,31 @@ async fn run<V: FilingView>(
     println!("# {} {} — {}", ticker, args.form, date);
     println!();
 
-    // ------------------------------------------------------------------
-    // Primary document (body or all)
-    // ------------------------------------------------------------------
-    if matches!(args.part, FilingPart::All | FilingPart::Body) {
-        let primary_url = latest.as_primary_document_url();
-        eprintln!("Rendering primary document: {}", primary_url);
+    let render_body = matches!(args.part, FilingPart::All | FilingPart::Body);
+    let render_exhibits = matches!(args.part, FilingPart::All | FilingPart::Exhibits);
+    let rendered = render_filing(client, latest, render_body, render_exhibits, view).await?;
 
+    if let Some(ref body) = rendered.body {
+        eprintln!(
+            "Rendering primary document: {}",
+            latest.as_primary_document_url()
+        );
         println!("## Primary Document");
         println!();
-        let text = fetch_and_render(client, &primary_url, view).await?;
-        println!("{}", text);
+        println!("{}", body);
     }
 
-    // ------------------------------------------------------------------
-    // Substantive exhibits (exhibits or all)
-    // ------------------------------------------------------------------
-    if matches!(args.part, FilingPart::All | FilingPart::Exhibits) {
-        let index = fetch_filing_index(client, latest).await?;
-        let exhibits = index.substantive_exhibits();
-
-        if exhibits.is_empty() {
-            eprintln!("No substantive exhibits found for this filing.");
-            return Ok(());
-        }
-
-        eprintln!(
-            "Found {} substantive exhibit(s) ({} total in filing):",
-            exhibits.len(),
-            index.documents.len()
-        );
-        for ex in &exhibits {
+    if !rendered.exhibits.is_empty() {
+        eprintln!("Found {} substantive exhibit(s):", rendered.exhibits.len());
+        for ex in &rendered.exhibits {
             eprintln!("  {} — {}", ex.document_type, ex.name);
         }
-
-        let base_url = latest.as_edgar_archive_url();
-
-        for ex in exhibits {
-            let url = format!("{}/{}", base_url, ex.name);
-            eprintln!("Rendering: {}", url);
-
+        for ex in &rendered.exhibits {
+            eprintln!("Rendering: {}", ex.url);
             println!("---");
             println!("## Exhibit: {} ({})", ex.document_type, ex.name);
             println!();
-
-            let text = fetch_and_render(client, &url, view).await?;
-            println!("{}", text);
+            println!("{}", ex.content);
             println!();
         }
     }

@@ -1,7 +1,8 @@
 // use crate::models::Ticker;
+use crate::normalize::Pct;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{DisplayFromStr, serde_as};
 
 // TODO: Document NPORT, etc.
 
@@ -28,8 +29,10 @@ pub struct NportInvestment {
     #[serde_as(as = "DisplayFromStr")]
     pub val_usd: Decimal,
 
+    /// Portfolio weight on the 0–100 scale, stored as a [`Pct`].
+    /// N-PORT `<pctVal>` is already in 0–100 form per the SEC schema.
     #[serde_as(as = "DisplayFromStr")]
-    pub pct_val: Decimal,
+    pub pct_val: Pct,
 
     pub payoff_profile: String,
     pub asset_cat: String,
@@ -40,6 +43,7 @@ pub struct NportInvestment {
 impl NportInvestment {
     /// Sorts a list of investments by `pct_val` in descending order.
     pub fn sort_by_pct_val_desc(investments: &mut [NportInvestment]) {
+        // Pct implements Ord, so this comparison is safe and correct.
         investments.sort_by(|a, b| b.pct_val.cmp(&a.pct_val));
     }
 }

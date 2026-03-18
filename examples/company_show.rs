@@ -1,9 +1,24 @@
+//! Fetches and displays the SEC company profile for one or more ticker symbols.
+//!
+//! Demonstrates [`fetch_company_profile`] and [`fetch_company_description`], which
+//! pull from the EDGAR submissions endpoint and the SEC company facts API respectively.
+//! The profile includes SIC code, sector, exchange listing, fiscal year end, and
+//! website metadata. Multiple tickers can be supplied in one invocation.
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example company_show -- AAPL
+//! cargo run --example company_show -- AAPL MSFT NVDA
+//! cargo run --example company_show -- SPY
+//! ```
+
 use chrono::Datelike;
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::TickerSymbol;
 use sec_fetcher::network::{
-    fetch_cik_by_ticker_symbol, fetch_company_description, fetch_company_profile, SecClient,
+    SecClient, fetch_cik_by_ticker_symbol, fetch_company_description, fetch_company_profile,
 };
 use std::error::Error;
 use std::fmt;
@@ -89,6 +104,7 @@ async fn fetch_profile_display(
     ticker: &TickerSymbol,
 ) -> Result<CompanyProfileDisplay, Box<dyn Error>> {
     let cik = fetch_cik_by_ticker_symbol(client, ticker).await?;
+    assert!(cik.value > 0, "CIK must be a positive non-zero integer");
     let profile = fetch_company_profile(client, cik).await?;
     let description = fetch_company_description(client, profile.cik.clone()).await?;
 

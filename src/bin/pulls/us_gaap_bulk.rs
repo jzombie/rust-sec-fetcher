@@ -13,7 +13,7 @@ use polars::prelude::{CsvWriter, SerWriter};
 use sec_fetcher::{
     config::ConfigManager,
     models::TickerSymbol,
-    network::{fetch_company_tickers, fetch_us_gaap_fundamentals, SecClient},
+    network::{SecClient, fetch_company_tickers, fetch_us_gaap_fundamentals},
     utils::VecExtensions,
 };
 use std::collections::HashMap;

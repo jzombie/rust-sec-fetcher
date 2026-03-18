@@ -106,7 +106,7 @@ static DEFAULT_CONFIG_PATH: LazyLock<String> =
 impl ConfigManager {
     /// Loads configuration using the default path.
     pub fn load() -> Result<Self, Box<dyn Error>> {
-        Self::from_config(None)
+        Self::from_config_with_app_identity(None, None, None)
     }
 
     /// Loads configuration from the given file path (if provided) or defaults to the standard config path.
@@ -127,14 +127,40 @@ impl ConfigManager {
     /// 2. **Environment variable** — [`APP_NAME_ENV_VAR`] (`SEC_FETCHER_APP_NAME`).
     /// 3. **Default** — [`DEFAULT_APP_NAME`] (`"sec-fetcher"`).
     pub fn from_config(path: Option<PathBuf>) -> Result<Self, Box<dyn Error>> {
-        if let Some(path) = &path {
-            if !path.exists() {
-                return Err(format!(
-                    "Config path does not exist: {}",
-                    path.to_string_lossy().into_owned()
-                )
-                .into());
-            }
+        Self::from_config_with_app_identity(path, None, None)
+    }
+
+    /// Loads configuration and applies optional app identity string overrides.
+    ///
+    /// `app_name_override` and `app_version_override` have the **highest**
+    /// precedence for `User-Agent` identity fields.
+    ///
+    /// ## App name resolution — precedence (highest → lowest)
+    ///
+    /// 1. **Function argument** — `app_name_override`.
+    /// 2. **Config file** — `app_name = "…"` key.
+    /// 3. **Environment variable** — [`APP_NAME_ENV_VAR`] (`SEC_FETCHER_APP_NAME`).
+    /// 4. **Default** — [`DEFAULT_APP_NAME`] (`"sec-fetcher"`).
+    ///
+    /// ## App version resolution — precedence (highest → lowest)
+    ///
+    /// 1. **Function argument** — `app_version_override`.
+    /// 2. **Config file** — `app_version = "…"` key.
+    /// 3. **Environment variable** — [`APP_VERSION_ENV_VAR`] (`SEC_FETCHER_APP_VERSION`).
+    /// 4. **Default** — [`DEFAULT_APP_VERSION`].
+    pub fn from_config_with_app_identity(
+        path: Option<PathBuf>,
+        app_name_override: Option<&str>,
+        app_version_override: Option<&str>,
+    ) -> Result<Self, Box<dyn Error>> {
+        if let Some(path) = &path
+            && !path.exists()
+        {
+            return Err(format!(
+                "Config path does not exist: {}",
+                path.to_string_lossy().into_owned()
+            )
+            .into());
         };
 
         let config_path = path.unwrap_or_else(Self::get_config_path);
@@ -192,18 +218,26 @@ impl ConfigManager {
 
         // Resolve app_name: env var fills the gap when neither TOML nor a
         // direct AppConfig assignment supplied one.
-        if settings.app_name.is_none() {
-            if let Ok(name) = std::env::var(APP_NAME_ENV_VAR) {
-                settings.app_name = Some(name);
-            }
+        if settings.app_name.is_none()
+            && let Ok(name) = std::env::var(APP_NAME_ENV_VAR)
+        {
+            settings.app_name = Some(name);
         }
 
         // Resolve app_version: env var fills the gap when neither TOML nor a
         // direct AppConfig assignment supplied one.
-        if settings.app_version.is_none() {
-            if let Ok(version) = std::env::var(APP_VERSION_ENV_VAR) {
-                settings.app_version = Some(version);
-            }
+        if settings.app_version.is_none()
+            && let Ok(version) = std::env::var(APP_VERSION_ENV_VAR)
+        {
+            settings.app_version = Some(version);
+        }
+
+        if let Some(name) = app_name_override {
+            settings.app_name = Some(name.to_string());
+        }
+
+        if let Some(version) = app_version_override {
+            settings.app_version = Some(version.to_string());
         }
 
         let (caches, temp_dir) = Self::make_caches(&settings);
@@ -268,10 +302,10 @@ impl ConfigManager {
 
     /// Determines the standard config file location.
     pub fn get_config_path() -> PathBuf {
-        if let Some(path) = Self::get_suggested_system_path() {
-            if path.exists() {
-                return path;
-            }
+        if let Some(path) = Self::get_suggested_system_path()
+            && path.exists()
+        {
+            return path;
         }
         PathBuf::from(&*DEFAULT_CONFIG_PATH)
     }

@@ -1,9 +1,13 @@
 [package]
 name = "sec-fetcher"
 version = "0.1.0-alpha"
-edition = "2021"
-license = "Apache-2.0"
-publish = false
+authors = ["Jeremy Harris <jeremy.harris@zenosmosis.com>"]
+repository = "https://github.com/jzombie/rust-sec-fetcher"
+edition = "2024"
+license = "PolyForm-Noncommercial-1.0.0"
+description = "Async Rust client for SEC EDGAR: fetch filings, fund holdings, XBRL data, and IPO registrations with compliant rate limiting."
+keywords = ["sec", "edgar", "finance", "filings", "stocks"]
+categories = ["api-bindings", "finance", "web-programming"]
 autobins = false
 
 # ── Stabilized utility bins ───────────────────────────────────────────────────

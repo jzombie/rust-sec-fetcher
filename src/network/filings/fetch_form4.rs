@@ -1,6 +1,6 @@
 use crate::enums::Url;
 use crate::models::{Cik, CikSubmission, Form4Transaction};
-use crate::network::{fetch_cik_submissions, SecClient};
+use crate::network::{SecClient, fetch_cik_submissions};
 use crate::parsers::parse_form4_xml;
 use std::error::Error;
 

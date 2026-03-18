@@ -1,54 +1,47 @@
-/// Shows how the holdings of a fund (N-PORT) or institutional manager (13F)
-/// have changed across consecutive filings, and insider transactions (Form 4)
-/// for operating companies.
-///
-/// Supports any ticker:
-///   - **NPORT-P** — ETFs and mutual funds (monthly, ~60-day lag)
-///     e.g. SPY, QQQ, IVV, ARKK
-///   - **13F-HR**  — Institutional managers ≥ $100 M AUM (quarterly, 45-day lag)
-///     e.g. BRK-A
-///   - **Form 4**  — Insider transactions for any public company (≤ 2 business days lag)
-///     e.g. AAPL, TSLA, NVDA
-///
-/// For N-PORT and 13F, consecutive filings are diffed to show adds, removes,
-/// and weight changes. For Form 4, recent insider buy/sell activity is listed.
-///
-/// # Usage
-///
-///   cargo run --example holdings_history -- SPY
-///       → last 3 NPORT-P filings for SPY, changes only
-///
-///   cargo run --example holdings_history -- BRK-A
-///       → last 4 13F-HR filings for Berkshire Hathaway, changes only
-///
-///   cargo run --example holdings_history -- AAPL
-///       → last 20 Form 4 insider transactions for Apple
-///
-///   cargo run --example holdings_history -- AAPL --filings 50
-///       → last 50 Form 4 filings (may cover many transactions each)
-///
-///   cargo run --example holdings_history -- SPY --all
-///       → show full holdings for each filing, not just the diff
-///
-/// # What you can and cannot see via Form 4
-///
-/// Form 4 covers corporate insiders: directors, officers, and anyone owning
-/// more than 10% of a class of equity. It does NOT cover Members of Congress
-/// or other government officials — those are reported under the STOCK Act to
-/// the House Clerk and Senate Secretary (disclosures.house.gov / efts.senate.gov),
-/// which is a completely separate system that is NOT accessible through the SEC.
-/// A Congress member would only appear in Form 4 if they were also a corporate
-/// director or officer of a public company, which is rare.
+//! Shows how the holdings of a fund (N-PORT) or institutional manager (13F)
+//! have changed across consecutive filings, and insider transactions (Form 4)
+//! for operating companies.
+//!
+//! Supports any ticker:
+//!   - **NPORT-P** — ETFs and mutual funds (monthly, ~60-day lag)
+//!     e.g. SPY, QQQ, IVV, ARKK
+//!   - **13F-HR**  — Institutional managers ≥ $100 M AUM (quarterly, 45-day lag)
+//!     e.g. BRK-A
+//!   - **Form 4**  — Insider transactions for any public company (≤ 2 business days lag)
+//!     e.g. AAPL, TSLA, NVDA
+//!
+//! For N-PORT and 13F, consecutive filings are diffed to show adds, removes,
+//! and weight changes. For Form 4, recent insider buy/sell activity is listed.
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example holdings_show -- SPY
+//! cargo run --example holdings_show -- BRK-A
+//! cargo run --example holdings_show -- AAPL
+//! cargo run --example holdings_show -- AAPL --filings 50
+//! cargo run --example holdings_show -- SPY --all
+//! ```
+//!
+//! # What you can and cannot see via Form 4
+//!
+//! Form 4 covers corporate insiders: directors, officers, and anyone owning
+//! more than 10% of a class of equity. It does NOT cover Members of Congress
+//! or other government officials — those are reported under the STOCK Act to
+//! the House Clerk and Senate Secretary, which is a completely separate system.
 use clap::Parser;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::{Cik, CikSubmission, NportInvestment, ThirteenfHolding, TickerSymbol};
 use sec_fetcher::network::{
-    fetch_13f, fetch_13f_filings, fetch_cik_by_ticker_symbol, fetch_form4, fetch_form4_filings,
-    fetch_nport, fetch_nport_filings, SecClient,
+    SecClient, fetch_13f, fetch_13f_filings, fetch_cik_by_ticker_symbol, fetch_form4,
+    fetch_form4_filings, fetch_nport, fetch_nport_filings,
 };
-use std::collections::HashMap;
+use sec_fetcher::ops::{
+    Diff, Position, WEIGHT_CHANGE_THRESHOLD, diff_holdings, positions_from_13f,
+    positions_from_nport,
+};
 use std::error::Error;
 use std::fmt;
 
@@ -75,38 +68,6 @@ struct Args {
 const DEFAULT_FILINGS_NPORT: usize = 3;
 const DEFAULT_FILINGS_13F: usize = 4;
 const DEFAULT_FILINGS_FORM4: usize = 20;
-
-/// Minimum absolute weight change (percentage points for N-PORT, approximate
-/// percentage of total value for 13F) to appear in the "Weight changes" list.
-const WEIGHT_CHANGE_THRESHOLD: Decimal = dec!(0.10);
-
-// ── common snapshot type ──────────────────────────────────────────────────────
-
-/// A normalized single-position snapshot used for diffing.
-/// Produced from both NportInvestment and ThirteenfHolding.
-#[derive(Clone)]
-struct Position {
-    cusip: String,
-    name: String,
-    val_usd: Decimal,
-    /// Weight as a percentage of total portfolio (0–100 scale).
-    /// For N-PORT this comes directly from the filing; for 13F it is derived
-    /// from the position's share of total reported value.
-    weight: Decimal,
-}
-
-impl fmt::Display for Position {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "  {:9}  {:<45}  {:>12}  {:>6.2}%",
-            self.cusip,
-            self.name.chars().take(45).collect::<String>(),
-            fmt_usd(self.val_usd),
-            self.weight,
-        )
-    }
-}
 
 /// A single Form 4 insider transaction row ready for display.
 struct Form4Row {
@@ -137,89 +98,17 @@ impl fmt::Display for Form4Row {
     }
 }
 
-fn positions_from_nport(investments: &[NportInvestment]) -> Vec<Position> {
-    investments
-        .iter()
-        .map(|h| Position {
-            cusip: h.cusip.clone(),
-            name: h.name.clone(),
-            val_usd: h.val_usd,
-            weight: h.pct_val * dec!(100), // pct_val is 0–1, convert to 0–100
-        })
-        .collect()
-}
-
-fn positions_from_13f(holdings: &[ThirteenfHolding]) -> Vec<Position> {
-    let total: Decimal = holdings.iter().map(|h| h.value_usd).sum();
-    holdings
-        .iter()
-        .map(|h| Position {
-            cusip: h.cusip.clone(),
-            name: h.name.clone(),
-            val_usd: h.value_usd,
-            weight: if total.is_zero() {
-                dec!(0)
-            } else {
-                (h.value_usd / total * dec!(100)).round_dp(4)
-            },
-        })
-        .collect()
-}
-
-// ── diff ──────────────────────────────────────────────────────────────────────
-
-struct Diff {
-    added: Vec<Position>,               // present in new, absent in old
-    removed: Vec<Position>,             // present in old, absent in new
-    changed: Vec<(Position, Position)>, // (old, new) where |weight delta| ≥ threshold
-}
-
-fn diff_snapshots(old: &[Position], new: &[Position]) -> Diff {
-    let old_map: HashMap<&str, &Position> = old.iter().map(|p| (p.cusip.as_str(), p)).collect();
-    let new_map: HashMap<&str, &Position> = new.iter().map(|p| (p.cusip.as_str(), p)).collect();
-
-    let added: Vec<Position> = new
-        .iter()
-        .filter(|p| !old_map.contains_key(p.cusip.as_str()))
-        .cloned()
-        .collect();
-
-    let removed: Vec<Position> = old
-        .iter()
-        .filter(|p| !new_map.contains_key(p.cusip.as_str()))
-        .cloned()
-        .collect();
-
-    let mut changed: Vec<(Position, Position)> = new
-        .iter()
-        .filter_map(|n| {
-            old_map.get(n.cusip.as_str()).map(|o| {
-                let delta = (n.weight - o.weight).abs();
-                if delta >= WEIGHT_CHANGE_THRESHOLD {
-                    Some(((*o).clone(), n.clone()))
-                } else {
-                    None
-                }
-            })
-        })
-        .flatten()
-        .collect();
-
-    // Sort by absolute weight change, largest first.
-    changed.sort_by(|(o1, n1), (o2, n2)| {
-        let d1 = (n1.weight - o1.weight).abs();
-        let d2 = (n2.weight - o2.weight).abs();
-        d2.cmp(&d1)
-    });
-
-    Diff {
-        added,
-        removed,
-        changed,
-    }
-}
-
 // ── formatting ────────────────────────────────────────────────────────────────
+
+fn format_position(p: &Position) -> String {
+    format!(
+        "  {:9}  {:<45}  {:>12}  {:>6.2}%",
+        p.cusip,
+        p.name.chars().take(45).collect::<String>(),
+        fmt_usd(p.val_usd),
+        p.weight,
+    )
+}
 
 fn fmt_usd(v: Decimal) -> String {
     if v >= dec!(1_000_000_000) {
@@ -242,14 +131,14 @@ fn print_diff(label_old: &str, label_new: &str, diff: &Diff) {
     if !diff.added.is_empty() {
         println!("  ADDED ({}):", diff.added.len());
         for p in &diff.added {
-            println!("  {}", p);
+            println!("  {}", format_position(p));
         }
     }
 
     if !diff.removed.is_empty() {
         println!("  REMOVED ({}):", diff.removed.len());
         for p in &diff.removed {
-            println!("  {}", p);
+            println!("  {}", format_position(p));
         }
     }
 
@@ -283,7 +172,7 @@ fn print_full(label: &str, positions: &[Position]) {
     );
     println!("  {}", "-".repeat(80));
     for p in positions {
-        println!("{}", p);
+        println!("{}", format_position(p));
     }
 }
 
@@ -449,7 +338,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         if i + 1 < snapshots.len() {
             let (next_label, next_positions) = &snapshots[i + 1];
-            let d = diff_snapshots(positions, next_positions);
+            let d = diff_holdings(positions, next_positions);
             print_diff(label, next_label, &d);
         }
     }

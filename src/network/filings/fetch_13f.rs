@@ -1,7 +1,7 @@
 use crate::enums::Url;
 use crate::models::{Cik, CikSubmission, ThirteenfHolding};
 use crate::network::filings::fetch_filing_index;
-use crate::network::{fetch_cik_submissions, SecClient};
+use crate::network::{SecClient, fetch_cik_submissions};
 use crate::parsers::parse_13f_xml;
 use std::error::Error;
 
@@ -103,5 +103,5 @@ pub async fn fetch_13f(
         .raw_request(reqwest::Method::GET, &url, None, None)
         .await?;
     let xml = response.text().await?;
-    parse_13f_xml(&xml)
+    parse_13f_xml(&xml, submission.filing_date)
 }

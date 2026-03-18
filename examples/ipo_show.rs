@@ -1,73 +1,51 @@
-/// Shows IPO registration statement filings for a given company.
-///
-/// Fetches all S-1 and S-1/A (or F-1 / F-1/A for foreign issuers) filings
-/// for the company and renders the selected filing's content.
-///
-/// # How to identify a company
-///
-/// Pre-IPO companies **do not yet have a ticker symbol** — that is the entire
-/// point of filing an S-1. Use `ipo_list` to discover the CIK (Central Index
-/// Key) assigned by the SEC, then pass it with `--cik`. Once a company has
-/// completed its IPO and been assigned a ticker you can use `--ticker` instead.
-///
-///   ipo_list output:  "1713445  Reddit, Inc.  …"
-///   → cargo run --example ipo_show -- --cik 1713445  (pre-IPO or post-IPO)
-///   → cargo run --example ipo_show -- --ticker RDDT  (only after IPO)
-///
-/// # What this shows
-///
-/// Unlike a generic filing viewer, this example is IPO-aware: it first prints
-/// the **full IPO filing timeline** (initial S-1, each amendment, and the final
-/// pricing prospectus if present), giving you a clear picture of how far through
-/// the process a company is before rendering the document text.
-///
-/// | Form    | Stage in the IPO process                                      |
-/// |---------|---------------------------------------------------------------|
-/// | S-1     | Initial registration filed with the SEC                       |
-/// | S-1/A   | Amendment — typically responding to SEC comments or updating  |
-/// |         | financials.  The final S-1/A is the definitive prospectus.    |
-/// | 424B4   | Pricing prospectus — filed at deal launch; contains the final |
-/// |         | offer price, size, and underwriter discount.                  |
-/// | F-1     | Foreign private issuer equivalent of S-1                      |
-/// | F-1/A   | Amendment to F-1                                              |
-///
-/// # Usage
-///
-///   cargo run --example ipo_show -- --cik <CIK_NUMBER> [OPTIONS]
-///   cargo run --example ipo_show -- --ticker <TICKER>  [OPTIONS]
-///
-/// # Options
-///
-///   --cik <N>               SEC CIK number (from ipo_list output; works pre- and post-IPO)
-///   --ticker <SYMBOL>       Ticker symbol — only valid after the IPO has completed
-///   --view markdown|embedding  Rendering style (default: markdown)
-///   --part summary|body|all    What to show (default: summary)
-///   --index <N>             Which filing to render (0 = newest; -1 = oldest/initial S-1)
-///
-/// # Examples
-///
-///   ## Lookup by CIK (works for pre-IPO companies discovered via ipo_list)
-///   cargo run --example ipo_show -- --cik 1713445 --part summary
-///
-///   ## Zero-padded CIK also works
-///   cargo run --example ipo_show -- --cik 0002039972 --part summary
-///
-///   ## Lookup by ticker (only valid once the IPO has completed)
-///   cargo run --example ipo_show -- --ticker RDDT --part summary
-///
-///   ## Render the initial S-1 or F-1 (oldest filing)
-///   cargo run --example ipo_show -- --cik 1713445 --index -1 --part body
-///
-///   ## Full prospectus + exhibits
-///   cargo run --example ipo_show -- --ticker RDDT --part all
+//! Shows IPO registration statement filings for a given company.
+//!
+//! Fetches all S-1 and S-1/A (or F-1 / F-1/A for foreign issuers) filings
+//! for the company and renders the selected filing's content.
+//!
+//! # How to identify a company
+//!
+//! Pre-IPO companies **do not yet have a ticker symbol**. Use `ipo_list` to
+//! discover the CIK (Central Index Key) assigned by the SEC, then pass it
+//! with `--cik`. Once a company has completed its IPO and been assigned a
+//! ticker you can use `--ticker` instead.
+//!
+//! ```text
+//! # Discovered by ipo_list:  "1713445  Reddit, Inc.  …"
+//! cargo run --example ipo_show -- --cik 1713445        # pre-IPO or post-IPO
+//! cargo run --example ipo_show -- --ticker RDDT        # only after IPO
+//! ```
+//!
+//! # What this shows
+//!
+//! This example is IPO-aware: it first prints the **full IPO filing timeline**
+//! (initial S-1, each amendment, and the final pricing prospectus if present),
+//! giving a clear picture of how far through the process a company is before
+//! optionally rendering the document text.
+//!
+//! | Form    | Stage in the IPO process                                      |
+//! |---------|---------------------------------------------------------------|
+//! | S-1     | Initial registration filed with the SEC                       |
+//! | S-1/A   | Amendment responding to SEC comments or updated financials    |
+//! | 424B4   | Pricing prospectus — final offer price, size, underwriter     |
+//! | F-1     | Foreign private issuer equivalent of S-1                      |
+//! | F-1/A   | Amendment to F-1                                              |
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example ipo_show -- --cik <CIK_NUMBER> [OPTIONS]
+//! cargo run --example ipo_show -- --ticker <TICKER>   [OPTIONS]
+//! cargo run --example ipo_show -- --cik 1713445 --part summary
+//! cargo run --example ipo_show -- --ticker RDDT --index -1 --part body
+//! cargo run --example ipo_show -- --ticker RDDT --part all
+//! ```
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::enums::Url;
 use sec_fetcher::models::{Cik, TickerSymbol};
-use sec_fetcher::network::{
-    fetch_and_render, fetch_cik_by_ticker_symbol, fetch_company_profile, fetch_filing_index_by_url,
-    fetch_filings, SecClient,
-};
+use sec_fetcher::network::{SecClient, fetch_cik_by_ticker_symbol, fetch_company_profile};
+use sec_fetcher::ops::{get_ipo_registration_filings, render_filing};
 use sec_fetcher::views::{EmbeddingTextView, FilingView, MarkdownView};
 use std::error::Error;
 
@@ -155,15 +133,8 @@ async fn run<V: FilingView>(
         .map(|t| format!("{} ({})", company_name, t.to_uppercase()))
         .unwrap_or(company_name.clone());
 
-    // Fetch all four IPO registration form types — S-1 and F-1 families —
-    // so the user doesn't need to know whether this is a domestic or foreign issuer.
-    let form_types = ["S-1", "S-1/A", "F-1", "F-1/A"];
-    let mut all_filings = Vec::new();
-    for ft in form_types {
-        let mut filings = fetch_filings(client, cik.clone(), ft).await?;
-        all_filings.append(&mut filings);
-    }
-    all_filings.sort_by(|a, b| b.filing_date.cmp(&a.filing_date));
+    // Fetch all four IPO registration form types — S-1 and F-1 families.
+    let all_filings = get_ipo_registration_filings(client, cik.clone()).await?;
 
     if all_filings.is_empty() {
         eprintln!(
@@ -247,51 +218,30 @@ async fn run<V: FilingView>(
     println!("# {}", label);
     println!();
 
-    // ── Primary document ──────────────────────────────────────────────────
-    let primary_url = target.as_primary_document_url();
-    eprintln!("Primary document: {}", primary_url);
+    let render_exhibits = matches!(args.part, FilingPart::All);
+    let rendered = render_filing(client, target, true, render_exhibits, view).await?;
 
+    // ── Primary document ──────────────────────────────────────────────────
+    eprintln!("Primary document: {}", target.as_primary_document_url());
     println!("## Primary Document");
     println!();
-    let text = fetch_and_render(client, &primary_url, view).await?;
-    println!("{}", text);
+    if let Some(ref body) = rendered.body {
+        println!("{}", body);
+    }
 
     // ── Exhibits (only when --part=all) ───────────────────────────────────
-    if matches!(args.part, FilingPart::All) {
-        let index_url =
-            Url::CikAccessionIndex(target.cik.clone(), target.accession_number.clone()).value();
-        let index = fetch_filing_index_by_url(client, &index_url).await?;
-        let exhibits = index.substantive_exhibits();
-
-        if exhibits.is_empty() {
-            eprintln!("No substantive exhibits found for this filing.");
-            return Ok(());
-        }
-
-        eprintln!(
-            "Found {} substantive exhibit(s) ({} total in filing):",
-            exhibits.len(),
-            index.documents.len()
-        );
-        for ex in &exhibits {
+    if !rendered.exhibits.is_empty() {
+        eprintln!("Found {} substantive exhibit(s):", rendered.exhibits.len());
+        for ex in &rendered.exhibits {
             eprintln!("  {} — {}", ex.document_type, ex.name);
         }
-
-        for ex in exhibits {
-            let url = Url::CikAccessionDocument(
-                target.cik.clone(),
-                target.accession_number.clone(),
-                ex.name.clone(),
-            )
-            .value();
-            eprintln!("Rendering exhibit: {}", url);
-
+        for ex in &rendered.exhibits {
+            eprintln!("Rendering exhibit: {}", ex.url);
             println!();
             println!("---");
             println!("## Exhibit: {} ({})", ex.document_type, ex.name);
             println!();
-            let text = fetch_and_render(client, &url, view).await?;
-            println!("{}", text);
+            println!("{}", ex.content);
         }
     }
 

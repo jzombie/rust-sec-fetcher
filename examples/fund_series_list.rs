@@ -1,6 +1,21 @@
+//! Lists SEC-registered investment company series and class records.
+//!
+//! Downloads the SEC's investment company series/class dataset, which covers
+//! all registered mutual fund series (each fund product) and their share classes
+//! (each fee structure). This dataset is used internally to resolve fund CIKs
+//! and validate NPORT-P holdings.
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example fund_series_list
+//! cargo run --example fund_series_list -- --limit 50
+//! cargo run --example fund_series_list -- --limit 0   # no limit
+//! ```
+
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::network::{fetch_investment_company_series_and_class_dataset, SecClient};
+use sec_fetcher::network::{SecClient, fetch_investment_company_series_and_class_dataset};
 use std::error::Error;
 
 #[derive(Parser)]
@@ -19,6 +34,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let client = SecClient::from_config_manager(&config_manager)?;
 
     let funds = fetch_investment_company_series_and_class_dataset(&client).await?;
+
+    // The SEC investment company dataset is always non-empty; thousands of
+    // registered funds are active at any given time.
+    assert!(
+        !funds.is_empty(),
+        "Expected at least one investment company series in the SEC dataset"
+    );
 
     let display_iter: Box<dyn Iterator<Item = _>> = if args.limit == 0 {
         Box::new(funds.iter())

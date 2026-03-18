@@ -16,8 +16,8 @@ use sec_fetcher::{
     config::ConfigManager,
     models::TickerSymbol,
     network::{
-        fetch_cik_by_ticker_symbol, fetch_investment_company_series_and_class_dataset, fetch_nport,
-        fetch_nport_filings, SecClient,
+        SecClient, fetch_cik_by_ticker_symbol, fetch_investment_company_series_and_class_dataset,
+        fetch_nport, fetch_nport_filings,
     },
     utils::VecExtensions,
 };

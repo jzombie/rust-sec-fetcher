@@ -1,6 +1,8 @@
 use crate::models::ThirteenfHolding;
-use quick_xml::events::Event;
+use crate::normalize::{Pct, compute_13f_weight_pct, normalize_13f_value_usd};
+use chrono::NaiveDate;
 use quick_xml::Reader;
+use quick_xml::events::Event;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use std::error::Error;
@@ -8,13 +10,23 @@ use std::error::Error;
 /// Parses a Form 13F-HR `informationTable.xml` document and returns one
 /// [`ThirteenfHolding`] per `<infoTable>` entry, sorted by `value_usd` descending.
 ///
-/// The SEC publishes the informationTable as a separate XML file within the
-/// filing index — fetch via [`crate::network::fetch_13f`] which
-/// discovers the correct filename from the index before fetching.
+/// The `filing_date` parameter is required to resolve the `<value>` unit — the
+/// EDGAR 13F-HR schema changed from thousands-of-USD to actual-USD around
+/// 2023-01-01.  Pass the `filing_date` from the corresponding
+/// [`crate::models::CikSubmission`].  All unit conversion is handled by
+/// [`crate::normalize::normalize_13f_value_usd`]; do not apply any multiplier
+/// at the call site.
 ///
-/// Note: the raw `<value>` element is in **thousands of USD**; this function
-/// multiplies by 1 000 so all callers see actual dollar values.
-pub fn parse_13f_xml(xml: &str) -> Result<Vec<ThirteenfHolding>, Box<dyn Error>> {
+/// Portfolio weight percentages (0–100 scale) are computed here via
+/// [`crate::normalize::compute_13f_weight_pct`] and stored in
+/// [`ThirteenfHolding::weight_pct`].
+///
+/// The filing index and the correct informationTable filename are discovered
+/// automatically by [`crate::network::fetch_13f`].
+pub fn parse_13f_xml(
+    xml: &str,
+    filing_date: Option<NaiveDate>,
+) -> Result<Vec<ThirteenfHolding>, Box<dyn Error>> {
     let mut reader = Reader::from_str(xml);
     reader.config_mut().trim_text(true);
 
@@ -81,12 +93,15 @@ pub fn parse_13f_xml(xml: &str) -> Result<Vec<ThirteenfHolding>, Box<dyn Error>>
                         name: std::mem::take(&mut name),
                         cusip: std::mem::take(&mut cusip),
                         title_of_class: std::mem::take(&mut title_of_class),
-                        // 13F value is in thousands of USD → convert to dollars
-                        value_usd: value_raw * dec!(1000),
+                        // Unit conversion (thousands era vs. actual-USD era) is
+                        // handled exclusively by normalize_13f_value_usd.
+                        value_usd: normalize_13f_value_usd(value_raw, filing_date),
                         shares,
                         shares_type: std::mem::take(&mut shares_type),
                         put_call: put_call.take(),
                         investment_discretion: std::mem::take(&mut investment_discretion),
+                        // Populated in the second pass below.
+                        weight_pct: Pct::ZERO,
                     });
                     in_info_table = false;
                     value_raw = dec!(0);
@@ -99,6 +114,13 @@ pub fn parse_13f_xml(xml: &str) -> Result<Vec<ThirteenfHolding>, Box<dyn Error>>
             _ => {}
         }
         buf.clear();
+    }
+
+    // Second pass: compute portfolio weights via normalize::percentage.
+    // All weight math lives in compute_13f_weight_pct — do not replicate it here.
+    let total: Decimal = holdings.iter().map(|h| h.value_usd).sum();
+    for h in holdings.iter_mut() {
+        h.weight_pct = compute_13f_weight_pct(h.value_usd, total);
     }
 
     holdings.sort_by(|a, b| b.value_usd.cmp(&a.value_usd));

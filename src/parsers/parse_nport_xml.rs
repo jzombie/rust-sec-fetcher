@@ -1,6 +1,7 @@
 use crate::models::{NportInvestment, Ticker};
-use quick_xml::events::Event;
+use crate::normalize::Pct;
 use quick_xml::Reader;
+use quick_xml::events::Event;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use simd_r_drive::DataStore;
@@ -40,7 +41,7 @@ pub fn parse_nport_xml(
                         balance: dec!(0.0),
                         cur_cd: String::new(),
                         val_usd: dec!(0.0),
-                        pct_val: dec!(0.0),
+                        pct_val: Pct::ZERO,
                         payoff_profile: String::new(),
                         asset_cat: String::new(),
                         issuer_cat: String::new(),
@@ -51,15 +52,13 @@ pub fn parse_nport_xml(
             }
             Event::Empty(ref e) => {
                 // Handle ISIN extraction from attribute inside <isin>
-                if current_tag == "identifiers" {
-                    if let Some(investment) = &mut current_investment {
-                        if let Some(attr) = e
-                            .attributes()
-                            .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"value"))
-                        {
-                            investment.isin = attr?.unescape_value()?.to_string();
-                        }
-                    }
+                if current_tag == "identifiers"
+                    && let Some(investment) = &mut current_investment
+                    && let Some(attr) = e
+                        .attributes()
+                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"value"))
+                {
+                    investment.isin = attr?.unescape_value()?.to_string();
                 }
             }
             Event::Text(e) => {
@@ -102,7 +101,8 @@ pub fn parse_nport_xml(
                                     Decimal::from_str(&value).unwrap_or_default().round_dp(2)
                             }
                             "pctVal" => {
-                                investment.pct_val = Decimal::from_str(&value).unwrap_or_default()
+                                investment.pct_val =
+                                    Pct::from_pct(Decimal::from_str(&value).unwrap_or_default());
                             }
                             "payoffProfile" => investment.payoff_profile = value,
                             "assetCat" => investment.asset_cat = value,
@@ -114,10 +114,10 @@ pub fn parse_nport_xml(
                 }
             }
             Event::End(ref e) => {
-                if std::str::from_utf8(e.name().as_ref())? == "invstOrSec" {
-                    if let Some(investment) = current_investment.take() {
-                        investments.push(investment);
-                    }
+                if std::str::from_utf8(e.name().as_ref())? == "invstOrSec"
+                    && let Some(investment) = current_investment.take()
+                {
+                    investments.push(investment);
                 }
             }
             Event::Eof => break,

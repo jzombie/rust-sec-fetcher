@@ -106,6 +106,32 @@ pub fn parse_us_gaap_fundamentals(
                                 fact_name_values.push(fact_name.clone());
                                 label_values.push(label.clone());
 
+                                // DESIGN: The SEC EDGAR companyfacts API is designed to resolve
+                                // the XBRL `scale` / `decimals` attribute server-side and return
+                                // `val` as the full, un-truncated number.  If a filer correctly
+                                // tags revenues as "34,820" with scale="6" (millions), the API
+                                // should return 34,820,000,000.  The `decimals` field is consumed
+                                // during this process and does NOT appear in the API response.
+                                //
+                                // REALITY (GIGO): The SEC does not audit or correct XBRL tags
+                                // before serving them.  Filer tagging errors are common: a company
+                                // may submit 34820 for revenue but forget the scale tag, causing
+                                // the API to faithfully return 34820 instead of 34,820,000,000.
+                                // The SEC's own DERA division regularly warns filers about this
+                                // exact problem (companies reporting a public float of $800M in
+                                // their HTML, but $800 in their XBRL structured data).
+                                //
+                                // IMPLICATION: `val` is stored as-is from the API.  Downstream
+                                // consumers must apply magnitude sanity checks (e.g. cross-
+                                // referencing against known market-cap or revenue ranges) before
+                                // treating `val` as a reliable dollar figure.
+                                //
+                                // Contrast with Form 13F-HR, where the `<value>` element had a
+                                // known era-based scale convention that required systematic
+                                // correction (see `normalize_13f_value_usd` in
+                                // `normalize/thirteenf.rs`). Here there is no systematic rule —
+                                // each filer error must be detected case-by-case.
+
                                 // Joins the unit of measure with the value, using a double-colon (`::`) separator
                                 let value = obs["val"]
                                     .as_f64()

@@ -1,15 +1,17 @@
-/// Lists all 8-K filings for a given ticker symbol, printing the filing date
-/// and a direct URL to the primary document of each filing.
-///
-/// Usage:
-///   cargo run --example list_8k_filings -- <TICKER_SYMBOL>
-///
-/// Example:
-///   cargo run --example list_8k_filings -- LLY
+//! Lists all 8-K filings for a given ticker symbol, printing the filing date
+//! and a direct URL to the primary document of each filing.
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example 8k_list -- <TICKER_SYMBOL>
+//! cargo run --example 8k_list -- LLY
+//! cargo run --example 8k_list -- AAPL
+//! ```
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::TickerSymbol;
-use sec_fetcher::network::{fetch_8k_filings, fetch_cik_by_ticker_symbol, SecClient};
+use sec_fetcher::network::{SecClient, fetch_8k_filings, fetch_cik_by_ticker_symbol};
 use std::error::Error;
 use std::fmt;
 
@@ -46,6 +48,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let cik = fetch_cik_by_ticker_symbol(&client, &ticker_symbol).await?;
     let filings = fetch_8k_filings(&client, cik).await?;
+
+    // Each filing's primary document URL follows the standard EDGAR archive path format.
+    for filing in &filings {
+        let url = filing.as_primary_document_url();
+        assert!(
+            url.starts_with("https://www.sec.gov/"),
+            "Primary document URL must be an EDGAR URL, got: {url}"
+        );
+    }
 
     if filings.is_empty() {
         println!("No 8-K filings found for '{}'.", ticker_symbol);

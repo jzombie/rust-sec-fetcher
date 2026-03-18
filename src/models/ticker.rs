@@ -2,8 +2,8 @@ use crate::enums::{CacheNamespacePrefix, TickerOrigin};
 use crate::models::{Cik, TickerSymbol};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
-use simd_r_drive::utils::NamespaceHasher;
 use simd_r_drive::DataStore;
+use simd_r_drive::utils::NamespaceHasher;
 use simd_r_drive_extensions::StorageCacheExt;
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock};
@@ -43,12 +43,11 @@ impl Ticker {
         let namespace_hasher = &*NAMESPACE_HASHER_FUZZY_MATCHER;
         let namespaced_query = namespace_hasher.namespace(query.as_bytes());
 
-        if let Some(preprocessor_cache) = cache {
-            if let Ok(cached) =
+        if let Some(preprocessor_cache) = cache
+            && let Ok(cached) =
                 preprocessor_cache.read_with_ttl::<Option<Ticker>>(&namespaced_query)
-            {
-                return cached?;
-            }
+        {
+            return cached?;
         }
 
         let query_tokens = Self::tokenize_company_name(query);

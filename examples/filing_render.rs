@@ -1,31 +1,36 @@
-/// Generic SEC filing document renderer.
-///
-/// Fetches any SEC EDGAR URL and renders it using the chosen view.  Useful
-/// for inspecting how a specific filing artifact looks before building a
-/// larger pipeline, and for comparing the output of different views
-/// side-by-side.
-///
-/// # Usage
-///   cargo run --example render_filing -- <URL> [--view markdown|embedding]
-///
-/// # Examples
-///
-///   ## Render a 10-K as lossless Markdown (tables kept as tables):
-///   cargo run --example render_filing -- \
-///     "https://www.sec.gov/Archives/edgar/data/320193/000032019325000008/aapl-20241228.htm" \
-///     --view markdown
-///
-///   ## Render an 8-K press release with tables flattened for embedding:
-///   cargo run --example render_filing -- \
-///     "https://www.sec.gov/Archives/edgar/data/320193/000114036126006577/aapl-20260224.htm" \
-///     --view embedding
-///
-///   ## Render a plain-text 10-K exhibit (default view):
-///   cargo run --example render_filing -- \
-///     "https://www.sec.gov/Archives/edgar/data/72971/000007297125000055/exhibit13.txt"
+//! Generic SEC filing document renderer.
+//!
+//! Fetches any SEC EDGAR URL and renders it using the chosen view.  Useful
+//! for inspecting how a specific filing artifact looks before building a
+//! larger pipeline, and for comparing the output of different views
+//! side-by-side.
+//!
+//! # Usage
+//!
+//! ```text
+//! cargo run --example filing_render -- <URL> [--view markdown|embedding]
+//! ```
+//!
+//! # Examples
+//!
+//! Render a 10-K as lossless Markdown (tables kept as tables):
+//!
+//! ```text
+//! cargo run --example filing_render -- \
+//!   "https://www.sec.gov/Archives/edgar/data/320193/000032019325000008/aapl-20241228.htm" \
+//!   --view markdown
+//! ```
+//!
+//! Render an 8-K press release row-by-row for dense vector embeddings:
+//!
+//! ```text
+//! cargo run --example filing_render -- \
+//!   "https://www.sec.gov/Archives/edgar/data/320193/000114036126006577/aapl-20260224.htm" \
+//!   --view embedding
+//! ```
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::network::{fetch_and_render, SecClient};
+use sec_fetcher::network::{SecClient, fetch_and_render};
 use sec_fetcher::views::{EmbeddingTextView, MarkdownView};
 use std::error::Error;
 
