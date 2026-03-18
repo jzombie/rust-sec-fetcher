@@ -32,6 +32,6 @@ pub mod thirteenf;
 
 pub use pct::Pct;
 pub use thirteenf::{
-    compute_13f_weight_pct, is_13f_thousands_era, normalize_13f_value_usd,
-    THIRTEENF_THOUSANDS_ERA_CUTOFF,
+    THIRTEENF_THOUSANDS_ERA_CUTOFF, compute_13f_weight_pct, is_13f_thousands_era,
+    normalize_13f_value_usd,
 };

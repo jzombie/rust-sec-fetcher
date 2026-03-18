@@ -66,9 +66,10 @@ fn submissions_are_newest_first() {
 #[test]
 fn entity_type_propagated_to_every_submission() {
     let subs = aapl_submissions();
-    assert!(subs
-        .iter()
-        .all(|s| s.entity_type.as_deref() == Some("operating")));
+    assert!(
+        subs.iter()
+            .all(|s| s.entity_type.as_deref() == Some("operating"))
+    );
 }
 
 #[test]

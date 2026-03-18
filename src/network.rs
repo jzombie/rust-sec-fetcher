@@ -5,7 +5,7 @@ mod fetch_company_tickers;
 pub use fetch_company_tickers::fetch_company_tickers;
 
 mod fetch_us_gaap_fundamentals;
-pub use fetch_us_gaap_fundamentals::{fetch_us_gaap_fundamentals, TickerFundamentalsDataFrame};
+pub use fetch_us_gaap_fundamentals::{TickerFundamentalsDataFrame, fetch_us_gaap_fundamentals};
 
 mod fetch_investment_company_series_and_class_dataset;
 pub use fetch_investment_company_series_and_class_dataset::fetch_investment_company_series_and_class_dataset;
@@ -18,13 +18,13 @@ pub use fetch_cik_submissions::{fetch_cik_submissions, parse_cik_submissions_jso
 
 mod fetch_edgar_feed;
 pub use fetch_edgar_feed::{
-    fetch_edgar_feed, fetch_edgar_feed_page, fetch_edgar_feed_since, fetch_edgar_feeds_since,
-    parse_edgar_atom_feed, FeedDelta, EDGAR_PAGE_SIZE,
+    EDGAR_PAGE_SIZE, FeedDelta, fetch_edgar_feed, fetch_edgar_feed_page, fetch_edgar_feed_since,
+    fetch_edgar_feeds_since, parse_edgar_atom_feed,
 };
 
 mod filings;
 pub use filings::{
-    fetch_10k_filings, fetch_10q_filings, fetch_13f, fetch_13f_filings, fetch_8k_filings,
+    fetch_8k_filings, fetch_10k_filings, fetch_10q_filings, fetch_13f, fetch_13f_filings,
     fetch_def14a_filings, fetch_filing_index, fetch_filing_index_by_url, fetch_filings,
     fetch_form4, fetch_form4_filings, fetch_nport, fetch_nport_filings, fetch_s1_filings,
     fetch_s2_filings, fetch_s3_filings, fetch_schedule_13d_filings, fetch_schedule_13g_filings,

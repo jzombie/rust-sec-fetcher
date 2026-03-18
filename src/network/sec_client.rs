@@ -2,8 +2,8 @@ use crate::config::{ConfigManager, DEFAULT_APP_NAME, DEFAULT_APP_VERSION};
 use email_address::EmailAddress;
 use reqwest;
 use reqwest_drive::{
-    init_cache_with_drive_and_throttle, init_client_with_cache_and_throttle, CacheBypass,
-    CachePolicy, ClientWithMiddleware, ThrottlePolicy,
+    CacheBypass, CachePolicy, ClientWithMiddleware, ThrottlePolicy,
+    init_cache_with_drive_and_throttle, init_client_with_cache_and_throttle,
 };
 use serde_json::Value;
 use simd_r_drive::DataStore;

@@ -1,5 +1,5 @@
 use crate::models::{Cik, CikSubmission};
-use crate::network::{fetch_cik_submissions, SecClient};
+use crate::network::{SecClient, fetch_cik_submissions};
 use std::error::Error;
 
 /// Fetches all SC 13D and SC 13D/A beneficial ownership report filings for a

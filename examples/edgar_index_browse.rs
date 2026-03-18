@@ -44,7 +44,7 @@ use chrono::{Datelike, Local};
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::MasterIndexEntry;
-use sec_fetcher::network::{fetch_edgar_master_index, SecClient};
+use sec_fetcher::network::{SecClient, fetch_edgar_master_index};
 use std::error::Error;
 use std::fmt;
 
@@ -117,15 +117,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let filtered: Vec<&MasterIndexEntry> = all_entries
         .iter()
         .filter(|e| {
-            if let Some(ref f) = form_filter {
-                if !e.form_type.to_lowercase().contains(f.as_str()) {
-                    return false;
-                }
+            if let Some(ref f) = form_filter
+                && !e.form_type.to_lowercase().contains(f.as_str())
+            {
+                return false;
             }
-            if let Some(ref c) = company_filter {
-                if !e.company_name.to_lowercase().contains(c.as_str()) {
-                    return false;
-                }
+            if let Some(ref c) = company_filter
+                && !e.company_name.to_lowercase().contains(c.as_str())
+            {
+                return false;
             }
             true
         })

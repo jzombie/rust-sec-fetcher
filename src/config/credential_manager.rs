@@ -108,12 +108,14 @@ impl CredentialProvider for CredentialManager {
                 io::stdin().read_line(&mut input).unwrap();
                 let credential = input.trim().to_string();
 
-                if let Err(err) = instance.store_credential(&credential) {
-                    if let Ok(cached_credential) = instance.get_credential() {
-                        if cached_credential == credential {
-                            eprintln!("Using cached credential for this session, but caught the following error: {}", err);
-                        }
-                    }
+                if let Err(err) = instance.store_credential(&credential)
+                    && let Ok(cached_credential) = instance.get_credential()
+                    && cached_credential == credential
+                {
+                    eprintln!(
+                        "Using cached credential for this session, but caught the following error: {}",
+                        err
+                    );
                 }
 
                 credential

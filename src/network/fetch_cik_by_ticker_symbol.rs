@@ -1,8 +1,8 @@
 use std::error::Error;
 
+use crate::network::SecClient;
 use crate::network::fetch_company_tickers;
 use crate::network::fetch_investment_company_series_and_class_dataset;
-use crate::network::SecClient;
 
 use crate::models::Cik;
 use crate::models::InvestmentCompany;

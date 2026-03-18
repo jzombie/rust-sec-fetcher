@@ -1,6 +1,6 @@
 use crate::enums::Url;
 use crate::models::{CikSubmission, FilingDocument};
-use crate::network::{fetch_and_render, fetch_filing_index, SecClient};
+use crate::network::{SecClient, fetch_and_render, fetch_filing_index};
 use crate::views::FilingView;
 use std::error::Error;
 

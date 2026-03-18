@@ -1,5 +1,5 @@
 use merge::Merge;
-use schemars::{schema_for, JsonSchema};
+use schemars::{JsonSchema, schema_for};
 use serde::{Deserialize, Serialize};
 use serde_json::to_string_pretty;
 use std::path::PathBuf;

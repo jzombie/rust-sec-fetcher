@@ -17,7 +17,7 @@
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::Ticker;
-use sec_fetcher::network::{fetch_company_tickers, SecClient};
+use sec_fetcher::network::{SecClient, fetch_company_tickers};
 use std::error::Error;
 
 #[derive(Parser)]

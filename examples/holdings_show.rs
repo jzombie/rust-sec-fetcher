@@ -35,12 +35,12 @@ use rust_decimal_macros::dec;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::{Cik, CikSubmission, NportInvestment, ThirteenfHolding, TickerSymbol};
 use sec_fetcher::network::{
-    fetch_13f, fetch_13f_filings, fetch_cik_by_ticker_symbol, fetch_form4, fetch_form4_filings,
-    fetch_nport, fetch_nport_filings, SecClient,
+    SecClient, fetch_13f, fetch_13f_filings, fetch_cik_by_ticker_symbol, fetch_form4,
+    fetch_form4_filings, fetch_nport, fetch_nport_filings,
 };
 use sec_fetcher::ops::{
-    diff_holdings, positions_from_13f, positions_from_nport, Diff, Position,
-    WEIGHT_CHANGE_THRESHOLD,
+    Diff, Position, WEIGHT_CHANGE_THRESHOLD, diff_holdings, positions_from_13f,
+    positions_from_nport,
 };
 use std::error::Error;
 use std::fmt;

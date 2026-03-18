@@ -28,13 +28,13 @@
 //!
 //! That is all.
 
-use flate2::write::GzEncoder;
 use flate2::Compression;
+use flate2::write::GzEncoder;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::enums::Url;
 use sec_fetcher::models::{AccessionNumber, CikSubmission, TickerSymbol};
 use sec_fetcher::network::{
-    fetch_8k_filings, fetch_cik_by_ticker_symbol, fetch_filing_index, SecClient,
+    SecClient, fetch_8k_filings, fetch_cik_by_ticker_symbol, fetch_filing_index,
 };
 use std::fs::{self, File};
 use std::io::Write;

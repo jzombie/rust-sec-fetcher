@@ -124,14 +124,10 @@ impl Url {
                 "https://www.sec.gov/files/investment/data/other/investment-company-series-and-class-information/investment-company-series-class-{}.csv",
                 year
             ),
-            Url::CikSubmission(cik) => format!(
-                "https://data.sec.gov/submissions/CIK{}.json",
-                cik
-            ),
-            Url::CikSubmissionPage(filename) => format!(
-                "https://data.sec.gov/submissions/{}",
-                filename
-            ),
+            Url::CikSubmission(cik) => format!("https://data.sec.gov/submissions/CIK{}.json", cik),
+            Url::CikSubmissionPage(filename) => {
+                format!("https://data.sec.gov/submissions/{}", filename)
+            }
             Url::CikAccession(cik, accession_number) => format!(
                 "https://www.sec.gov/Archives/edgar/data/{}/{}",
                 cik,
@@ -143,7 +139,7 @@ impl Url {
                 accession_number.to_unformatted_string(),
                 accession_number,
             ),
-            Url::CikAccessionPrimaryDocument(cik, accession_number ) => format!(
+            Url::CikAccessionPrimaryDocument(cik, accession_number) => format!(
                 "{}/primary_doc.xml",
                 Url::CikAccession(cik.clone(), accession_number.clone()).value(),
             ),
@@ -154,20 +150,25 @@ impl Url {
             ),
             Url::CompanyTickersJson => "https://www.sec.gov/files/company_tickers.json".to_string(),
             Url::CompanyTickersTxt => "https://www.sec.gov/include/ticker.txt".to_string(),
-            Url::CompanyFacts(cik) => format!(
-                "https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json",
-                cik
-            ),
-            Url::EdgarCurrentFeed { form_type, count, before } => format!(
+            Url::CompanyFacts(cik) => {
+                format!("https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json", cik)
+            }
+            Url::EdgarCurrentFeed {
+                form_type,
+                count,
+                before,
+            } => format!(
                 "https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type={}&dateb={}&owner=include&count={}&search_text=&output=atom",
                 form_type, before, count
             ),
-            Url::EdgarCompanyFeed { cik, form_type, count, before } => format!(
-                "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={}&type={}&dateb={}&owner=include&count={}&search_text=&output=atom",
+            Url::EdgarCompanyFeed {
                 cik,
                 form_type,
+                count,
                 before,
-                count
+            } => format!(
+                "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={}&type={}&dateb={}&owner=include&count={}&search_text=&output=atom",
+                cik, form_type, before, count
             ),
             Url::EdgarFullIndex { year, quarter } => format!(
                 "https://www.sec.gov/Archives/edgar/full-index/{}/QTR{}/master.idx",

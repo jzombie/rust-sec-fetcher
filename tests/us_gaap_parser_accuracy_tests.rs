@@ -1,8 +1,8 @@
 use flate2::read::GzDecoder;
 use polars::prelude::*;
-use sec_fetcher::parsers::{parse_us_gaap_fundamentals, US_GAAP_META_COLUMNS};
-use serde_json::json;
+use sec_fetcher::parsers::{US_GAAP_META_COLUMNS, parse_us_gaap_fundamentals};
 use serde_json::Value;
+use serde_json::json;
 use std::fs::File;
 use std::path::PathBuf;
 
@@ -81,80 +81,78 @@ fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
             // We search through all taxonomies because we don't know which one this fact belongs to from the DF column name alone
             // (The DF fact_name is unique enough usually, but strictly it falls under a taxonomy)
             for (_taxonomy, tax_data) in facts_obj {
-                if let Some(fact_node) = tax_data.get(fact_name) {
-                    if let Some(units_node) = fact_node["units"].as_object() {
-                        if let Some(observations) = units_node.get(unit) {
-                            if let Some(obs_array) = observations.as_array() {
-                                // Gather valid candidates
-                                let mut candidates = Vec::new();
+                if let Some(fact_node) = tax_data.get(fact_name)
+                    && let Some(units_node) = fact_node["units"].as_object()
+                    && let Some(observations) = units_node.get(unit)
+                    && let Some(obs_array) = observations.as_array()
+                {
+                    // Gather valid candidates
+                    let mut candidates = Vec::new();
 
-                                for obs in obs_array {
-                                    // REPLICATE PARSER LOGIC FOR FY
-                                    let end_str = obs["end"].as_str().unwrap_or("").to_string();
-                                    let end_year = if end_str.len() >= 4 {
-                                        end_str[0..4].parse::<u64>().unwrap_or(0)
-                                    } else {
-                                        0
-                                    };
+                    for obs in obs_array {
+                        // REPLICATE PARSER LOGIC FOR FY
+                        let end_str = obs["end"].as_str().unwrap_or("").to_string();
+                        let end_year = if end_str.len() >= 4 {
+                            end_str[0..4].parse::<u64>().unwrap_or(0)
+                        } else {
+                            0
+                        };
 
-                                    let obs_fy = if let Some(f) = obs["fy"].as_u64() {
-                                        // FIX LOGIC: Match the parser's mixed strictness checks
-                                        let obs_fp_check = obs["fp"].as_str().unwrap_or("FY");
-                                        if obs_fp_check == "FY" {
-                                            if end_year > 0 && f > end_year {
-                                                continue;
-                                            }
-                                        } else if end_year > 0 && f > end_year + 1 {
-                                            continue;
-                                        }
-                                        f
-                                    } else {
-                                        end_year
-                                    };
-
-                                    let obs_fp = obs["fp"].as_str().unwrap_or("");
-
-                                    if obs_fy == fy && obs_fp == fp {
-                                        candidates.push(obs);
-                                    }
-                                }
-
-                                if candidates.is_empty() {
+                        let obs_fy = if let Some(f) = obs["fy"].as_u64() {
+                            // FIX LOGIC: Match the parser's mixed strictness checks
+                            let obs_fp_check = obs["fp"].as_str().unwrap_or("FY");
+                            if obs_fp_check == "FY" {
+                                if end_year > 0 && f > end_year {
                                     continue;
                                 }
-
-                                // Sort candidates by filed date descending, then end date descending
-                                candidates.sort_by(|a, b| {
-                                    let filed_a = a["filed"].as_str().unwrap_or("");
-                                    let filed_b = b["filed"].as_str().unwrap_or("");
-                                    let c = filed_b.cmp(filed_a); // Descending filed
-                                    if c == std::cmp::Ordering::Equal {
-                                        let end_a = a["end"].as_str().unwrap_or("");
-                                        let end_b = b["end"].as_str().unwrap_or("");
-                                        end_b.cmp(end_a) // Descending end
-                                    } else {
-                                        c
-                                    }
-                                });
-
-                                // Best candidate is the first one
-                                let best_match = candidates[0];
-                                let best_val = best_match["val"].as_f64().unwrap_or(0.0);
-
-                                // Compare values with epsilon for float logic? Or exact?
-                                // JSON float parsing vs string parsing might have tiny diffs.
-                                // But usually exact for these financial numbers.
-                                if (best_val - val_num).abs() < 0.0001 {
-                                    correct_match_found = true;
-                                    break;
-                                } else {
-                                    // Found the right FY/FP bucket, but value mismatch
-                                    // This implies the parser chose a different value than our logic?
-                                    // OR there are multiple entries with same filed date?
-                                    // Or the unit search found a different unit? (We are inside unit loop).
-                                }
+                            } else if end_year > 0 && f > end_year + 1 {
+                                continue;
                             }
+                            f
+                        } else {
+                            end_year
+                        };
+
+                        let obs_fp = obs["fp"].as_str().unwrap_or("");
+
+                        if obs_fy == fy && obs_fp == fp {
+                            candidates.push(obs);
                         }
+                    }
+
+                    if candidates.is_empty() {
+                        continue;
+                    }
+
+                    // Sort candidates by filed date descending, then end date descending
+                    candidates.sort_by(|a, b| {
+                        let filed_a = a["filed"].as_str().unwrap_or("");
+                        let filed_b = b["filed"].as_str().unwrap_or("");
+                        let c = filed_b.cmp(filed_a); // Descending filed
+                        if c == std::cmp::Ordering::Equal {
+                            let end_a = a["end"].as_str().unwrap_or("");
+                            let end_b = b["end"].as_str().unwrap_or("");
+                            end_b.cmp(end_a) // Descending end
+                        } else {
+                            c
+                        }
+                    });
+
+                    // Best candidate is the first one
+                    let best_match = candidates[0];
+                    let best_val = best_match["val"].as_f64().unwrap_or(0.0);
+
+                    // Compare values with epsilon for float logic? Or exact?
+                    // JSON float parsing vs string parsing might have tiny diffs.
+                    // But usually exact for these financial numbers.
+                    if (best_val - val_num).abs() < 0.0001 {
+                        correct_match_found = true;
+                        break;
+                    } else {
+                        // Found the right FY/FP bucket, but value mismatch
+                        // This implies the parser chose a different value than our logic?
+                        // OR there are multiple entries with same filed date?
+                        // Or the unit search found a different unit? (We are inside unit loop).
                     }
                 }
             }
@@ -496,7 +494,14 @@ fn test_canonical_order_column_exists_and_monotonic() {
 
         // Since canonical order 0 is latest, 1 is older...
         // FY[0] should be >= FY[1]
-        assert!(current_fy >= next_fy, "Rows should be strict reverse chronological (FY desc) but row {} is FY{} and row {} is FY{}", i, current_fy, i+1, next_fy);
+        assert!(
+            current_fy >= next_fy,
+            "Rows should be strict reverse chronological (FY desc) but row {} is FY{} and row {} is FY{}",
+            i,
+            current_fy,
+            i + 1,
+            next_fy
+        );
 
         // Logic check: Canonical Order 0 < Canonical Order 1
         // Real Time 0 > Real Time 1

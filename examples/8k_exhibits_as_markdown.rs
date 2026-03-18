@@ -15,7 +15,7 @@
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::TickerSymbol;
-use sec_fetcher::network::{fetch_8k_filings, fetch_cik_by_ticker_symbol, SecClient};
+use sec_fetcher::network::{SecClient, fetch_8k_filings, fetch_cik_by_ticker_symbol};
 use sec_fetcher::ops::render_all_exhibits;
 use sec_fetcher::views::{EmbeddingTextView, FilingView, MarkdownView};
 use std::error::Error;

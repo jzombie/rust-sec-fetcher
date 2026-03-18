@@ -1,8 +1,8 @@
 use crate::models::ThirteenfHolding;
-use crate::normalize::{compute_13f_weight_pct, normalize_13f_value_usd, Pct};
+use crate::normalize::{Pct, compute_13f_weight_pct, normalize_13f_value_usd};
 use chrono::NaiveDate;
-use quick_xml::events::Event;
 use quick_xml::Reader;
+use quick_xml::events::Event;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use std::error::Error;

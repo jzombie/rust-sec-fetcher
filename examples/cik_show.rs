@@ -17,7 +17,7 @@
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::{CikSubmission, TickerSymbol};
-use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_cik_submissions, SecClient};
+use sec_fetcher::network::{SecClient, fetch_cik_by_ticker_symbol, fetch_cik_submissions};
 use std::error::Error;
 
 #[derive(Parser)]

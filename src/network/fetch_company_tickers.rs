@@ -92,10 +92,10 @@ pub async fn fetch_company_tickers(
     // the parsers.
     let mut map: HashMap<String, Ticker> = HashMap::new();
     for mut t in txt_tickers {
-        if t.company_name.is_empty() {
-            if let Some(name) = cik_to_name.get(&t.cik) {
-                t.company_name = name.clone();
-            }
+        if t.company_name.is_empty()
+            && let Some(name) = cik_to_name.get(&t.cik)
+        {
+            t.company_name = name.clone();
         }
         map.insert(t.symbol.to_string(), t);
     }

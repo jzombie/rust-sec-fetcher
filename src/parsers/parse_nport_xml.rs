@@ -1,7 +1,7 @@
 use crate::models::{NportInvestment, Ticker};
 use crate::normalize::Pct;
-use quick_xml::events::Event;
 use quick_xml::Reader;
+use quick_xml::events::Event;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use simd_r_drive::DataStore;
@@ -52,15 +52,13 @@ pub fn parse_nport_xml(
             }
             Event::Empty(ref e) => {
                 // Handle ISIN extraction from attribute inside <isin>
-                if current_tag == "identifiers" {
-                    if let Some(investment) = &mut current_investment {
-                        if let Some(attr) = e
-                            .attributes()
-                            .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"value"))
-                        {
-                            investment.isin = attr?.unescape_value()?.to_string();
-                        }
-                    }
+                if current_tag == "identifiers"
+                    && let Some(investment) = &mut current_investment
+                    && let Some(attr) = e
+                        .attributes()
+                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"value"))
+                {
+                    investment.isin = attr?.unescape_value()?.to_string();
                 }
             }
             Event::Text(e) => {
@@ -116,10 +114,10 @@ pub fn parse_nport_xml(
                 }
             }
             Event::End(ref e) => {
-                if std::str::from_utf8(e.name().as_ref())? == "invstOrSec" {
-                    if let Some(investment) = current_investment.take() {
-                        investments.push(investment);
-                    }
+                if std::str::from_utf8(e.name().as_ref())? == "invstOrSec"
+                    && let Some(investment) = current_investment.take()
+                {
+                    investments.push(investment);
                 }
             }
             Event::Eof => break,

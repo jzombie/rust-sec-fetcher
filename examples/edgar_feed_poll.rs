@@ -46,7 +46,7 @@ use chrono::DateTime;
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::FeedEntry;
-use sec_fetcher::network::{fetch_edgar_feeds_since, SecClient, EDGAR_PAGE_SIZE};
+use sec_fetcher::network::{EDGAR_PAGE_SIZE, SecClient, fetch_edgar_feeds_since};
 use std::error::Error;
 use std::fmt;
 
@@ -212,23 +212,23 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    if new_high_water != since {
-        if let Some(mark) = new_high_water {
-            let filter_part = if args.filter.is_empty() {
-                String::new()
-            } else {
-                format!("--filter \"{}\" ", args.filter)
-            };
-            let mark_str = mark.to_rfc3339();
-            eprintln!();
-            eprintln!("┌─ Next delta poll ──────────────────────────────────────────────────");
-            eprintln!("│  {}", mark_str);
-            eprintln!("└────────────────────────────────────────────────────────────────────");
-            eprintln!(
-                "  cargo run --example edgar_firehose -- {}--since \"{}\"",
-                filter_part, mark_str
-            );
-        }
+    if new_high_water != since
+        && let Some(mark) = new_high_water
+    {
+        let filter_part = if args.filter.is_empty() {
+            String::new()
+        } else {
+            format!("--filter \"{}\" ", args.filter)
+        };
+        let mark_str = mark.to_rfc3339();
+        eprintln!();
+        eprintln!("┌─ Next delta poll ──────────────────────────────────────────────────");
+        eprintln!("│  {}", mark_str);
+        eprintln!("└────────────────────────────────────────────────────────────────────");
+        eprintln!(
+            "  cargo run --example edgar_firehose -- {}--since \"{}\"",
+            filter_part, mark_str
+        );
     }
 
     Ok(())

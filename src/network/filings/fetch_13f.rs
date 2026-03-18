@@ -1,7 +1,7 @@
 use crate::enums::Url;
 use crate::models::{Cik, CikSubmission, ThirteenfHolding};
 use crate::network::filings::fetch_filing_index;
-use crate::network::{fetch_cik_submissions, SecClient};
+use crate::network::{SecClient, fetch_cik_submissions};
 use crate::parsers::parse_13f_xml;
 use std::error::Error;
 

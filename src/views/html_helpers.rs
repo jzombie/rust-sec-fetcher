@@ -1,5 +1,5 @@
 use html_to_markdown_rs::{
-    convert, ConversionOptions, HeadingStyle, PreprocessingOptions, PreprocessingPreset,
+    ConversionOptions, HeadingStyle, PreprocessingOptions, PreprocessingPreset, convert,
 };
 use regex::Regex;
 use std::error::Error;

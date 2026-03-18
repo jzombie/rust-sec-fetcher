@@ -15,7 +15,7 @@
 
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::network::{fetch_investment_company_series_and_class_dataset, SecClient};
+use sec_fetcher::network::{SecClient, fetch_investment_company_series_and_class_dataset};
 use std::error::Error;
 
 #[derive(Parser)]

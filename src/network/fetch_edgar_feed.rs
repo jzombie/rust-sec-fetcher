@@ -3,8 +3,8 @@ use crate::models::{Cik, FeedEntry};
 use crate::network::SecClient;
 use chrono::{DateTime, FixedOffset, NaiveDate};
 use futures::future::join_all;
-use quick_xml::events::Event;
 use quick_xml::Reader;
+use quick_xml::events::Event;
 use regex::Regex;
 use std::error::Error;
 use std::sync::LazyLock as Lazy;
@@ -136,22 +136,19 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
                     if let Some(attr) = e
                         .attributes()
                         .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"href"))
+                        && let Some(ref mut p) = current
                     {
-                        if let Some(ref mut p) = current {
-                            p.link_href = attr?.unescape_value()?.to_string();
-                        }
+                        p.link_href = attr?.unescape_value()?.to_string();
                     }
                 }
                 b"category" if current.is_some() => {
                     if let Some(attr) = e
                         .attributes()
                         .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"term"))
+                        && let Some(ref mut p) = current
+                        && p.form_type.is_empty()
                     {
-                        if let Some(ref mut p) = current {
-                            if p.form_type.is_empty() {
-                                p.form_type = attr?.unescape_value()?.to_string();
-                            }
-                        }
+                        p.form_type = attr?.unescape_value()?.to_string();
                     }
                 }
                 _ => {}
@@ -163,29 +160,26 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
                     if let Some(attr) = e
                         .attributes()
                         .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"href"))
+                        && let Some(ref mut p) = current
                     {
-                        if let Some(ref mut p) = current {
-                            p.link_href = attr?.unescape_value()?.to_string();
-                        }
+                        p.link_href = attr?.unescape_value()?.to_string();
                     }
                 }
                 b"category" if current.is_some() => {
                     if let Some(attr) = e
                         .attributes()
                         .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"term"))
+                        && let Some(ref mut p) = current
+                        && p.form_type.is_empty()
                     {
-                        if let Some(ref mut p) = current {
-                            if p.form_type.is_empty() {
-                                p.form_type = attr?.unescape_value()?.to_string();
-                            }
-                        }
+                        p.form_type = attr?.unescape_value()?.to_string();
                     }
                 }
                 _ => {}
             },
 
             Event::Text(e) => {
-                if let (Some(field), Some(ref mut p)) = (current_field.take(), &mut current) {
+                if let (Some(field), Some(p)) = (current_field.take(), &mut current) {
                     let text = e.decode()?.to_string();
                     match field {
                         "title" => p.title = text,
@@ -199,10 +193,10 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
 
             Event::End(ref e) => {
                 if e.name().as_ref() == b"entry" {
-                    if let Some(p) = current.take() {
-                        if let Some(entry) = p.build() {
-                            entries.push(entry);
-                        }
+                    if let Some(p) = current.take()
+                        && let Some(entry) = p.build()
+                    {
+                        entries.push(entry);
                     }
                 } else {
                     // Reset field tracker on any closing tag; leaf elements

@@ -1,6 +1,6 @@
 use crate::enums::Url;
 use crate::models::{Cik, CikSubmission, NportInvestment};
-use crate::network::{fetch_cik_submissions, fetch_company_tickers, SecClient};
+use crate::network::{SecClient, fetch_cik_submissions, fetch_company_tickers};
 use crate::parsers::parse_nport_xml;
 use std::error::Error;
 

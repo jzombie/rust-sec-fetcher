@@ -115,10 +115,10 @@ fn search_csv_for_tag(
         let mut values = Vec::new();
         for result in reader.records() {
             let record = result?;
-            if let Some(value) = record.get(idx) {
-                if !value.trim().is_empty() {
-                    values.push(value.to_string());
-                }
+            if let Some(value) = record.get(idx)
+                && !value.trim().is_empty()
+            {
+                values.push(value.to_string());
             }
         }
         Ok(Some(values))

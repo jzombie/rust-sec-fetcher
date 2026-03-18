@@ -1,6 +1,6 @@
 use crate::enums::FormType;
 use crate::models::{Cik, CikSubmission, FeedEntry};
-use crate::network::{fetch_edgar_feeds_since, fetch_filings, SecClient};
+use crate::network::{SecClient, fetch_edgar_feeds_since, fetch_filings};
 use chrono::{DateTime, FixedOffset};
 use std::collections::HashSet;
 use std::error::Error;

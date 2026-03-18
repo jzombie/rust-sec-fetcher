@@ -1,5 +1,5 @@
 use sec_fetcher::config::{
-    ConfigManager, APP_NAME_ENV_VAR, APP_VERSION_ENV_VAR, DEFAULT_APP_NAME, DEFAULT_APP_VERSION,
+    APP_NAME_ENV_VAR, APP_VERSION_ENV_VAR, ConfigManager, DEFAULT_APP_NAME, DEFAULT_APP_VERSION,
     EMAIL_ENV_VAR,
 };
 use sec_fetcher::network::SecClient;
@@ -79,7 +79,9 @@ fn test_fails_if_no_email_available_non_interactive() {
     let _lock = ENV_MUTEX.lock().unwrap();
     // Force non-interactive mode and provide an existing but empty config file
     set_interactive_mode_override(Some(false));
-    std::env::remove_var(EMAIL_ENV_VAR); // ensure env var is not set
+    unsafe {
+        std::env::remove_var(EMAIL_ENV_VAR);
+    } // ensure env var is not set
 
     let (_temp_dir, config_path) = create_temp_config("");
 
@@ -101,7 +103,9 @@ fn test_fails_if_no_email_available_non_interactive() {
 fn test_email_from_env_var_non_interactive() {
     let _lock = ENV_MUTEX.lock().unwrap();
     set_interactive_mode_override(Some(false));
-    std::env::set_var(EMAIL_ENV_VAR, "env@example.com");
+    unsafe {
+        std::env::set_var(EMAIL_ENV_VAR, "env@example.com");
+    }
 
     let (_temp_dir, config_path) = create_temp_config(""); // no email in file
 
@@ -116,7 +120,9 @@ fn test_email_from_env_var_non_interactive() {
         Some("env@example.com".to_string())
     );
 
-    std::env::remove_var(EMAIL_ENV_VAR);
+    unsafe {
+        std::env::remove_var(EMAIL_ENV_VAR);
+    }
     set_interactive_mode_override(None);
 }
 
@@ -124,7 +130,9 @@ fn test_email_from_env_var_non_interactive() {
 fn test_config_file_email_takes_precedence_over_env_var() {
     let _lock = ENV_MUTEX.lock().unwrap();
     set_interactive_mode_override(Some(false));
-    std::env::set_var(EMAIL_ENV_VAR, "env@example.com");
+    unsafe {
+        std::env::set_var(EMAIL_ENV_VAR, "env@example.com");
+    }
 
     let (_temp_dir, config_path) = create_temp_config(r#"email = "file@example.com""#);
 
@@ -136,7 +144,9 @@ fn test_config_file_email_takes_precedence_over_env_var() {
         Some("file@example.com".to_string())
     );
 
-    std::env::remove_var(EMAIL_ENV_VAR);
+    unsafe {
+        std::env::remove_var(EMAIL_ENV_VAR);
+    }
     set_interactive_mode_override(None);
 }
 
@@ -173,8 +183,12 @@ fn test_fails_on_invalid_key() {
 #[test]
 fn test_app_name_from_config_file() {
     let _lock = ENV_MUTEX.lock().unwrap();
-    std::env::remove_var(APP_NAME_ENV_VAR);
-    std::env::remove_var(APP_VERSION_ENV_VAR);
+    unsafe {
+        std::env::remove_var(APP_NAME_ENV_VAR);
+    }
+    unsafe {
+        std::env::remove_var(APP_VERSION_ENV_VAR);
+    }
 
     let config_contents = r#"
         email = "test@example.com"
@@ -195,7 +209,9 @@ fn test_app_name_from_config_file() {
 #[test]
 fn test_app_name_absent_is_none() {
     let _lock = ENV_MUTEX.lock().unwrap();
-    std::env::remove_var(APP_NAME_ENV_VAR); // ensure env var doesn't interfere
+    unsafe {
+        std::env::remove_var(APP_NAME_ENV_VAR);
+    } // ensure env var doesn't interfere
 
     let config_contents = r#"
         email = "test@example.com"
@@ -222,7 +238,9 @@ fn test_app_name_absent_is_none() {
 #[test]
 fn test_app_name_from_env_var() {
     let _lock = ENV_MUTEX.lock().unwrap();
-    std::env::set_var(APP_NAME_ENV_VAR, "my-env-app");
+    unsafe {
+        std::env::set_var(APP_NAME_ENV_VAR, "my-env-app");
+    }
 
     let (_temp_dir, config_path) = create_temp_config(r#"email = "test@example.com""#);
 
@@ -243,13 +261,17 @@ fn test_app_name_from_env_var() {
         )
     );
 
-    std::env::remove_var(APP_NAME_ENV_VAR);
+    unsafe {
+        std::env::remove_var(APP_NAME_ENV_VAR);
+    }
 }
 
 #[test]
 fn test_app_name_config_file_takes_precedence_over_env_var() {
     let _lock = ENV_MUTEX.lock().unwrap();
-    std::env::set_var(APP_NAME_ENV_VAR, "env-app");
+    unsafe {
+        std::env::set_var(APP_NAME_ENV_VAR, "env-app");
+    }
 
     let (_temp_dir, config_path) = create_temp_config(
         r#"email = "test@example.com"
@@ -265,7 +287,9 @@ app_name = "file-app""#,
         "Config file app_name should take precedence over env var"
     );
 
-    std::env::remove_var(APP_NAME_ENV_VAR);
+    unsafe {
+        std::env::remove_var(APP_NAME_ENV_VAR);
+    }
 }
 
 #[test]
@@ -277,8 +301,12 @@ fn test_app_name_default_constant() {
 #[test]
 fn test_app_version_from_config_file() {
     let _lock = ENV_MUTEX.lock().unwrap();
-    std::env::remove_var(APP_NAME_ENV_VAR);
-    std::env::remove_var(APP_VERSION_ENV_VAR);
+    unsafe {
+        std::env::remove_var(APP_NAME_ENV_VAR);
+    }
+    unsafe {
+        std::env::remove_var(APP_VERSION_ENV_VAR);
+    }
 
     let config_contents = r#"
         email = "test@example.com"
@@ -304,7 +332,9 @@ fn test_app_version_from_config_file() {
 #[test]
 fn test_app_version_from_env_var() {
     let _lock = ENV_MUTEX.lock().unwrap();
-    std::env::set_var(APP_VERSION_ENV_VAR, "9.9.9");
+    unsafe {
+        std::env::set_var(APP_VERSION_ENV_VAR, "9.9.9");
+    }
 
     let (_temp_dir, config_path) = create_temp_config(r#"email = "test@example.com""#);
     let config_manager = ConfigManager::from_config(Some(config_path))
@@ -321,13 +351,17 @@ fn test_app_version_from_env_var() {
         format!("sec-fetcher/9.9.9 (+test@example.com)")
     );
 
-    std::env::remove_var(APP_VERSION_ENV_VAR);
+    unsafe {
+        std::env::remove_var(APP_VERSION_ENV_VAR);
+    }
 }
 
 #[test]
 fn test_app_version_config_file_takes_precedence_over_env_var() {
     let _lock = ENV_MUTEX.lock().unwrap();
-    std::env::set_var(APP_VERSION_ENV_VAR, "1.0.0-env");
+    unsafe {
+        std::env::set_var(APP_VERSION_ENV_VAR, "1.0.0-env");
+    }
 
     let (_temp_dir, config_path) = create_temp_config(
         r#"email = "test@example.com"
@@ -342,7 +376,9 @@ app_version = "2.0.0-file""#,
         "Config file app_version should take precedence over env var"
     );
 
-    std::env::remove_var(APP_VERSION_ENV_VAR);
+    unsafe {
+        std::env::remove_var(APP_VERSION_ENV_VAR);
+    }
 }
 
 #[test]
@@ -354,7 +390,9 @@ fn test_app_version_default_constant() {
 #[test]
 fn test_app_name_string_override_takes_precedence_over_config_and_env() {
     let _lock = ENV_MUTEX.lock().unwrap();
-    std::env::set_var(APP_NAME_ENV_VAR, "env-app-name");
+    unsafe {
+        std::env::set_var(APP_NAME_ENV_VAR, "env-app-name");
+    }
 
     let (_temp_dir, config_path) = create_temp_config(
         r#"email = "test@example.com"
@@ -376,28 +414,32 @@ app_name = "file-app-name""#,
     let client = SecClient::from_config_manager(&config_manager).unwrap();
     assert_eq!(
         client.get_user_agent(),
-        format!("string-app-name/{} (+test@example.com)", env!("CARGO_PKG_VERSION"))
+        format!(
+            "string-app-name/{} (+test@example.com)",
+            env!("CARGO_PKG_VERSION")
+        )
     );
 
-    std::env::remove_var(APP_NAME_ENV_VAR);
+    unsafe {
+        std::env::remove_var(APP_NAME_ENV_VAR);
+    }
 }
 
 #[test]
 fn test_app_version_string_override_takes_precedence_over_config_and_env() {
     let _lock = ENV_MUTEX.lock().unwrap();
-    std::env::set_var(APP_VERSION_ENV_VAR, "9.9.9-env");
+    unsafe {
+        std::env::set_var(APP_VERSION_ENV_VAR, "9.9.9-env");
+    }
 
     let (_temp_dir, config_path) = create_temp_config(
         r#"email = "test@example.com"
 app_version = "2.0.0-file""#,
     );
 
-    let config_manager = ConfigManager::from_config_with_app_identity(
-        Some(config_path),
-        None,
-        Some("7.7.7-string"),
-    )
-    .expect("Failed to load config with app_version string override");
+    let config_manager =
+        ConfigManager::from_config_with_app_identity(Some(config_path), None, Some("7.7.7-string"))
+            .expect("Failed to load config with app_version string override");
 
     assert_eq!(
         config_manager.get_config().app_version,
@@ -410,14 +452,20 @@ app_version = "2.0.0-file""#,
         "sec-fetcher/7.7.7-string (+test@example.com)"
     );
 
-    std::env::remove_var(APP_VERSION_ENV_VAR);
+    unsafe {
+        std::env::remove_var(APP_VERSION_ENV_VAR);
+    }
 }
 
 #[test]
 fn test_app_identity_string_overrides_both_name_and_version() {
     let _lock = ENV_MUTEX.lock().unwrap();
-    std::env::set_var(APP_NAME_ENV_VAR, "env-app");
-    std::env::set_var(APP_VERSION_ENV_VAR, "1.0.0-env");
+    unsafe {
+        std::env::set_var(APP_NAME_ENV_VAR, "env-app");
+    }
+    unsafe {
+        std::env::set_var(APP_VERSION_ENV_VAR, "1.0.0-env");
+    }
 
     let (_temp_dir, config_path) = create_temp_config(
         r#"email = "test@example.com"
@@ -438,6 +486,10 @@ app_version = "2.0.0-file""#,
         "string-app/3.0.0-string (+test@example.com)"
     );
 
-    std::env::remove_var(APP_NAME_ENV_VAR);
-    std::env::remove_var(APP_VERSION_ENV_VAR);
+    unsafe {
+        std::env::remove_var(APP_NAME_ENV_VAR);
+    }
+    unsafe {
+        std::env::remove_var(APP_VERSION_ENV_VAR);
+    }
 }

@@ -30,7 +30,7 @@
 //! ```
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::network::{fetch_and_render, SecClient};
+use sec_fetcher::network::{SecClient, fetch_and_render};
 use sec_fetcher::views::{EmbeddingTextView, MarkdownView};
 use std::error::Error;
 

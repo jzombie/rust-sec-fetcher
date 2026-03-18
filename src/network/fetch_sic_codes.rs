@@ -60,14 +60,14 @@ fn parse_sic_codes_html(html: &str) -> Result<Vec<SicCode>, Box<dyn Error>> {
             })
             .collect();
 
-        if cells.len() == 3 {
-            if let Ok(code) = cells[0].parse::<u16>() {
-                codes.push(SicCode {
-                    code,
-                    office: cells[1].clone(),
-                    description: cells[2].clone(),
-                });
-            }
+        if cells.len() == 3
+            && let Ok(code) = cells[0].parse::<u16>()
+        {
+            codes.push(SicCode {
+                code,
+                office: cells[1].clone(),
+                description: cells[2].clone(),
+            });
         }
     }
 

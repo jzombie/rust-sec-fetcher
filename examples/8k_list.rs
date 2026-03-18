@@ -11,7 +11,7 @@
 use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::TickerSymbol;
-use sec_fetcher::network::{fetch_8k_filings, fetch_cik_by_ticker_symbol, SecClient};
+use sec_fetcher::network::{SecClient, fetch_8k_filings, fetch_cik_by_ticker_symbol};
 use std::error::Error;
 use std::fmt;
 

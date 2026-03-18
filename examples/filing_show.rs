@@ -37,7 +37,7 @@
 use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::TickerSymbol;
-use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_filings, SecClient};
+use sec_fetcher::network::{SecClient, fetch_cik_by_ticker_symbol, fetch_filings};
 use sec_fetcher::ops::render_filing;
 use sec_fetcher::views::{EmbeddingTextView, FilingView, MarkdownView};
 use std::error::Error;

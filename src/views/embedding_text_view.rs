@@ -1,5 +1,5 @@
-use super::html_helpers::{collapse_blank_lines, flatten_tables, render_html_to_clean_markdown};
 use super::FilingView;
+use super::html_helpers::{collapse_blank_lines, flatten_tables, render_html_to_clean_markdown};
 use std::error::Error;
 
 /// Renders an SEC filing document as embedding-optimized prose text.

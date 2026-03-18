@@ -33,10 +33,10 @@ pub mod holdings;
 pub mod ipo;
 
 pub use filing::{
-    render_all_exhibits, render_exhibit_doc, render_filing, RenderedExhibit, RenderedFiling,
+    RenderedExhibit, RenderedFiling, render_all_exhibits, render_exhibit_doc, render_filing,
 };
 pub use holdings::{
-    diff_holdings, positions_from_13f, positions_from_nport, Diff, Position,
-    WEIGHT_CHANGE_THRESHOLD,
+    Diff, Position, WEIGHT_CHANGE_THRESHOLD, diff_holdings, positions_from_13f,
+    positions_from_nport,
 };
 pub use ipo::{get_ipo_feed_entries, get_ipo_registration_filings};

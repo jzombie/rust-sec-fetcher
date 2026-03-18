@@ -153,14 +153,14 @@ impl ConfigManager {
         app_name_override: Option<&str>,
         app_version_override: Option<&str>,
     ) -> Result<Self, Box<dyn Error>> {
-        if let Some(path) = &path {
-            if !path.exists() {
-                return Err(format!(
-                    "Config path does not exist: {}",
-                    path.to_string_lossy().into_owned()
-                )
-                .into());
-            }
+        if let Some(path) = &path
+            && !path.exists()
+        {
+            return Err(format!(
+                "Config path does not exist: {}",
+                path.to_string_lossy().into_owned()
+            )
+            .into());
         };
 
         let config_path = path.unwrap_or_else(Self::get_config_path);
@@ -218,18 +218,18 @@ impl ConfigManager {
 
         // Resolve app_name: env var fills the gap when neither TOML nor a
         // direct AppConfig assignment supplied one.
-        if settings.app_name.is_none() {
-            if let Ok(name) = std::env::var(APP_NAME_ENV_VAR) {
-                settings.app_name = Some(name);
-            }
+        if settings.app_name.is_none()
+            && let Ok(name) = std::env::var(APP_NAME_ENV_VAR)
+        {
+            settings.app_name = Some(name);
         }
 
         // Resolve app_version: env var fills the gap when neither TOML nor a
         // direct AppConfig assignment supplied one.
-        if settings.app_version.is_none() {
-            if let Ok(version) = std::env::var(APP_VERSION_ENV_VAR) {
-                settings.app_version = Some(version);
-            }
+        if settings.app_version.is_none()
+            && let Ok(version) = std::env::var(APP_VERSION_ENV_VAR)
+        {
+            settings.app_version = Some(version);
         }
 
         if let Some(name) = app_name_override {
@@ -302,10 +302,10 @@ impl ConfigManager {
 
     /// Determines the standard config file location.
     pub fn get_config_path() -> PathBuf {
-        if let Some(path) = Self::get_suggested_system_path() {
-            if path.exists() {
-                return path;
-            }
+        if let Some(path) = Self::get_suggested_system_path()
+            && path.exists()
+        {
+            return path;
         }
         PathBuf::from(&*DEFAULT_CONFIG_PATH)
     }

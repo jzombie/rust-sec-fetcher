@@ -44,7 +44,7 @@ use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::enums::Url;
 use sec_fetcher::models::{Cik, TickerSymbol};
-use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_company_profile, SecClient};
+use sec_fetcher::network::{SecClient, fetch_cik_by_ticker_symbol, fetch_company_profile};
 use sec_fetcher::ops::{get_ipo_registration_filings, render_filing};
 use sec_fetcher::views::{EmbeddingTextView, FilingView, MarkdownView};
 use std::error::Error;

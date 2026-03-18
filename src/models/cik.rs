@@ -154,13 +154,12 @@ impl Cik {
         // listing so the returned CIK is always a root operating-company entry.
         // If no primary listing shares the CIK (rare ADR / foreign-issuer edge
         // case), fall back to the instrument's own CIK.
-        if found.origin == TickerOrigin::DerivedInstrument {
-            if let Some(primary) = company_tickers
+        if found.origin == TickerOrigin::DerivedInstrument
+            && let Some(primary) = company_tickers
                 .iter()
                 .find(|t| t.origin == TickerOrigin::PrimaryListing && t.cik == found.cik)
-            {
-                return Ok(primary.cik.clone());
-            }
+        {
+            return Ok(primary.cik.clone());
         }
 
         Ok(found.cik.clone())
