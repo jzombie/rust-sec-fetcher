@@ -47,8 +47,8 @@ pub fn parse_13f_xml(xml: &str) -> Result<Vec<ThirteenfHolding>, Box<dyn Error>>
                     current_tag = local.to_string();
                 }
             }
-            Ok(Event::Text(ref e)) if in_info_table => {
-                let text = e.unescape()?.trim().to_string();
+            Ok(Event::Text(e)) if in_info_table => {
+                let text = e.decode()?.trim().to_string();
                 if text.is_empty() {
                     buf.clear();
                     continue;

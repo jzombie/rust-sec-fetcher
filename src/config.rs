@@ -8,4 +8,5 @@ pub use config_manager::{
 };
 
 mod credential_manager;
+#[cfg(feature = "keyring")]
 pub use credential_manager::{CredentialManager, CredentialProvider};

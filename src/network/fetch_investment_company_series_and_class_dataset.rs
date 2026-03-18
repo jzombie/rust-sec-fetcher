@@ -2,7 +2,6 @@ use crate::enums::{CacheNamespacePrefix, Url};
 use crate::models::InvestmentCompany;
 use crate::network::SecClient;
 use crate::parsers::parse_investment_companies_csv;
-use crate::Caches;
 use chrono::{Datelike, Utc};
 use simd_r_drive::utils::NamespaceHasher;
 use simd_r_drive_extensions::StorageCacheExt;
@@ -44,7 +43,7 @@ static NAMESPACE_HASHER_LATEST_FUNDS_YEAR: LazyLock<Arc<NamespaceHasher>> = Lazy
 pub async fn fetch_investment_company_series_and_class_dataset(
     sec_client: &SecClient,
 ) -> Result<Vec<InvestmentCompany>, Box<dyn Error>> {
-    let preprocessor_cache = Caches::get_preprocessor_cache();
+    let preprocessor_cache = sec_client.get_preprocessor_cache();
     let namespace_hasher = &*NAMESPACE_HASHER_LATEST_FUNDS_YEAR;
     let namespaced_query = namespace_hasher.namespace(b"latest_funds_year");
 

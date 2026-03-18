@@ -1,12 +1,16 @@
-use crate::config::{AppConfig, CredentialManager, CredentialProvider};
+use crate::caches::Caches;
+use crate::config::AppConfig;
+#[cfg(feature = "keyring")]
+use crate::config::{CredentialManager, CredentialProvider};
+#[cfg(feature = "keyring")]
 use crate::utils::is_interactive_mode;
-use crate::Caches;
 use config::{Config, File};
 use dirs::config_dir;
 use merge::Merge;
+use simd_r_drive::DataStore;
 use std::error::Error;
 use std::path::PathBuf;
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 
 /// Environment variable used to supply the required contact email address.
 ///
@@ -90,6 +94,10 @@ pub const DEFAULT_APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 #[derive(Debug)]
 pub struct ConfigManager {
     config: AppConfig,
+    caches: Caches,
+    /// Keeps the temporary cache directory alive for the lifetime of this
+    /// `ConfigManager`.  `None` when `cache_base_dir` was explicitly configured.
+    _cache_dir: Option<tempfile::TempDir>,
 }
 
 static DEFAULT_CONFIG_PATH: LazyLock<String> =
@@ -157,16 +165,22 @@ impl ConfigManager {
         if settings.email.is_none() && user_settings.email.is_none() {
             if let Ok(email) = std::env::var(EMAIL_ENV_VAR) {
                 user_settings.email = Some(email);
-            } else if is_interactive_mode() {
-                let credential_manager = CredentialManager::from_prompt()?;
-                let email = credential_manager.get_credential().map_err(|err| {
-                    format!(
-                        "Could not obtain credential from credential manager: {:?}",
-                        err
-                    )
-                })?;
-                user_settings.email = Some(email);
             } else {
+                #[cfg(feature = "keyring")]
+                if is_interactive_mode() {
+                    let credential_manager = CredentialManager::from_prompt()?;
+                    let email = credential_manager.get_credential().map_err(|err| {
+                        format!(
+                            "Could not obtain credential from credential manager: {:?}",
+                            err
+                        )
+                    })?;
+                    user_settings.email = Some(email);
+                }
+            }
+            // Without the keyring feature the interactive prompt is not available;
+            // the error branch below handles the no-email case.
+            if user_settings.email.is_none() {
                 return Err(format!(
                     "Could not obtain email credential. Set `email` in the config file or the `{}` environment variable.",
                     EMAIL_ENV_VAR
@@ -192,30 +206,60 @@ impl ConfigManager {
             }
         }
 
-        let instance = Self { config: settings };
+        let (caches, temp_dir) = Self::make_caches(&settings);
 
-        instance.init_caches();
+        let instance = Self {
+            config: settings,
+            caches,
+            _cache_dir: temp_dir,
+        };
 
         Ok(instance)
     }
 
     pub fn from_app_config(app_config: &AppConfig) -> Self {
-        let instance = Self {
+        let (caches, temp_dir) = Self::make_caches(app_config);
+        Self {
             config: app_config.clone(),
-        };
-
-        instance.init_caches();
-
-        instance
+            caches,
+            _cache_dir: temp_dir,
+        }
     }
 
-    fn init_caches(&self) {
-        Caches::init(self)
+    /// Creates `Caches` for the given config.  When `cache_base_dir` is
+    /// `None` a fresh temporary directory is created and returned so the
+    /// caller can hold it alive.
+    fn make_caches(config: &AppConfig) -> (Caches, Option<tempfile::TempDir>) {
+        match &config.cache_base_dir {
+            Some(path) => {
+                let caches = Caches::open(path).unwrap_or_else(|err| {
+                    panic!("Failed to open caches at '{}': {err}", path.display())
+                });
+                (caches, None)
+            }
+            None => {
+                let temp_dir = tempfile::Builder::new()
+                    .prefix(env!("CARGO_PKG_NAME"))
+                    .tempdir()
+                    .expect("failed to create temp cache dir");
+                let caches = Caches::open(temp_dir.path())
+                    .unwrap_or_else(|err| panic!("Failed to open caches in tempdir: {err}"));
+                (caches, Some(temp_dir))
+            }
+        }
     }
 
     /// Retrieves a reference to the configuration.
     pub fn get_config(&self) -> &AppConfig {
         &self.config
+    }
+
+    pub fn get_http_cache_store(&self) -> Arc<DataStore> {
+        self.caches.get_http_cache_store()
+    }
+
+    pub fn get_preprocessor_cache(&self) -> Arc<DataStore> {
+        self.caches.get_preprocessor_cache()
     }
 
     pub fn get_suggested_system_path() -> Option<PathBuf> {

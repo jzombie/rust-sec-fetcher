@@ -4,6 +4,7 @@ use serde::Serialize;
 use crate::enums::TickerOrigin;
 use crate::models::AccessionNumber;
 use crate::models::Ticker;
+use crate::models::TickerSymbol;
 
 use std::error::Error;
 
@@ -61,6 +62,12 @@ impl From<std::num::ParseIntError> for CikError {
     }
 }
 
+impl std::fmt::Display for Cik {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:010}", self.value)
+    }
+}
+
 impl Cik {
     /// Creates a `Cik` instance from a `AccessionNumber` instance.
     ///
@@ -93,6 +100,7 @@ impl Cik {
     /// # Errors
     /// - Returns `CikError::InvalidLength` if the string exceeds 10 characters.
     /// - Returns `CikError::ParseError` if the string is not a valid number.
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(cik_str: &str) -> Result<Self, CikError> {
         if cik_str.len() > 10 {
             return Err(CikError::InvalidLength);
@@ -100,11 +108,6 @@ impl Cik {
 
         let value = cik_str.parse::<u64>()?;
         Ok(Self { value })
-    }
-
-    /// Converts the CIK to a zero-padded 10-digit string.
-    pub fn to_string(&self) -> String {
-        format!("{:010}", self.value)
     }
 
     /// Converts the CIK to a u64.
@@ -139,13 +142,12 @@ impl Cik {
     ///   or if the data is incorrectly formatted.
     pub fn get_company_cik_by_ticker_symbol(
         company_tickers: &[Ticker],
-        ticker_symbol: &str,
+        ticker: &TickerSymbol,
     ) -> Result<Cik, Box<dyn Error>> {
-        let normalized = Ticker::normalize_symbol(ticker_symbol);
         let found = company_tickers
             .iter()
-            .find(|t| t.symbol == normalized)
-            .ok_or_else(|| format!("Ticker symbol '{}' not found", ticker_symbol))?;
+            .find(|t| t.symbol == *ticker)
+            .ok_or_else(|| format!("Ticker symbol '{}' not found", ticker))?;
 
         // Derived instruments (warrants, units, preferreds) share their parent
         // registrant's CIK by SEC convention. Resolve to the confirmed primary

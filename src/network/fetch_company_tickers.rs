@@ -53,9 +53,9 @@ use std::error::Error;
 ///
 /// [`TickerOrigin::PrimaryListing`]: crate::enums::TickerOrigin::PrimaryListing
 /// [`TickerOrigin::DerivedInstrument`]: crate::enums::TickerOrigin::DerivedInstrument
-/// [`fetch_investment_company_series_and_class_dataset`]: crate::network::fetch_investment_company_series_and_class_dataset
-/// [`fetch_cik_by_ticker_symbol`]: crate::network::fetch_cik_by_ticker_symbol
-pub async fn fetch_operating_company_tickers(
+/// [`fetch_investment_company_series_and_class_dataset`]: crate::network::fetch_investment_company_series_and_class_dataset()
+/// [`fetch_cik_by_ticker_symbol`]: crate::network::fetch_cik_by_ticker_symbol()
+pub async fn fetch_company_tickers(
     sec_client: &SecClient,
     include_derived_instruments: bool,
 ) -> Result<Vec<Ticker>, Box<dyn Error>> {
@@ -97,10 +97,10 @@ pub async fn fetch_operating_company_tickers(
                 t.company_name = name.clone();
             }
         }
-        map.insert(t.symbol.clone(), t);
+        map.insert(t.symbol.to_string(), t);
     }
     for t in json_tickers {
-        map.insert(t.symbol.clone(), t);
+        map.insert(t.symbol.to_string(), t);
     }
 
     let mut result: Vec<Ticker> = map.into_values().collect();

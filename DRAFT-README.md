@@ -3,6 +3,33 @@
 [deepwiki-page]: https://deepwiki.com/jzombie/rust-sec-fetcher
 [deepwiki-badge]: https://deepwiki.com/badge.svg
 
+## Feature flags
+
+| Feature   | Default  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `keyring` | disabled | Enables OS keychain integration so the SEC contact email can be stored and retrieved securely across sessions (macOS Keychain, Windows Credential Manager, Linux Secret Service via D-Bus). When this feature is active and no email is found in the config file or environment, the library will prompt for one interactively and remember it. Without this feature the email must always be supplied via the config file or `SEC_FETCHER_EMAIL` environment variable. |
+
+### Linux note
+
+The `keyring` feature depends on D-Bus and requires `libdbus-1-dev` and `pkg-config` to be installed at build time:
+
+```sh
+# Ubuntu / Debian
+sudo apt install libdbus-1-dev pkg-config
+
+# Fedora / RHEL
+sudo dnf install dbus-devel pkgconf-pkg-config
+```
+
+Enable the feature with:
+
+```sh
+cargo build --features keyring
+cargo test --features keyring
+```
+
+No extra system packages are required on macOS or Windows.
+
 ## Configuration
 
 No config file is required to get started. The simplest way to try it out is to just run the binary — if you are in a terminal and no email is configured, the program will ask for it at startup. For repeated use you can set the `SEC_FETCHER_EMAIL` environment variable, or copy `sec_fetcher_config.toml.example` to `sec_fetcher_config.toml` to keep a persistent config file.

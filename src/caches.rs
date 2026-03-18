@@ -1,65 +1,60 @@
-use crate::config::ConfigManager;
-use log::warn;
 use simd_r_drive::DataStore;
 use std::path::Path;
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
 
-static SIMD_R_DRIVE_HTTP_CACHE: OnceLock<Arc<DataStore>> = OnceLock::new();
-static SIMD_R_DRIVE_PREPROCESSOR_CACHE: OnceLock<Arc<DataStore>> = OnceLock::new();
+/// Owns the two on-disk `DataStore` instances used by a single `ConfigManager`.
+///
+/// Each `ConfigManager` creates its own `Caches` from a fresh directory, which
+/// means every test that creates a `ConfigManager` gets isolated cache files
+/// with no shared state — eliminating cross-test cache pollution via stale
+/// entries from previous runs.
+pub struct Caches {
+    http_cache: Arc<DataStore>,
+    preprocessor_cache: Arc<DataStore>,
+}
 
-pub struct Caches;
+impl std::fmt::Debug for Caches {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Caches")
+            .field("http_cache", &"<DataStore>")
+            .field("preprocessor_cache", &"<DataStore>")
+            .finish()
+    }
+}
 
 impl Caches {
-    /// Initializes the shared cache with a dynamic path from `ConfigManager`.
-    /// If already initialized, it logs a warning instead of erroring.
-    pub fn init(config_manager: &ConfigManager) {
-        let cache_base_path = config_manager.get_config().cache_base_dir.as_ref().unwrap(); // Fetch from config
-
-        // HTTP Cache
-        {
-            let http_cache_path = cache_base_path.join("http_storage_cache.bin");
-
-            let data_store = DataStore::open(Path::new(&http_cache_path))
-                .unwrap_or_else(|err| panic!("Failed to open datastore: {}", err));
-
-            if SIMD_R_DRIVE_HTTP_CACHE.set(Arc::new(data_store)).is_err() {
-                warn!(
-                    "SIMD_R_DRIVE_HTTP_CACHE was already initialized. Ignoring reinitialization."
-                );
-            }
-        }
-
-        // Preprocessor Cache
-        {
-            let http_cache_path = cache_base_path.join("preprocessor_cache.bin");
-
-            let data_store = DataStore::open(Path::new(&http_cache_path))
-                .unwrap_or_else(|err| panic!("Failed to open datastore: {}", err));
-
-            if SIMD_R_DRIVE_PREPROCESSOR_CACHE
-                .set(Arc::new(data_store))
-                .is_err()
-            {
-                warn!(
-                    "SIMD_R_DRIVE_PREPROCESSOR_CACHE was already initialized. Ignoring reinitialization."
-                );
-            }
-        }
+    /// Opens (or creates) both DataStore files rooted at `base`.
+    ///
+    /// The directory is created if it does not already exist.
+    pub fn open(base: &Path) -> Result<Self, Box<dyn std::error::Error>> {
+        std::fs::create_dir_all(base)?;
+        let http_cache = Arc::new(
+            DataStore::open(&base.join("http_storage_cache.bin")).map_err(|err| {
+                format!(
+                    "Failed to open HTTP DataStore at '{}': {err}",
+                    base.display()
+                )
+            })?,
+        );
+        let preprocessor_cache = Arc::new(
+            DataStore::open(&base.join("preprocessor_cache.bin")).map_err(|err| {
+                format!(
+                    "Failed to open preprocessor DataStore at '{}': {err}",
+                    base.display()
+                )
+            })?,
+        );
+        Ok(Self {
+            http_cache,
+            preprocessor_cache,
+        })
     }
 
-    /// Returns a reference to the shared `DataStore`. Panics if not initialized.
-    pub fn get_http_cache_store() -> Arc<DataStore> {
-        SIMD_R_DRIVE_HTTP_CACHE
-            .get()
-            .expect("SIMD_R_DRIVE_HTTP_CACHE is uninitialized. Call `Caches::init(config_manager)` first.")
-            .clone()
+    pub fn get_http_cache_store(&self) -> Arc<DataStore> {
+        self.http_cache.clone()
     }
 
-    /// Returns a reference to the shared `DataStore`. Panics if not initialized.
-    pub fn get_preprocessor_cache() -> Arc<DataStore> {
-        SIMD_R_DRIVE_PREPROCESSOR_CACHE
-            .get()
-            .expect("SIMD_R_DRIVE_PREPROCESSOR_CACHE is uninitialized. Call `Caches::init(config_manager)` first.")
-            .clone()
+    pub fn get_preprocessor_cache(&self) -> Arc<DataStore> {
+        self.preprocessor_cache.clone()
     }
 }

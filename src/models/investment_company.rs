@@ -1,4 +1,4 @@
-use crate::models::{Cik, Ticker};
+use crate::models::{Cik, TickerSymbol};
 use serde::Deserialize;
 use std::error::Error;
 
@@ -51,16 +51,11 @@ pub struct InvestmentCompany {
 impl InvestmentCompany {
     pub fn get_fund_cik_by_ticker_symbol(
         investment_companies: &[InvestmentCompany],
-        ticker_symbol: &str,
+        ticker: &TickerSymbol,
     ) -> Result<Cik, Box<dyn Error>> {
-        let normalized = Ticker::normalize_symbol(ticker_symbol);
         for result in investment_companies.iter() {
-            let stored = result
-                .class_ticker
-                .as_deref()
-                .map(Ticker::normalize_symbol)
-                .unwrap_or_default();
-            if stored == normalized {
+            let stored = result.class_ticker.as_deref().map(TickerSymbol::new);
+            if stored.as_ref() == Some(ticker) {
                 if let Some(cik_str) = &result.cik_number {
                     let cik = Cik::from_str(cik_str)?;
                     return Ok(cik);

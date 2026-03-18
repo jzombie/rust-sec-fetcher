@@ -4,11 +4,11 @@
 ///
 /// Supports any ticker:
 ///   - **NPORT-P** — ETFs and mutual funds (monthly, ~60-day lag)
-///                   e.g. SPY, QQQ, IVV, ARKK
+///     e.g. SPY, QQQ, IVV, ARKK
 ///   - **13F-HR**  — Institutional managers ≥ $100 M AUM (quarterly, 45-day lag)
-///                   e.g. BRK-A
+///     e.g. BRK-A
 ///   - **Form 4**  — Insider transactions for any public company (≤ 2 business days lag)
-///                   e.g. AAPL, TSLA, NVDA
+///     e.g. AAPL, TSLA, NVDA
 ///
 /// For N-PORT and 13F, consecutive filings are diffed to show adds, removes,
 /// and weight changes. For Form 4, recent insider buy/sell activity is listed.
@@ -39,17 +39,35 @@
 /// which is a completely separate system that is NOT accessible through the SEC.
 /// A Congress member would only appear in Form 4 if they were also a corporate
 /// director or officer of a public company, which is rare.
+use clap::Parser;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::models::{Cik, CikSubmission, NportInvestment, ThirteenfHolding};
+use sec_fetcher::models::{Cik, CikSubmission, NportInvestment, ThirteenfHolding, TickerSymbol};
 use sec_fetcher::network::{
     fetch_13f, fetch_13f_filings, fetch_cik_by_ticker_symbol, fetch_form4, fetch_form4_filings,
     fetch_nport, fetch_nport_filings, SecClient,
 };
 use std::collections::HashMap;
-use std::env;
 use std::error::Error;
+use std::fmt;
+
+#[derive(Parser)]
+#[command(
+    about = "Show holdings changes or insider transactions across recent filings for a ticker"
+)]
+struct Args {
+    /// Ticker symbol: fund (SPY), institutional manager (BRK-A), or company (AAPL)
+    ticker: String,
+
+    /// Number of recent filings to fetch (default: 3 NPORT / 4 13F / 20 Form4)
+    #[arg(long)]
+    filings: Option<usize>,
+
+    /// Print full holdings for every filing (N-PORT/13F only), not just the diff
+    #[arg(long)]
+    all: bool,
+}
 
 // ── config ───────────────────────────────────────────────────────────────────
 
@@ -75,6 +93,48 @@ struct Position {
     /// For N-PORT this comes directly from the filing; for 13F it is derived
     /// from the position's share of total reported value.
     weight: Decimal,
+}
+
+impl fmt::Display for Position {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "  {:9}  {:<45}  {:>12}  {:>6.2}%",
+            self.cusip,
+            self.name.chars().take(45).collect::<String>(),
+            fmt_usd(self.val_usd),
+            self.weight,
+        )
+    }
+}
+
+/// A single Form 4 insider transaction row ready for display.
+struct Form4Row {
+    filed: String,
+    txn_date: String,
+    filer_name: String,
+    role: String,
+    action: String,
+    shares: String,
+    price: String,
+    owned_after: String,
+}
+
+impl fmt::Display for Form4Row {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:<12}  {:<12}  {:<30}  {:<20}  {:<12}  {:>12}  {:>10}  {:>14}",
+            self.filed,
+            self.txn_date,
+            self.filer_name,
+            self.role,
+            self.action,
+            self.shares,
+            self.price,
+            self.owned_after,
+        )
+    }
 }
 
 fn positions_from_nport(investments: &[NportInvestment]) -> Vec<Position> {
@@ -182,26 +242,14 @@ fn print_diff(label_old: &str, label_new: &str, diff: &Diff) {
     if !diff.added.is_empty() {
         println!("  ADDED ({}):", diff.added.len());
         for p in &diff.added {
-            println!(
-                "    {:9}  {:<45}  {:>10}  {:>6.2}%",
-                p.cusip,
-                p.name.chars().take(45).collect::<String>(),
-                fmt_usd(p.val_usd),
-                p.weight
-            );
+            println!("  {}", p);
         }
     }
 
     if !diff.removed.is_empty() {
         println!("  REMOVED ({}):", diff.removed.len());
         for p in &diff.removed {
-            println!(
-                "    {:9}  {:<45}  {:>10}  {:>6.2}%",
-                p.cusip,
-                p.name.chars().take(45).collect::<String>(),
-                fmt_usd(p.val_usd),
-                p.weight
-            );
+            println!("  {}", p);
         }
     }
 
@@ -235,13 +283,7 @@ fn print_full(label: &str, positions: &[Position]) {
     );
     println!("  {}", "-".repeat(80));
     for p in positions {
-        println!(
-            "  {:9}  {:<45}  {:>12}  {:>6.2}%",
-            p.cusip,
-            p.name.chars().take(45).collect::<String>(),
-            fmt_usd(p.val_usd),
-            p.weight
-        );
+        println!("{}", p);
     }
 }
 
@@ -249,41 +291,9 @@ fn print_full(label: &str, positions: &[Position]) {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let args: Vec<String> = env::args().collect();
-
-    let mut ticker = String::new();
-    let mut num_filings: Option<usize> = None;
-    let mut show_all = false;
-
-    let mut i = 1;
-    while i < args.len() {
-        match args[i].as_str() {
-            "--filings" => {
-                i += 1;
-                if let Some(v) = args.get(i) {
-                    num_filings = Some(v.parse().unwrap_or(3).max(2));
-                }
-            }
-            "--all" => show_all = true,
-            other if !other.starts_with('-') => ticker = other.to_string(),
-            other => {
-                eprintln!("Unknown argument: {}", other);
-                eprintln!("Usage: holdings_history <TICKER> [--filings N] [--all]");
-                std::process::exit(1);
-            }
-        }
-        i += 1;
-    }
-
-    if ticker.is_empty() {
-        eprintln!("Usage: holdings_history <TICKER> [--filings N] [--all]");
-        eprintln!("  <TICKER>     fund, institutional manager, or company, e.g. SPY, BRK-A, AAPL");
-        eprintln!(
-            "  --filings N  how many recent filings to fetch (default: 3 NPORT / 4 13F / 20 Form4)"
-        );
-        eprintln!("  --all        print full holdings for every filing (N-PORT/13F only), not just the diff");
-        std::process::exit(1);
-    }
+    let args = Args::parse();
+    let ticker = TickerSymbol::new(&args.ticker);
+    let show_all = args.all;
 
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;
@@ -291,7 +301,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // ── CIK lookup ────────────────────────────────────────────────────────────
     eprintln!("Looking up CIK for {}…", ticker);
     let cik: Cik = fetch_cik_by_ticker_symbol(&client, &ticker).await?;
-    eprintln!("  CIK: {}", cik.to_string());
+    eprintln!("  CIK: {}", cik);
 
     // ── Submission list ───────────────────────────────────────────────────────
     eprintln!("Fetching submission history…");
@@ -338,7 +348,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         FilingKind::ThirteenF => DEFAULT_FILINGS_13F,
         FilingKind::Form4 => DEFAULT_FILINGS_FORM4,
     };
-    let n = num_filings.unwrap_or(default_n).min(relevant.len());
+    let n = args.filings.unwrap_or(default_n).min(relevant.len());
 
     // Take the N most recent filings. Submissions are returned newest-first.
     let selected: Vec<&CikSubmission> = relevant.iter().take(n).collect();
@@ -349,9 +359,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         println!();
         println!(
             "{} (CIK: {})  —  insider transactions (most recent {} filings)",
-            ticker.to_uppercase(),
-            cik.to_string(),
-            n
+            ticker, cik, n
         );
         println!();
         println!(
@@ -372,28 +380,26 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 } else {
                     "Insider"
                 };
-                let action = format!("{} ({})", t.code_description(), t.transaction_code);
-                let price_str = t
-                    .price_per_share
-                    .map(|p| format!("${:.2}", p))
-                    .unwrap_or_else(|| "-".to_string());
-                let after_str = t
-                    .shares_owned_after
-                    .map(|s| format!("{:.0}", s))
-                    .unwrap_or_else(|| "-".to_string());
-                println!(
-                    "{:<12}  {:<12}  {:<30}  {:<20}  {:<12}  {:>12}  {:>10}  {:>14}",
-                    sub.filing_date.map(|d| d.to_string()).unwrap_or_default(),
-                    t.transaction_date
+                let row = Form4Row {
+                    filed: sub.filing_date.map(|d| d.to_string()).unwrap_or_default(),
+                    txn_date: t
+                        .transaction_date
                         .map(|d| d.to_string())
                         .unwrap_or_default(),
-                    t.filer_name.chars().take(30).collect::<String>(),
-                    role.chars().take(20).collect::<String>(),
-                    action,
-                    format!("{:.0}", t.shares),
-                    price_str,
-                    after_str,
-                );
+                    filer_name: t.filer_name.chars().take(30).collect(),
+                    role: role.chars().take(20).collect(),
+                    action: format!("{} ({})", t.code_description(), t.transaction_code),
+                    shares: format!("{:.0}", t.shares),
+                    price: t
+                        .price_per_share
+                        .map(|p| format!("${:.2}", p))
+                        .unwrap_or_else(|| "-".to_string()),
+                    owned_after: t
+                        .shares_owned_after
+                        .map(|s| format!("{:.0}", s))
+                        .unwrap_or_else(|| "-".to_string()),
+                };
+                println!("{}", row);
             }
         }
         println!();
@@ -410,7 +416,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .filing_date
             .map(|d| d.to_string())
             .unwrap_or_else(|| sub.accession_number.to_string());
-        eprintln!("  {} ({})", date_label, sub.accession_number.to_string());
+        eprintln!("  {} ({})", date_label, sub.accession_number);
 
         let positions: Vec<Position> = match kind {
             FilingKind::NPort => {
@@ -432,12 +438,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // ── Print results ─────────────────────────────────────────────────────────
     println!();
-    println!(
-        "{} (CIK: {})  —  {} filings",
-        ticker.to_uppercase(),
-        cik.to_string(),
-        snapshots.len()
-    );
+    println!("{} (CIK: {})  —  {} filings", ticker, cik, snapshots.len());
 
     for i in 0..snapshots.len() {
         let (label, positions) = &snapshots[i];

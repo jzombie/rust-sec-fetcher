@@ -1,4 +1,4 @@
-use crate::enums::Url;
+use crate::enums::{FormType, Url};
 use crate::models::{AccessionNumber, Cik};
 use chrono::NaiveDate;
 
@@ -41,6 +41,13 @@ pub struct CikSubmission {
 }
 
 impl CikSubmission {
+    /// Returns the [`FormType`] for this submission, parsed from the raw `form` string.
+    ///
+    /// Unknown form types are returned as [`FormType::Other`].
+    pub fn form_type(&self) -> FormType {
+        self.form.parse().unwrap()
+    }
+
     /// Returns all submissions whose `form` field matches `form_type` (case-insensitive).
     pub fn by_form<'a>(submissions: &'a [Self], form_type: &str) -> Vec<&'a Self> {
         submissions

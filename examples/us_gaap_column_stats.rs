@@ -1,8 +1,30 @@
+use clap::Parser;
 use csv::ReaderBuilder;
 use rayon::prelude::*;
 use std::collections::HashMap;
+use std::fmt;
 use std::fs;
 use std::path::Path;
+
+#[derive(Parser)]
+#[command(about = "Count column-header frequencies across all CSV files in a directory")]
+struct Args {
+    /// Directory containing the CSV files to analyze
+    #[arg(default_value = "data/14-mar-2026-us-gaap")]
+    dir: String,
+}
+
+/// A column name together with the number of CSV files it appears in.
+struct ColumnCount {
+    name: String,
+    count: usize,
+}
+
+impl fmt::Display for ColumnCount {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.name, self.count)
+    }
+}
 
 /// Reads all CSV files in the given directory and counts occurrences of column headers.
 fn count_column_occurrences(dir: &str) -> HashMap<String, usize> {
@@ -11,18 +33,14 @@ fn count_column_occurrences(dir: &str) -> HashMap<String, usize> {
     let files: Vec<_> = fs::read_dir(dir)
         .expect("Failed to read directory")
         .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "csv"))
+        .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "csv"))
         .collect();
 
     let results: Vec<HashMap<String, usize>> = files
         .par_iter()
         .map(|entry| {
             let path = entry.path();
-            if let Some(counts) = process_csv(&path) {
-                counts
-            } else {
-                HashMap::new()
-            }
+            process_csv(&path).unwrap_or_default()
         })
         .collect();
 
@@ -42,7 +60,7 @@ fn process_csv(path: &Path) -> Option<HashMap<String, usize>> {
     let file = fs::File::open(path).ok()?;
     let mut rdr = ReaderBuilder::new().has_headers(true).from_reader(file);
 
-    if let Some(headers) = rdr.headers().ok() {
+    if let Ok(headers) = rdr.headers() {
         for col in headers.iter() {
             *counts.entry(col.to_string()).or_insert(0) += 1;
         }
@@ -52,14 +70,17 @@ fn process_csv(path: &Path) -> Option<HashMap<String, usize>> {
 }
 
 fn main() {
-    let dir = "data/us-gaap"; // Change this to your directory path
-    let column_distribution = count_column_occurrences(dir);
+    let args = Args::parse();
+    let column_distribution = count_column_occurrences(&args.dir);
 
-    let mut sorted_columns: Vec<_> = column_distribution.iter().collect();
-    sorted_columns.sort_by(|a, b| b.1.cmp(a.1)); // Sort by frequency (descending)
+    let mut sorted_columns: Vec<ColumnCount> = column_distribution
+        .into_iter()
+        .map(|(name, count)| ColumnCount { name, count })
+        .collect();
+    sorted_columns.sort_by(|a, b| b.count.cmp(&a.count));
 
     println!("Column Distribution:");
-    for (col, count) in sorted_columns {
-        println!("{}: {}", col, count);
+    for col in &sorted_columns {
+        println!("{}", col);
     }
 }

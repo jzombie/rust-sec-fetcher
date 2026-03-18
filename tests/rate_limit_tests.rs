@@ -52,12 +52,14 @@ use std::time::{Duration, Instant};
 /// `adaptive_jitter_ms` is left at the `ThrottlePolicy` default (500 ms);
 /// assertions use a generous upper-bound multiplier to absorb jitter.
 fn make_client(max_concurrent: usize, min_delay_ms: u64) -> SecClient {
-    let mut app_config = AppConfig::default();
-    app_config.email = Some("test@example.com".into());
-    app_config.max_concurrent = Some(max_concurrent);
-    app_config.min_delay_ms = Some(min_delay_ms);
     // Use 0 retries so failed requests don't artificially slow the wall clock
-    app_config.max_retries = Some(0);
+    let app_config = AppConfig {
+        email: Some("test@example.com".into()),
+        max_concurrent: Some(max_concurrent),
+        min_delay_ms: Some(min_delay_ms),
+        max_retries: Some(0),
+        ..Default::default()
+    };
 
     let config_manager = ConfigManager::from_app_config(&app_config);
     SecClient::from_config_manager(&config_manager).unwrap()
@@ -316,7 +318,7 @@ async fn test_max_concurrent_cap_respected() -> Result<(), Box<dyn Error>> {
     let elapsed = start.elapsed();
 
     // ceil(n / max_concurrent) sequential batches, each taking >= min_delay_ms.
-    let min_batches = (n as u64 + max_concurrent as u64 - 1) / max_concurrent as u64;
+    let min_batches = (n as u64).div_ceil(max_concurrent as u64);
     let min_expected = Duration::from_millis(min_batches * min_delay_ms);
     // Upper bound: each batch may also absorb adaptive jitter (500 ms) + slack.
     let max_expected = Duration::from_millis(min_batches * (min_delay_ms + 500 + 200));
@@ -533,7 +535,7 @@ async fn test_mixed_cached_and_non_cached_non_cached_still_throttled() -> Result
 
     // 10 cold (uncached) requests with max_concurrent=2 require
     // ceil(10/2) = 5 serial batches × 100 ms = 500 ms minimum.
-    let cold_batches = (n as u64 + max_concurrent as u64 - 1) / max_concurrent as u64;
+    let cold_batches = (n as u64).div_ceil(max_concurrent as u64);
     let min_expected = Duration::from_millis(cold_batches * min_delay_ms);
     // Upper bound: each cold batch may absorb adaptive jitter (500 ms) + slack.
     let max_expected = Duration::from_millis(cold_batches * (min_delay_ms + 500 + 200));
@@ -647,11 +649,13 @@ fn test_throttle_policy_reflects_config() {
     let cases: &[(usize, u64, usize)] = &[(1, 500, 5), (4, 100, 3), (10, 1000, 2)];
 
     for &(max_concurrent, min_delay_ms, max_retries) in cases {
-        let mut app_config = AppConfig::default();
-        app_config.email = Some("test@example.com".into());
-        app_config.max_concurrent = Some(max_concurrent);
-        app_config.min_delay_ms = Some(min_delay_ms);
-        app_config.max_retries = Some(max_retries);
+        let app_config = AppConfig {
+            email: Some("test@example.com".into()),
+            max_concurrent: Some(max_concurrent),
+            min_delay_ms: Some(min_delay_ms),
+            max_retries: Some(max_retries),
+            ..Default::default()
+        };
         let config_manager = ConfigManager::from_app_config(&app_config);
 
         let client = SecClient::from_config_manager(&config_manager).unwrap();
@@ -930,7 +934,7 @@ async fn test_mixed_raw_request_and_nocache_nocache_remains_throttled() -> Resul
 
     // 10 cold (nocache) tasks with max_concurrent=2 →
     // ceil(10/2)=5 serial batches × 100 ms = 500 ms minimum.
-    let cold_batches = (n as u64 + max_concurrent as u64 - 1) / max_concurrent as u64;
+    let cold_batches = (n as u64).div_ceil(max_concurrent as u64);
     let min_expected = Duration::from_millis(cold_batches * min_delay_ms);
     let max_expected = Duration::from_millis(cold_batches * (min_delay_ms + 500 + 200));
 

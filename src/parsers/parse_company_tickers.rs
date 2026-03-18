@@ -1,5 +1,5 @@
 use crate::enums::TickerOrigin;
-use crate::models::{Cik, Ticker};
+use crate::models::{Cik, Ticker, TickerSymbol};
 use serde_json::Value;
 use std::error::Error;
 
@@ -16,7 +16,7 @@ pub fn parse_company_tickers_json(data: &Value) -> Result<Vec<Ticker>, Box<dyn E
             let cik = Cik::from_u64(cik_u64)?;
             tickers.push(Ticker {
                 cik,
-                symbol: Ticker::normalize_symbol(ticker_info["ticker"].as_str().unwrap_or("")),
+                symbol: TickerSymbol::new(ticker_info["ticker"].as_str().unwrap_or("")),
                 company_name: ticker_info["title"]
                     .as_str()
                     .unwrap_or("")
@@ -61,7 +61,7 @@ pub fn parse_ticker_txt(text: &str) -> Vec<Ticker> {
         };
         tickers.push(Ticker {
             cik,
-            symbol: Ticker::normalize_symbol(symbol_raw),
+            symbol: TickerSymbol::new(symbol_raw),
             company_name: String::new(),
             origin: TickerOrigin::DerivedInstrument,
         });

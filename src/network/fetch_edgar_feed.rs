@@ -3,11 +3,11 @@ use crate::models::{Cik, FeedEntry};
 use crate::network::SecClient;
 use chrono::{DateTime, FixedOffset, NaiveDate};
 use futures::future::join_all;
-use once_cell::sync::Lazy;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use regex::Regex;
 use std::error::Error;
+use std::sync::LazyLock as Lazy;
 
 // ---------------------------------------------------------------------------
 // Compiled regexes
@@ -135,7 +135,7 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
                 b"link" if current.is_some() => {
                     if let Some(attr) = e
                         .attributes()
-                        .find(|a| a.as_ref().map_or(false, |a| a.key.as_ref() == b"href"))
+                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"href"))
                     {
                         if let Some(ref mut p) = current {
                             p.link_href = attr?.unescape_value()?.to_string();
@@ -145,7 +145,7 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
                 b"category" if current.is_some() => {
                     if let Some(attr) = e
                         .attributes()
-                        .find(|a| a.as_ref().map_or(false, |a| a.key.as_ref() == b"term"))
+                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"term"))
                     {
                         if let Some(ref mut p) = current {
                             if p.form_type.is_empty() {
@@ -162,7 +162,7 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
                 b"link" if current.is_some() => {
                     if let Some(attr) = e
                         .attributes()
-                        .find(|a| a.as_ref().map_or(false, |a| a.key.as_ref() == b"href"))
+                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"href"))
                     {
                         if let Some(ref mut p) = current {
                             p.link_href = attr?.unescape_value()?.to_string();
@@ -172,7 +172,7 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
                 b"category" if current.is_some() => {
                     if let Some(attr) = e
                         .attributes()
-                        .find(|a| a.as_ref().map_or(false, |a| a.key.as_ref() == b"term"))
+                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"term"))
                     {
                         if let Some(ref mut p) = current {
                             if p.form_type.is_empty() {
@@ -184,9 +184,9 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
                 _ => {}
             },
 
-            Event::Text(ref e) => {
+            Event::Text(e) => {
                 if let (Some(field), Some(ref mut p)) = (current_field.take(), &mut current) {
-                    let text = e.unescape()?.to_string();
+                    let text = e.decode()?.to_string();
                     match field {
                         "title" => p.title = text,
                         "updated" => p.updated = text,
@@ -271,7 +271,7 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
 ///
 /// This gives you exactly the delta — only filings accepted since the last poll.
 ///
-/// [`fetch_edgar_master_index`]: crate::network::fetch_edgar_master_index
+/// [`fetch_edgar_master_index`]: crate::network::fetch_edgar_master_index()
 pub async fn fetch_edgar_feed(
     client: &SecClient,
     form_type: &str,

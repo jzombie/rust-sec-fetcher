@@ -3,8 +3,10 @@ use quick_xml::events::Event;
 use quick_xml::Reader;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
+use simd_r_drive::DataStore;
 use std::error::Error;
 use std::str::FromStr;
+use std::sync::Arc;
 
 // TODO: Look out for very similar (but not duplicates) such as this. Note: The CUSIP and ISIN are different, as well as the values.
 // Investment 4308: NportInvestment { company_ticker: None, name: "PROLOGIS LP", lei: "GL16H1DHB0QSHP25F723", title: "Prologis LP", cusip: "74340XCH2", isin: "US74340XCH26", balance: 724000.00, cur_cd: "USD", val_usd: 713480.28, pct_val: 0.007357911161, payoff_profile: "Long", asset_cat: "DBT", issuer_cat: "", inv_country: "US" }
@@ -12,6 +14,7 @@ use std::str::FromStr;
 pub fn parse_nport_xml(
     xml: &str,
     company_tickers: &[Ticker],
+    cache: Option<&Arc<DataStore>>,
 ) -> Result<Vec<NportInvestment>, Box<dyn Error>> {
     let mut reader = Reader::from_str(xml);
 
@@ -52,16 +55,16 @@ pub fn parse_nport_xml(
                     if let Some(investment) = &mut current_investment {
                         if let Some(attr) = e
                             .attributes()
-                            .find(|a| a.as_ref().map_or(false, |a| a.key.as_ref() == b"value"))
+                            .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"value"))
                         {
                             investment.isin = attr?.unescape_value()?.to_string();
                         }
                     }
                 }
             }
-            Event::Text(ref e) => {
+            Event::Text(e) => {
                 if let Some(investment) = &mut current_investment {
-                    let value = e.unescape()?.trim().to_string(); // Trim whitespace
+                    let value = e.decode()?.trim().to_string(); // Trim whitespace
 
                     // Only update if value is not empty (ignores whitespace-only nodes)
                     if !value.is_empty() {
@@ -124,19 +127,19 @@ pub fn parse_nport_xml(
 
     NportInvestment::sort_by_pct_val_desc(&mut investments);
 
-    for (i, investment) in investments.iter_mut().enumerate() {
+    for investment in investments.iter_mut() {
         // TODO: Remove
         // println!("{}, Investment name: {}", i, investment.name);
 
         let company_ticker =
-            match Ticker::get_by_fuzzy_matched_name(&company_tickers, &investment.title, true) {
+            match Ticker::get_by_fuzzy_matched_name(company_tickers, &investment.title, cache) {
                 Some(company_ticker) => Some(company_ticker),
-                None => Ticker::get_by_fuzzy_matched_name(&company_tickers, &investment.name, true),
+                None => Ticker::get_by_fuzzy_matched_name(company_tickers, &investment.name, cache),
             };
 
         // investment.company_ticker = company_ticker;
         if let Some(company_ticker) = company_ticker {
-            investment.mapped_ticker_symbol = Some(company_ticker.symbol.clone());
+            investment.mapped_ticker_symbol = Some(company_ticker.symbol.to_string());
             investment.mapped_company_name = Some(company_ticker.company_name.clone());
             investment.mapped_company_cik_number = Some(company_ticker.cik.to_string());
         }

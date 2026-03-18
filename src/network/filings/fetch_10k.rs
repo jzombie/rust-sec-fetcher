@@ -36,18 +36,19 @@ use std::error::Error;
 /// together.  Use [`CikSubmission::most_recent_10k`] if you only need the
 /// latest filing.
 ///
-/// [`fetch_company_description`]: crate::network::fetch_company_description
-/// [`fetch_us_gaap_fundamentals`]: crate::network::fetch_us_gaap_fundamentals
+/// [`fetch_company_description`]: crate::network::fetch_company_description()
+/// [`fetch_us_gaap_fundamentals`]: crate::network::fetch_us_gaap_fundamentals()
 ///
 /// # Example
 /// ```rust,no_run
 /// # use sec_fetcher::network::{fetch_10k_filings, fetch_cik_by_ticker_symbol, SecClient};
 /// # use sec_fetcher::config::ConfigManager;
+/// # use sec_fetcher::models::TickerSymbol;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let config = ConfigManager::load()?;
 /// let client = SecClient::from_config_manager(&config)?;
-/// let cik = fetch_cik_by_ticker_symbol(&client, "AAPL").await?;
+/// let cik = fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new("AAPL")).await?;
 /// let filings = fetch_10k_filings(&client, cik).await?;
 /// for f in &filings {
 ///     println!("{:?}  {}", f.filing_date, f.as_primary_document_url());

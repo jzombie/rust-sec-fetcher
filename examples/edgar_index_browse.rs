@@ -51,70 +51,70 @@
 ///   --company NAME    Filter by company name substring, case-insensitive
 ///   --top N           Maximum rows to display (default: 50; 0 = no limit)
 use chrono::{Datelike, Local};
+use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::MasterIndexEntry;
 use sec_fetcher::network::{fetch_edgar_master_index, SecClient};
-use std::env;
 use std::error::Error;
+use std::fmt;
+
+#[derive(Parser)]
+#[command(about = "Browse EDGAR quarterly full-index (master.idx) files")]
+struct Args {
+    /// Calendar year (default: current year)
+    #[arg(long)]
+    year: Option<u16>,
+
+    /// Quarter 1–4 (default: current quarter)
+    #[arg(long)]
+    quarter: Option<u8>,
+
+    /// Filter by form type substring, case-insensitive (e.g. \"10-K\", \"8-K\")
+    #[arg(long)]
+    form: Option<String>,
+
+    /// Filter by company name substring, case-insensitive
+    #[arg(long)]
+    company: Option<String>,
+
+    /// Maximum rows to display (default: 50; 0 = no limit)
+    #[arg(long)]
+    top: Option<usize>,
+}
+
+/// A single full-index entry formatted as a table row.
+struct IndexEntryRow<'a>(&'a MasterIndexEntry);
+
+impl<'a> fmt::Display for IndexEntryRow<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let e = self.0;
+        write!(
+            f,
+            "{:<12}  {:<12}  {:<45}  {:<18}  {}",
+            e.date_filed.to_string(),
+            e.cik,
+            e.company_name.chars().take(45).collect::<String>(),
+            e.form_type,
+            e.as_url(),
+        )
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    // ── Parse CLI arguments ────────────────────────────────────────────────
-    let args: Vec<String> = env::args().skip(1).collect();
+    let args = Args::parse();
 
     let today = Local::now().date_naive();
-    let default_year = today.year() as u16;
-    let default_quarter = ((today.month0() / 3) + 1) as u8;
+    let year = args.year.unwrap_or(today.year() as u16);
+    let quarter = args.quarter.unwrap_or(((today.month0() / 3) + 1) as u8);
 
-    let mut year: u16 = default_year;
-    let mut quarter: u8 = default_quarter;
-    let mut form_filter: Option<String> = None;
-    let mut company_filter: Option<String> = None;
-    let mut top: Option<usize> = None; // None = use default of 50
-
-    let mut i = 0;
-    while i < args.len() {
-        match args[i].as_str() {
-            "--year" => {
-                i += 1;
-                year = args
-                    .get(i)
-                    .and_then(|s| s.parse().ok())
-                    .unwrap_or(default_year);
-            }
-            "--quarter" => {
-                i += 1;
-                quarter = args
-                    .get(i)
-                    .and_then(|s| s.parse().ok())
-                    .unwrap_or(default_quarter);
-            }
-            "--form" => {
-                i += 1;
-                form_filter = args.get(i).map(|s| s.to_lowercase());
-            }
-            "--company" => {
-                i += 1;
-                company_filter = args.get(i).map(|s| s.to_lowercase());
-            }
-            "--top" => {
-                i += 1;
-                top = args.get(i).and_then(|s| s.parse().ok());
-            }
-            "--help" | "-h" => {
-                eprintln!("Usage: full_index [--year YYYY] [--quarter Q] [--form TYPE] [--company NAME] [--top N]");
-                eprintln!("  --top 0  means no limit");
-                return Ok(());
-            }
-            _ => {}
-        }
-        i += 1;
-    }
-
-    if quarter < 1 || quarter > 4 {
+    if !(1..=4).contains(&quarter) {
         eprintln!("Error: --quarter must be 1–4");
         std::process::exit(1);
     }
+
+    let form_filter = args.form.map(|s| s.to_lowercase());
+    let company_filter = args.company.map(|s| s.to_lowercase());
 
     // ── Fetch ──────────────────────────────────────────────────────────────
     eprintln!("Fetching EDGAR full-index for {year} Q{quarter}…");
@@ -155,9 +155,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Default to top 50 when the user hasn't asked for a specific limit.
-    let limit = top.unwrap_or(50);
+    let limit = args.top.unwrap_or(50);
     let display: Vec<&MasterIndexEntry> = if limit == 0 {
-        filtered.iter().copied().collect()
+        filtered.to_vec()
     } else {
         filtered.iter().copied().take(limit).collect()
     };
@@ -182,20 +182,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
     println!();
     println!(
-        "{:<12}  {:<12}  {:<45}  {:<18}  {}",
-        "Filed", "CIK", "Company", "Form", "URL"
+        "{:<12}  {:<12}  {:<45}  {:<18}  URL",
+        "Filed", "CIK", "Company", "Form"
     );
     println!("{}", "-".repeat(150));
 
     for entry in &display {
-        println!(
-            "{:<12}  {:<12}  {:<45}  {:<18}  {}",
-            entry.date_filed.to_string(),
-            entry.cik,
-            entry.company_name.chars().take(45).collect::<String>(),
-            entry.form_type,
-            entry.as_url(),
-        );
+        println!("{}", IndexEntryRow(entry));
     }
 
     println!();

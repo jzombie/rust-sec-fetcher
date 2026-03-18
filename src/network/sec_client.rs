@@ -1,4 +1,3 @@
-use crate::caches::Caches;
 use crate::config::{ConfigManager, DEFAULT_APP_NAME, DEFAULT_APP_VERSION};
 use email_address::EmailAddress;
 use reqwest;
@@ -7,6 +6,7 @@ use reqwest_drive::{
     CachePolicy, ClientWithMiddleware, ThrottlePolicy,
 };
 use serde_json::Value;
+use simd_r_drive::DataStore;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::time::Duration;
@@ -18,6 +18,7 @@ pub struct SecClient {
     http_client: ClientWithMiddleware,
     cache_policy: Arc<CachePolicy>,
     throttle_policy: Arc<ThrottlePolicy>,
+    preprocessor_cache: Arc<DataStore>,
 }
 
 impl SecClient {
@@ -86,7 +87,8 @@ impl SecClient {
             adaptive_jitter_ms: 500,
         });
 
-        let http_cache = Caches::get_http_cache_store();
+        let http_cache = config_manager.get_http_cache_store();
+        let preprocessor_cache = config_manager.get_preprocessor_cache();
 
         let (drive_cache, throttle_cache) = init_cache_with_drive_and_throttle(
             Arc::clone(&http_cache),
@@ -102,6 +104,7 @@ impl SecClient {
             http_client: cache_client,
             cache_policy,
             throttle_policy,
+            preprocessor_cache,
         })
     }
 
@@ -147,6 +150,10 @@ impl SecClient {
 
     pub fn get_throttle_policy(&self) -> ThrottlePolicy {
         self.throttle_policy.as_ref().clone()
+    }
+
+    pub fn get_preprocessor_cache(&self) -> Arc<DataStore> {
+        self.preprocessor_cache.clone()
     }
 
     pub async fn raw_request(

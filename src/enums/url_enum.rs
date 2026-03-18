@@ -16,7 +16,7 @@ pub enum Url {
     CikAccession(Cik, AccessionNumber),
 
     /// Points to the human-readable EDGAR filing index page for a specific filing.
-    /// Format: https://www.sec.gov/Archives/edgar/data/{CIK}/{accn_unformatted}/{accn_formatted}-index.htm
+    /// Format: <https://www.sec.gov/Archives/edgar/data/>{CIK}/{accn_unformatted}/{accn_formatted}-index.htm
     CikAccessionIndex(Cik, AccessionNumber),
 
     /// Points to the `primary_doc.xml` of a specific filing, using
@@ -24,7 +24,7 @@ pub enum Url {
     CikAccessionPrimaryDocument(Cik, AccessionNumber),
 
     /// Points to a named document within a specific filing archive.
-    /// Format: https://www.sec.gov/Archives/edgar/data/{CIK}/{accn_unformatted}/{filename}
+    /// Format: <https://www.sec.gov/Archives/edgar/data/>{CIK}/{accn_unformatted}/{filename}
     CikAccessionDocument(Cik, AccessionNumber, String),
 
     /// Points to the SEC's primary ticker-to-CIK JSON file.
@@ -35,20 +35,20 @@ pub enum Url {
     /// company names but does not include warrants, units, preferred share
     /// classes, or ADRs.
     ///
-    /// See [`crate::network::fetch_operating_company_tickers`].
+    /// See [`crate::network::fetch_company_tickers`].
     CompanyTickersJson,
 
     /// Points to the SEC's supplementary plain-text ticker-to-CIK file.
     ///
     /// Tab-separated, no header: each line is `symbol\tcik`.  This file is
-    /// broader than [`CompanyTickersJson`]: it includes warrants (`-WT`),
+    /// broader than [`Url::CompanyTickersJson`]: it includes warrants (`-WT`),
     /// units (`-UN`), preferred share classes (`-PA`, `-PB`, …), ADRs, and
     /// fund share classes that do not appear in the JSON file.  Company names
-    /// are not available here — they are inherited from [`CompanyTickersJson`]
+    /// are not available here — they are inherited from [`Url::CompanyTickersJson`]
     /// via CIK lookup during the merge in
-    /// [`fetch_operating_company_tickers`].
+    /// [`crate::network::fetch_company_tickers()`].
     ///
-    /// See [`crate::network::fetch_operating_company_tickers`].
+    /// See [`crate::network::fetch_company_tickers`].
     CompanyTickersTxt,
 
     /// Points to the `companyfacts` XBRL JSON API for a specific CIK.
@@ -126,7 +126,7 @@ impl Url {
             ),
             Url::CikSubmission(cik) => format!(
                 "https://data.sec.gov/submissions/CIK{}.json",
-                cik.to_string()
+                cik
             ),
             Url::CikSubmissionPage(filename) => format!(
                 "https://data.sec.gov/submissions/{}",
@@ -134,14 +134,14 @@ impl Url {
             ),
             Url::CikAccession(cik, accession_number) => format!(
                 "https://www.sec.gov/Archives/edgar/data/{}/{}",
-                cik.to_string(),
+                cik,
                 accession_number.to_unformatted_string()
             ),
             Url::CikAccessionIndex(cik, accession_number) => format!(
                 "https://www.sec.gov/Archives/edgar/data/{}/{}/{}-index.htm",
-                cik.to_string(),
+                cik,
                 accession_number.to_unformatted_string(),
-                accession_number.to_string(),
+                accession_number,
             ),
             Url::CikAccessionPrimaryDocument(cik, accession_number ) => format!(
                 "{}/primary_doc.xml",
@@ -156,7 +156,7 @@ impl Url {
             Url::CompanyTickersTxt => "https://www.sec.gov/include/ticker.txt".to_string(),
             Url::CompanyFacts(cik) => format!(
                 "https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json",
-                cik.to_string()
+                cik
             ),
             Url::EdgarCurrentFeed { form_type, count, before } => format!(
                 "https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type={}&dateb={}&owner=include&count={}&search_text=&output=atom",
@@ -164,7 +164,7 @@ impl Url {
             ),
             Url::EdgarCompanyFeed { cik, form_type, count, before } => format!(
                 "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={}&type={}&dateb={}&owner=include&count={}&search_text=&output=atom",
-                cik.to_string(),
+                cik,
                 form_type,
                 before,
                 count

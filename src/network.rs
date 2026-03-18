@@ -1,8 +1,8 @@
 mod sec_client;
 pub use sec_client::SecClient;
 
-mod fetch_operating_company_tickers;
-pub use fetch_operating_company_tickers::fetch_operating_company_tickers;
+mod fetch_company_tickers;
+pub use fetch_company_tickers::fetch_company_tickers;
 
 mod fetch_us_gaap_fundamentals;
 pub use fetch_us_gaap_fundamentals::{fetch_us_gaap_fundamentals, TickerFundamentalsDataFrame};
@@ -25,9 +25,9 @@ pub use fetch_edgar_feed::{
 mod filings;
 pub use filings::{
     fetch_10k_filings, fetch_10q_filings, fetch_13f, fetch_13f_filings, fetch_8k_filings,
-    fetch_def14a_filings, fetch_filing_index, fetch_form4, fetch_form4_filings, fetch_nport,
-    fetch_nport_filings, fetch_s1_filings, fetch_s2_filings, fetch_s3_filings,
-    fetch_schedule_13d_filings,
+    fetch_def14a_filings, fetch_filing_index, fetch_filings, fetch_form4, fetch_form4_filings,
+    fetch_nport, fetch_nport_filings, fetch_s1_filings, fetch_s2_filings, fetch_s3_filings,
+    fetch_schedule_13d_filings, fetch_schedule_13g_filings,
 };
 
 mod fetch_edgar_master_index;
@@ -41,3 +41,6 @@ pub use fetch_sic_codes::fetch_sic_codes;
 
 mod fetch_company_description;
 pub use fetch_company_description::fetch_company_description;
+
+mod fetch_and_render;
+pub use fetch_and_render::fetch_and_render;

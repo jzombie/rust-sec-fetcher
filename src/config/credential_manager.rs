@@ -1,26 +1,34 @@
+#[cfg(feature = "keyring")]
 use crate::utils::is_interactive_mode;
+#[cfg(feature = "keyring")]
 use keyring::Entry;
+#[cfg(feature = "keyring")]
 use std::error::Error;
+#[cfg(feature = "keyring")]
 use std::io::{self, Write};
 
 // TODO: Put storage backend in a trait instead and
 // add option to get components directly from `SIMD R Drive`?
 
+#[cfg(feature = "keyring")]
 /// Service name used for keyring storage
 const SERVICE: &str = env!("CARGO_PKG_NAME");
 
+#[cfg(feature = "keyring")]
 /// Credential Manager struct
 pub struct CredentialManager {
     entry: Entry,
     cached: Option<String>,
 }
 
+#[cfg(feature = "keyring")]
 pub trait CredentialProvider {
     fn from_prompt() -> Result<Self, Box<dyn Error>>
     where
         Self: Sized;
 }
 
+#[cfg(feature = "keyring")]
 impl CredentialManager {
     /// Creates a new instance for a given user
     pub fn new(username: &str) -> Result<Self, Box<dyn Error>> {
@@ -67,6 +75,7 @@ impl CredentialManager {
     }
 }
 
+#[cfg(feature = "keyring")]
 impl CredentialProvider for CredentialManager {
     /// Gets the credential or prompts the user for input
     fn from_prompt() -> Result<Self, Box<dyn Error>> {
@@ -100,7 +109,7 @@ impl CredentialProvider for CredentialManager {
                 let credential = input.trim().to_string();
 
                 if let Err(err) = instance.store_credential(&credential) {
-                    if let Some(cached_credential) = instance.get_credential().ok() {
+                    if let Ok(cached_credential) = instance.get_credential() {
                         if cached_credential == credential {
                             eprintln!("Using cached credential for this session, but caught the following error: {}", err);
                         }

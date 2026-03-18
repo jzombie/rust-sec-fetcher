@@ -1,6 +1,6 @@
 use crate::enums::Url;
 use crate::models::{Cik, CikSubmission, NportInvestment};
-use crate::network::{fetch_cik_submissions, fetch_operating_company_tickers, SecClient};
+use crate::network::{fetch_cik_submissions, fetch_company_tickers, SecClient};
 use crate::parsers::parse_nport_xml;
 use std::error::Error;
 
@@ -48,19 +48,19 @@ pub async fn fetch_nport_filings(
 /// The primary document in an NPORT-P submission is a single XML file
 /// (pointed to by `submission.primary_document`).  This function fetches that
 /// XML and parses each `<invstOrSec>` element into an [`NportInvestment`].
-/// The ticker-symbol lookup table ([`fetch_operating_company_tickers`]) is used to enrich
+/// The ticker-symbol lookup table ([`fetch_company_tickers()`]) is used to enrich
 /// holdings with exchange-listed ticker symbols where available.
 ///
 /// # Example
 /// ```rust,no_run
 /// # use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_nport, SecClient};
-/// # use sec_fetcher::models::CikSubmission;
+/// # use sec_fetcher::models::{CikSubmission, TickerSymbol};
 /// # use sec_fetcher::config::ConfigManager;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let config = ConfigManager::load()?;
 /// let client = SecClient::from_config_manager(&config)?;
-/// let cik = fetch_cik_by_ticker_symbol(&client, "VFINX").await?;
+/// let cik = fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new("VFINX")).await?;
 /// let submissions = fetch_cik_submissions(&client, cik).await?;
 /// let latest = CikSubmission::by_form(&submissions, "NPORT-P").into_iter().next().unwrap();
 /// let investments = fetch_nport(&client, latest).await?;
@@ -76,7 +76,7 @@ pub async fn fetch_nport(
 ) -> Result<Vec<NportInvestment>, Box<dyn Error>> {
     // include_derived_instruments=true so all instrument symbols (warrants,
     // units, preferred classes) are available when resolving portfolio holdings.
-    let company_tickers = fetch_operating_company_tickers(client, true).await?;
+    let company_tickers = fetch_company_tickers(client, true).await?;
 
     let url = Url::CikAccessionPrimaryDocument(
         submission.cik.clone(),
@@ -89,5 +89,9 @@ pub async fn fetch_nport(
         .await?;
     let xml_data = response.text().await?;
 
-    parse_nport_xml(&xml_data, &company_tickers)
+    parse_nport_xml(
+        &xml_data,
+        &company_tickers,
+        Some(&client.get_preprocessor_cache()),
+    )
 }

@@ -16,6 +16,9 @@ pub use filing_document::{FilingDocument, FilingIndex};
 mod ticker;
 pub use ticker::Ticker;
 
+mod ticker_symbol;
+pub use ticker_symbol::TickerSymbol;
+
 mod investment_company;
 pub use investment_company::InvestmentCompany;
 

@@ -7,6 +7,19 @@ use std::error::Error;
 
 pub type TickerFundamentalsDataFrame = DataFrame;
 
+/// The ordered set of metadata columns present in every US-GAAP fundamentals
+/// DataFrame. These columns precede the XBRL fact columns, which vary by company.
+pub const US_GAAP_META_COLUMNS: &[&str] = &[
+    "canonical_order",
+    "fy",
+    "fp",
+    "period_end",
+    "filed",
+    "form",
+    "accn",
+    "filing_url",
+];
+
 // TODO: Include potential support for Form 10-SA or whatever will be used for semi-annual reporting
 
 /// Parses a US GAAP fundamentals JSON object into a Polars DataFrame.
@@ -251,16 +264,8 @@ pub fn parse_us_gaap_fundamentals(
     pivot_df.with_column(Series::new("filing_url".into(), filing_urls))?;
 
     // Reorder columns to place metadata (canonical_order, fy, fp, period_end, filed, form, accn, filing_url) at the start
-    let mut desired_cols = vec![
-        "canonical_order".to_string(),
-        "fy".to_string(),
-        "fp".to_string(),
-        "period_end".to_string(),
-        "filed".to_string(),
-        "form".to_string(),
-        "accn".to_string(),
-        "filing_url".to_string(),
-    ];
+    let mut desired_cols: Vec<String> =
+        US_GAAP_META_COLUMNS.iter().map(|s| s.to_string()).collect();
     let existing_cols = pivot_df.get_column_names();
 
     // Append all other fact columns

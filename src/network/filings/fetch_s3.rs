@@ -44,11 +44,12 @@ use std::error::Error;
 /// ```rust,no_run
 /// # use sec_fetcher::network::{fetch_s3_filings, fetch_cik_by_ticker_symbol, SecClient};
 /// # use sec_fetcher::config::ConfigManager;
+/// # use sec_fetcher::models::TickerSymbol;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let config = ConfigManager::load()?;
 /// let client = SecClient::from_config_manager(&config)?;
-/// let cik = fetch_cik_by_ticker_symbol(&client, "MSFT").await?;
+/// let cik = fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new("MSFT")).await?;
 /// let filings = fetch_s3_filings(&client, cik).await?;
 /// for f in &filings {
 ///     println!("{:?}  {}  {}", f.filing_date, f.form, f.as_primary_document_url());

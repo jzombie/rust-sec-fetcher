@@ -1,5 +1,9 @@
 TODO: Keep notice of 10-Q/A and 10-K/A forms (these are amended)
 
+## News and Announcements
+
+EDGAR News and Announcements: https://www.sec.gov/submit-filings/edgar-news-announcements
+
 ## SIC
 
 - SIC code list: https://www.sec.gov/search-filings/standard-industrial-classification-sic-code-list
@@ -336,6 +340,11 @@ Since primary documents for 10-Ks are .htm files, you need to:
 
 - https://sec-edgar-api.readthedocs.io/en/latest/
 - https://github.com/janlukasschroeder/sec-api-python
+
+## Ideas / Future Work
+
+- **Public API inspiration**: review [edgarkit](https://github.com/r007/edgarkit), [api-ninjas SEC API](https://api-ninjas.com/api/sec), and [edgar-rs](https://github.com/Haut/edgar-rs) for patterns worth adopting.
+- **HuggingFace dataset**: consider uploading XBRL artifacts as an `XBRL_facts_and_figures` (or similar) dataset for easier public access and sharing. Including XBRL US-GAAP fact documentation from the current year taxonomy would make it more useful.
 
 -----
 

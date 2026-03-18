@@ -1,35 +1,32 @@
+use clap::Parser;
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::models::CikSubmission;
+use sec_fetcher::models::{CikSubmission, TickerSymbol};
 use sec_fetcher::network::{fetch_cik_by_ticker_symbol, fetch_cik_submissions, SecClient};
-use std::env;
 use std::error::Error;
-use tokio;
+
+#[derive(Parser)]
+#[command(about = "Look up the CIK for a ticker and inspect its recent submissions")]
+struct Args {
+    /// Ticker symbol (e.g. AAPL)
+    ticker: String,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        eprintln!("Usage: {} <TICKER_SYMBOL>", args[0]);
-        std::process::exit(1);
-    }
-
-    let ticker_symbol = &args[1];
+    let args = Args::parse();
+    let ticker_symbol = TickerSymbol::new(&args.ticker);
 
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;
 
-    let result_cik = fetch_cik_by_ticker_symbol(&client, ticker_symbol)
+    let result_cik = fetch_cik_by_ticker_symbol(&client, &ticker_symbol)
         .await
         .ok();
 
-    if result_cik.is_none() {
-        println!("No matching record found for ticker '{}'.", ticker_symbol);
-    } else {
-        let cik = result_cik.unwrap();
-
+    if let Some(cik) = result_cik {
         println!(
             "Submissions URL: https://data.sec.gov/submissions/CIK{}.json",
-            cik.to_string()
+            cik
         );
 
         // // TODO: Lookup filings -> recent -> accessionNumber, strip out the dahes, and paste in
@@ -68,6 +65,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
             }
         }
+    } else {
+        println!("No matching record found for ticker '{}'.", ticker_symbol);
     }
 
     Ok(())

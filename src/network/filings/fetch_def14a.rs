@@ -35,17 +35,18 @@ use std::error::Error;
 /// returned by this function; they can be retrieved directly via
 /// [`fetch_cik_submissions`] and filtering for `"PRE 14A"`.
 ///
-/// [`fetch_cik_submissions`]: crate::network::fetch_cik_submissions
+/// [`fetch_cik_submissions`]: crate::network::fetch_cik_submissions()
 ///
 /// # Example
 /// ```rust,no_run
 /// # use sec_fetcher::network::{fetch_def14a_filings, fetch_cik_by_ticker_symbol, SecClient};
 /// # use sec_fetcher::config::ConfigManager;
+/// # use sec_fetcher::models::TickerSymbol;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let config = ConfigManager::load()?;
 /// let client = SecClient::from_config_manager(&config)?;
-/// let cik = fetch_cik_by_ticker_symbol(&client, "AAPL").await?;
+/// let cik = fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new("AAPL")).await?;
 /// let filings = fetch_def14a_filings(&client, cik).await?;
 /// for f in &filings {
 ///     println!("{:?}  {}", f.filing_date, f.as_primary_document_url());

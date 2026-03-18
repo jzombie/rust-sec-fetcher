@@ -114,11 +114,12 @@ pub fn parse_cik_submissions_json(data: &Value, cik: Cik) -> Vec<CikSubmission> 
 /// ```rust,no_run
 /// # use sec_fetcher::network::{fetch_cik_submissions, fetch_cik_by_ticker_symbol, SecClient};
 /// # use sec_fetcher::config::ConfigManager;
+/// # use sec_fetcher::models::TickerSymbol;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let config = ConfigManager::load()?;
 /// let client = SecClient::from_config_manager(&config)?;
-/// let cik = fetch_cik_by_ticker_symbol(&client, "AAPL").await?;
+/// let cik = fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new("AAPL")).await?;
 /// let submissions = fetch_cik_submissions(&client, cik).await?;
 /// println!("Total filings: {}", submissions.len());
 /// # Ok(())

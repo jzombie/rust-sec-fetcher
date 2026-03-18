@@ -1,4 +1,4 @@
-use crate::enums::Url;
+use crate::enums::{FormType, Url};
 use chrono::NaiveDate;
 
 /// One row from an EDGAR full-index `master.idx` file.
@@ -27,5 +27,12 @@ impl MasterIndexEntry {
     /// Returns the full SEC URL to the filing document.
     pub fn as_url(&self) -> String {
         Url::EdgarArchive(self.filename.clone()).value()
+    }
+
+    /// Returns the [`FormType`] for this entry, parsed from the raw `form_type` string.
+    ///
+    /// Unknown form types are returned as [`FormType::Other`].
+    pub fn form_type(&self) -> FormType {
+        self.form_type.parse().unwrap()
     }
 }

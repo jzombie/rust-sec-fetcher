@@ -1,0 +1,63 @@
+# cargo-deny configuration
+# https://embarkstudios.github.io/cargo-deny/
+
+[graph]
+targets = []
+
+# ── Licenses ──────────────────────────────────────────────────────────────────
+
+[licenses]
+# Fail on any license not listed here.
+version = 2
+allow = [
+    "0BSD",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "CC0-1.0",
+    "CDLA-Permissive-2.0",
+    "ISC",
+    "LGPL-2.1-or-later",
+    "MIT",
+    "MIT-0",
+    "MPL-2.0",
+    "OpenSSL",
+    "Apache-2.0 WITH LLVM-exception",
+    "Unicode-3.0",
+    "Unlicense",
+    "Zlib",
+]
+# polars-arrow-format has no license field in its manifest; its source is
+# licensed under Apache-2.0, so we allow it here.
+exceptions = [
+    { name = "polars-arrow-format", allow = ["Apache-2.0"] },
+]
+
+# ── Security advisories ───────────────────────────────────────────────────────
+
+[advisories]
+version = 2
+# Ignore RUSTSEC-2025-0141 (bincode 1.x is unmaintained).
+# bincode is a transitive dependency via simd-r-drive; we do not use it
+# directly and cannot upgrade it independently.
+ignore = [
+    { id = "RUSTSEC-2025-0141", reason = "transitive dep via simd-r-drive; not used directly" },
+]
+
+# ── Duplicate crates ──────────────────────────────────────────────────────────
+
+[bans]
+# Duplicates from mismatched transitive dep version requirements (polars, tokio,
+# reqwest, simd-r-drive all pin different releases of windows-sys, hashbrown,
+# etc.).  These cannot be resolved without upstream changes, so we demote them
+# to warnings.
+multiple-versions = "warn"
+wildcards = "allow"
+
+# ── Sources ───────────────────────────────────────────────────────────────────
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

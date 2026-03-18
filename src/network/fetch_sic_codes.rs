@@ -1,9 +1,9 @@
 use crate::enums::Url;
 use crate::models::SicCode;
 use crate::network::SecClient;
-use once_cell::sync::Lazy;
 use regex::Regex;
 use std::error::Error;
+use std::sync::LazyLock as Lazy;
 
 static TR_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?s)<tr[\s>](.*?)</tr>").unwrap());
 static TD_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?s)<td[^>]*>(.*?)</td>").unwrap());

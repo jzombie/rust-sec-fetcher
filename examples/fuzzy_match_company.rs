@@ -1,11 +1,17 @@
+use clap::Parser;
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::models::{CikSubmission, Ticker};
-use sec_fetcher::network::{
-    fetch_cik_by_ticker_symbol, fetch_cik_submissions, fetch_operating_company_tickers, SecClient,
-};
-use std::env;
+use sec_fetcher::models::Ticker;
+use sec_fetcher::network::{fetch_company_tickers, SecClient};
 use std::error::Error;
-use tokio;
+
+#[derive(Parser)]
+#[command(
+    about = "Fuzzy-match a company name or ticker symbol against the SEC operating company list"
+)]
+struct Args {
+    /// Search string: a company name, ticker symbol, or partial match (e.g. \"Apple\", \"AAPL\")
+    query: String,
+}
 
 // TODO: Add unit tests for (at least)
 //  - Container: SPYV
@@ -30,13 +36,8 @@ use tokio;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        eprintln!("Usage: {} \"<SEARCH_STRING>\"", args[0]);
-        std::process::exit(1);
-    }
-
-    let search_string = &args[1];
+    let args = Args::parse();
+    let search_string = &args.query;
 
     println!("Searching for: {}", search_string);
 
@@ -48,9 +49,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;
 
-    let company_tickers = fetch_operating_company_tickers(&client, true)
-        .await
-        .unwrap();
+    let company_tickers = fetch_company_tickers(&client, true).await.unwrap();
 
     // Override search string with company name if using direct symbol
     let search_string = {
@@ -63,10 +62,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let search_string = match exact_company_ticker {
             Some(ticker) => {
                 println!("Exact match: {:?}", ticker);
-
-                let company_name = ticker.company_name.to_string();
-
-                company_name
+                ticker.company_name.to_string()
             }
             None => search_string.to_string(),
         };
@@ -76,7 +72,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     println!("Using search string: {}", search_string);
 
-    let fuzzy_matched = Ticker::get_by_fuzzy_matched_name(&company_tickers, &search_string, false);
+    let fuzzy_matched = Ticker::get_by_fuzzy_matched_name(&company_tickers, &search_string, None);
 
     println!("Fuzzy matched: {:?}", fuzzy_matched);
 

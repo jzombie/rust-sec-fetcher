@@ -10,7 +10,7 @@ use std::error::Error;
 /// call `https://data.sec.gov/submissions/CIK{cik}.json`. When the cache is
 /// warm the second call is free.
 ///
-/// [`fetch_cik_submissions`]: crate::network::fetch_cik_submissions
+/// [`fetch_cik_submissions`]: crate::network::fetch_cik_submissions()
 ///
 /// # Example
 ///

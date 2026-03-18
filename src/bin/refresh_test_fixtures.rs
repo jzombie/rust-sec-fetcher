@@ -32,7 +32,10 @@ use flate2::write::GzEncoder;
 use flate2::Compression;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::enums::Url;
-use sec_fetcher::network::{fetch_cik_by_ticker_symbol, SecClient};
+use sec_fetcher::models::TickerSymbol;
+use sec_fetcher::network::{
+    fetch_8k_filings, fetch_cik_by_ticker_symbol, fetch_filing_index, SecClient,
+};
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::PathBuf;
@@ -64,6 +67,10 @@ enum FixtureKind {
     Submissions,
     /// `https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json`
     CompanyFacts,
+    /// Primary HTML document of the latest 8-K for this ticker.
+    EightKPrimary,
+    /// First renderable (non-binary) EX-* exhibit of the latest 8-K.
+    EightKFirstHtmlExhibit,
 }
 
 const FIXTURES: &[Fixture] = &[
@@ -104,6 +111,17 @@ const FIXTURES: &[Fixture] = &[
         ticker: "NVDA",
         kind: FixtureKind::CompanyFacts,
     },
+    // ── rendering HTML (8-K primary doc + first exhibit, stored compressed) ─
+    Fixture {
+        output: "AAPL_8k_primary.html",
+        ticker: "AAPL",
+        kind: FixtureKind::EightKPrimary,
+    },
+    Fixture {
+        output: "AAPL_8k_exhibit.html",
+        ticker: "AAPL",
+        kind: FixtureKind::EightKFirstHtmlExhibit,
+    },
 ];
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -118,11 +136,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         p.push("tests/fixtures");
         p
     };
-
     fs::create_dir_all(&fixtures_dir)?;
 
     println!(
-        "Downloading {} fixtures into {}",
+        "Downloading {} JSON fixtures into {}",
         FIXTURES.len(),
         fixtures_dir.display()
     );
@@ -134,11 +151,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         print!("  {} ({}) ... ", fixture.output, fixture.ticker);
         std::io::stdout().flush()?;
 
-        let cik = fetch_cik_by_ticker_symbol(&client, fixture.ticker).await?;
+        let cik = fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new(fixture.ticker)).await?;
 
-        let url = match fixture.kind {
+        let url: String = match fixture.kind {
             FixtureKind::Submissions => Url::CikSubmission(cik).value(),
             FixtureKind::CompanyFacts => Url::CompanyFacts(cik).value(),
+            FixtureKind::EightKPrimary => {
+                let filings = fetch_8k_filings(&client, cik).await?;
+                let latest = filings
+                    .first()
+                    .ok_or_else(|| format!("No 8-K filings for '{}'", fixture.ticker))?;
+                latest.as_primary_document_url()
+            }
+            FixtureKind::EightKFirstHtmlExhibit => {
+                let filings = fetch_8k_filings(&client, cik).await?;
+                let latest = filings
+                    .first()
+                    .ok_or_else(|| format!("No 8-K filings for '{}'", fixture.ticker))?;
+                let index = fetch_filing_index(&client, latest).await?;
+                let base = latest.as_edgar_archive_url();
+                let skip = [".pdf", ".xsd", ".zip", ".xlsx", ".png", ".jpg", ".gif"];
+                let exhibit = index
+                    .exhibits()
+                    .into_iter()
+                    .find(|ex| {
+                        let n = ex.name.to_ascii_lowercase();
+                        !skip.iter().any(|e| n.ends_with(e))
+                    })
+                    .ok_or_else(|| format!("No renderable exhibit for '{}'", fixture.ticker))?;
+                format!("{}/{}", base, exhibit.name)
+            }
         };
 
         let response = client
@@ -170,7 +212,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
-    println!();
     println!("Done.  All fixtures are up to date.");
     Ok(())
 }

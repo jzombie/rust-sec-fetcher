@@ -1,9 +1,9 @@
 use crate::enums::{CacheNamespacePrefix, TickerOrigin};
-use crate::models::Cik;
-use crate::Caches;
+use crate::models::{Cik, TickerSymbol};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use simd_r_drive::utils::NamespaceHasher;
+use simd_r_drive::DataStore;
 use simd_r_drive_extensions::StorageCacheExt;
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock};
@@ -19,7 +19,7 @@ static NAMESPACE_HASHER_FUZZY_MATCHER: LazyLock<Arc<NamespaceHasher>> = LazyLock
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Ticker {
     pub cik: Cik,
-    pub symbol: String,
+    pub symbol: TickerSymbol,
     pub company_name: String,
     pub origin: TickerOrigin,
 }
@@ -33,33 +33,17 @@ const CIK_FREQUENCY_BOOST: f64 = 2.0;
 const TICKER_SYMBOL_LENGTH_PENALTY: f64 = -1.0;
 
 impl Ticker {
-    /// Normalizes a raw ticker symbol string to a canonical form.
-    ///
-    /// Rules applied in order:
-    /// 1. Trim leading/trailing ASCII whitespace.
-    /// 2. Convert to uppercase.
-    /// 3. Replace `.` and `/` with `-` (e.g. `BRK.B` → `BRK-B`,
-    ///    `BRK/B` → `BRK-B`).
-    ///
-    /// All SEC data processing — parsing, storage, and lookup — passes
-    /// symbols through this function so that `BRK.B`, `BRK/B`, `brk-b`,
-    /// and `BRK-B` all resolve to the same canonical key `"BRK-B"`.
-    pub fn normalize_symbol(s: &str) -> String {
-        s.trim().to_uppercase().replace('.', "-").replace('/', "-")
-    }
-
     // TODO: Move to parsers?
     // TODO: Rename to `from_fuzzy_matched_name`?
     pub fn get_by_fuzzy_matched_name(
         company_tickers: &[Ticker],
         query: &str,
-        use_cache: bool,
+        cache: Option<&Arc<DataStore>>,
     ) -> Option<Ticker> {
-        let preprocessor_cache = Caches::get_preprocessor_cache();
         let namespace_hasher = &*NAMESPACE_HASHER_FUZZY_MATCHER;
         let namespaced_query = namespace_hasher.namespace(query.as_bytes());
 
-        if use_cache {
+        if let Some(preprocessor_cache) = cache {
             if let Ok(cached) =
                 preprocessor_cache.read_with_ttl::<Option<Ticker>>(&namespaced_query)
             {
@@ -74,7 +58,7 @@ impl Ticker {
 
         for ticker in company_tickers {
             let cik = ticker.cik.value;
-            let ticker_symbol = &ticker.symbol;
+            let ticker_symbol = ticker.symbol.as_str();
             let title_tokens = Self::tokenize_company_name(&ticker.company_name);
 
             let query_freq = Self::token_frequencies(&query_tokens);
@@ -104,7 +88,7 @@ impl Ticker {
                 score += EXACT_MATCH_BOOST;
             }
 
-            if query_tokens.contains(&ticker_symbol) {
+            if query_tokens.iter().any(|t| t == ticker_symbol) {
                 score += TICKER_SYMBOL_MATCH_BOOST;
             }
 
@@ -138,7 +122,7 @@ impl Ticker {
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
             .map(|(company, _)| company.clone());
 
-        if use_cache {
+        if let Some(preprocessor_cache) = cache {
             preprocessor_cache
                 .write_with_ttl::<Option<Ticker>>(
                     &namespaced_query,
