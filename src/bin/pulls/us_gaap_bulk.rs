@@ -19,7 +19,6 @@ use sec_fetcher::{
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::PathBuf;
-use tracing_subscriber::EnvFilter;
 
 #[derive(Parser)]
 #[command(
@@ -37,7 +36,9 @@ struct Args {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt()
         .with_env_filter(
-            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("debug")),
+            tracing_subscriber::EnvFilter::builder()
+                .with_default_directive(tracing::Level::DEBUG.into())
+                .from_env_lossy(),
         )
         .init();
 

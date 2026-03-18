@@ -46,7 +46,6 @@ csv = "1.4.0"
 dashmap = { version = "6.1.0", features = ["rayon"] }
 dirs = "6.0.0"
 email_address = "0.2.9"
-env_logger = "0.11.9"
 flate2 = "1.1"
 futures = "0.3.32"
 html-to-markdown-rs = "2.28.2"
@@ -54,7 +53,6 @@ html2text = "0.16.7"
 indexmap = "2.13.0"
 itertools = "0.14.0"
 keyring = { version = "3.6.2", features = ["apple-native", "windows-native", "sync-secret-service"], optional = true }
-log = "0.4.29"
 merge = "0.2.0"
 polars = { version = "0.46.0", features = ["json", "lazy", "pivot"] }
 quick-xml = "0.39.2"
@@ -75,6 +73,7 @@ strum = "0.28.0"
 strum_macros = "0.28.0"
 tempfile = "3.27.0"
 tokio = { version = "1.50.0", features = ["full"] }
+tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 
 [dev-dependencies]

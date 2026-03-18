@@ -12,7 +12,6 @@
 //! ```
 
 use clap::Parser;
-use log::{error, info};
 use sec_fetcher::{
     config::ConfigManager,
     models::TickerSymbol,
@@ -23,6 +22,7 @@ use sec_fetcher::{
     utils::VecExtensions,
 };
 use tokio::fs::create_dir_all;
+use tracing::{error, info};
 
 #[derive(Parser)]
 #[command(
@@ -41,8 +41,12 @@ struct Args {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
-    env_logger::Builder::from_default_env()
-        .filter(None, log::LevelFilter::Info)
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::builder()
+                .with_default_directive(tracing::Level::INFO.into())
+                .from_env_lossy(),
+        )
         .init();
 
     let mut error_log: Vec<String> = Vec::new();
