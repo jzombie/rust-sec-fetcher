@@ -18,7 +18,7 @@ path = "src/bin/check_form_type_coverage.rs"
 
 # ── Debug data-pull bins (src/bin/pulls/) ─────────────────────────────────────
 # Experimental/in-progress scripts used to bulk-pull and explore SEC data
-# locally.  Kept in a sub-directory to distinguish them from the stabilised
+# locally.  Kept in a sub-directory to distinguish them from the stabilized
 # bins above.
 
 [[bin]]
