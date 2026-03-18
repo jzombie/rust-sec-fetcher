@@ -4,9 +4,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::to_string_pretty;
 use std::path::PathBuf;
 
-#[cfg(not(debug_assertions))]
-use std::sync::OnceLock;
-
 /// Always replace `Some(value)` with `Some(new_value)`
 fn overwrite_option<T>(base: &mut Option<T>, new: Option<T>) {
     if let Some(value) = new {
@@ -43,35 +40,15 @@ pub struct AppConfig {
     pub cache_base_dir: Option<PathBuf>,
 }
 
-#[cfg(not(debug_assertions))]
-static DEFAULT_CACHE_DIR: OnceLock<tempfile::TempDir> = OnceLock::new();
-
 impl Default for AppConfig {
     fn default() -> Self {
-        // For testing/example purposes, use a fixed "data" directory in the project root when in debug mode.
-        #[cfg(debug_assertions)]
-        let cache_base_dir = PathBuf::from("data");
-
-        // simd-r-drive doesn't support safe multi-process access, so each
-        // instance gets its own temp dir within the system temp directory.
-        #[cfg(not(debug_assertions))]
-        let cache_base_dir = DEFAULT_CACHE_DIR
-            .get_or_init(|| {
-                tempfile::Builder::new()
-                    .prefix(env!("CARGO_PKG_NAME"))
-                    .tempdir()
-                    .expect("failed to create temp cache dir")
-            })
-            .path()
-            .to_path_buf();
-
-        // SEC guidance (Accessing EDGAR Data) currently states a maximum
-        // request rate of 10 requests/second. See:
-        // https://www.sec.gov/os/accessing-edgar-data
+        // `cache_base_dir = None` instructs `ConfigManager` to create a fresh
+        // temporary directory for this instance.  The tempdir is owned by the
+        // `ConfigManager` and deleted when it is dropped, giving each instance
+        // (and therefore each test) fully isolated cache storage.
         //
-        // This project uses a conservative default to avoid throttling and to
-        // be a good citizen: default to 500 ms minimum delay between requests
-        // (i.e., ~2 requests/second) with a single concurrent requester.
+        // Set `cache_base_dir` in the TOML config file or via `AppConfig` directly
+        // if you need a persistent on-disk cache across process restarts.
         Self {
             email: None,
             app_name: None,
@@ -79,7 +56,7 @@ impl Default for AppConfig {
             max_concurrent: Some(1),
             min_delay_ms: Some(500),
             max_retries: Some(5),
-            cache_base_dir: Some(cache_base_dir),
+            cache_base_dir: None,
         }
     }
 }

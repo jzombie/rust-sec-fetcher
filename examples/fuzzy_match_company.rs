@@ -3,6 +3,7 @@ use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::Ticker;
 use sec_fetcher::network::{fetch_company_tickers, SecClient};
 use std::error::Error;
+use tokio;
 
 #[derive(Parser)]
 #[command(
@@ -49,7 +50,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;
 
-    let company_tickers = fetch_company_tickers(&client, true).await.unwrap();
+    let company_tickers = fetch_company_tickers(&client, true)
+        .await
+        .unwrap();
 
     // Override search string with company name if using direct symbol
     let search_string = {
@@ -63,7 +66,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
             Some(ticker) => {
                 println!("Exact match: {:?}", ticker);
 
-                ticker.company_name.to_string()
+                let company_name = ticker.company_name.to_string();
+
+                company_name
             }
             None => search_string.to_string(),
         };

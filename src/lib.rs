@@ -6,4 +6,3 @@ pub mod network;
 pub mod parsers;
 pub mod utils;
 pub mod views;
-use caches::Caches;

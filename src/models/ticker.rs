@@ -1,10 +1,10 @@
 use crate::enums::{CacheNamespacePrefix, TickerOrigin};
 use crate::models::{Cik, TickerSymbol};
-use crate::Caches;
 use dashmap::DashMap;
-use serde::{Deserialize, Serialize};
+use simd_r_drive::DataStore;
 use simd_r_drive::utils::NamespaceHasher;
 use simd_r_drive_extensions::StorageCacheExt;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock};
 
@@ -38,13 +38,12 @@ impl Ticker {
     pub fn get_by_fuzzy_matched_name(
         company_tickers: &[Ticker],
         query: &str,
-        use_cache: bool,
+        cache: Option<&Arc<DataStore>>,
     ) -> Option<Ticker> {
-        let preprocessor_cache = Caches::get_preprocessor_cache();
         let namespace_hasher = &*NAMESPACE_HASHER_FUZZY_MATCHER;
         let namespaced_query = namespace_hasher.namespace(query.as_bytes());
 
-        if use_cache {
+        if let Some(preprocessor_cache) = cache {
             if let Ok(cached) =
                 preprocessor_cache.read_with_ttl::<Option<Ticker>>(&namespaced_query)
             {
@@ -123,7 +122,7 @@ impl Ticker {
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
             .map(|(company, _)| company.clone());
 
-        if use_cache {
+        if let Some(preprocessor_cache) = cache {
             preprocessor_cache
                 .write_with_ttl::<Option<Ticker>>(
                     &namespaced_query,
