@@ -1,6 +1,6 @@
 [package]
 name = "sec-fetcher"
-version = "0.1.0-alpha"
+version = "0.1.1-alpha"
 authors = ["Jeremy Harris <jeremy.harris@zenosmosis.com>"]
 repository = "https://github.com/jzombie/rust-sec-fetcher"
 edition = "2024"
