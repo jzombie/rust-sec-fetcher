@@ -401,9 +401,9 @@ dependencies = [
 
 [[package]]
 name = "cache-manager"
-version = "0.3.1"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74d49bcf8291ce378bbffd25cc2b19bd9f407f3887b798297d1b3ff09bbae736"
+checksum = "3f4c9910c978b82ae60dfcad7e192ae6006ee039a886376c71ea1b675cecf59b"
 dependencies = [
  "tempfile",
 ]
@@ -3241,9 +3241,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest-drive"
-version = "0.13.2-alpha"
+version = "0.13.2-alpha.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffa7520cae3cf3d3dc27a8ce9897e7d44c05a76657a75e80638c27d2674331d8"
+checksum = "63399211eef94e3f8b6c863a5ca4ea60a082822a81a89673206d1c02cd0f2a04"
 dependencies = [
  "async-trait",
  "bitcode",
