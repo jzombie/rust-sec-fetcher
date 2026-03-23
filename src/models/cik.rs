@@ -1,3 +1,4 @@
+use bitcode::{Decode, Encode};
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -34,7 +35,7 @@ use std::error::Error;
 ///
 /// # Reference:
 /// - [SEC CIK Lookup](https://www.sec.gov/edgar/searchedgar/cik)
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Encode, Decode)]
 pub struct Cik {
     pub value: u64,
 }

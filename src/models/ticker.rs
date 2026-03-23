@@ -1,5 +1,6 @@
 use crate::enums::{CacheNamespacePrefix, TickerOrigin};
 use crate::models::{Cik, TickerSymbol};
+use bitcode::{Decode, Encode};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use simd_r_drive::DataStore;
@@ -16,7 +17,7 @@ static NAMESPACE_HASHER_FUZZY_MATCHER: LazyLock<Arc<NamespaceHasher>> = LazyLock
     ))
 });
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub struct Ticker {
     pub cik: Cik,
     pub symbol: TickerSymbol,
