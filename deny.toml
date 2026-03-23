@@ -39,12 +39,6 @@ exceptions = [
 
 [advisories]
 version = 2
-# Ignore RUSTSEC-2025-0141 (bincode 1.x is unmaintained).
-# bincode is a transitive dependency via simd-r-drive; we do not use it
-# directly and cannot upgrade it independently.
-ignore = [
-    { id = "RUSTSEC-2025-0141", reason = "transitive dep via simd-r-drive; not used directly" },
-]
 
 # ── Duplicate crates ──────────────────────────────────────────────────────────
 

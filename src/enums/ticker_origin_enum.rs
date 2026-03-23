@@ -1,8 +1,11 @@
+use bitcode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use std::cmp::{Eq, PartialEq};
 use strum_macros::{Display, EnumString};
 
-#[derive(Eq, PartialEq, Hash, Clone, EnumString, Display, Debug, Serialize, Deserialize)]
+#[derive(
+    Eq, PartialEq, Hash, Clone, EnumString, Display, Debug, Serialize, Deserialize, Encode, Decode,
+)]
 pub enum TickerOrigin {
     /// Primary listing from `company_tickers.json`.
     ///

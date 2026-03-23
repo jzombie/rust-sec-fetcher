@@ -6,13 +6,13 @@ publish = false
 
 [dependencies]
 itertools = "0.14.0"
-linfa = "0.7"
-linfa-clustering = "0.7"
-linfa-reduction = "0.7.1"
-ndarray = "0.15"
-regex = "1.11.1"
+linfa = "0.8"
+linfa-clustering = "0.8"
+linfa-reduction = "0.8.1"
+ndarray = "0.17"
+regex = "1.12.3"
 rust-bert = "0.23.0"
-serde = { version = "1.0.218", features = ["derive"] }
-serde_json = "1.0.140"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
 tch = { version = "0.17.0", default-features = false, features = ["download-libtorch"] }
-tokenizers = "0.21.0"
+tokenizers = "0.22.2"

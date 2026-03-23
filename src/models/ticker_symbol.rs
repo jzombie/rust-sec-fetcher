@@ -1,3 +1,4 @@
+use bitcode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 /// A normalized SEC ticker symbol.
@@ -10,7 +11,7 @@ use serde::{Deserialize, Serialize};
 /// All SEC data processing — parsing, storage, and lookup — uses this type
 /// so that `BRK.B`, `BRK/B`, `brk-b`, and `BRK-B` all resolve to the same
 /// canonical key `"BRK-B"`.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Encode, Decode)]
 pub struct TickerSymbol(String);
 
 impl TickerSymbol {
