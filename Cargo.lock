@@ -251,15 +251,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
-name = "bincode"
-version = "1.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "bitcode"
 version = "0.6.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3254,7 +3245,7 @@ dependencies = [
  "rand 0.10.0",
  "reqwest",
  "reqwest-middleware",
- "simd-r-drive",
+ "simd-r-drive 0.15.5-alpha",
  "tokio",
  "tracing",
 ]
@@ -3574,7 +3565,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "simd-r-drive",
+ "simd-r-drive 0.16.0-alpha",
  "simd-r-drive-extensions",
  "strum",
  "strum_macros 0.28.0",
@@ -3816,7 +3807,25 @@ dependencies = [
  "dashmap",
  "indoc",
  "memmap2",
- "simd-r-drive-entry-handle",
+ "simd-r-drive-entry-handle 0.15.5-alpha",
+ "tracing",
+ "tracing-subscriber",
+ "xxhash-rust",
+]
+
+[[package]]
+name = "simd-r-drive"
+version = "0.16.0-alpha"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9afd92a41b82934c0f021ce9795e005e9fe24b27d43a54ab5a2a857d1a2b4468"
+dependencies = [
+ "async-trait",
+ "clap",
+ "crc32fast",
+ "dashmap",
+ "indoc",
+ "memmap2",
+ "simd-r-drive-entry-handle 0.16.0-alpha",
  "tracing",
  "tracing-subscriber",
  "xxhash-rust",
@@ -3833,14 +3842,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "simd-r-drive-extensions"
-version = "0.15.5-alpha"
+name = "simd-r-drive-entry-handle"
+version = "0.16.0-alpha"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44f6150221ccf8a4e60b29352a9545efc90e5de7eee7a5faa8431391fd90788b"
+checksum = "b0fbd3cbea77f73c9acf0463021c5b040973009f60dcd1b3adcd192165c364a0"
 dependencies = [
- "bincode",
+ "crc32fast",
+ "memmap2",
+]
+
+[[package]]
+name = "simd-r-drive-extensions"
+version = "0.16.0-alpha"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d71af5d3c087d1556e5a5c67251ccc947d40a475c63bd43b5a086729c035656"
+dependencies = [
+ "bitcode",
  "serde",
- "simd-r-drive",
+ "simd-r-drive 0.16.0-alpha",
  "walkdir",
 ]
 
