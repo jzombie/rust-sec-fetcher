@@ -98,10 +98,18 @@ pub fn parse_period_slot(s: &str) -> Option<PeriodSlot> {
     }
 
     // Semi-annual H1 aliases (must check before H2 to avoid prefix collision)
-    if upper.contains("HY1") || upper.contains("H1") || upper.contains("SA1") || upper.contains("S1") {
+    if upper.contains("HY1")
+        || upper.contains("H1")
+        || upper.contains("SA1")
+        || upper.contains("S1")
+    {
         return Some(PeriodSlot::H1);
     }
-    if upper.contains("HY2") || upper.contains("H2") || upper.contains("SA2") || upper.contains("S2") {
+    if upper.contains("HY2")
+        || upper.contains("H2")
+        || upper.contains("SA2")
+        || upper.contains("S2")
+    {
         return Some(PeriodSlot::H2);
     }
 
@@ -160,27 +168,27 @@ mod tests {
 
     #[test]
     fn semi_annual_aliases() {
-        assert_eq!(parse_period_slot_token("H1"),  Some(2));
-        assert_eq!(parse_period_slot_token("H2"),  Some(4));
+        assert_eq!(parse_period_slot_token("H1"), Some(2));
+        assert_eq!(parse_period_slot_token("H2"), Some(4));
         assert_eq!(parse_period_slot_token("HY1"), Some(2));
         assert_eq!(parse_period_slot_token("HY2"), Some(4));
         assert_eq!(parse_period_slot_token("SA1"), Some(2));
         assert_eq!(parse_period_slot_token("SA2"), Some(4));
-        assert_eq!(parse_period_slot_token("S1"),  Some(2));
-        assert_eq!(parse_period_slot_token("S2"),  Some(4));
+        assert_eq!(parse_period_slot_token("S1"), Some(2));
+        assert_eq!(parse_period_slot_token("S2"), Some(4));
     }
 
     #[test]
     fn month_window_aliases() {
-        assert_eq!(parse_period_slot_token("3M"),  Some(1));
-        assert_eq!(parse_period_slot_token("6M"),  Some(2));
-        assert_eq!(parse_period_slot_token("9M"),  Some(3));
+        assert_eq!(parse_period_slot_token("3M"), Some(1));
+        assert_eq!(parse_period_slot_token("6M"), Some(2));
+        assert_eq!(parse_period_slot_token("9M"), Some(3));
         assert_eq!(parse_period_slot_token("12M"), Some(4));
     }
 
     #[test]
     fn unrecognised_returns_none() {
-        assert_eq!(parse_period_slot_token(""),   None);
+        assert_eq!(parse_period_slot_token(""), None);
         assert_eq!(parse_period_slot_token("SA"), None);
         assert_eq!(parse_period_slot_token("Q5"), None);
     }
@@ -216,10 +224,10 @@ pub fn extract_first_year(s: &str) -> Option<i64> {
             && chars[i + 3].is_ascii_digit()
         {
             let year_str: String = chars[i..=i + 3].iter().collect();
-            if let Ok(year) = year_str.parse::<i64>() {
-                if (1900..=2100).contains(&year) {
-                    return Some(year);
-                }
+            if let Ok(year) = year_str.parse::<i64>()
+                && (1900..=2100).contains(&year)
+            {
+                return Some(year);
             }
         }
     }
@@ -243,7 +251,10 @@ pub fn parse_period(period: &str) -> Result<Period, String> {
     let raw = period.trim();
     let upper = raw.to_ascii_uppercase();
     let year = extract_first_year(&upper).ok_or_else(|| {
-        format!("Period `{}` is missing year; expected values like 2024Q3, 2024H1, or 2024FY", raw)
+        format!(
+            "Period `{}` is missing year; expected values like 2024Q3, 2024H1, or 2024FY",
+            raw
+        )
     })?;
     if let Some(slot) = parse_period_slot(&upper) {
         let q = slot.normalized_quarter();

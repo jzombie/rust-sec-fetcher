@@ -1,3 +1,15 @@
+
+[package]
+name = "sec-fetcher"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+description.workspace = true
+keywords.workspace = true
+categories.workspace = true
+autobins = false
 [workspace]
 members = ["sec-fetcher-shared"]
 
@@ -11,17 +23,8 @@ description = "Async Rust client for SEC EDGAR: fetch filings, fund holdings, XB
 keywords = ["sec", "edgar", "finance", "filings", "stocks"]
 categories = ["api-bindings", "finance", "web-programming"]
 
-[package]
-name = "sec-fetcher"
-version.workspace = true
-edition.workspace = true
-authors.workspace = true
-repository.workspace = true
-license.workspace = true
-description.workspace = true
-keywords.workspace = true
-categories.workspace = true
-autobins = false
+[workspace.dependencies]
+sec-fetcher-shared = { path = "sec-fetcher-shared", version = "0.2.0-alpha" }
 
 # ── Stabilized utility bins ───────────────────────────────────────────────────
 
@@ -54,11 +57,7 @@ path = "src/bin/pulls/fund_holdings.rs"
 # system packages.
 keyring = ["dep:keyring"]
 
-[workspace.dependencies]
-sec-fetcher-shared = { path = "sec-fetcher-shared", version = "0.2.0-alpha" }
-
 [dependencies]
-sec-fetcher-shared.workspace = true
 bitcode = "0.6.9"
 bytes = "1.11.1"
 chrono = "0.4.44"
@@ -86,6 +85,7 @@ reqwest-drive = "0.13.2-alpha.2"
 rust_decimal = { version = "1.41.0", features = ["serde"] }
 rust_decimal_macros = "1.40.0"
 schemars = "1.2.1"
+sec-fetcher-shared.workspace = true
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 serde_with = "3.18.0"

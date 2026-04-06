@@ -278,8 +278,10 @@ pub fn parse_us_gaap_fundamentals(
     pivot_df.with_column(Series::new("filing_url".into(), filing_urls))?;
 
     // Reorder columns to place metadata (canonical_order, fy, fp, period_end, filed, form, accn, filing_url) at the start
-    let mut desired_cols: Vec<String> =
-        US_GAAP_CSV_META_COLUMNS.iter().map(|s| s.to_string()).collect();
+    let mut desired_cols: Vec<String> = US_GAAP_CSV_META_COLUMNS
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
     let existing_cols = pivot_df.get_column_names();
 
     // Append all other fact columns

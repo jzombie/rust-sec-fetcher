@@ -1,6 +1,6 @@
 use flate2::read::GzDecoder;
 use polars::prelude::*;
-use sec_fetcher::parsers::{parse_us_gaap_fundamentals};
+use sec_fetcher::parsers::parse_us_gaap_fundamentals;
 use sec_fetcher_shared::US_GAAP_CSV_META_COLUMNS;
 use serde_json::Value;
 use serde_json::json;
