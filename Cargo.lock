@@ -1354,9 +1354,9 @@ dependencies = [
 
 [[package]]
 name = "html-to-markdown-rs"
-version = "2.29.0"
+version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9013679b8c3600142e5a8f742748c3c38c49d9fc50675dad62f8f1721090a85a"
+checksum = "c116fad2be99a76c9d9bce6197e0e3271de05f26a967b30888ba07eb669bc666"
 dependencies = [
  "ahash 0.8.12",
  "astral-tl",
@@ -1364,6 +1364,7 @@ dependencies = [
  "html-escape",
  "html5ever 0.39.0",
  "lru",
+ "memchr",
  "once_cell",
  "regex",
  "serde",
