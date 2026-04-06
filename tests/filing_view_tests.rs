@@ -433,3 +433,57 @@ fn fixture_aapl_8k_exhibit_markdown_preserves_tables() {
     let md = markdown(&html);
     assert_table_headers_preserved(&html, &md, "AAPL exhibit (markdown)");
 }
+
+// ---------------------------------------------------------------------------
+// 8. FilingContentType & FilingView default method coverage
+// ---------------------------------------------------------------------------
+
+use sec_fetcher::views::FilingContentType;
+
+#[test]
+fn filing_content_type_debug_does_not_panic() {
+    let _ = format!("{:?}", FilingContentType::Html);
+    let _ = format!("{:?}", FilingContentType::Text);
+    let _ = format!(
+        "{:?}",
+        FilingContentType::Binary {
+            mime_type: "application/pdf".to_string()
+        }
+    );
+}
+
+#[test]
+fn binary_variant_carries_mime_type() {
+    let ct = FilingContentType::Binary {
+        mime_type: "application/pdf".to_string(),
+    };
+    if let FilingContentType::Binary { mime_type } = ct {
+        assert_eq!(mime_type, "application/pdf");
+    } else {
+        panic!("expected Binary variant");
+    }
+}
+
+/// Minimal `FilingView` implementor that exercises the default methods.
+struct PassThroughView;
+
+impl FilingView for PassThroughView {
+    fn render_html(&self, html: &str) -> Result<String, Box<dyn std::error::Error>> {
+        Ok(html.to_string())
+    }
+}
+
+#[test]
+fn filing_view_render_text_default_passes_through() {
+    let view = PassThroughView;
+    let input = "plain text\nline 2";
+    assert_eq!(view.render_text(input), input);
+}
+
+#[test]
+fn filing_view_render_binary_default_includes_mime_and_url() {
+    let view = PassThroughView;
+    let notice = view.render_binary("https://example.com/doc.pdf", "application/pdf");
+    assert!(notice.contains("application/pdf"));
+    assert!(notice.contains("https://example.com/doc.pdf"));
+}
