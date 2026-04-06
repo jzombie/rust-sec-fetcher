@@ -173,4 +173,18 @@ fn name_cusip_and_currency_parsed() {
     assert_eq!(nvda.inv_country, "US");
     assert_eq!(nvda.asset_cat, "EC");
     assert_eq!(nvda.payoff_profile, "Long");
+
+    // Verify the second entry (Prologis) independently — a state-bleeding parser
+    // that copies fields from entry 1 into entry 2 would fail these assertions.
+    let prologis = investments.iter().find(|i| i.cusip == "74340XCH2").unwrap();
+    assert_eq!(prologis.name, "PROLOGIS LP");
+    assert_eq!(prologis.cur_cd, "USD");
+    assert_eq!(prologis.inv_country, "US");
+    assert_eq!(prologis.asset_cat, "DBT");
+    assert_eq!(prologis.payoff_profile, "Long");
+
+    // The two entries must differ on the field that distinguishes equity vs debt.
+    assert_ne!(nvda.asset_cat, prologis.asset_cat); // "EC" vs "DBT"
+    assert_ne!(nvda.cusip, prologis.cusip);
+    assert_ne!(nvda.name, prologis.name);
 }

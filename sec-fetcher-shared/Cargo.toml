@@ -1,0 +1,10 @@
+[package]
+name = "sec-fetcher-shared"
+description = "Shared definitions for sec-fetcher: fiscal-period parsing, sort-rank utilities, and canonical US-GAAP CSV column definitions."
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true

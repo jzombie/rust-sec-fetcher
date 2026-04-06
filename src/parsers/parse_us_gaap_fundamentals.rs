@@ -2,23 +2,11 @@ use crate::enums::Url;
 use crate::models::{AccessionNumber, Cik};
 use polars::prelude::pivot::pivot;
 use polars::prelude::*;
+use sec_fetcher_shared::{US_GAAP_CSV_META_COLUMNS, normalize_fp_label, parse_period_slot_token};
 use serde_json::Value;
 use std::error::Error;
 
 pub type TickerFundamentalsDataFrame = DataFrame;
-
-/// The ordered set of metadata columns present in every US-GAAP fundamentals
-/// DataFrame. These columns precede the XBRL fact columns, which vary by company.
-pub const US_GAAP_META_COLUMNS: &[&str] = &[
-    "canonical_order",
-    "fy",
-    "fp",
-    "period_end",
-    "filed",
-    "form",
-    "accn",
-    "filing_url",
-];
 
 // TODO: Include potential support for Form 10-SA or whatever will be used for semi-annual reporting
 
@@ -143,7 +131,10 @@ pub fn parse_us_gaap_fundamentals(
                                 form_values.push(obs["form"].as_str().unwrap_or("").to_string());
                                 filed_values.push(obs["filed"].as_str().unwrap_or("").to_string());
                                 fy_values.push(fy_derived);
-                                fp_values.push(obs["fp"].as_str().unwrap_or("").to_string());
+                                // Normalize Q4 → FY: year-end quarters are always canonical FY
+                                // regardless of whether the SEC tagged them via a 10-Q or 10-K.
+                                fp_values
+                                    .push(normalize_fp_label(obs["fp"].as_str().unwrap_or("")));
                                 accn_values.push(obs["accn"].as_str().unwrap_or("").to_string());
                             }
                         }
@@ -235,21 +226,42 @@ pub fn parse_us_gaap_fundamentals(
         )
         .collect()?;
 
-    // Create a ranking column for 'fp' to ensure correct chronological sorting
-    // Order: FY (latest) -> Q3 -> Q2 -> Q1
-    // We assign higher numbers to later periods and sort descending.
-    let fp_rank_expr = when(col("fp").eq(lit("FY")))
-        .then(lit(4))
-        .when(col("fp").eq(lit("Q3")))
-        .then(lit(3))
-        .when(col("fp").eq(lit("Q2")))
-        .then(lit(2))
-        .when(col("fp").eq(lit("Q1")))
-        .then(lit(1))
-        .otherwise(lit(0))
-        .alias("fp_rank");
+    // Normalize the `form` column: strip the `/A` amendment suffix so that the
+    // base form type is stored (e.g. `"10-Q/A"` → `"10-Q"`).  The amendment fact
+    // is surfaced as a separate `is_amendment` boolean column so callers can still
+    // distinguish amended rows from originals.
+    //
+    // This runs after the join so it operates on the already-deduplicated winning
+    // row (the latest-filed filing per (fy, fp) pair).
+    let (is_amendment_values, normalized_form_values): (Vec<bool>, Vec<Option<String>>) = {
+        let form_col = pivot_df.column("form")?.str()?;
+        form_col
+            .into_iter()
+            .map(|opt| match opt {
+                Some(s) if s.ends_with("/A") => (true, Some(s[..s.len() - 2].to_string())),
+                Some(s) => (false, Some(s.to_string())),
+                None => (false, None),
+            })
+            .unzip()
+    };
+    pivot_df.with_column(Series::new("is_amendment".into(), is_amendment_values))?;
+    pivot_df.with_column(Series::new("form".into(), normalized_form_values))?;
 
-    pivot_df = pivot_df.lazy().with_column(fp_rank_expr).collect()?;
+    // Compute fp_rank using the shared sec-fetcher-shared crate so that all period
+    // token aliases (H1, H2, SA1, SA2, 6M, 12M, Q4, …) sort correctly.
+    // The old hardcoded Polars when/then only handled Q1–Q3 + FY, leaving Q4
+    // and all semi-annual/monthly tokens at rank 0 (wrong order).
+    let fp_ranks: Vec<i32> = pivot_df
+        .column("fp")?
+        .str()?
+        .into_iter()
+        .map(|opt| {
+            opt.and_then(parse_period_slot_token)
+                .map(|r| r as i32)
+                .unwrap_or(0)
+        })
+        .collect();
+    pivot_df.with_column(Series::new("fp_rank".into(), fp_ranks))?;
 
     // Sort by FY descending, then by our custom fp rank descending
     pivot_df = pivot_df.sort(
@@ -290,8 +302,10 @@ pub fn parse_us_gaap_fundamentals(
     pivot_df.with_column(Series::new("filing_url".into(), filing_urls))?;
 
     // Reorder columns to place metadata (canonical_order, fy, fp, period_end, filed, form, accn, filing_url) at the start
-    let mut desired_cols: Vec<String> =
-        US_GAAP_META_COLUMNS.iter().map(|s| s.to_string()).collect();
+    let mut desired_cols: Vec<String> = US_GAAP_CSV_META_COLUMNS
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
     let existing_cols = pivot_df.get_column_names();
 
     // Append all other fact columns
@@ -424,7 +438,8 @@ mod tests {
         assert_eq!(cols[3].as_str(), "period_end");
         assert_eq!(cols[4].as_str(), "filed");
         assert_eq!(cols[5].as_str(), "form");
-        assert_eq!(cols[6].as_str(), "accn");
+        assert_eq!(cols[6].as_str(), "is_amendment");
+        assert_eq!(cols[7].as_str(), "accn");
         assert!(cols.iter().any(|c| c.as_str() == "Revenue"));
 
         // 2. Validate row count: Should be 3 rows (2024 FY, 2024 Q3, 2024 Q2).
@@ -455,8 +470,18 @@ mod tests {
         // because the amendment has a later 'filed' date (2025-02-01 vs 2024-11-01)
         // and we sort by filed descending before pivoting.
         assert_eq!(revenue_col.get(1), Some("1600::USD"));
-        assert_eq!(accn_col.get(1), Some("000-2024-Q3-AMEND")); // Should be the amendment accn
+        assert_eq!(accn_col.get(1), Some("000-2024-Q3-AMEND"));
         assert_eq!(filed_col.get(1), Some("2025-02-01"));
+
+        // Amendment normalization: form must be the base type, is_amendment must reflect origin.
+        let form_col = df.column("form").unwrap().str().unwrap();
+        let is_amend_col = df.column("is_amendment").unwrap().bool().unwrap();
+        assert_eq!(form_col.get(0), Some("10-K")); // FY row, not amended
+        assert_eq!(is_amend_col.get(0), Some(false));
+        assert_eq!(form_col.get(1), Some("10-Q")); // Q3 row, came from 10-Q/A — stripped
+        assert_eq!(is_amend_col.get(1), Some(true));
+        assert_eq!(form_col.get(2), Some("10-Q")); // Q2 row, not amended
+        assert_eq!(is_amend_col.get(2), Some(false));
 
         // Check Row 2 (Should be 2024 Q2)
         assert_eq!(fy_col.get(2), Some(2024));
@@ -534,5 +559,82 @@ mod tests {
         assert!(accn_values.contains(&"standard-2023"));
         assert!(accn_values.contains(&"off-calendar-2024-q1"));
         assert!(!accn_values.contains(&"invalid-gap"));
+    }
+
+    #[test]
+    fn test_q4_fp_normalized_to_fy() {
+        // Some companies file a 10-Q/A for period Q4. The SEC tags fp="Q4" in
+        // companyfacts, but we normalize to "FY" so that the fp column is
+        // consistent for downstream consumers.  If the same company also has a
+        // genuine 10-K (fp="FY") for the same fiscal year, the amendment logic
+        // (filed DESC → UniqueKeepStrategy::First) already picks the latest one —
+        // after normalization both rows compete on the same (fy, fp="FY") key.
+        let mock_json = json!({
+            "cik": 9999,
+            "entityName": "Q4 Filer Corp",
+            "facts": {
+                "us-gaap": {
+                    "Revenue": {
+                        "label": "Revenue",
+                        "units": {
+                            "USD": [
+                                // Q3 — normal quarterly row, must not be touched.
+                                {
+                                    "val": 500.0,
+                                    "end": "2022-09-30",
+                                    "fy": 2022,
+                                    "fp": "Q3",
+                                    "form": "10-Q",
+                                    "filed": "2022-11-01",
+                                    "accn": "000-2022-Q3"
+                                },
+                                // Year-end tagged Q4 by the SEC — must be normalized to FY.
+                                {
+                                    "val": 2000.0,
+                                    "end": "2022-12-31",
+                                    "fy": 2022,
+                                    "fp": "Q4",
+                                    "form": "10-Q/A",
+                                    "filed": "2023-02-01",
+                                    "accn": "000-2022-Q4"
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        });
+
+        let df = parse_us_gaap_fundamentals(mock_json).expect("parse failed");
+
+        // Two distinct periods: FY (was Q4) and Q3.
+        assert_eq!(
+            df.height(),
+            2,
+            "Q4 and FY must not produce two separate rows"
+        );
+
+        let fp_col = df.column("fp").unwrap().str().unwrap();
+        let fp_values: Vec<&str> = fp_col.into_iter().flatten().collect();
+
+        // Q4 must have been renamed to FY.
+        assert!(
+            fp_values.contains(&"FY"),
+            "Q4 must be normalized to FY, got {:?}",
+            fp_values
+        );
+        assert!(
+            !fp_values.contains(&"Q4"),
+            "raw Q4 must not appear in fp column, got {:?}",
+            fp_values
+        );
+
+        // The normalized FY row must be row 0 (newest-first ordering).
+        assert_eq!(fp_col.get(0), Some("FY"));
+        assert_eq!(fp_col.get(1), Some("Q3"));
+
+        // is_amendment must be true for the Q4/FY row (came from a 10-Q/A).
+        let is_amend_col = df.column("is_amendment").unwrap().bool().unwrap();
+        assert_eq!(is_amend_col.get(0), Some(true));
     }
 }
