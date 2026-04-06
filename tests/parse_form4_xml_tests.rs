@@ -13,6 +13,7 @@
 
 use chrono::NaiveDate;
 use flate2::read::GzDecoder;
+use indoc::indoc;
 use rust_decimal_macros::dec;
 use sec_fetcher::models::Form4Transaction;
 use sec_fetcher::parsers::parse_form4_xml;
@@ -199,29 +200,31 @@ fn empty_xml_returns_empty_vec() {
 #[test]
 fn invalid_transaction_date_parses_to_none() {
     // No real EDGAR Form 4 has a malformed date, so we exercise this path inline.
-    let xml = r#"<?xml version="1.0"?><ownershipDocument>
-  <reportingOwner>
-    <reportingOwnerId>
-      <rptOwnerCik>0001</rptOwnerCik>
-      <rptOwnerName>Test User</rptOwnerName>
-    </reportingOwnerId>
-    <reportingOwnerRelationship>
-      <isDirector>0</isDirector><isOfficer>0</isOfficer><is10PercentOwner>0</is10PercentOwner>
-    </reportingOwnerRelationship>
-  </reportingOwner>
-  <nonDerivativeTable>
-    <nonDerivativeTransaction>
-      <securityTitle><value>Common Stock</value></securityTitle>
-      <transactionDate><value>not-a-date</value></transactionDate>
-      <transactionCoding><transactionCode>P</transactionCode></transactionCoding>
-      <transactionAmounts>
-        <transactionShares><value>100</value></transactionShares>
-        <transactionPricePerShare><value>50</value></transactionPricePerShare>
-        <transactionAcquiredDisposedCode><value>A</value></transactionAcquiredDisposedCode>
-      </transactionAmounts>
-    </nonDerivativeTransaction>
-  </nonDerivativeTable>
-</ownershipDocument>"#;
+    let xml = indoc! {r#"
+        <?xml version="1.0"?><ownershipDocument>
+          <reportingOwner>
+            <reportingOwnerId>
+              <rptOwnerCik>0001</rptOwnerCik>
+              <rptOwnerName>Test User</rptOwnerName>
+            </reportingOwnerId>
+            <reportingOwnerRelationship>
+              <isDirector>0</isDirector><isOfficer>0</isOfficer><is10PercentOwner>0</is10PercentOwner>
+            </reportingOwnerRelationship>
+          </reportingOwner>
+          <nonDerivativeTable>
+            <nonDerivativeTransaction>
+              <securityTitle><value>Common Stock</value></securityTitle>
+              <transactionDate><value>not-a-date</value></transactionDate>
+              <transactionCoding><transactionCode>P</transactionCode></transactionCoding>
+              <transactionAmounts>
+                <transactionShares><value>100</value></transactionShares>
+                <transactionPricePerShare><value>50</value></transactionPricePerShare>
+                <transactionAcquiredDisposedCode><value>A</value></transactionAcquiredDisposedCode>
+              </transactionAmounts>
+            </nonDerivativeTransaction>
+          </nonDerivativeTable>
+        </ownershipDocument>
+    "#};
     let result = parse_form4_xml(xml, None).unwrap();
     assert_eq!(result.len(), 1);
     assert!(result[0].transaction_date.is_none());
@@ -232,30 +235,32 @@ fn invalid_transaction_date_parses_to_none() {
 /// on both transactions (a charitable gift and an RSU grant).
 #[test]
 fn positive_price_round_trips_as_some_exact_value() {
-    let xml = r#"<?xml version="1.0"?><ownershipDocument>
-  <reportingOwner>
-    <reportingOwnerId>
-      <rptOwnerCik>0001111111</rptOwnerCik>
-      <rptOwnerName>Seller Person</rptOwnerName>
-    </reportingOwnerId>
-    <reportingOwnerRelationship>
-      <isDirector>0</isDirector><isOfficer>1</isOfficer>
-      <officerTitle>CFO</officerTitle><is10PercentOwner>0</is10PercentOwner>
-    </reportingOwnerRelationship>
-  </reportingOwner>
-  <nonDerivativeTable>
-    <nonDerivativeTransaction>
-      <securityTitle><value>Common Stock</value></securityTitle>
-      <transactionDate><value>2025-06-15</value></transactionDate>
-      <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
-      <transactionAmounts>
-        <transactionShares><value>500</value></transactionShares>
-        <transactionPricePerShare><value>189.47</value></transactionPricePerShare>
-        <transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode>
-      </transactionAmounts>
-    </nonDerivativeTransaction>
-  </nonDerivativeTable>
-</ownershipDocument>"#;
+    let xml = indoc! {r#"
+        <?xml version="1.0"?><ownershipDocument>
+          <reportingOwner>
+            <reportingOwnerId>
+              <rptOwnerCik>0001111111</rptOwnerCik>
+              <rptOwnerName>Seller Person</rptOwnerName>
+            </reportingOwnerId>
+            <reportingOwnerRelationship>
+              <isDirector>0</isDirector><isOfficer>1</isOfficer>
+              <officerTitle>CFO</officerTitle><is10PercentOwner>0</is10PercentOwner>
+            </reportingOwnerRelationship>
+          </reportingOwner>
+          <nonDerivativeTable>
+            <nonDerivativeTransaction>
+              <securityTitle><value>Common Stock</value></securityTitle>
+              <transactionDate><value>2025-06-15</value></transactionDate>
+              <transactionCoding><transactionCode>S</transactionCode></transactionCoding>
+              <transactionAmounts>
+                <transactionShares><value>500</value></transactionShares>
+                <transactionPricePerShare><value>189.47</value></transactionPricePerShare>
+                <transactionAcquiredDisposedCode><value>D</value></transactionAcquiredDisposedCode>
+              </transactionAmounts>
+            </nonDerivativeTransaction>
+          </nonDerivativeTable>
+        </ownershipDocument>
+    "#};
     let result = parse_form4_xml(xml, None).unwrap();
     assert_eq!(result.len(), 1);
     let txn = &result[0];
@@ -268,4 +273,63 @@ fn positive_price_round_trips_as_some_exact_value() {
     // Shares must be the shares field value, not contaminated by the price.
     assert_eq!(txn.shares, dec!(500));
     assert_ne!(txn.shares, dec!(189));
+    // The XML above has isOfficer=1 / officerTitle=CFO — assert those too so a
+    // parser that always returns is_officer=false / officer_title=None is caught.
+    assert!(txn.is_officer, "isOfficer=1 in XML must parse to true");
+    assert!(!txn.is_director, "isDirector=0 in XML must parse to false");
+    assert_eq!(
+        txn.officer_title.as_deref(),
+        Some("CFO"),
+        "officerTitle must be Some(\"CFO\") when isOfficer=1"
+    );
+    assert_ne!(
+        txn.officer_title, None,
+        "officer_title must not be None when isOfficer=1"
+    );
+}
+
+/// `is10PercentOwner=1` must parse to `is_ten_pct_owner=true`.
+/// The real Levinson fixture always has 0 here, so we use a minimal inline fixture.
+#[test]
+fn is_ten_pct_owner_true_parsed_from_xml() {
+    let xml = indoc! {r#"
+        <?xml version="1.0"?><ownershipDocument>
+          <reportingOwner>
+            <reportingOwnerId>
+              <rptOwnerCik>0005555555</rptOwnerCik>
+              <rptOwnerName>Large Holder</rptOwnerName>
+            </reportingOwnerId>
+            <reportingOwnerRelationship>
+              <isDirector>0</isDirector><isOfficer>0</isOfficer><is10PercentOwner>1</is10PercentOwner>
+            </reportingOwnerRelationship>
+          </reportingOwner>
+          <nonDerivativeTable>
+            <nonDerivativeTransaction>
+              <securityTitle><value>Common Stock</value></securityTitle>
+              <transactionDate><value>2025-01-10</value></transactionDate>
+              <transactionCoding><transactionCode>P</transactionCode></transactionCoding>
+              <transactionAmounts>
+                <transactionShares><value>1000</value></transactionShares>
+                <transactionPricePerShare><value>50.00</value></transactionPricePerShare>
+                <transactionAcquiredDisposedCode><value>A</value></transactionAcquiredDisposedCode>
+              </transactionAmounts>
+            </nonDerivativeTransaction>
+          </nonDerivativeTable>
+        </ownershipDocument>
+    "#};
+    let result = parse_form4_xml(xml, None).unwrap();
+    assert_eq!(result.len(), 1);
+    let txn = &result[0];
+    assert!(
+        txn.is_ten_pct_owner,
+        "is10PercentOwner=1 in XML must parse to is_ten_pct_owner=true"
+    );
+    assert!(!txn.is_director);
+    assert!(!txn.is_officer);
+    assert!(txn.officer_title.is_none());
+    // Cross-check: the inline fixture explicitly has is10PercentOwner=1, so true is expected.
+    assert!(
+        txn.is_ten_pct_owner,
+        "sanity: just confirmed the inline fixture gives true"
+    );
 }

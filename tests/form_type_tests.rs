@@ -111,6 +111,14 @@ fn aapl_fixture_contains_expected_form_types() {
             ft
         );
     }
+
+    // Apple is an operating company — it must never appear in investment-company
+    // specific filing types.  This verifies `present` is not a superset that
+    // contains everything (which would make the positive assertions above trivially pass).
+    assert!(
+        !present.contains(&FormType::NportP),
+        "AAPL should not have NPORT-P filings (that form is only for investment companies)"
+    );
 }
 
 /// The raw `form` field on each `CikSubmission` must parse to a `FormType`

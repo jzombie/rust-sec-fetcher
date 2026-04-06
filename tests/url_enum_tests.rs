@@ -20,8 +20,15 @@ fn accn(cik_val: u64, year: u16, seq: u32) -> AccessionNumber {
 #[test]
 fn investment_company_dataset_url() {
     let url = Url::InvestmentCompanySeriesAndClassDataset(2025).value();
-    assert!(url.contains("investment-company-series-class-2025.csv"));
-    assert!(url.starts_with("https://www.sec.gov/files/investment/data/"));
+    assert_eq!(
+        url,
+        "https://www.sec.gov/files/investment/data/other/investment-company-series-and-class-information/investment-company-series-class-2025.csv"
+    );
+    // Year is embedded — a different year must produce a different URL.
+    assert_ne!(
+        url,
+        Url::InvestmentCompanySeriesAndClassDataset(2024).value()
+    );
 }
 
 #[test]
@@ -42,30 +49,44 @@ fn cik_submission_page_url() {
 #[test]
 fn cik_accession_url() {
     let url = Url::CikAccession(cik(320193), accn(320193, 24, 123456)).value();
-    assert!(url.contains("/Archives/edgar/data/0000320193/"));
-    assert!(url.starts_with("https://www.sec.gov/"));
+    assert_eq!(
+        url,
+        "https://www.sec.gov/Archives/edgar/data/0000320193/000032019324123456"
+    );
+    // Plain accession URL must not include the index-page suffix.
+    assert!(!url.ends_with("-index.htm"));
 }
 
 #[test]
 fn cik_accession_index_url() {
     let a = accn(320193, 24, 123456);
-    let url = Url::CikAccessionIndex(cik(320193), a.clone()).value();
-    assert!(url.ends_with("-index.htm"));
-    assert!(url.contains(&a.to_string()));
+    let url = Url::CikAccessionIndex(cik(320193), a).value();
+    assert_eq!(
+        url,
+        "https://www.sec.gov/Archives/edgar/data/0000320193/000032019324123456/0000320193-24-123456-index.htm"
+    );
 }
 
 #[test]
 fn cik_accession_primary_document_url() {
     let a = accn(320193, 24, 123456);
     let url = Url::CikAccessionPrimaryDocument(cik(320193), a).value();
-    assert!(url.ends_with("/primary_doc.xml"));
+    assert_eq!(
+        url,
+        "https://www.sec.gov/Archives/edgar/data/0000320193/000032019324123456/primary_doc.xml"
+    );
 }
 
 #[test]
 fn cik_accession_document_url() {
     let a = accn(320193, 24, 123456);
     let url = Url::CikAccessionDocument(cik(320193), a, "report.htm".to_string()).value();
-    assert!(url.ends_with("/report.htm"));
+    assert_eq!(
+        url,
+        "https://www.sec.gov/Archives/edgar/data/0000320193/000032019324123456/report.htm"
+    );
+    // Named-document URL must not collide with the primary-document URL.
+    assert!(!url.ends_with("/primary_doc.xml"));
 }
 
 #[test]
@@ -97,10 +118,13 @@ fn edgar_current_feed_url() {
         before: String::new(),
     }
     .value();
-    assert!(url.contains("action=getcurrent"));
-    assert!(url.contains("type=8-K"));
-    assert!(url.contains("count=40"));
-    assert!(url.contains("output=atom"));
+    assert_eq!(
+        url,
+        "https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=8-K&dateb=&owner=include&count=40&search_text=&output=atom"
+    );
+    // Must use getcurrent action, not getcompany, and must not contain a CIK.
+    assert!(!url.contains("action=getcompany"));
+    assert!(!url.contains("CIK="));
 }
 
 #[test]
@@ -112,10 +136,12 @@ fn edgar_company_feed_url() {
         before: String::new(),
     }
     .value();
-    assert!(url.contains("action=getcompany"));
-    assert!(url.contains("CIK=0000320193"));
-    assert!(url.contains("type=10-K"));
-    assert!(url.contains("count=10"));
+    assert_eq!(
+        url,
+        "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000320193&type=10-K&dateb=&owner=include&count=10&search_text=&output=atom"
+    );
+    // Must use getcompany action, not getcurrent.
+    assert!(!url.contains("action=getcurrent"));
 }
 
 #[test]

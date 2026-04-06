@@ -1,5 +1,6 @@
 use chrono::DateTime;
 use indoc::formatdoc;
+use indoc::indoc;
 use sec_fetcher::models::FeedEntry;
 use sec_fetcher::network::{EDGAR_PAGE_SIZE, FeedDelta, parse_edgar_atom_feed};
 
@@ -82,6 +83,34 @@ fn parse_single_entry() {
     assert_eq!(entries[0].accession_number, "0001104659-26-027766");
     assert_eq!(entries[0].form_type, "8-K");
     assert_eq!(entries[0].company_name, "Test Corp");
+}
+
+#[test]
+fn form_type_and_company_name_vary_with_feed_content() {
+    // make_feed() always emits "8-K - Test Corp …" so we need a hand-rolled
+    // entry to prove the parser reads the actual <category> and <title> fields
+    // rather than returning a hardcoded default.
+    let xml = indoc! {r#"
+        <?xml version="1.0" encoding="UTF-8"?>
+        <feed xmlns="http://www.w3.org/2005/Atom">
+          <title>EDGAR</title>
+          <updated>2026-03-15T18:00:00-04:00</updated>
+          <entry>
+            <title>10-K - Acme Industries (0009876543) (Filer)</title>
+            <updated>2026-03-14T12:00:00-04:00</updated>
+            <id>urn:tag:sec.gov,2008:accession-number=0001000001-26-000099</id>
+            <link href="https://www.sec.gov/Archives/edgar/data/9876543/0001000001-26-000099/"/>
+            <summary type="html">Filed: 2026-03-14 AccNo: 0001000001-26-000099</summary>
+            <category term="10-K"/>
+          </entry>
+        </feed>
+    "#};
+    let entries = parse_edgar_atom_feed(xml).unwrap();
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].form_type, "10-K");
+    assert_eq!(entries[0].company_name, "Acme Industries");
+    assert_ne!(entries[0].form_type, "8-K");
+    assert_ne!(entries[0].company_name, "Test Corp");
 }
 
 #[test]

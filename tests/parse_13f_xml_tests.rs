@@ -248,19 +248,23 @@ fn fractional_weights_rounded_to_4dp() {
   </infoTable>
 </informationTable>"#;
     let holdings = parse_13f_xml(THIRDS, None).unwrap();
-    // ALPHA: 2/3 * 100 = 66.6667 (rounded), BETA: 1/3 * 100 = 33.3333
+    // ALPHA: 2/3 * 100 = 66.6666...% → rounds to 66.6667 at 4dp
+    // BETA:  1/3 * 100 = 33.3333...% → rounds to 33.3333 at 4dp
     let alpha = holdings.iter().find(|h| h.cusip == "000000001").unwrap();
     let beta = holdings.iter().find(|h| h.cusip == "000000002").unwrap();
 
-    // Scale is 0-100; Pct enforces scale (not bounds).
-    assert!(
-        alpha.weight_pct.value() > dec!(60),
-        "2/3 share should be >60%"
+    assert_eq!(
+        alpha.weight_pct.value(),
+        dec!(66.6667),
+        "2/3 share must round to 66.6667"
     );
-    assert!(
-        beta.weight_pct.value() > dec!(30),
-        "1/3 share should be >30%"
+    assert_eq!(
+        beta.weight_pct.value(),
+        dec!(33.3333),
+        "1/3 share must round to 33.3333"
     );
+    // Cross-check: distinct inputs must produce distinct outputs.
+    assert_ne!(alpha.weight_pct.value(), beta.weight_pct.value());
     // 4 decimal places
     assert_eq!(
         alpha.weight_pct.value().scale(),
