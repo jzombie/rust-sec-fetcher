@@ -259,6 +259,19 @@ pub fn parse_period(period: &str) -> Result<Period, String> {
 /// (which vary per company) and must be treated as non-fact bookkeeping data.
 ///
 /// The order here is canonical: both the writer and reader rely on it.
+///
+/// ## Row ordering convention
+///
+/// Rows are written **newest-first** (reverse chronological).  The primary
+/// sort key is `(fy DESC, fp_rank DESC)` where `fp_rank` is the integer
+/// returned by [`parse_period_slot_token`] for the `fp` field.
+///
+/// `canonical_order` is a **0-based physical row index**: the first row has
+/// `canonical_order = 0`, the second `1`, and so on.  It encodes the
+/// newest-first position assigned at write time and is the bridge between the
+/// on-disk row position and the runtime `local_idx` used for global-ID lookups.
+/// A mismatch between the stored value and the actual row position indicates
+/// that the file has been rewritten or reordered without updating this column.
 pub const US_GAAP_CSV_META_COLUMNS: &[&str] = &[
     "canonical_order",
     "fy",
