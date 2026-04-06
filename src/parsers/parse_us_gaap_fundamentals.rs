@@ -10,13 +10,21 @@ pub type TickerFundamentalsDataFrame = DataFrame;
 
 // TODO: Include potential support for Form 10-SA or whatever will be used for semi-annual reporting
 
-/// Parses a US GAAP fundamentals JSON object into a Polars DataFrame.
+/// Parses a US GAAP fundamentals JSON object into a Polars DataFrame containing
+/// **periodic time-series financial data** (10-K, 10-Q, and related amendments).
+///
+/// Event-driven filings (8-K and 8-K/A) are excluded during extraction.  They do
+/// not carry a canonical fiscal period (`fp` is typically blank), are sparsely
+/// tagged, and often duplicate values already present in the authoritative periodic
+/// filing for the same period.  Only periodic filings that form a coherent
+/// time-series financial record are retained.
 ///
 /// # Sorting and Deduplication Logic
 /// The parser processes the JSON facts list and performs the following steps to ensure
 /// the DataFrame contains the most accurate and up-to-date information:
 ///
 /// 1. **Extraction**: All facts are extracted with their metadata (fy, fp, filed, accn).
+///    8-K / 8-K/A rows are skipped at this stage.
 /// 2. **Chronological Sorting (Filings)**: The intermediate DataFrame is sorted by the 'filed'
 ///    date in descending order (`.sort(["filed"], descending=true)`).
 /// 3. **Deduplication (Last-in Wins)**: When multiple records exist for the same fiscal period
@@ -55,6 +63,16 @@ pub fn parse_us_gaap_fundamentals(
                     if let Some(units) = fact_info["units"].as_object() {
                         for (unit, observations) in units {
                             for obs in observations.as_array().unwrap_or(&Vec::new()) {
+                                // Exclude event-driven filings: 8-K and 8-K/A do not
+                                // carry a canonical fiscal period and are not part of the
+                                // periodic time-series financial record.
+                                let obs_form = obs["form"].as_str().unwrap_or("");
+                                if obs_form.eq_ignore_ascii_case("8-K")
+                                    || obs_form.eq_ignore_ascii_case("8-K/A")
+                                {
+                                    continue;
+                                }
+
                                 let end_str = obs["end"].as_str().unwrap_or("").to_string();
                                 let end_year = if end_str.len() >= 4 {
                                     end_str[0..4].parse::<u64>().unwrap_or(0)

@@ -15,10 +15,14 @@ pub type TickerFundamentalsDataFrame = DataFrame;
 ///
 /// The SEC "company facts" endpoint
 /// (`https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json`) returns the
-/// complete set of **XBRL-tagged values** the company has disclosed in every
-/// periodic filing (10-K, 10-Q, 8-K, and others).  XBRL tagging is mandatory
-/// for all public companies, so this endpoint covers the full financial history
-/// available on EDGAR.
+/// complete set of **XBRL-tagged values** the company has disclosed in its
+/// periodic filings (10-K, 10-Q, and related amendments).  XBRL tagging is
+/// mandatory for all public companies, so this endpoint covers the full
+/// time-series financial history available on EDGAR.
+///
+/// Event-driven filings (8-K, 8-K/A) are excluded by the parser: they do not
+/// carry a canonical fiscal period and are not part of the periodic financial
+/// time-series.
 ///
 /// This is **structured financial data** — the numbers extracted from
 /// financial statements.  It is entirely separate from the filings/submissions
