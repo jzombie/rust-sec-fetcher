@@ -283,6 +283,9 @@ pub fn parse_period(period: &str) -> Result<Period, String> {
 /// on-disk row position and the runtime `local_idx` used for global-ID lookups.
 /// A mismatch between the stored value and the actual row position indicates
 /// that the file has been rewritten or reordered without updating this column.
+/// `is_amendment` (index 6): `true` when the winning row for this period came from an
+/// amendment filing (i.e. the original `form` value ended with `/A`, e.g. `"10-Q/A"`).
+/// The `form` column itself is normalised to the base type (`"10-Q"`).
 pub const US_GAAP_CSV_META_COLUMNS: &[&str] = &[
     "canonical_order",
     "fy",
@@ -290,6 +293,7 @@ pub const US_GAAP_CSV_META_COLUMNS: &[&str] = &[
     "period_end",
     "filed",
     "form",
+    "is_amendment",
     "accn",
     "filing_url",
 ];

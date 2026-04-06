@@ -223,6 +223,27 @@ pub fn parse_us_gaap_fundamentals(
         )
         .collect()?;
 
+    // Normalize the `form` column: strip the `/A` amendment suffix so that the
+    // base form type is stored (e.g. `"10-Q/A"` → `"10-Q"`).  The amendment fact
+    // is surfaced as a separate `is_amendment` boolean column so callers can still
+    // distinguish amended rows from originals.
+    //
+    // This runs after the join so it operates on the already-deduplicated winning
+    // row (the latest-filed filing per (fy, fp) pair).
+    let (is_amendment_values, normalized_form_values): (Vec<bool>, Vec<Option<String>>) = {
+        let form_col = pivot_df.column("form")?.str()?;
+        form_col
+            .into_iter()
+            .map(|opt| match opt {
+                Some(s) if s.ends_with("/A") => (true, Some(s[..s.len() - 2].to_string())),
+                Some(s) => (false, Some(s.to_string())),
+                None => (false, None),
+            })
+            .unzip()
+    };
+    pivot_df.with_column(Series::new("is_amendment".into(), is_amendment_values))?;
+    pivot_df.with_column(Series::new("form".into(), normalized_form_values))?;
+
     // Compute fp_rank using the shared sec-fetcher-shared crate so that all period
     // token aliases (H1, H2, SA1, SA2, 6M, 12M, Q4, …) sort correctly.
     // The old hardcoded Polars when/then only handled Q1–Q3 + FY, leaving Q4
@@ -414,7 +435,8 @@ mod tests {
         assert_eq!(cols[3].as_str(), "period_end");
         assert_eq!(cols[4].as_str(), "filed");
         assert_eq!(cols[5].as_str(), "form");
-        assert_eq!(cols[6].as_str(), "accn");
+        assert_eq!(cols[6].as_str(), "is_amendment");
+        assert_eq!(cols[7].as_str(), "accn");
         assert!(cols.iter().any(|c| c.as_str() == "Revenue"));
 
         // 2. Validate row count: Should be 3 rows (2024 FY, 2024 Q3, 2024 Q2).
@@ -445,8 +467,18 @@ mod tests {
         // because the amendment has a later 'filed' date (2025-02-01 vs 2024-11-01)
         // and we sort by filed descending before pivoting.
         assert_eq!(revenue_col.get(1), Some("1600::USD"));
-        assert_eq!(accn_col.get(1), Some("000-2024-Q3-AMEND")); // Should be the amendment accn
+        assert_eq!(accn_col.get(1), Some("000-2024-Q3-AMEND"));
         assert_eq!(filed_col.get(1), Some("2025-02-01"));
+
+        // Amendment normalization: form must be the base type, is_amendment must reflect origin.
+        let form_col = df.column("form").unwrap().str().unwrap();
+        let is_amend_col = df.column("is_amendment").unwrap().bool().unwrap();
+        assert_eq!(form_col.get(0), Some("10-K")); // FY row, not amended
+        assert_eq!(is_amend_col.get(0), Some(false));
+        assert_eq!(form_col.get(1), Some("10-Q")); // Q3 row, came from 10-Q/A — stripped
+        assert_eq!(is_amend_col.get(1), Some(true));
+        assert_eq!(form_col.get(2), Some("10-Q")); // Q2 row, not amended
+        assert_eq!(is_amend_col.get(2), Some(false));
 
         // Check Row 2 (Should be 2024 Q2)
         assert_eq!(fy_col.get(2), Some(2024));
