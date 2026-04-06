@@ -53,8 +53,10 @@ pub(super) fn render_html_to_clean_markdown(html: &str) -> Result<String, Box<dy
         ..Default::default()
     };
 
-    let md = convert(&clean, Some(options))
+    let result = convert(&clean, Some(options))
         .map_err(|e| format!("HTML→Markdown conversion failed: {}", e))?;
+
+    let md = result.content.unwrap_or_default();
 
     Ok(collapse_blank_lines(&md))
 }
