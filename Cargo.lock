@@ -3608,6 +3608,7 @@ dependencies = [
  "rust_decimal",
  "rust_decimal_macros",
  "schemars 1.2.1",
+ "sec-fetcher-shared",
  "serde",
  "serde_json",
  "serde_with",
@@ -3620,6 +3621,10 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
 ]
+
+[[package]]
+name = "sec-fetcher-shared"
+version = "0.2.0-alpha"
 
 [[package]]
 name = "security-framework"

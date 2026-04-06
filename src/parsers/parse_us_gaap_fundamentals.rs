@@ -2,23 +2,11 @@ use crate::enums::Url;
 use crate::models::{AccessionNumber, Cik};
 use polars::prelude::pivot::pivot;
 use polars::prelude::*;
+use sec_fetcher_shared::{US_GAAP_CSV_META_COLUMNS, parse_period_slot_token};
 use serde_json::Value;
 use std::error::Error;
 
 pub type TickerFundamentalsDataFrame = DataFrame;
-
-/// The ordered set of metadata columns present in every US-GAAP fundamentals
-/// DataFrame. These columns precede the XBRL fact columns, which vary by company.
-pub const US_GAAP_META_COLUMNS: &[&str] = &[
-    "canonical_order",
-    "fy",
-    "fp",
-    "period_end",
-    "filed",
-    "form",
-    "accn",
-    "filing_url",
-];
 
 // TODO: Include potential support for Form 10-SA or whatever will be used for semi-annual reporting
 
@@ -235,21 +223,21 @@ pub fn parse_us_gaap_fundamentals(
         )
         .collect()?;
 
-    // Create a ranking column for 'fp' to ensure correct chronological sorting
-    // Order: FY (latest) -> Q3 -> Q2 -> Q1
-    // We assign higher numbers to later periods and sort descending.
-    let fp_rank_expr = when(col("fp").eq(lit("FY")))
-        .then(lit(4))
-        .when(col("fp").eq(lit("Q3")))
-        .then(lit(3))
-        .when(col("fp").eq(lit("Q2")))
-        .then(lit(2))
-        .when(col("fp").eq(lit("Q1")))
-        .then(lit(1))
-        .otherwise(lit(0))
-        .alias("fp_rank");
-
-    pivot_df = pivot_df.lazy().with_column(fp_rank_expr).collect()?;
+    // Compute fp_rank using the shared sec-fetcher-shared crate so that all period
+    // token aliases (H1, H2, SA1, SA2, 6M, 12M, Q4, …) sort correctly.
+    // The old hardcoded Polars when/then only handled Q1–Q3 + FY, leaving Q4
+    // and all semi-annual/monthly tokens at rank 0 (wrong order).
+    let fp_ranks: Vec<i32> = pivot_df
+        .column("fp")?
+        .str()?
+        .into_iter()
+        .map(|opt| {
+            opt.and_then(parse_period_slot_token)
+                .map(|r| r as i32)
+                .unwrap_or(0)
+        })
+        .collect();
+    pivot_df.with_column(Series::new("fp_rank".into(), fp_ranks))?;
 
     // Sort by FY descending, then by our custom fp rank descending
     pivot_df = pivot_df.sort(
@@ -291,7 +279,7 @@ pub fn parse_us_gaap_fundamentals(
 
     // Reorder columns to place metadata (canonical_order, fy, fp, period_end, filed, form, accn, filing_url) at the start
     let mut desired_cols: Vec<String> =
-        US_GAAP_META_COLUMNS.iter().map(|s| s.to_string()).collect();
+        US_GAAP_CSV_META_COLUMNS.iter().map(|s| s.to_string()).collect();
     let existing_cols = pivot_df.get_column_names();
 
     // Append all other fact columns

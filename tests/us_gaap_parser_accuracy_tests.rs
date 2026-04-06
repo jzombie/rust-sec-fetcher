@@ -1,6 +1,7 @@
 use flate2::read::GzDecoder;
 use polars::prelude::*;
-use sec_fetcher::parsers::{US_GAAP_META_COLUMNS, parse_us_gaap_fundamentals};
+use sec_fetcher::parsers::{parse_us_gaap_fundamentals};
+use sec_fetcher_shared::US_GAAP_CSV_META_COLUMNS;
 use serde_json::Value;
 use serde_json::json;
 use std::fs::File;
@@ -30,7 +31,7 @@ fn load_fixture(name: &str) -> Value {
 /// DataFrame is missing a fact that exists in the JSON (unless that fact causes a mismatch in existing cells).
 fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
     // 1. Get list of fact columns (excluding metadata)
-    let meta_cols = US_GAAP_META_COLUMNS;
+    let meta_cols = US_GAAP_CSV_META_COLUMNS;
     // df.get_column_names() returns a slice of &PlSmallStr in recent Polars
     let all_cols = df.get_column_names();
 
