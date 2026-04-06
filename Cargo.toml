@@ -14,7 +14,7 @@ autobins = false
 members = ["sec-fetcher-shared"]
 
 [workspace.package]
-version = "0.2.0-alpha"
+version = "0.3.0-alpha"
 edition = "2024"
 authors = ["Jeremy Harris <jeremy.harris@zenosmosis.com>"]
 repository = "https://github.com/jzombie/rust-sec-fetcher"
@@ -24,7 +24,7 @@ keywords = ["sec", "edgar", "finance", "filings", "stocks"]
 categories = ["api-bindings", "finance", "web-programming"]
 
 [workspace.dependencies]
-sec-fetcher-shared = { path = "sec-fetcher-shared", version = "0.2.0-alpha" }
+sec-fetcher-shared = { path = "sec-fetcher-shared", version = "0.3.0-alpha" }
 
 # ── Stabilized utility bins ───────────────────────────────────────────────────
 
