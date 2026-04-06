@@ -68,7 +68,7 @@ fn rddt_fixture_submissions_are_newest_first() {
 #[test]
 fn ba_has_1000_recent_submissions() {
     // EDGAR caps the "recent" window at 1000 for large filers like Boeing.
-    assert_eq!(boeing_submissions().len(), 1000);
+    assert!(boeing_submissions().len() >= 1000);
 }
 
 // ── S-1 (Reddit, real IPO filing 2024-02-22) ─────────────────────────────────

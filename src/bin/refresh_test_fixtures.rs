@@ -85,6 +85,19 @@ enum FixtureKind {
     /// | transition | `0000950123-23-002585` | 2023-02-14 | `<value>` in **actual USD** (first modern) |
     /// | modern | `0001193125-26-054580` | 2026-02-17 | `<value>` in **actual USD** |
     ThirteenF { accession: &'static str },
+    /// Raw Form 4 ownership-document XML (not the XSL-rendered version under `xslF345X05/`).
+    ///
+    /// `accession` must be a full formatted accession number string
+    /// (e.g. `"0001214128-26-000004"`).  The issuer's CIK is resolved from
+    /// the `ticker` field; the filing index is then fetched to discover
+    /// the raw XML filename.
+    Form4Xml { accession: &'static str },
+    /// Raw text of the EDGAR full-index `master.idx` for the given quarter.
+    /// The `ticker` field is not used for URL construction; pass any valid ticker.
+    MasterIdx { year: u16, quarter: u8 },
+    /// `https://www.sec.gov/files/company_tickers.json`.
+    /// The `ticker` field is not used for URL construction; pass any valid ticker.
+    CompanyTickersJson,
 }
 
 const FIXTURES: &[Fixture] = &[
@@ -168,6 +181,42 @@ const FIXTURES: &[Fixture] = &[
         kind: FixtureKind::ThirteenF {
             // Q4-2025: filed 2026-02-17.  Recent filing confirming modern schema.
             accession: "0001193125-26-054580",
+        },
+    },
+    // ── Form 4 XML (ownership document) ──────────────────────────────────────
+    //
+    // AAPL director Arthur D. Levinson (CIK 0001214128), filed 2026-02-26.
+    // Contains:
+    //   • nonDerivativeTransaction: Common Stock, gift code G, 1113 sh disposed, 4 069 576 after
+    //   • derivativeTransaction:    RSU grant code A, 1011 sh acquired, is_derivative = true
+    Fixture {
+        output: "AAPL_form4_levinson.xml",
+        ticker: "AAPL",
+        kind: FixtureKind::Form4Xml {
+            accession: "0001214128-26-000004",
+        },
+    },
+    // ── company_tickers.json ──────────────────────────────────────────────────
+    //
+    // Full operating-company ticker listing (~10 000 entries).  Anchored against
+    // AAPL (CIK 320193), MSFT (CIK 789019), and NVDA (CIK 1045810).
+    Fixture {
+        output: "company_tickers.json",
+        ticker: "AAPL", // ticker not used for URL construction
+        kind: FixtureKind::CompanyTickersJson,
+    },
+    // ── master.idx quarterly snapshot ────────────────────────────────────────
+    //
+    // Q4 2025 (Oct–Dec 2025).  Known anchors:
+    //   • AAPL 10-K   accn=0000320193-25-000079  filed 2025-10-31
+    //   • AAPL  8-K   accn=0000320193-25-000077  filed 2025-10-30
+    //   • MSFT 10-Q   accn=0001193125-25-256321  filed 2025-10-29
+    Fixture {
+        output: "master_idx_2025_Q4.idx",
+        ticker: "AAPL", // ticker not used for URL construction
+        kind: FixtureKind::MasterIdx {
+            year: 2025,
+            quarter: 4,
         },
     },
 ];
@@ -257,6 +306,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Url::CikAccessionDocument(sub.cik, sub.accession_number, info_doc.name.clone())
                     .value()
             }
+            FixtureKind::Form4Xml { accession } => {
+                let acc_num = AccessionNumber::from_str(accession)
+                    .map_err(|e| format!("Invalid accession '{}': {}", accession, e))?;
+                let sub = CikSubmission {
+                    cik: cik.clone(),
+                    entity_type: None,
+                    accession_number: acc_num,
+                    form: "4".to_string(),
+                    primary_document: "primary_doc.xml".to_string(),
+                    filing_date: None,
+                    items: vec![],
+                };
+                let index = fetch_filing_index(&client, &sub).await?;
+                // The raw ownership XML sits in the filing root; the XSL-rendered
+                // copy is under an xslF345X05/ subdirectory and is not listed in
+                // the filing index documents array.
+                let xml_doc = index
+                    .documents
+                    .iter()
+                    .find(|d| d.name.ends_with(".xml"))
+                    .ok_or_else(|| {
+                        format!(
+                            "No XML document in Form 4 filing index for accession {}",
+                            accession
+                        )
+                    })?;
+                Url::CikAccessionDocument(sub.cik, sub.accession_number, xml_doc.name.clone())
+                    .value()
+            }
+            FixtureKind::MasterIdx { year, quarter } => {
+                Url::EdgarFullIndex { year, quarter }.value()
+            }
+            FixtureKind::CompanyTickersJson => Url::CompanyTickersJson.value(),
         };
 
         let response = client
