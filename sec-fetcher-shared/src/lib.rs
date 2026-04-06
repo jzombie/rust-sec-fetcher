@@ -149,6 +149,61 @@ pub fn parse_period_slot_token(s: &str) -> Option<i64> {
     parse_period_slot(s).map(PeriodSlot::normalized_quarter)
 }
 
+/// Normalises a raw SEC `fp` token to its canonical CSV label.
+///
+/// The only transformation currently applied is **`Q4` → `FY`**: the SEC tags
+/// some year-end filings as `"Q4"` (typically via a 10-Q/A) rather than the
+/// standard `"FY"` used by annual 10-K filings.  Both map to the same
+/// period-slot rank (4) and refer to the same fiscal year-end point, so the
+/// canonical form is `"FY"` for consistency in downstream CSV consumers.
+///
+/// All other tokens are returned unchanged (preserving case as-is from the
+/// API, e.g. `"Q1"`, `"H1"`, `"SA2"`).
+///
+/// ```
+/// use sec_fetcher_shared::normalize_fp_label;
+/// assert_eq!(normalize_fp_label("Q4"), "FY");
+/// assert_eq!(normalize_fp_label("q4"), "FY");
+/// assert_eq!(normalize_fp_label("FY"),  "FY");
+/// assert_eq!(normalize_fp_label("Q3"),  "Q3");
+/// assert_eq!(normalize_fp_label("H1"),  "H1");
+/// ```
+pub fn normalize_fp_label(fp: &str) -> String {
+    if fp.trim().eq_ignore_ascii_case("Q4") {
+        "FY".to_string()
+    } else {
+        fp.to_string()
+    }
+}
+
+/// Returns the set of candidate ticker symbols that a raw input string might
+/// resolve to, normalised to uppercase and with `.`/`-` variants generated.
+///
+/// EDGAR and data providers use both `.` and `-` as separators in class-share
+/// tickers (e.g. `BRK.B` vs `BRK-B`).  This function always returns both
+/// forms so callers only need a single lookup rather than separate tries.
+///
+/// ```
+/// use sec_fetcher_shared::normalize_symbol;
+/// let c = normalize_symbol("brk.b");
+/// assert!(c.contains(&"BRK.B".to_string()));
+/// assert!(c.contains(&"BRK-B".to_string()));
+/// ```
+pub fn normalize_symbol(symbol: &str) -> Vec<String> {
+    let upper = symbol.to_ascii_uppercase();
+    let dot_to_dash = upper.replace('.', "-");
+    let dash_to_dot = upper.replace('-', ".");
+
+    let mut set = std::collections::HashSet::new();
+    set.insert(upper);
+    set.insert(dot_to_dash);
+    set.insert(dash_to_dot);
+
+    let mut out: Vec<String> = set.into_iter().collect();
+    out.sort();
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -198,6 +253,34 @@ mod tests {
         assert_eq!(parse_period_slot_token("fy"), Some(4));
         assert_eq!(parse_period_slot_token("q2"), Some(2));
         assert_eq!(parse_period_slot_token("sa2"), Some(4));
+    }
+
+    #[test]
+    fn normalize_fp_label_maps_q4_to_fy() {
+        assert_eq!(normalize_fp_label("Q4"), "FY");
+        assert_eq!(normalize_fp_label("q4"), "FY");
+    }
+
+    #[test]
+    fn normalize_fp_label_leaves_other_tokens_unchanged() {
+        assert_eq!(normalize_fp_label("FY"), "FY");
+        assert_eq!(normalize_fp_label("Q3"), "Q3");
+        assert_eq!(normalize_fp_label("H1"), "H1");
+        assert_eq!(normalize_fp_label("SA2"), "SA2");
+        assert_eq!(normalize_fp_label(""), "");
+    }
+
+    #[test]
+    fn normalize_symbol_generates_dot_and_dash_variants() {
+        let c = normalize_symbol("brk.b");
+        assert!(c.contains(&"BRK.B".to_string()));
+        assert!(c.contains(&"BRK-B".to_string()));
+    }
+
+    #[test]
+    fn normalize_symbol_upcases_plain_ticker() {
+        let c = normalize_symbol("aapl");
+        assert_eq!(c, vec!["AAPL".to_string()]);
     }
 }
 
