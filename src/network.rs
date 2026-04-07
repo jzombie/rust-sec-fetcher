@@ -16,6 +16,9 @@ pub use fetch_cik_by_ticker_symbol::fetch_cik_by_ticker_symbol;
 mod fetch_cik_submissions;
 pub use fetch_cik_submissions::{fetch_cik_submissions, parse_cik_submissions_json};
 
+mod fetch_related_ciks;
+pub use fetch_related_ciks::{fetch_all_entity_submissions, fetch_related_ciks};
+
 mod fetch_edgar_feed;
 pub use fetch_edgar_feed::{
     EDGAR_PAGE_SIZE, FeedDelta, fetch_edgar_feed, fetch_edgar_feed_page, fetch_edgar_feed_since,
@@ -43,7 +46,9 @@ mod fetch_company_description;
 pub use fetch_company_description::fetch_company_description;
 
 mod fetch_10k_sections;
-pub use fetch_10k_sections::{TenKSections, fetch_10k_sections, fetch_10k_sections_for_filing};
+pub use fetch_10k_sections::{
+    TenKSections, extract_sections_from_document, fetch_10k_sections, fetch_10k_sections_for_filing,
+};
 
 mod fetch_and_render;
 pub use fetch_and_render::fetch_and_render;

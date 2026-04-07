@@ -113,6 +113,17 @@ pub enum Url {
     /// recognises, the reviewing office it is assigned to, and its industry
     /// title. Parse with [`crate::network::fetch_sic_codes`].
     SicCodes,
+
+    /// EDGAR Full-Text Search (EFTS) phrase query that returns 10-K filings
+    /// filed by an entity, including the `ciks` co-registrant array on each hit.
+    ///
+    /// The `entity_name` is the SEC-registered legal name obtained from the
+    /// submissions JSON (a CIK-keyed exact lookup, not user input).  The name
+    /// is used as a quoted phrase in EDGAR's full-text search index — the same
+    /// index EDGAR's own search UI queries.  Because the `ciks` array on each
+    /// returned filing is filtered for the caller's primary CIK, a stray
+    /// phrase match from an unrelated filer cannot produce a false result.
+    EftsCoRegistrantsByName { entity_name: String },
 }
 
 impl Url {
@@ -176,6 +187,16 @@ impl Url {
             ),
             Url::EdgarArchive(path) => format!("https://www.sec.gov/Archives/{}", path),
             Url::SicCodes => "https://www.sec.gov/info/edgar/siccodes.htm".to_string(),
+            Url::EftsCoRegistrantsByName { entity_name } => {
+                // Percent-encode the name as a quoted phrase for the q= parameter.
+                // The only characters that need encoding to form a safe URL are
+                // double-quotes (already added as delimiters) and percent signs.
+                let encoded = entity_name.replace('%', "%25").replace('"', "%22");
+                format!(
+                    "https://efts.sec.gov/LATEST/search-index?q=%22{}%22&forms=10-K&_source=ciks,display_names&from=0&size=100",
+                    encoded
+                )
+            }
         }
     }
 }

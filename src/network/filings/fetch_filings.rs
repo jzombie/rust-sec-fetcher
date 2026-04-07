@@ -1,5 +1,5 @@
 use crate::models::{Cik, CikSubmission};
-use crate::network::{SecClient, fetch_cik_submissions};
+use crate::network::{SecClient, fetch_all_entity_submissions};
 use std::error::Error;
 
 /// Fetches all filings of a given form type for a CIK, ordered newest-first.
@@ -69,7 +69,7 @@ pub async fn fetch_filings(
     cik: Cik,
     form_type: impl AsRef<str>,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
-    let submissions = fetch_cik_submissions(client, cik).await?;
+    let submissions = fetch_all_entity_submissions(client, cik).await?;
     Ok(CikSubmission::by_form(&submissions, form_type.as_ref())
         .into_iter()
         .cloned()

@@ -28,13 +28,15 @@
 //!
 //! That is all.
 
+use chrono::Datelike;
 use flate2::Compression;
 use flate2::write::GzEncoder;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::enums::Url;
 use sec_fetcher::models::{AccessionNumber, CikSubmission, TickerSymbol};
 use sec_fetcher::network::{
-    SecClient, fetch_8k_filings, fetch_cik_by_ticker_symbol, fetch_filing_index,
+    SecClient, fetch_10k_filings, fetch_8k_filings, fetch_cik_by_ticker_symbol,
+    fetch_filing_index, fetch_related_ciks,
 };
 use std::fs::{self, File};
 use std::io::Write;
@@ -98,6 +100,28 @@ enum FixtureKind {
     /// `https://www.sec.gov/files/company_tickers.json`.
     /// The `ticker` field is not used for URL construction; pass any valid ticker.
     CompanyTickersJson,
+    /// The raw primary document (HTML, SGML `.txt`, or inline iXBRL) for a
+    /// specific year's 10-K filing.
+    ///
+    /// When `primary_document` is empty (pre-2000 EDGAR SGML bundles) the
+    /// submission's root SGML `.txt` file is downloaded instead.
+    ///
+    /// Used by `tests/tenk_sections_tests.rs` to validate that
+    /// `extract_sections_from_document` successfully locates Item 1 and Item 7
+    /// across every major EDGAR filing era without live network access.
+    TenKRaw { year: u16 },
+    /// JSON array of zero-padded 10-digit CIK strings returned by
+    /// [`fetch_related_ciks`] for this ticker's primary CIK.
+    ///
+    /// Written as `[]` for companies with no holding-company reorganisation and
+    /// as a non-empty array for those that have one.  For Alphabet Inc. (GOOG)
+    /// the expected value is `["0001288776"]` (Google Inc., predecessor CIK).
+    ///
+    /// Tests in `tests/cik_lineage_tests.rs` assert these expected contents,
+    /// verifying that [`fetch_related_ciks`] is both correct (finds the real
+    /// predecessor) and conservative (returns empty when no reorganisation
+    /// occurred).
+    RelatedCiks,
 }
 
 const FIXTURES: &[Fixture] = &[
@@ -219,6 +243,170 @@ const FIXTURES: &[Fixture] = &[
             quarter: 4,
         },
     },
+    // ── 10-K raw document fixtures ────────────────────────────────────────────
+    //
+    // These fixtures exercise `extract_sections_from_document` across every
+    // major EDGAR filing era:
+    //
+    //   SGML era (pre-2000):     AAPL 1994, MSFT 1995, INTC 1996
+    //   Early HTML (2002–2006):  AAPL 2003, MSFT 2005, XOM 2006
+    //   Mid HTML (2008–2013):    ORCL 2009, JNJ 2010, GOOG 2012
+    //   iXBRL era (2014–2018):   AAPL 2016, NVDA 2017
+    //   Modern inline iXBRL:     AMZN 2019, JPM 2022, BRK-B 2023, COST 2024
+    //
+    // Companies that were replaced due to incorporation-by-reference (their
+    // EDGAR 10-K shell pointed to a physical annual report, so no extractable
+    // content existed in the filing):
+    //   GE 1994, KO 2002, WMT 2005, JPM 2009 — all used inc-by-ref to annual
+    //   reports; replaced with tech companies that file inline.
+    //
+    // Tests in `tests/tenk_sections_tests.rs` load each fixture, call
+    // `extract_sections_from_document`, and assert both Item 1 and Item 7 are
+    // present with at least the minimum expected character counts.
+    //
+    // ── SGML era ─────────────────────────────────────────────────────────────
+    Fixture {
+        output: "AAPL_10k_1994.raw",
+        ticker: "AAPL",
+        kind: FixtureKind::TenKRaw { year: 1994 },
+    },
+    Fixture {
+        output: "MSFT_10k_1995.raw",
+        ticker: "MSFT",
+        kind: FixtureKind::TenKRaw { year: 1995 },
+    },
+    Fixture {
+        output: "INTC_10k_1996.raw",
+        ticker: "INTC",
+        kind: FixtureKind::TenKRaw { year: 1996 },
+    },
+    // ── Early HTML era ────────────────────────────────────────────────────────
+    Fixture {
+        output: "AAPL_10k_2003.raw",
+        ticker: "AAPL",
+        kind: FixtureKind::TenKRaw { year: 2003 },
+    },
+    Fixture {
+        output: "MSFT_10k_2005.raw",
+        ticker: "MSFT",
+        kind: FixtureKind::TenKRaw { year: 2005 },
+    },
+    // ── Mid HTML era ──────────────────────────────────────────────────────────
+    Fixture {
+        output: "ORCL_10k_2009.raw",
+        ticker: "ORCL",
+        kind: FixtureKind::TenKRaw { year: 2009 },
+    },
+    Fixture {
+        output: "GOOG_10k_2012.raw",
+        ticker: "GOOG",
+        kind: FixtureKind::TenKRaw { year: 2012 },
+    },
+    // ── iXBRL transition era ──────────────────────────────────────────────────
+    Fixture {
+        output: "AAPL_10k_2016.raw",
+        ticker: "AAPL",
+        kind: FixtureKind::TenKRaw { year: 2016 },
+    },
+    Fixture {
+        output: "NVDA_10k_2017.raw",
+        ticker: "NVDA",
+        kind: FixtureKind::TenKRaw { year: 2017 },
+    },
+    // ── Early HTML additions ─────────────────────────────────────────────────
+    //
+    // ExxonMobil 2006: large energy company in the early-HTML era.  XOM has a
+    // single stable CIK from the 1999 Exxon/Mobil merger; a stable entity that
+    // exercises the non-restructured code path.
+    Fixture {
+        output: "XOM_10k_2006.raw",
+        ticker: "XOM",
+        kind: FixtureKind::TenKRaw { year: 2006 },
+    },
+    // ── Mid HTML additions ────────────────────────────────────────────────────
+    //
+    // Johnson & Johnson 2010: large diversified healthcare company.  Fills the
+    // healthcare sector gap in the era matrix.  JNJ files fully inline — no
+    // incorporation-by-reference to a physical annual report.
+    Fixture {
+        output: "JNJ_10k_2010.raw",
+        ticker: "JNJ",
+        kind: FixtureKind::TenKRaw { year: 2010 },
+    },
+    // ── Modern inline iXBRL ───────────────────────────────────────────────────
+    //
+    // Amazon 2019: first year with modern inline iXBRL for Amazon; large
+    // e-commerce / cloud company that files a detailed Item 1 and Item 7.
+    Fixture {
+        output: "AMZN_10k_2019.raw",
+        ticker: "AMZN",
+        kind: FixtureKind::TenKRaw { year: 2019 },
+    },
+    // JPMorgan Chase 2022: large US bank, modern inline iXBRL.  JPM 2009 was
+    // previously excluded because its MD&A was incorporated by reference.
+    // Modern (2022) JPM filings are fully inline — confirms the financial-
+    // sector modern path works end to end.
+    Fixture {
+        output: "JPM_10k_2022.raw",
+        ticker: "JPM",
+        kind: FixtureKind::TenKRaw { year: 2022 },
+    },
+    Fixture {
+        output: "BRK_B_10k_2023.raw",
+        ticker: "BRK-B",
+        kind: FixtureKind::TenKRaw { year: 2023 },
+    },
+    Fixture {
+        output: "COST_10k_2024.raw",
+        ticker: "COST",
+        kind: FixtureKind::TenKRaw { year: 2024 },
+    },
+    // ── CIK lineage (RelatedCiks) ─────────────────────────────────────────────
+    //
+    // These fixtures capture the output of `fetch_related_ciks` for a range of
+    // companies.  Tests in `tests/cik_lineage_tests.rs` check expected contents:
+    //
+    //   GOOG   → ["0001288776"]   (Google Inc., predecessor before Alphabet)
+    //   GOOGL  → ["0001288776"]   (same predecessor — different ticker, same CIK)
+    //   Others → []              (no holding-company reorganisation on record)
+    //
+    // Having BOTH a positive case (GOOG) and multiple negative cases (AAPL,
+    // AMZN, META, MSFT, NVDA) proves the function is selective, not permissive.
+    Fixture {
+        output: "GOOG_related_ciks.json",
+        ticker: "GOOG",
+        kind: FixtureKind::RelatedCiks,
+    },
+    Fixture {
+        output: "GOOGL_related_ciks.json",
+        ticker: "GOOGL",
+        kind: FixtureKind::RelatedCiks,
+    },
+    Fixture {
+        output: "AAPL_related_ciks.json",
+        ticker: "AAPL",
+        kind: FixtureKind::RelatedCiks,
+    },
+    Fixture {
+        output: "META_related_ciks.json",
+        ticker: "META",
+        kind: FixtureKind::RelatedCiks,
+    },
+    Fixture {
+        output: "MSFT_related_ciks.json",
+        ticker: "MSFT",
+        kind: FixtureKind::RelatedCiks,
+    },
+    Fixture {
+        output: "NVDA_related_ciks.json",
+        ticker: "NVDA",
+        kind: FixtureKind::RelatedCiks,
+    },
+    Fixture {
+        output: "AMZN_related_ciks.json",
+        ticker: "AMZN",
+        kind: FixtureKind::RelatedCiks,
+    },
 ];
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -249,6 +437,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::io::stdout().flush()?;
 
         let cik = fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new(fixture.ticker)).await?;
+
+        // ── RelatedCiks: no URL — call fetch_related_ciks and serialise result ──
+        if matches!(fixture.kind, FixtureKind::RelatedCiks) {
+            let related = fetch_related_ciks(&client, &cik).await?;
+            let entries: Vec<String> = related
+                .iter()
+                .map(|c| format!("{:010}", c.value))
+                .collect();
+            let json_bytes = serde_json::to_vec(&entries)?;
+            let gz_file = File::create(&gz_path)?;
+            let mut encoder = GzEncoder::new(gz_file, Compression::best());
+            encoder.write_all(&json_bytes)?;
+            encoder.finish()?;
+            if entries.is_empty() {
+                println!("ok  (no predecessor CIKs)");
+            } else {
+                println!("ok  (predecessor CIKs: {})", entries.join(", "));
+            }
+            continue;
+        }
 
         let url: String = match fixture.kind {
             FixtureKind::Submissions => Url::CikSubmission(cik).value(),
@@ -339,6 +547,44 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Url::EdgarFullIndex { year, quarter }.value()
             }
             FixtureKind::CompanyTickersJson => Url::CompanyTickersJson.value(),
+            FixtureKind::TenKRaw { year } => {
+                // Locate the filing for the requested year, then return its
+                // best document URL using the same tiered strategy as
+                // `fetch_10k_sections_for_filing`.
+                let filings = fetch_10k_filings(&client, cik.clone()).await?;
+                let filing = filings
+                    .iter()
+                    .find(|f| {
+                        f.filing_date
+                            .map(|d| d.year() == year as i32)
+                            .unwrap_or(false)
+                    })
+                    .ok_or_else(|| {
+                        format!(
+                            "No 10-K filing found for '{}' in year {}",
+                            fixture.ticker, year
+                        )
+                    })?;
+
+                // For pre-2000 SGML bundles, primary_document is empty; fall
+                // back to the root SGML .txt file at the CIK level.
+                if filing.primary_document.is_empty() {
+                    Url::EdgarArchive(format!(
+                        "edgar/data/{}/{}.txt",
+                        filing.cik, filing.accession_number
+                    ))
+                    .value()
+                } else {
+                    Url::CikAccessionDocument(
+                        filing.cik.clone(),
+                        filing.accession_number.clone(),
+                        filing.primary_document.clone(),
+                    )
+                    .value()
+                }
+            }
+            // Handled above before this match — unreachable at runtime.
+            FixtureKind::RelatedCiks => unreachable!("RelatedCiks handled above"),
         };
 
         let response = client

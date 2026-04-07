@@ -127,8 +127,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let want_item7 = matches!(args.section, SectionArg::Item7 | SectionArg::Both);
 
     if want_item1 {
-        match sections.item1 {
-            Some(ref text) => {
+        match sections.item1() {
+            Some(text) => {
                 eprintln!("Item 1: {} chars", text.len());
                 println!("=== ITEM 1. BUSINESS ===");
                 println!();
@@ -140,8 +140,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if want_item7 {
-        match sections.item7 {
-            Some(ref text) => {
+        match sections.item7() {
+            Some(text) => {
                 eprintln!("Item 7: {} chars", text.len());
                 println!("=== ITEM 7. MANAGEMENT'S DISCUSSION AND ANALYSIS ===");
                 println!();

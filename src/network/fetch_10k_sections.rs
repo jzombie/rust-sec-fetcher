@@ -2,103 +2,114 @@ use crate::enums::Url;
 use crate::models::{Cik, CikSubmission};
 use crate::network::{SecClient, fetch_cik_submissions, fetch_filing_index};
 use regex::Regex;
+use scraper::{Html, Node};
+use std::collections::HashMap;
 use std::error::Error;
 use std::sync::LazyLock as Lazy;
 
-// ── Section boundary regexes ──────────────────────────────────────────────────
-// Start regexes are multiline-anchored ((?m)^) so they only match when
-// "Item N" appears at the beginning of a line (modulo leading whitespace).
-// This is the critical guard against forward cross-references in the body
-// text — e.g. "see Part II, Item 7 of this Form 10-K" — that otherwise
-// create spuriously large gaps and defeat the max-gap strategy.
+// ── Heading detection ─────────────────────────────────────────────────────────
 //
-// End regexes are NOT anchored: they only need to locate the nearest following
-// section boundary, and headings are the only things that can be both on a
-// fresh line AND match tightly enough for max-gap to prefer them.
+// A heading token starts with "Item" (case-insensitive), optional whitespace
+// including &nbsp; (\u00A0), then the item designator (digits + optional
+// trailing letter: `1`, `1A`, `7`, `7A`, `15T`), then a separator.
+//
+// Separator: any non-alphanumeric character OR end-of-string.
+// This guards against partial matches: "Item 10." matches Item 10, not Item 1.
 
-// Item 1 start — anchored to line start.
-static ITEM1_START_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?mi)^[ \t]*Item\s*1[.\s]").unwrap());
-// Item 1 end — "Item 1A" (post-2004) or "Item 2" (pre-2004, before the SEC
-// required a separate Risk Factors section).  "nearest end" semantics in
-// extract_section_from_text guarantee that whichever comes first is used.
-static ITEM1_END_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?mi)^[ \t]*Item\s*1\s*A\b|^[ \t]*Item\s*2\b").unwrap());
+// Matches any item heading. Capture group 1 = raw designator (e.g. "7A").
+static ANY_ITEM_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?i)^item[\s\u{00A0}]*(\d+[A-Za-z]?)[\s\u{00A0}]*(?:[^0-9A-Za-z]|$)").unwrap()
+});
 
-// Item 7 start — anchored to line start.
-static ITEM7_START_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?mi)^[ \t]*Item\s*7[.\s]").unwrap());
-// Item 7 end — "Item 7A" or "Item 8".  Item 7A was optional before ~2000
-// but Item 8 (Financial Statements) is universal across all eras.
-static ITEM7_END_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?mi)^[ \t]*Item\s*7\s*A\b|^[ \t]*Item\s*8\b").unwrap());
-
-// Non-prose file extensions — skip these in the filing index fallback.
+// Non-prose file extensions — skip in the filing index fallback.
 static BINARY_EXT_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)\.(jpg|jpeg|png|gif|pdf|xlsx|zip|xsd|xml|js|css)$").unwrap()
 });
 
-// SGML structural tags common in pre-2000 EDGAR submissions.
-// Stripped but their *text content* is kept.
+// SGML tag strip for pre-2000 plain-text bundles.
 static SGML_TAG_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"<[^>]{0,400}>").unwrap());
 
-// A section shorter than this is a TOC stub, not a real body.
+// Sections shorter than this are TOC stubs rather than real bodies.
 const MIN_SECTION_CHARS: usize = 400;
 
-// ── Public types ─────────────────────────────────────────────────────────────
+// ── Public types ──────────────────────────────────────────────────────────────
 
-/// The full, untruncated text of Item 1 and Item 7 extracted from a 10-K.
+/// All sections extracted from a 10-K filing, keyed by normalized item name.
 ///
-/// Both fields are `None` when the section cannot be located in any document
-/// of the filing.  All text is plain UTF-8 without HTML markup.
-#[derive(Debug, Clone)]
-pub struct TenKSections {
-    /// **Item 1 — Business.**  The legally-mandated description of the company's
-    /// products, brands, markets, distribution channels, and competitive position.
-    pub item1: Option<String>,
-
-    /// **Item 7 — Management's Discussion and Analysis.**  Management's narrative
-    /// on financial results, supply chain costs, input prices, consumer demand
-    /// trends, and forward-looking commentary for the fiscal year.
-    pub item7: Option<String>,
-}
+/// Keys use the form `"item_N"` or `"item_NA"` (lowercase, underscore separator):
+/// `"item_1"`, `"item_1a"`, `"item_7"`, `"item_7a"`, etc.
+///
+/// Use [`get`](TenKSections::get) for direct key lookup, or the named
+/// convenience accessors [`item1`](TenKSections::item1),
+/// [`item7`](TenKSections::item7), etc.
+#[derive(Debug, Clone, Default)]
+pub struct TenKSections(HashMap<String, String>);
 
 impl TenKSections {
     fn empty() -> Self {
-        Self {
-            item1: None,
-            item7: None,
-        }
+        Self::default()
     }
 
-    /// Both sections have enough text to be real section bodies (not TOC stubs).
+    /// Retrieve a section by normalized key (e.g. `"item_1"`, `"item_7"`).
+    pub fn get(&self, key: &str) -> Option<&str> {
+        self.0.get(key).map(|s| s.as_str())
+    }
+
+    /// All section keys present (in unspecified order).
+    pub fn keys(&self) -> impl Iterator<Item = &str> {
+        self.0.keys().map(|s| s.as_str())
+    }
+
+    /// Iterate over all `(key, text)` pairs.
+    pub fn iter(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.0.iter().map(|(k, v)| (k.as_str(), v.as_str()))
+    }
+
+    // ── Named convenience accessors ───────────────────────────────────────────
+
+    /// Item 1 — Business
+    pub fn item1(&self) -> Option<&str> { self.get("item_1") }
+    /// Item 1A — Risk Factors
+    pub fn item1a(&self) -> Option<&str> { self.get("item_1a") }
+    /// Item 2 — Properties
+    pub fn item2(&self) -> Option<&str> { self.get("item_2") }
+    /// Item 3 — Legal Proceedings
+    pub fn item3(&self) -> Option<&str> { self.get("item_3") }
+    /// Item 7 — Management's Discussion and Analysis
+    pub fn item7(&self) -> Option<&str> { self.get("item_7") }
+    /// Item 7A — Quantitative and Qualitative Disclosures About Market Risk
+    pub fn item7a(&self) -> Option<&str> { self.get("item_7a") }
+    /// Item 8 — Financial Statements
+    pub fn item8(&self) -> Option<&str> { self.get("item_8") }
+
+    // ── Internal helpers ──────────────────────────────────────────────────────
+
+    /// True when Item 1 and Item 7 are both present and substantial.
     fn is_adequate(&self) -> bool {
-        self.item1.as_ref().map_or(0, |s| s.len()) >= MIN_SECTION_CHARS
-            && self.item7.as_ref().map_or(0, |s| s.len()) >= MIN_SECTION_CHARS
+        self.item1().map_or(0, |s| s.len()) >= MIN_SECTION_CHARS
+            && self.item7().map_or(0, |s| s.len()) >= MIN_SECTION_CHARS
     }
 
-    /// Replace each field with `other`'s value whenever `other` is longer.
+    /// For each key, keep whichever value is longer.
     fn merge_with(&mut self, other: Self) {
-        if other.item1.as_ref().map_or(0, |s| s.len())
-            > self.item1.as_ref().map_or(0, |s| s.len())
-        {
-            self.item1 = other.item1;
-        }
-        if other.item7.as_ref().map_or(0, |s| s.len())
-            > self.item7.as_ref().map_or(0, |s| s.len())
-        {
-            self.item7 = other.item7;
+        for (key, val) in other.0 {
+            let entry = self.0.entry(key).or_default();
+            if val.len() > entry.len() {
+                *entry = val;
+            }
         }
     }
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-/// Fetches and extracts the full text of **Item 1** (Business) and **Item 7**
-/// (MD&A) from the most recent 10-K filing for the given [`Cik`].
+/// Fetches and extracts **all sections** from the most recent 10-K filing for
+/// the given [`Cik`].
 ///
-/// Both sections are returned **without truncation**.
+/// Returns a [`TenKSections`] map keyed by normalized item name (`"item_1"`,
+/// `"item_7"`, `"item_1a"`, …).  Use [`TenKSections::get`],
+/// [`TenKSections::item7`], etc. to access individual sections.
 ///
 /// # Example
 ///
@@ -111,8 +122,8 @@ impl TenKSections {
 /// let client = SecClient::from_config_manager(&cfg)?;
 /// let cik = fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new("AAPL")).await?;
 /// let sections = fetch_10k_sections(&client, cik).await?;
-/// if let Some(item1) = sections.item1 {
-///     println!("=== Item 1 ({} chars) ===\n{item1}", item1.len());
+/// if let Some(text) = sections.item7() {
+///     println!("=== Item 7 ({} chars) ===\n{text}", text.len());
 /// }
 /// # Ok(()) }
 /// ```
@@ -128,30 +139,20 @@ pub async fn fetch_10k_sections(
     fetch_10k_sections_for_filing(sec_client, filing).await
 }
 
-/// Extracts Item 1 and Item 7 from a **specific** 10-K filing you already hold.
+/// Extracts all sections from a **specific** 10-K filing you already hold.
 ///
-/// Use this when you want to iterate over historical filings rather than just
-/// the most recent one.  Obtain the list of all filings with
-/// [`fetch_10k_filings`], pick the one you want, then pass it here.
+/// Use this when iterating over historical filings.  Obtain the list with
+/// [`fetch_10k_filings`], pick the filing you want, then pass it here.
 ///
 /// [`fetch_10k_filings`]: crate::network::fetch_10k_filings
 ///
 /// # Strategy
 ///
-/// 1. Try the filing's `primary_document`.
-/// 2. If neither section is found (or both are TOC stubs < 400 chars), fetch
-///    the full filing index and try every candidate document in priority order:
-///    typed 10-K documents first, then `.htm` files, then `.txt` files.
-/// 3. Each candidate's best result is merged in; the first pass that makes both
-///    sections adequate terminates the search.
-///
-/// This handles:
-/// - **iXBRL wrapper filings** (2010s+) where `primary_document` is a shell
-///   and the narrative body lives in a separate `.htm` file.
-/// - **Legacy SGML / plain-text filings** (pre-2000s) where the full 10-K is
-///   a single `.txt` submission and `primary_document` points to a header stub.
-/// - **HTML entity encoding** — headings like `ITEM&nbsp;7.` are normalised
-///   by converting the whole document to plain text before section matching.
+/// 1. Try the primary document.
+/// 2. If Item 1 and Item 7 are not yet substantial, fetch the filing index and
+///    try candidate documents in priority order: typed 10-K docs first, then
+///    `.htm` files, then `.txt` files.  Stops as soon as both core sections
+///    are substantial.
 ///
 /// # Example
 ///
@@ -168,8 +169,8 @@ pub async fn fetch_10k_sections(
 /// for filing in &filings {
 ///     let date = filing.filing_date.map(|d| d.to_string()).unwrap_or_default();
 ///     let sections = fetch_10k_sections_for_filing(&client, filing).await?;
-///     if let Some(item1) = sections.item1 {
-///         println!("=== {} Item 1 ({} chars) ===\n{item1}", date, item1.len());
+///     for (key, text) in sections.iter() {
+///         println!("{} {}: {} chars", date, key, text.len());
 ///     }
 /// }
 /// # Ok(()) }
@@ -178,11 +179,6 @@ pub async fn fetch_10k_sections_for_filing(
     sec_client: &SecClient,
     filing: &CikSubmission,
 ) -> Result<TenKSections, Box<dyn Error>> {
-    // Pre-2000 EDGAR filings have an empty `primary_document` field in the
-    // submissions JSON.  The full SGML bundle is accessible at:
-    //   Archives/edgar/data/{CIK}/{accession_formatted}.txt
-    // (at the CIK root, NOT inside an accession subdirectory).
-    // Modern filings have a named primary document inside the accession dir.
     let old_format = filing.primary_document.is_empty();
 
     // ── Pass 1: primary document ──────────────────────────────────────────────
@@ -210,20 +206,15 @@ pub async fn fetch_10k_sections_for_filing(
     }
 
     // ── Pass 2: filing index fallback ─────────────────────────────────────────
-    // Handles:
-    //   • iXBRL/viewer-wrapper filings where the narrative is in a separate .htm
-    //   • Multi-document old bundles where pass 1 only fetched a header stub
-    // Fetch the index.  If that call fails, return whatever we already have.
     let index = match fetch_filing_index(sec_client, filing).await {
         Ok(idx) => idx,
         Err(_) => return Ok(best),
     };
 
-    // Build a candidate list in priority order:
-    //   Tier 0 — explicitly typed "10-K" / "10-K405" / "10-K/A" documents
-    //   Tier 1 — any .htm / .html document
-    //   Tier 2 — any .txt document
-    // Primary document is skipped (already tried).  Binary assets are skipped.
+    // Candidate priority:
+    //   Tier 0 — explicitly typed "10-K" / "10-K405" / "10-K/A"
+    //   Tier 1 — any .htm / .html
+    //   Tier 2 — any .txt
     let mut candidates: Vec<&str> = Vec::new();
 
     for tier in 0..3u8 {
@@ -250,8 +241,6 @@ pub async fn fetch_10k_sections_for_filing(
     }
 
     for name in candidates {
-        // Old-format filings: individual document files live at the CIK root,
-        // not inside an accession subdirectory.  Use EdgarArchive for them.
         let url = if old_format {
             Url::EdgarArchive(format!("edgar/data/{}/{}", filing.cik, name)).value()
         } else {
@@ -293,73 +282,175 @@ async fn fetch_sections_from_url(
     Ok(extract_sections_from_document(&raw))
 }
 
-/// Converts the document to plain text **once** and extracts both sections.
+/// Parses a 10-K document and extracts all its numbered sections.
 ///
-/// Two paths depending on document format:
-///
-/// 1. **HTML** (`<html`, `<!DOCTYPE`, `<head`, `<body` detected anywhere in
-///    the first kilobyte) — processed with `html2text`, which resolves HTML
-///    entities (`&nbsp;`, `&#160;`, ...), strips tags, and normalises
-///    whitespace.  This is the correct path for all filings from ~2000 onward.
-///
-/// 2. **SGML / plain text** — pre-2000 EDGAR submissions are single large
-///    `.txt` bundles wrapping the 10-K in SGML structural tags
-///    (`<SEC-DOCUMENT>`, `<DOCUMENT>`, `<TYPE>`, `<TEXT>`, `<PAGE>`, ...).
-///    html5ever (used internally by html2text) loses the body content for
-///    these files because it places everything before an implicit `<body>`
-///    into `<head>`.  Instead we do a lightweight regex tag-strip that
-///    preserves every text node verbatim.
-fn extract_sections_from_document(raw: &str) -> TenKSections {
+/// - **HTML** — uses `scraper` to walk DOM text nodes directly, avoiding the
+///   table-rendering artifacts that defeat line-start regex anchors.
+/// - **SGML / plain text** — strips tags with a lightweight regex, then
+///   treats each line as a token.
+pub fn extract_sections_from_document(raw: &str) -> TenKSections {
     let peek = &raw[..raw.len().min(2048)].to_ascii_lowercase();
     let is_html = peek.contains("<!doctype")
         || peek.contains("<html")
         || peek.contains("<head")
         || peek.contains("<body");
 
-    let text: std::borrow::Cow<str> = if is_html {
-        let rendered = html2text::config::plain_no_decorate()
-            .string_from_read(raw.as_bytes(), 1_000_000)
-            .unwrap_or_default();
-        std::borrow::Cow::Owned(rendered)
+    if is_html {
+        extract_sections_from_html(raw)
     } else {
-        // Lightweight SGML tag strip: remove every <...> sequence and replace
-        // with a single space so adjacent tokens stay separated.
-        std::borrow::Cow::Owned(SGML_TAG_RE.replace_all(raw, " ").into_owned())
-    };
-
-    TenKSections {
-        item1: extract_section_from_text(&text, &ITEM1_START_RE, &ITEM1_END_RE),
-        item7: extract_section_from_text(&text, &ITEM7_START_RE, &ITEM7_END_RE),
+        let stripped = SGML_TAG_RE.replace_all(raw, " ");
+        extract_sections_from_plain(&stripped)
     }
 }
 
-/// Extracts the full, untruncated text of one section from a plain-text
-/// document using the max-gap strategy.
+/// Normalize a raw item designator to a map key: `"7A"` → `"item_7a"`.
+fn normalize_key(raw_designator: &str) -> String {
+    format!("item_{}", raw_designator.to_ascii_lowercase())
+}
+
+/// Sort key for item designators: numeric part first, then letter suffix.
+/// Ensures `"9"` < `"10"` < `"9A"` < `"10A"`.
+fn sort_key(designator: &str) -> (u32, String) {
+    let digits: String = designator.chars().take_while(|c| c.is_ascii_digit()).collect();
+    let suffix: String = designator.chars().skip_while(|c| c.is_ascii_digit()).collect();
+    (digits.parse::<u32>().unwrap_or(0), suffix.to_ascii_lowercase())
+}
+
+/// Walk `tokens` and return all extracted sections.
 ///
-/// Every `(start_marker, nearest_end_marker)` pair is scored by character
-/// distance and the widest gap wins.  TOC pairs are always tiny (< 200 chars);
-/// real section bodies span tens-to-hundreds of thousands of characters.
-fn extract_section_from_text(text: &str, start_re: &Regex, end_re: &Regex) -> Option<String> {
-    let starts: Vec<usize> = start_re.find_iter(text).map(|m| m.start()).collect();
-    let ends: Vec<usize> = end_re.find_iter(text).map(|m| m.start()).collect();
-
-    if starts.is_empty() || ends.is_empty() {
-        return None;
-    }
-
-    let (best_start, best_end) = starts
+/// 1. Find every token that is a heading (matched by `ANY_ITEM_RE`).
+/// 2. For each unique designator, apply the max-gap strategy: try every
+///    `(start_token, nearest_end_token)` pair where the end token is any
+///    heading with a strictly greater sort key.  The widest gap wins — TOC
+///    pairs are always tiny; real bodies span tens of thousands of chars.
+/// 3. Discard sections shorter than `MIN_SECTION_CHARS`.
+fn extract_all_sections(tokens: &[String], offsets: &[usize], text: &str) -> TenKSections {
+    // Map each token index to its designator if it's a heading.
+    let heading_positions: Vec<(usize, String)> = tokens
         .iter()
-        .filter_map(|&s| {
-            let e = ends.iter().find(|&&pos| pos > s)?;
-            Some((s, *e))
+        .enumerate()
+        .filter_map(|(i, t)| {
+            ANY_ITEM_RE
+                .captures(t)
+                .map(|c| (i, c.get(1).unwrap().as_str().to_ascii_uppercase()))
         })
-        .max_by_key(|(s, e)| e - s)?;
+        .collect();
 
-    let section = text[best_start..best_end].trim().to_string();
-
-    if section.len() < 40 {
-        return None;
+    if heading_positions.is_empty() {
+        return TenKSections::empty();
     }
 
-    Some(section)
+    // Unique start designators, sorted numerically.
+    let mut start_designators: Vec<String> = heading_positions
+        .iter()
+        .map(|(_, d)| d.clone())
+        .collect::<std::collections::HashSet<_>>()
+        .into_iter()
+        .collect();
+    start_designators.sort_by_key(|d| sort_key(d));
+
+    let mut map: HashMap<String, String> = HashMap::new();
+
+    for start_des in &start_designators {
+        let start_sort = sort_key(start_des);
+
+        let start_tokens: Vec<usize> = heading_positions
+            .iter()
+            .filter(|(_, d)| d == start_des)
+            .map(|(i, _)| *i)
+            .collect();
+
+        let end_tokens: Vec<usize> = heading_positions
+            .iter()
+            .filter(|(_, d)| sort_key(d) > start_sort)
+            .map(|(i, _)| *i)
+            .collect();
+
+        if end_tokens.is_empty() {
+            continue;
+        }
+
+        let best = start_tokens
+            .iter()
+            .flat_map(|&si| {
+                end_tokens
+                    .iter()
+                    .filter(move |&&ei| ei > si)
+                    .map(move |&ei| (si, ei))
+            })
+            .max_by_key(|&(si, ei)| offsets[ei].saturating_sub(offsets[si]));
+
+        if let Some((si, ei)) = best {
+            let content = text[offsets[si]..offsets[ei]].trim().to_string();
+            if content.len() >= MIN_SECTION_CHARS {
+                map.insert(normalize_key(start_des), content);
+            }
+        }
+    }
+
+    TenKSections(map)
 }
+
+/// HTML path — uses `scraper` to collect DOM text nodes in document order.
+fn extract_sections_from_html(raw: &str) -> TenKSections {
+    let document = Html::parse_document(raw);
+
+    let mut tokens: Vec<String> = Vec::new();
+    let mut offsets: Vec<usize> = Vec::new();
+    let mut text = String::new();
+
+    'outer: for node_ref in document.tree.nodes() {
+        if let Node::Text(text_node) = node_ref.value() {
+            let raw_text = text_node.text.as_ref();
+            // Skip content inside <script> and <style>.
+            let mut ancestor = node_ref.parent();
+            while let Some(a) = ancestor {
+                if let Node::Element(el) = a.value() {
+                    let name = el.name();
+                    if name == "script" || name == "style" {
+                        continue 'outer;
+                    }
+                }
+                ancestor = a.parent();
+            }
+            let trimmed = raw_text.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+            let offset = if text.is_empty() { 0 } else { text.len() + 1 };
+            offsets.push(offset);
+            tokens.push(trimmed.to_string());
+            if !text.is_empty() {
+                text.push(' ');
+            }
+            text.push_str(trimmed);
+        }
+    }
+
+    extract_all_sections(&tokens, &offsets, &text)
+}
+
+/// SGML/plain-text path — `plain` has already had tags stripped.
+///
+/// Lines are tokens so that a full heading line `"Item 1. Business"` is one
+/// unit and matches the heading regex as a whole.
+fn extract_sections_from_plain(plain: &str) -> TenKSections {
+    let tokens: Vec<String> = plain
+        .lines()
+        .map(|l| l.trim())
+        .filter(|l| !l.is_empty())
+        .map(|l| l.to_string())
+        .collect();
+    let mut offsets: Vec<usize> = Vec::new();
+    let mut text = String::new();
+    for token in &tokens {
+        let offset = if text.is_empty() { 0 } else { text.len() + 1 };
+        offsets.push(offset);
+        if !text.is_empty() {
+            text.push('\n');
+        }
+        text.push_str(token);
+    }
+    extract_all_sections(&tokens, &offsets, &text)
+}
+
