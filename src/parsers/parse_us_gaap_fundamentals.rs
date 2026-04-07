@@ -8,24 +8,41 @@ use std::error::Error;
 
 pub type TickerFundamentalsDataFrame = DataFrame;
 
-// TODO: Include potential support for Form 10-SA or whatever will be used for semi-annual reporting
-
-/// Parses a US GAAP fundamentals JSON object into a Polars DataFrame.
+/// Parses a US GAAP fundamentals JSON object into a Polars DataFrame containing
+/// **periodic time-series financial data** (10-K, 10-Q, and related amendments).
 ///
-/// # Sorting and Deduplication Logic
-/// The parser processes the JSON facts list and performs the following steps to ensure
-/// the DataFrame contains the most accurate and up-to-date information:
+/// # Filing inclusion
 ///
-/// 1. **Extraction**: All facts are extracted with their metadata (fy, fp, filed, accn).
-/// 2. **Chronological Sorting (Filings)**: The intermediate DataFrame is sorted by the 'filed'
-///    date in descending order (`.sort(["filed"], descending=true)`).
-/// 3. **Deduplication (Last-in Wins)**: When multiple records exist for the same fiscal period
-///    (same `fy` and `fp` keys), the `pivot` operation aggregates using the `.first()` function.
-///    Because the data was pre-sorted by `filed` descending, `.first()` selects the record
-///    from the most recent filing (e.g., an amendment `10-Q/A` filed later will overwrite
-///    the original `10-Q`).
-/// 4. **Row Ordering**: The final DataFrame is sorted by Fiscal Year (`fy`) descending, and
-///    then by Fiscal Period (`fp`) descending (FY > Q3 > Q2 > Q1).
+/// Two rules filter observations before they enter the dataset:
+///
+/// 1. **No fiscal period** (`fp` empty or missing) — the observation has no
+///    canonical period assignment and cannot participate in the time-series.
+/// 2. **Form is 8-K or 8-K/A** — press-release filings are excluded explicitly
+///    because they sometimes carry a period tag (e.g. `fp="FY"` on an earnings
+///    release) yet are not authoritative: the periodic 10-K or 10-Q reports the
+///    same data more completely.
+///
+/// All other observations — regardless of form type — are retained and flow
+/// through the same merge logic.
+///
+/// # Amendment handling
+///
+/// Amendments (any form ending with `/A`) are not special-cased.  Their values
+/// win naturally because they carry a later `filed` date, sorting ahead of the
+/// original in the `filed DESC` pass.
+///
+/// Merging is **tag-level**, not row-level:
+/// - A partial amendment that corrects only a subset of tags will have its
+///   corrected tags win while leaving untouched tags populated from the original
+///   filing — both coexist in the same output row.
+/// - A late-filed amendment only affects the `(fy, fp)` period it belongs to;
+///   other periods are completely isolated by the pivot key.
+///
+/// Row-level provenance metadata (`accn`, `form`, `filed`) is taken from the
+/// most-recently-filed filing for that period.  The `/A` suffix is stripped from
+/// `form` and a separate `is_amendment` boolean is produced.  `is_amendment =
+/// true` means the most-recently-filed filing for that period was an amendment —
+/// not that every value on the row came from it.
 pub fn parse_us_gaap_fundamentals(
     serde_json_value: Value,
 ) -> Result<TickerFundamentalsDataFrame, Box<dyn Error>> {
@@ -55,6 +72,22 @@ pub fn parse_us_gaap_fundamentals(
                     if let Some(units) = fact_info["units"].as_object() {
                         for (unit, observations) in units {
                             for obs in observations.as_array().unwrap_or(&Vec::new()) {
+                                // Skip event-driven filings. Two complementary rules:
+                                //   1. No `fp`: observation carries no fiscal period at all.
+                                //   2. Form is 8-K / 8-K/A: press-release filings that
+                                //      sometimes carry a period tag (e.g. fp="FY" on an
+                                //      earnings release) but are not authoritative — the
+                                //      periodic 10-K/10-Q covers the same data more
+                                //      completely.
+                                let obs_fp = obs["fp"].as_str().unwrap_or("").trim();
+                                let obs_form = obs["form"].as_str().unwrap_or("");
+                                if obs_fp.is_empty()
+                                    || obs_form.eq_ignore_ascii_case("8-K")
+                                    || obs_form.eq_ignore_ascii_case("8-K/A")
+                                {
+                                    continue;
+                                }
+
                                 let end_str = obs["end"].as_str().unwrap_or("").to_string();
                                 let end_year = if end_str.len() >= 4 {
                                     end_str[0..4].parse::<u64>().unwrap_or(0)
@@ -158,13 +191,15 @@ pub fn parse_us_gaap_fundamentals(
         "accn" => &accn_values
     )?;
 
-    // Sort Logic:
-    // 1. 'filed' descending: Prioritize the latest filing date (Amendments > Original).
-    // 2. 'end' descending: Within the same filing (or same filed date), prioritize the Latest Instant/Period End.
-    //    This is CRITICAL for Balance Sheet (Instant) items in quarterly filings.
-    //    A Q1 filing contains both Current Q1 End (2025-03-31) and Prior Year End (2024-12-31).
-    //    Both are tagged 'Q1' by the SEC in some contexts, but we want the '2025-03-31' value for the Q1 row.
-    //    Sorting by 'end' descending ensures the latest date comes first, so .first() picks the actual Q1 balance.
+    // Sort by `filed` DESC then `end` DESC.  The most-recently-filed observation
+    // for any `(fact_name, fy, fp)` triple sorts first, so any later filing
+    // (amendment or otherwise) wins without form-type-specific logic.
+    //
+    // The secondary `end` DESC key handles balance-sheet (instant) tags in
+    // quarterly filings: a 10-Q contains both the current quarter-end balance
+    // (e.g. 2025-03-31) and the prior year-end comparative (e.g. 2024-12-31),
+    // both tagged `(fy=2025, fp=Q1)`.  Sorting by `end` DESC ensures `.first()`
+    // picks the current-quarter balance.
     df = df.sort(
         ["filed", "end"],
         SortMultipleOptions::default()
@@ -172,8 +207,18 @@ pub fn parse_us_gaap_fundamentals(
             .with_nulls_last(true),
     )?;
 
-    // Extract metadata (filed, form, accn, end) for the latest filing per (fy, fp)
-    // We clone because we need to reuse df for the pivot
+    // Metadata extraction: select provenance metadata (accn, form, filed,
+    // period_end) for each `(fy, fp)` period from the most-recently-filed
+    // filing.  `unique(["fy","fp"], First)` on the already-sorted df gives the
+    // first (= most-recently-filed) row per period.
+    //
+    // Note the asymmetry with the tag-level pivot below: the pivot merges values
+    // tag-by-tag, so a partial amendment's corrected tags win while untouched
+    // tags come from the original.  Metadata is a full-row selection — the
+    // most-recently-filed filing wins the entire metadata block even if it only
+    // corrected one tag.  Consequence: `is_amendment = true` means the
+    // most-recently-filed filing for that period was an amendment; it does NOT
+    // guarantee every value on that row came from the amendment.
     let meta_df = df
         .clone()
         .lazy()
@@ -191,7 +236,16 @@ pub fn parse_us_gaap_fundamentals(
         )
         .collect()?;
 
-    // Perform a single pivot (values include units)
+    // Tag-level pivot keyed on `(fy, fp)` with `.first()` aggregation.
+    // Because the DataFrame is sorted `filed DESC`, `.first()` independently
+    // selects the most-recently-filed observation for each tag in each period
+    // bucket — this is the core of the tag-level merge.
+    //
+    // A partial amendment that only re-files a subset of tags will have those
+    // tags win while untouched tags fall through to the original filing's obs.
+    // A late-filed amendment is confined to its own `(fy, fp)` bucket by the
+    // pivot key; other periods are unaffected.  The logic is entirely
+    // form-agnostic: any filing with a later `filed` date wins.
     let mut pivot_df = pivot(
         &df,
         ["fact_name"]
@@ -226,13 +280,10 @@ pub fn parse_us_gaap_fundamentals(
         )
         .collect()?;
 
-    // Normalize the `form` column: strip the `/A` amendment suffix so that the
-    // base form type is stored (e.g. `"10-Q/A"` → `"10-Q"`).  The amendment fact
-    // is surfaced as a separate `is_amendment` boolean column so callers can still
-    // distinguish amended rows from originals.
-    //
-    // This runs after the join so it operates on the already-deduplicated winning
-    // row (the latest-filed filing per (fy, fp) pair).
+    // Strip the `/A` suffix from the winning form so the base type is stored
+    // (e.g. `"10-Q/A"` → `"10-Q"`).  Works for any SEC form type.  The
+    // amendment fact is surfaced via `is_amendment` so callers can filter
+    // amended rows without re-parsing the form string.
     let (is_amendment_values, normalized_form_values): (Vec<bool>, Vec<Option<String>>) = {
         let form_col = pivot_df.column("form")?.str()?;
         form_col
@@ -247,10 +298,11 @@ pub fn parse_us_gaap_fundamentals(
     pivot_df.with_column(Series::new("is_amendment".into(), is_amendment_values))?;
     pivot_df.with_column(Series::new("form".into(), normalized_form_values))?;
 
-    // Compute fp_rank using the shared sec-fetcher-shared crate so that all period
-    // token aliases (H1, H2, SA1, SA2, 6M, 12M, Q4, …) sort correctly.
-    // The old hardcoded Polars when/then only handled Q1–Q3 + FY, leaving Q4
-    // and all semi-annual/monthly tokens at rank 0 (wrong order).
+    // Output ordering: sort by `fy DESC` then canonical `fp` rank, and attach
+    // a `canonical_order` index (0 = most recent period).  The rank is computed
+    // via the shared crate so all period token aliases (H1, H2, SA1, SA2, 6M,
+    // 12M, Q4, …) sort correctly.  The temporary `fp_rank` column is dropped
+    // before returning.
     let fp_ranks: Vec<i32> = pivot_df
         .column("fp")?
         .str()?
@@ -636,5 +688,286 @@ mod tests {
         // is_amendment must be true for the Q4/FY row (came from a 10-Q/A).
         let is_amend_col = df.column("is_amendment").unwrap().bool().unwrap();
         assert_eq!(is_amend_col.get(0), Some(true));
+    }
+
+    #[test]
+    fn test_partial_amendment_merges_tags_independently() {
+        // Scenario: a 10-K/A corrects Revenue but does NOT re-file Assets.
+        //
+        // The pivot must merge at the tag (column) level, not at the row level:
+        //   - Revenue  → 10-K/A value wins (it was filed later)
+        //   - Assets   → 10-K value is the only source; must still appear
+        //   - NetIncome→ only in original 10-K; must appear unchanged
+        //
+        // Row-level metadata (accn, form, is_amendment) must reflect the
+        // amendment because it was the most-recently-filed filing for the period.
+        let mock_json = json!({
+            "cik": 77777,
+            "entityName": "Partial Amend Corp",
+            "facts": {
+                "us-gaap": {
+                    "Revenue": {
+                        "label": "Revenue",
+                        "units": {
+                            "USD": [
+                                // Original 10-K
+                                {
+                                    "val": 5000.0,
+                                    "end": "2024-12-31",
+                                    "fy": 2024,
+                                    "fp": "FY",
+                                    "form": "10-K",
+                                    "filed": "2025-03-01",
+                                    "accn": "000-10K-2024"
+                                },
+                                // 10-K/A corrects Revenue only
+                                {
+                                    "val": 5500.0,
+                                    "end": "2024-12-31",
+                                    "fy": 2024,
+                                    "fp": "FY",
+                                    "form": "10-K/A",
+                                    "filed": "2025-04-01",
+                                    "accn": "000-10KA-2024"
+                                }
+                            ]
+                        }
+                    },
+                    "Assets": {
+                        "label": "Assets",
+                        "units": {
+                            "USD": [
+                                // Only in original 10-K — not re-filed by 10-K/A
+                                {
+                                    "val": 10000.0,
+                                    "end": "2024-12-31",
+                                    "fy": 2024,
+                                    "fp": "FY",
+                                    "form": "10-K",
+                                    "filed": "2025-03-01",
+                                    "accn": "000-10K-2024"
+                                }
+                            ]
+                        }
+                    },
+                    "NetIncomeLoss": {
+                        "label": "Net Income",
+                        "units": {
+                            "USD": [
+                                // Only in original 10-K — not re-filed by 10-K/A
+                                {
+                                    "val": 1200.0,
+                                    "end": "2024-12-31",
+                                    "fy": 2024,
+                                    "fp": "FY",
+                                    "form": "10-K",
+                                    "filed": "2025-03-01",
+                                    "accn": "000-10K-2024"
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        });
+
+        let df = parse_us_gaap_fundamentals(mock_json).expect("parse failed");
+
+        assert_eq!(df.height(), 1, "Single period must produce exactly one row");
+
+        // Tag-level merge: Revenue must use the 10-K/A corrected value.
+        let revenue = df.column("Revenue").unwrap().get(0).unwrap();
+        assert_eq!(
+            revenue.get_str().unwrap(),
+            "5500::USD",
+            "Revenue must come from the 10-K/A (corrected value)"
+        );
+
+        // Tag-level merge: Assets only existed in the original 10-K; must survive.
+        let assets = df.column("Assets").unwrap().get(0).unwrap();
+        assert_eq!(
+            assets.get_str().unwrap(),
+            "10000::USD",
+            "Assets must come from the original 10-K (only source)"
+        );
+
+        // Tag-level merge: NetIncomeLoss only in original 10-K; must survive.
+        let net_income = df.column("NetIncomeLoss").unwrap().get(0).unwrap();
+        assert_eq!(
+            net_income.get_str().unwrap(),
+            "1200::USD",
+            "NetIncomeLoss must come from the original 10-K (only source)"
+        );
+
+        // Row metadata must reflect the 10-K/A (most-recently-filed).
+        let accn = df.column("accn").unwrap().get(0).unwrap();
+        assert_eq!(
+            accn.get_str().unwrap(),
+            "000-10KA-2024",
+            "accn must point to the 10-K/A (most recently filed)"
+        );
+
+        let form = df.column("form").unwrap().get(0).unwrap();
+        assert_eq!(
+            form.get_str().unwrap(),
+            "10-K",
+            "form must be stripped of /A suffix"
+        );
+
+        let is_amendment = df
+            .column("is_amendment")
+            .unwrap()
+            .bool()
+            .unwrap()
+            .get(0)
+            .unwrap();
+        assert!(
+            is_amendment,
+            "is_amendment must be true — the latest filing for this period was a 10-K/A"
+        );
+    }
+
+    #[test]
+    fn test_late_amendment_merges_into_correct_period_only() {
+        // Scenario: a 10-K/A is filed AFTER a subsequent period's 10-Q.
+        //
+        //   filed 2025-03-01  10-K   (2024 FY) Revenue=5000, Assets=10000
+        //   filed 2025-04-15  10-Q   (2025 Q1) Revenue=6000, Assets=11000
+        //   filed 2025-05-01  10-K/A (2024 FY) Revenue=5500  <-- corrects 2024 only
+        //
+        // The 10-K/A is the most-recently-filed document overall, but its
+        // (fy=2024, fp=FY) key must confine it entirely to the 2024 FY row.
+        // The 2025 Q1 row must be completely unaffected.
+        let mock_json = json!({
+            "cik": 55555,
+            "entityName": "Late Amend Corp",
+            "facts": {
+                "us-gaap": {
+                    "Revenue": {
+                        "label": "Revenue",
+                        "units": {
+                            "USD": [
+                                {
+                                    "val": 5000.0,
+                                    "end": "2024-12-31",
+                                    "fy": 2024, "fp": "FY",
+                                    "form": "10-K",
+                                    "filed": "2025-03-01",
+                                    "accn": "000-10K-2024"
+                                },
+                                {
+                                    "val": 6000.0,
+                                    "end": "2025-03-31",
+                                    "fy": 2025, "fp": "Q1",
+                                    "form": "10-Q",
+                                    "filed": "2025-04-15",
+                                    "accn": "000-10Q-2025Q1"
+                                },
+                                // Filed AFTER 2025 Q1, but scoped to 2024 FY.
+                                {
+                                    "val": 5500.0,
+                                    "end": "2024-12-31",
+                                    "fy": 2024, "fp": "FY",
+                                    "form": "10-K/A",
+                                    "filed": "2025-05-01",
+                                    "accn": "000-10KA-2024"
+                                }
+                            ]
+                        }
+                    },
+                    "Assets": {
+                        "label": "Assets",
+                        "units": {
+                            "USD": [
+                                {
+                                    "val": 10000.0,
+                                    "end": "2024-12-31",
+                                    "fy": 2024, "fp": "FY",
+                                    "form": "10-K",
+                                    "filed": "2025-03-01",
+                                    "accn": "000-10K-2024"
+                                },
+                                {
+                                    "val": 11000.0,
+                                    "end": "2025-03-31",
+                                    "fy": 2025, "fp": "Q1",
+                                    "form": "10-Q",
+                                    "filed": "2025-04-15",
+                                    "accn": "000-10Q-2025Q1"
+                                }
+                                // No Assets observation in the 10-K/A.
+                            ]
+                        }
+                    }
+                }
+            }
+        });
+
+        let df = parse_us_gaap_fundamentals(mock_json).expect("parse failed");
+
+        assert_eq!(
+            df.height(),
+            2,
+            "Must have exactly two rows: 2025 Q1 and 2024 FY"
+        );
+
+        // ── 2025 Q1 row (canonical_order=0, newest first) ─────────────────────
+        let revenue_col = df.column("Revenue").unwrap().str().unwrap();
+        let assets_col = df.column("Assets").unwrap().str().unwrap();
+        let accn_col = df.column("accn").unwrap().str().unwrap();
+        let form_col = df.column("form").unwrap().str().unwrap();
+        let is_amend = df.column("is_amendment").unwrap().bool().unwrap();
+        let fy_col = df.column("fy").unwrap().u64().unwrap();
+        let fp_col = df.column("fp").unwrap().str().unwrap();
+
+        // Row 0 = 2025 Q1
+        assert_eq!(fy_col.get(0), Some(2025));
+        assert_eq!(fp_col.get(0), Some("Q1"));
+        assert_eq!(
+            revenue_col.get(0),
+            Some("6000::USD"),
+            "2025 Q1 Revenue must be unchanged by the 2024 10-K/A"
+        );
+        assert_eq!(
+            assets_col.get(0),
+            Some("11000::USD"),
+            "2025 Q1 Assets must be unchanged by the 2024 10-K/A"
+        );
+        assert_eq!(
+            accn_col.get(0),
+            Some("000-10Q-2025Q1"),
+            "2025 Q1 accn must be the 10-Q, not the later 10-K/A"
+        );
+        assert_eq!(form_col.get(0), Some("10-Q"));
+        assert_eq!(
+            is_amend.get(0),
+            Some(false),
+            "2025 Q1 must not be flagged as an amendment"
+        );
+
+        // ── 2024 FY row (canonical_order=1) ──────────────────────────────────
+        assert_eq!(fy_col.get(1), Some(2024));
+        assert_eq!(fp_col.get(1), Some("FY"));
+        assert_eq!(
+            revenue_col.get(1),
+            Some("5500::USD"),
+            "2024 FY Revenue must use the 10-K/A corrected value"
+        );
+        assert_eq!(
+            assets_col.get(1),
+            Some("10000::USD"),
+            "2024 FY Assets must come from the original 10-K (not re-filed by 10-K/A)"
+        );
+        assert_eq!(
+            accn_col.get(1),
+            Some("000-10KA-2024"),
+            "2024 FY metadata accn must be the 10-K/A (most recently filed for this period)"
+        );
+        assert_eq!(form_col.get(1), Some("10-K"));
+        assert_eq!(
+            is_amend.get(1),
+            Some(true),
+            "2024 FY must be flagged as an amendment"
+        );
     }
 }
