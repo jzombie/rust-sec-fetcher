@@ -27,6 +27,16 @@ pub enum Url {
     /// Format: <https://www.sec.gov/Archives/edgar/data/>{CIK}/{accn_unformatted}/{filename}
     CikAccessionDocument(Cik, AccessionNumber, String),
 
+    /// Primary-document URL for a pre-2000 SGML filing bundle.
+    ///
+    /// The SEC stores the full SGML submission text at:
+    /// `https://www.sec.gov/Archives/edgar/data/{CIK}/{accession_unformatted}.txt`
+    ///
+    /// Use this for filings whose `primary_document` field is empty — that
+    /// field was not populated before EDGAR's switch to structured filing
+    /// headers in the late 1990s.
+    SgmlSubmissionTxt(Cik, AccessionNumber),
+
     /// Points to the SEC's primary ticker-to-CIK JSON file.
     ///
     /// Covers exchange-listed **operating companies** only: one entry per
@@ -160,6 +170,11 @@ impl Url {
                 "{}/{}",
                 Url::CikAccession(cik.clone(), accession_number.clone()).value(),
                 filename,
+            ),
+            Url::SgmlSubmissionTxt(cik, accession_number) => format!(
+                "https://www.sec.gov/Archives/edgar/data/{}/{}.txt",
+                cik,
+                accession_number,
             ),
             Url::CompanyTickersJson => "https://www.sec.gov/files/company_tickers.json".to_string(),
             Url::CompanyTickersTxt => "https://www.sec.gov/include/ticker.txt".to_string(),

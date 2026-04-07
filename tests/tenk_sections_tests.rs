@@ -186,10 +186,10 @@ fn mid_html_orcl_2009_extracts_both_sections() {
 /// Johnson & Johnson 10-K for fiscal year 2010.
 ///
 /// Large diversified healthcare / consumer-goods company in the mid-HTML era.
-/// JNJ files fully inline — no incorporation-by-reference to a physical annual
-/// report.  Confirms the extractor handles a healthcare-sector filing that
-/// mixes consumer, pharmaceutical, and medical-device business descriptions in
-/// a single Item 1 narrative.
+/// JNJ historically incorporated Items 6–8 by reference to Exhibit 13 (the
+/// Annual Report to Shareholders).  The fixture is the Exhibit-13 annual
+/// report, discovered via the filing-index multi-pass strategy in
+/// `refresh_test_fixtures`; it contains the full inline MD&A.
 #[test]
 fn mid_html_jnj_2010_extracts_both_sections() {
     assert_sections_extracted("JNJ_10k_2010.raw", 5_000);

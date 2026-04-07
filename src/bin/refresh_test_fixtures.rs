@@ -35,8 +35,8 @@ use sec_fetcher::config::ConfigManager;
 use sec_fetcher::enums::Url;
 use sec_fetcher::models::{AccessionNumber, CikSubmission, TickerSymbol};
 use sec_fetcher::network::{
-    SecClient, fetch_8k_filings, fetch_10k_filings, fetch_cik_by_ticker_symbol, fetch_filing_index,
-    fetch_related_ciks,
+    SecClient, fetch_8k_filings, fetch_10k_filings, fetch_best_10k_document,
+    fetch_cik_by_ticker_symbol, fetch_filing_index, fetch_related_ciks,
 };
 use std::fs::{self, File};
 use std::io::Write;
@@ -455,6 +455,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         }
 
+        if let FixtureKind::TenKRaw { year } = &fixture.kind {
+            let filings = fetch_10k_filings(&client, cik.clone()).await?;
+            let filing = filings
+                .iter()
+                .find(|f| {
+                    f.filing_date
+                        .map(|d| d.year() == *year as i32)
+                        .unwrap_or(false)
+                })
+                .ok_or_else(|| {
+                    format!(
+                        "No 10-K filing found for '{}' in year {}",
+                        fixture.ticker, year
+                    )
+                })?;
+
+            let bytes = fetch_best_10k_document(&client, filing).await?;
+            let uncompressed_kb = bytes.len() / 1024;
+            let gz_file = File::create(&gz_path)?;
+            let mut encoder = GzEncoder::new(gz_file, Compression::best());
+            encoder.write_all(&bytes)?;
+            encoder.finish()?;
+            let compressed_kb = fs::metadata(&gz_path)?.len() / 1024;
+            println!(
+                "ok  ({} KB \u{2192} {} KB gz, {:.0}% reduction)",
+                uncompressed_kb,
+                compressed_kb,
+                100.0 - (compressed_kb as f64 / uncompressed_kb as f64) * 100.0
+            );
+            continue;
+        }
+
         let url: String = match fixture.kind {
             FixtureKind::Submissions => Url::CikSubmission(cik).value(),
             FixtureKind::CompanyFacts => Url::CompanyFacts(cik).value(),
@@ -544,42 +576,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Url::EdgarFullIndex { year, quarter }.value()
             }
             FixtureKind::CompanyTickersJson => Url::CompanyTickersJson.value(),
-            FixtureKind::TenKRaw { year } => {
-                // Locate the filing for the requested year, then return its
-                // best document URL using the same tiered strategy as
-                // `fetch_10k_sections_for_filing`.
-                let filings = fetch_10k_filings(&client, cik.clone()).await?;
-                let filing = filings
-                    .iter()
-                    .find(|f| {
-                        f.filing_date
-                            .map(|d| d.year() == year as i32)
-                            .unwrap_or(false)
-                    })
-                    .ok_or_else(|| {
-                        format!(
-                            "No 10-K filing found for '{}' in year {}",
-                            fixture.ticker, year
-                        )
-                    })?;
-
-                // For pre-2000 SGML bundles, primary_document is empty; fall
-                // back to the root SGML .txt file at the CIK level.
-                if filing.primary_document.is_empty() {
-                    Url::EdgarArchive(format!(
-                        "edgar/data/{}/{}.txt",
-                        filing.cik, filing.accession_number
-                    ))
-                    .value()
-                } else {
-                    Url::CikAccessionDocument(
-                        filing.cik.clone(),
-                        filing.accession_number.clone(),
-                        filing.primary_document.clone(),
-                    )
-                    .value()
-                }
-            }
+            // Handled above by the TenKRaw early-continue block.
+            FixtureKind::TenKRaw { .. } => unreachable!("TenKRaw handled before URL match"),
             // Handled above before this match — unreachable at runtime.
             FixtureKind::RelatedCiks => unreachable!("RelatedCiks handled above"),
         };

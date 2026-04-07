@@ -2,6 +2,7 @@ use crate::enums::Url;
 use crate::models::{Cik, CikSubmission};
 use crate::network::{SecClient, fetch_cik_submissions, fetch_filing_index};
 use crate::parsers::{TenKSections, extract_sections_from_document};
+use bytes::Bytes;
 use regex::Regex;
 use std::error::Error;
 use std::sync::LazyLock as Lazy;
@@ -11,6 +12,119 @@ static BINARY_EXT_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)\.(jpg|jpeg|png|gif|pdf|xlsx|zip|xsd|xml|js|css)$").unwrap());
 
 // ── Public API ────────────────────────────────────────────────────────────────
+
+/// Returns the raw bytes of the best 10-K document for a filing.
+///
+/// Pass 1 — downloads the primary document.  If that document passes
+/// [`TenKSections::is_adequate`], returns its bytes immediately.
+///
+/// Pass 2 — if the primary document is a stub (incorporates sections by
+/// reference to a separate annual report), walks the filing index in two
+/// tiers:
+///
+/// - **Tier 0** — explicitly typed `10-K`, `10-K405`, `10-K/A`, `ARS`, or
+///   `EX-13*` documents (Exhibit 13 annual reports).
+/// - **Tier 1** — any remaining `.htm`, `.html`, or `.txt` file.
+///
+/// The first document whose parsed sections pass `is_adequate` wins.  If no
+/// document satisfies the check, the primary document bytes are returned as a
+/// last-resort fallback.
+///
+/// This is the single source of truth for 10-K document selection; both the
+/// network-layer [`fetch_10k_sections_for_filing`] and the test-fixture
+/// refresh binary call this.
+pub async fn fetch_best_10k_document(
+    sec_client: &SecClient,
+    filing: &CikSubmission,
+) -> Result<Bytes, Box<dyn Error>> {
+    let primary_url = if filing.primary_document.is_empty() {
+        Url::SgmlSubmissionTxt(filing.cik.clone(), filing.accession_number.clone()).value()
+    } else {
+        Url::CikAccessionDocument(
+            filing.cik.clone(),
+            filing.accession_number.clone(),
+            filing.primary_document.clone(),
+        )
+        .value()
+    };
+
+    let prim_resp = sec_client
+        .raw_request(reqwest::Method::GET, &primary_url, None, None)
+        .await?;
+    if !prim_resp.status().is_success() {
+        return Err(format!("HTTP {} for {}", prim_resp.status(), primary_url).into());
+    }
+    let prim_bytes = prim_resp.bytes().await?;
+
+    // Fast path: primary document is self-contained.
+    if {
+        let t = String::from_utf8_lossy(&prim_bytes);
+        extract_sections_from_document(&t).is_adequate()
+    } {
+        return Ok(prim_bytes);
+    }
+
+    // Slow path: walk the filing index for an adequate document.
+    let index = match fetch_filing_index(sec_client, filing).await {
+        Ok(idx) => idx,
+        Err(_) => return Ok(prim_bytes),
+    };
+
+    for tier in 0..2u8 {
+        for doc in &index.documents {
+            if doc.name == filing.primary_document {
+                continue;
+            }
+            if BINARY_EXT_RE.is_match(&doc.name) {
+                continue;
+            }
+            let lower = doc.name.to_ascii_lowercase();
+            let type_upper = doc.document_type.to_ascii_uppercase();
+            let matches_tier = match tier {
+                0 => {
+                    type_upper == "10-K"
+                        || type_upper == "10-K405"
+                        || type_upper == "10-K/A"
+                        || type_upper == "ARS"
+                        || type_upper.starts_with("EX-13")
+                }
+                1 => {
+                    lower.ends_with(".htm")
+                        || lower.ends_with(".html")
+                        || lower.ends_with(".txt")
+                }
+                _ => false,
+            };
+            if !matches_tier {
+                continue;
+            }
+
+            let url = Url::CikAccessionDocument(
+                filing.cik.clone(),
+                filing.accession_number.clone(),
+                doc.name.clone(),
+            )
+            .value();
+
+            if let Ok(r) = sec_client
+                .raw_request(reqwest::Method::GET, &url, None, None)
+                .await
+            {
+                if r.status().is_success() {
+                    let b = r.bytes().await?;
+                    if {
+                        let t = String::from_utf8_lossy(&b);
+                        extract_sections_from_document(&t).is_adequate()
+                    } {
+                        return Ok(b);
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(prim_bytes)
+}
 
 /// Fetches and extracts **all sections** from the most recent 10-K filing for
 /// the given [`Cik`].
@@ -91,11 +205,7 @@ pub async fn fetch_10k_sections_for_filing(
 
     // ── Pass 1: primary document ──────────────────────────────────────────────
     let primary_url = if old_format {
-        Url::EdgarArchive(format!(
-            "edgar/data/{}/{}.txt",
-            filing.cik, filing.accession_number
-        ))
-        .value()
+        Url::SgmlSubmissionTxt(filing.cik.clone(), filing.accession_number.clone()).value()
     } else {
         Url::CikAccessionDocument(
             filing.cik.clone(),
