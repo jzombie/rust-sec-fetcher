@@ -1,21 +1,7 @@
-//! Extracts the **full text** of Item 1 (Business) and/or Item 7 (MD&A) from
-//! a 10-K filing for any given ticker.
+//! Extracts the full text of any section(s) from a 10-K filing for a given ticker.
 //!
 //! By default the most recent 10-K is used.  Pass `--year YYYY` to select a
-//! specific fiscal year, or `--list` to print every available 10-K with its
-//! filing date so you can pick the one you want.
-//!
-//! These two sections are the raw textual corpus needed to connect a company's
-//! products and supply chain narrative back to consumer-goods signal data:
-//!
-//! | Section | What companies write here |
-//! |---------|--------------------------|
-//! | **Item 1 — Business** | Every product category, brand, distribution channel, and geographic market the company operates in.  Legally mandated to detail *exactly* what they make and sell. |
-//! | **Item 7 — MD&A** | Management's year-in-review: revenue drivers, supply chain pressures, input cost trends, margin commentary, and consumer demand outlook. |
-//!
-//! Output is **untruncated** plain text — typically 5,000–50,000+ words per
-//! section — suitable for vector embedding, RAG retrieval, LLM context, or any
-//! NLP workload that needs the full corpus.
+//! specific fiscal year, or `--list` to print every available 10-K filing date.
 //!
 //! # Usage
 //!
@@ -25,14 +11,14 @@
 //! cargo run --example tenk_sections -- AAPL
 //! cargo run --example tenk_sections -- AAPL --list
 //! cargo run --example tenk_sections -- AAPL --year 2022
-//! cargo run --example tenk_sections -- PG --section item7
-//! cargo run --example tenk_sections -- KO --section item1 --year 2020
-//! cargo run --example tenk_sections -- WMT --section both > wmt_10k_corpus.txt
-//! cargo run --example tenk_sections -- COST --section both 2>/dev/null | wc -c
+//! cargo run --example tenk_sections -- PG --section item_7
+//! cargo run --example tenk_sections -- KO --section item_1 --year 2020
+//! cargo run --example tenk_sections -- WMT --section item_1a
+//! cargo run --example tenk_sections -- COST --section all > cost_10k.txt
 //! ```
 
 use chrono::Datelike;
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::TickerSymbol;
 use sec_fetcher::network::{
@@ -43,23 +29,22 @@ use std::error::Error;
 
 #[derive(Parser)]
 #[command(
-    about = "Extract full Item 1 (Business) and/or Item 7 (MD&A) from a 10-K",
+    about = "Extract sections from a 10-K filing",
     long_about = "Fetches the primary 10-K document for the given ticker and extracts the full \
-                 untruncated text of Item 1 and/or Item 7 as a plain-text corpus.\n\n\
-                 Item 1 — Business: legally-detailed description of every product category, \
-                 brand, and market the company operates in.\n\n\
-                 Item 7 — MD&A: supply chain costs, input price trends, consumer demand \
-                 commentary, margin analysis, and management's business outlook.\n\n\
-                 Progress messages are written to stderr; section text goes to stdout, \
-                 so you can redirect stdout to a file while still seeing progress."
+                 untruncated text of any numbered section.\n\n\
+                 --section accepts any normalized key: item_1, item_1a, item_2, item_3, \
+                 item_7, item_7a, item_8, etc.  Short forms without the underscore also work: \
+                 item1, item7a.  Use 'all' to print every section found (default).\n\n\
+                 Progress messages go to stderr; section text goes to stdout."
 )]
 struct Args {
     /// Ticker symbol (e.g. AAPL, PG, KO, WMT, COST)
     ticker: String,
 
-    /// Which section(s) to output
-    #[arg(long, value_enum, default_value = "both")]
-    section: SectionArg,
+    /// Which section(s) to output.  Use a key like "item_7", "item_1a", "item_7a", or "all".
+    /// Short forms without underscore also work: "item7", "item1a".  Default: all.
+    #[arg(long, default_value = "all")]
+    section: String,
 
     /// Select the 10-K whose filing date falls in this calendar year (e.g. --year 2022).
     /// If omitted, the most recent 10-K is used.
@@ -69,16 +54,6 @@ struct Args {
     /// List all available 10-K filings for this ticker (date, accession number) and exit.
     #[arg(long)]
     list: bool,
-}
-
-#[derive(Clone, ValueEnum)]
-enum SectionArg {
-    /// Item 1 — Business description only
-    Item1,
-    /// Item 7 — MD&A only
-    Item7,
-    /// Both Item 1 and Item 7 (default)
-    Both,
 }
 
 #[tokio::main]
@@ -129,34 +104,71 @@ async fn main() -> Result<(), Box<dyn Error>> {
         fetch_10k_sections(&client, cik).await?
     };
 
-    let want_item1 = matches!(args.section, SectionArg::Item1 | SectionArg::Both);
-    let want_item7 = matches!(args.section, SectionArg::Item7 | SectionArg::Both);
+    let section_key = normalize_section_key(&args.section);
 
-    if want_item1 {
-        match sections.item1() {
-            Some(text) => {
-                eprintln!("Item 1: {} chars", text.len());
-                println!("=== ITEM 1. BUSINESS ===");
-                println!();
-                println!("{text}");
-                println!();
-            }
-            None => eprintln!("Warning: Item 1 not found in 10-K primary document."),
+    if section_key == "all" {
+        let mut keys: Vec<&str> = sections.keys().collect();
+        keys.sort_by(|a, b| section_sort_key(a).cmp(&section_sort_key(b)));
+        if keys.is_empty() {
+            eprintln!("Warning: no sections found in this filing.");
         }
-    }
-
-    if want_item7 {
-        match sections.item7() {
-            Some(text) => {
-                eprintln!("Item 7: {} chars", text.len());
-                println!("=== ITEM 7. MANAGEMENT'S DISCUSSION AND ANALYSIS ===");
+        for key in keys {
+            if let Some(text) = sections.get(key) {
+                eprintln!("{}: {} chars", key, text.len());
+                println!("=== {} ===", key.to_ascii_uppercase());
                 println!();
                 println!("{text}");
                 println!();
             }
-            None => eprintln!("Warning: Item 7 not found in 10-K primary document."),
+        }
+    } else {
+        match sections.get(&section_key) {
+            Some(text) => {
+                eprintln!("{}: {} chars", section_key, text.len());
+                println!("=== {} ===", section_key.to_ascii_uppercase());
+                println!();
+                println!("{text}");
+                println!();
+            }
+            None => {
+                eprintln!("Warning: {} not found in this filing.", section_key);
+                eprintln!(
+                    "Available sections: {}",
+                    {
+                        let mut keys: Vec<&str> = sections.keys().collect();
+                        keys.sort_by(|a, b| section_sort_key(a).cmp(&section_sort_key(b)));
+                        keys.join(", ")
+                    }
+                );
+            }
         }
     }
 
     Ok(())
+}
+
+/// Normalize a CLI section argument to a canonical map key.
+///
+/// Accepts `item7`, `item_7`, `item7a`, `item_7a`, `all`, `both`, etc.
+fn normalize_section_key(s: &str) -> String {
+    let lower = s.to_ascii_lowercase();
+    if lower == "all" || lower == "both" {
+        return "all".to_string();
+    }
+    let rest = lower
+        .strip_prefix("item_")
+        .or_else(|| lower.strip_prefix("item"))
+        .unwrap_or(&lower);
+    format!("item_{rest}")
+}
+
+/// Sort key for section map keys (`"item_7a"` → `(7, "a")`).
+fn section_sort_key(key: &str) -> (u32, String) {
+    let rest = key.strip_prefix("item_").unwrap_or(key);
+    let num_end = rest
+        .find(|c: char| !c.is_ascii_digit())
+        .unwrap_or(rest.len());
+    let num: u32 = rest[..num_end].parse().unwrap_or(0);
+    let suffix = rest[num_end..].to_string();
+    (num, suffix)
 }

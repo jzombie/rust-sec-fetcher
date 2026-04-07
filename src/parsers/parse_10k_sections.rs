@@ -156,11 +156,14 @@ fn sort_key(designator: &str) -> (u32, String) {
 /// Walk `tokens` and return all extracted sections.
 ///
 /// 1. Find every token that is a heading (matched by `ANY_ITEM_RE`).
-/// 2. For each unique designator, apply the max-gap strategy: try every
-///    `(start_token, end_token)` pair where the end token is any heading with
-///    a strictly greater sort key. The widest gap wins — TOC pairs are always
-///    tiny; real bodies span tens of thousands of chars.
-/// 3. Discard sections shorter than `MIN_SECTION_CHARS`.
+/// 2. For each unique designator, **filter out TOC-entry start tokens**: a
+///    start token is only valid when the gap to its nearest end token is ≥
+///    `MIN_SECTION_CHARS`.  TOC entries cluster tightly (next entry is a few
+///    dozen chars away); body headings precede thousands of chars of prose.
+/// 3. Among valid starts, try every `(start_token, end_token)` pair and take
+///    the widest gap — this ensures stray cross-references ("see Item 8")
+///    embedded in prose don't win over the real section boundary.
+/// 4. Discard sections shorter than `MIN_SECTION_CHARS`.
 fn extract_all_sections(tokens: &[String], offsets: &[usize], text: &str) -> TenKSections {
     // Map each token index to its designator if it's a heading.
     let heading_positions: Vec<(usize, String)> = tokens
@@ -207,7 +210,27 @@ fn extract_all_sections(tokens: &[String], offsets: &[usize], text: &str) -> Ten
             continue;
         }
 
-        let best = start_tokens
+        // Filter to start tokens where the nearest end is already >= MIN_SECTION_CHARS
+        // away.  TOC entries sit only a few dozen chars from the next TOC entry, so
+        // they fail this test; body section headings precede thousands of chars of
+        // prose, so they pass.
+        let valid_starts: Vec<usize> = start_tokens
+            .iter()
+            .copied()
+            .filter(|&si| {
+                end_tokens
+                    .iter()
+                    .find(|&&ei| ei > si)
+                    .map(|&ei| offsets[ei].saturating_sub(offsets[si]) >= MIN_SECTION_CHARS)
+                    .unwrap_or(false)
+            })
+            .collect();
+
+        if valid_starts.is_empty() {
+            continue;
+        }
+
+        let best = valid_starts
             .iter()
             .flat_map(|&si| {
                 end_tokens
