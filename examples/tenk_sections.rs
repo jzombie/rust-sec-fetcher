@@ -31,8 +31,8 @@
 //! cargo run --example tenk_sections -- COST --section both 2>/dev/null | wc -c
 //! ```
 
-use clap::{Parser, ValueEnum};
 use chrono::Datelike;
+use clap::{Parser, ValueEnum};
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::models::TickerSymbol;
 use sec_fetcher::network::{
@@ -101,7 +101,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
         println!("{:<12}  {:<20}  {}", "Date", "Accession Number", "Form");
         for f in &filings {
-            let date = f.filing_date.map(|d| d.to_string()).unwrap_or_else(|| "unknown".into());
+            let date = f
+                .filing_date
+                .map(|d| d.to_string())
+                .unwrap_or_else(|| "unknown".into());
             println!("{:<12}  {:<20}  {}", date, f.accession_number, f.form);
         }
         return Ok(());
@@ -115,7 +118,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .iter()
             .find(|f| f.filing_date.map(|d| d.year() == year).unwrap_or(false))
             .ok_or_else(|| format!("No 10-K filing found for {} in year {}", ticker, year))?;
-        let date = filing.filing_date.map(|d| d.to_string()).unwrap_or_default();
+        let date = filing
+            .filing_date
+            .map(|d| d.to_string())
+            .unwrap_or_default();
         eprintln!("Using {} filing from {}…", filing.form, date);
         fetch_10k_sections_for_filing(&client, filing).await?
     } else {
@@ -154,4 +160,3 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
-

@@ -54,7 +54,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
             println!("  Predecessor CIKs: none (no holding-company reorganization on record)");
         } else {
             let ids: Vec<String> = related.iter().map(|c| c.value.to_string()).collect();
-            println!("  Predecessor CIKs found via EFTS co-registrant records: {}", ids.join(", "));
+            println!(
+                "  Predecessor CIKs found via EFTS co-registrant records: {}",
+                ids.join(", ")
+            );
         }
         println!();
 

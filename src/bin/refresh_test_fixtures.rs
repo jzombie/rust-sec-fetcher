@@ -35,8 +35,8 @@ use sec_fetcher::config::ConfigManager;
 use sec_fetcher::enums::Url;
 use sec_fetcher::models::{AccessionNumber, CikSubmission, TickerSymbol};
 use sec_fetcher::network::{
-    SecClient, fetch_10k_filings, fetch_8k_filings, fetch_cik_by_ticker_symbol,
-    fetch_filing_index, fetch_related_ciks,
+    SecClient, fetch_8k_filings, fetch_10k_filings, fetch_cik_by_ticker_symbol, fetch_filing_index,
+    fetch_related_ciks,
 };
 use std::fs::{self, File};
 use std::io::Write;
@@ -441,10 +441,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // ── RelatedCiks: no URL — call fetch_related_ciks and serialise result ──
         if matches!(fixture.kind, FixtureKind::RelatedCiks) {
             let related = fetch_related_ciks(&client, &cik).await?;
-            let entries: Vec<String> = related
-                .iter()
-                .map(|c| format!("{:010}", c.value))
-                .collect();
+            let entries: Vec<String> = related.iter().map(|c| format!("{:010}", c.value)).collect();
             let json_bytes = serde_json::to_vec(&entries)?;
             let gz_file = File::create(&gz_path)?;
             let mut encoder = GzEncoder::new(gz_file, Compression::best());

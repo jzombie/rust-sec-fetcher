@@ -129,7 +129,10 @@ pub async fn fetch_all_entity_submissions(
     for related_cik in related {
         match fetch_cik_submissions(client, related_cik).await {
             Ok(mut subs) => all.append(&mut subs),
-            Err(e) => eprintln!("Warning: could not fetch submissions for related CIK: {}", e),
+            Err(e) => eprintln!(
+                "Warning: could not fetch submissions for related CIK: {}",
+                e
+            ),
         }
     }
 
@@ -138,4 +141,3 @@ pub async fn fetch_all_entity_submissions(
 
     Ok(all)
 }
-

@@ -7,9 +7,8 @@ use std::error::Error;
 use std::sync::LazyLock as Lazy;
 
 // Non-prose file extensions — skip in the filing index fallback.
-static BINARY_EXT_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(?i)\.(jpg|jpeg|png|gif|pdf|xlsx|zip|xsd|xml|js|css)$").unwrap()
-});
+static BINARY_EXT_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)\.(jpg|jpeg|png|gif|pdf|xlsx|zip|xsd|xml|js|css)$").unwrap());
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -190,4 +189,3 @@ async fn fetch_sections_from_url(
     let raw = response.text().await?;
     Ok(extract_sections_from_document(&raw))
 }
-

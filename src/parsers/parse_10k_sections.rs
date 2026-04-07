@@ -18,8 +18,7 @@ static ANY_ITEM_RE: Lazy<Regex> = Lazy::new(|| {
 });
 
 // SGML tag strip for pre-2000 plain-text bundles.
-static SGML_TAG_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"<[^>]{0,400}>").unwrap());
+static SGML_TAG_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"<[^>]{0,400}>").unwrap());
 
 // Sections shorter than this are TOC stubs rather than real bodies.
 const MIN_SECTION_CHARS: usize = 400;
@@ -60,19 +59,33 @@ impl TenKSections {
     // ── Named convenience accessors ───────────────────────────────────────────
 
     /// Item 1 — Business
-    pub fn item1(&self) -> Option<&str> { self.get("item_1") }
+    pub fn item1(&self) -> Option<&str> {
+        self.get("item_1")
+    }
     /// Item 1A — Risk Factors
-    pub fn item1a(&self) -> Option<&str> { self.get("item_1a") }
+    pub fn item1a(&self) -> Option<&str> {
+        self.get("item_1a")
+    }
     /// Item 2 — Properties
-    pub fn item2(&self) -> Option<&str> { self.get("item_2") }
+    pub fn item2(&self) -> Option<&str> {
+        self.get("item_2")
+    }
     /// Item 3 — Legal Proceedings
-    pub fn item3(&self) -> Option<&str> { self.get("item_3") }
+    pub fn item3(&self) -> Option<&str> {
+        self.get("item_3")
+    }
     /// Item 7 — Management's Discussion and Analysis
-    pub fn item7(&self) -> Option<&str> { self.get("item_7") }
+    pub fn item7(&self) -> Option<&str> {
+        self.get("item_7")
+    }
     /// Item 7A — Quantitative and Qualitative Disclosures About Market Risk
-    pub fn item7a(&self) -> Option<&str> { self.get("item_7a") }
+    pub fn item7a(&self) -> Option<&str> {
+        self.get("item_7a")
+    }
     /// Item 8 — Financial Statements
-    pub fn item8(&self) -> Option<&str> { self.get("item_8") }
+    pub fn item8(&self) -> Option<&str> {
+        self.get("item_8")
+    }
 
     // ── Internal helpers ──────────────────────────────────────────────────────
 
@@ -126,9 +139,18 @@ fn normalize_key(raw_designator: &str) -> String {
 /// Sort key for item designators: numeric part first, then letter suffix.
 /// Ensures `"9"` < `"10"` < `"9A"` < `"10A"`.
 fn sort_key(designator: &str) -> (u32, String) {
-    let digits: String = designator.chars().take_while(|c| c.is_ascii_digit()).collect();
-    let suffix: String = designator.chars().skip_while(|c| c.is_ascii_digit()).collect();
-    (digits.parse::<u32>().unwrap_or(0), suffix.to_ascii_lowercase())
+    let digits: String = designator
+        .chars()
+        .take_while(|c| c.is_ascii_digit())
+        .collect();
+    let suffix: String = designator
+        .chars()
+        .skip_while(|c| c.is_ascii_digit())
+        .collect();
+    (
+        digits.parse::<u32>().unwrap_or(0),
+        suffix.to_ascii_lowercase(),
+    )
 }
 
 /// Walk `tokens` and return all extracted sections.

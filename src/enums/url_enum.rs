@@ -123,7 +123,9 @@ pub enum Url {
     /// index EDGAR's own search UI queries.  Because the `ciks` array on each
     /// returned filing is filtered for the caller's primary CIK, a stray
     /// phrase match from an unrelated filer cannot produce a false result.
-    EftsCoRegistrantsByName { entity_name: String },
+    EftsCoRegistrantsByName {
+        entity_name: String,
+    },
 }
 
 impl Url {
