@@ -23,30 +23,22 @@ use std::path::PathBuf;
 
 // ── Fixture loader ────────────────────────────────────────────────────────────
 
-fn try_load_text_fixture(name: &str) -> Option<String> {
+fn load_text_fixture(name: &str) -> String {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("tests/fixtures");
     path.push(format!("{}.gz", name));
-    let file = File::open(&path).ok()?;
+    let file = File::open(&path).unwrap_or_else(|_| {
+        panic!(
+            "fixture '{}' not found — run `cargo run --bin refresh-test-fixtures`",
+            name
+        )
+    });
     let mut decoder = GzDecoder::new(file);
     let mut text = String::new();
-    decoder.read_to_string(&mut text).ok()?;
-    Some(text)
-}
-
-macro_rules! load_fixture_or_skip {
-    ($name:literal) => {
-        match try_load_text_fixture($name) {
-            Some(t) => t,
-            None => {
-                eprintln!(
-                    "SKIP: fixture '{}' not found — run `cargo run --bin refresh-test-fixtures`",
-                    $name
-                );
-                return;
-            }
-        }
-    };
+    decoder
+        .read_to_string(&mut text)
+        .expect("failed to decompress fixture");
+    text
 }
 
 // ── Real-data tests (AAPL_form4_levinson.xml) ────────────────────────────────
@@ -54,8 +46,7 @@ macro_rules! load_fixture_or_skip {
 // Arthur D. Levinson (CIK 0001214128) is a director of Apple Inc. (CIK 0000320193).
 
 fn levinson_form4() -> Vec<Form4Transaction> {
-    let xml = try_load_text_fixture("AAPL_form4_levinson.xml")
-        .expect("run `cargo run --bin refresh-test-fixtures`");
+    let xml = load_text_fixture("AAPL_form4_levinson.xml");
     let filing_date = NaiveDate::from_ymd_opt(2026, 2, 26).unwrap();
     parse_form4_xml(&xml, Some(filing_date)).unwrap()
 }
@@ -183,7 +174,7 @@ fn levinson_state_does_not_bleed_between_rows() {
 
 #[test]
 fn filing_date_none_is_stored_as_none() {
-    let xml = load_fixture_or_skip!("AAPL_form4_levinson.xml");
+    let xml = load_text_fixture("AAPL_form4_levinson.xml");
     let result = parse_form4_xml(&xml, None).unwrap();
     assert_eq!(result.len(), 2);
     for txn in &result {

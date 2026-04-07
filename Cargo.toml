@@ -11,7 +11,7 @@ keywords.workspace = true
 categories.workspace = true
 autobins = false
 [workspace]
-members = ["sec-fetcher-shared"]
+members = ["sec-fetcher-shared", "sec-fetcher-test-fixtures"]
 
 [workspace.package]
 version = "0.4.0-alpha"
@@ -24,13 +24,10 @@ keywords = ["sec", "edgar", "finance", "filings", "stocks"]
 categories = ["api-bindings", "finance", "web-programming"]
 
 [workspace.dependencies]
+polars = { version = "0.46.0", features = ["json", "lazy", "pivot"] }
 sec-fetcher-shared = { path = "sec-fetcher-shared", version = "0.4.0-alpha" }
 
 # ── Stabilized utility bins ───────────────────────────────────────────────────
-
-[[bin]]
-name = "refresh-test-fixtures"
-path = "src/bin/refresh_test_fixtures.rs"
 
 [[bin]]
 name = "check-form-type-coverage"
@@ -67,7 +64,6 @@ csv = "1.4.0"
 dashmap = { version = "6.1.0", features = ["rayon"] }
 dirs = "6.0.0"
 email_address = "0.2.9"
-flate2 = "1.1"
 futures = "0.3.32"
 html-to-markdown-rs = "3.1.0"
 html2text = "0.16.7"
@@ -75,7 +71,7 @@ indexmap = "2.13.0"
 itertools = "0.14.0"
 keyring = { version = "3.6.3", features = ["apple-native", "windows-native", "sync-secret-service"], optional = true }
 merge = "0.2.0"
-polars = { version = "0.46.0", features = ["json", "lazy", "pivot"] }
+polars.workspace = true
 quick-xml = "0.39.2"
 rand = "0.10.0"
 rayon = "1.11.0"
@@ -102,3 +98,5 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 [dev-dependencies]
 indoc = "2.0.7"
 mockito = "1.7.2"
+rust_decimal = { version = "1.41.0", features = ["serde"] }
+rust_decimal_macros = "1.40.0"

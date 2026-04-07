@@ -22,8 +22,8 @@
 //! generous for the smallest valid older filings while comfortably sitting
 //! above any TOC stub.
 //!
-//! If a fixture is missing, the test is skipped with a message directing the
-//! developer to run the fixture refresh binary.
+//! If a fixture is missing, the test panics directing the developer to run
+//! the fixture refresh binary.
 
 use flate2::read::GzDecoder;
 use sec_fetcher::network::extract_sections_from_document;
@@ -35,34 +35,30 @@ use std::path::PathBuf;
 
 /// Loads a raw document fixture from `tests/fixtures/{name}.gz`.
 ///
-/// Returns `None` if the file does not exist.
-fn try_load_raw_fixture(name: &str) -> Option<String> {
+/// Panics if the file does not exist — run `cargo run --bin refresh-test-fixtures`.
+fn load_raw_fixture(name: &str) -> String {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("tests/fixtures");
     path.push(format!("{}.gz", name));
 
-    let file = File::open(&path).ok()?;
+    let file = File::open(&path).unwrap_or_else(|_| {
+        panic!(
+            "fixture '{}' not found — run `cargo run --bin refresh-test-fixtures`",
+            name
+        )
+    });
     let mut decoder = GzDecoder::new(file);
     let mut content = String::new();
-    decoder.read_to_string(&mut content).ok()?;
-    Some(content)
+    decoder
+        .read_to_string(&mut content)
+        .expect("failed to decompress fixture");
+    content
 }
 
 /// Asserts that `extract_sections_from_document` extracts both Item 1 and
 /// Item 7 from the fixture with at least `min_chars` characters each.
-///
-/// Skips silently if the fixture file has not been downloaded yet.
 fn assert_sections_extracted(fixture_name: &str, min_chars: usize) {
-    let raw = match try_load_raw_fixture(fixture_name) {
-        Some(r) => r,
-        None => {
-            eprintln!(
-                "SKIP: fixture '{}' not found — run `cargo run --bin refresh-test-fixtures`",
-                fixture_name
-            );
-            return;
-        }
-    };
+    let raw = load_raw_fixture(fixture_name);
 
     let sections = extract_sections_from_document(&raw);
 

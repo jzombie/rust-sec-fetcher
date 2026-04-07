@@ -37,17 +37,24 @@ use std::path::PathBuf;
 
 /// Loads a `RelatedCiks` fixture from `tests/fixtures/{name}.gz`.
 ///
-/// Returns `None` if the file does not exist (fixture not yet downloaded).
-fn try_load_related_ciks(name: &str) -> Option<Vec<String>> {
+/// Panics if the file is missing — run `cargo run --bin refresh-test-fixtures`.
+fn load_related_ciks(name: &str) -> Vec<String> {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("tests/fixtures");
     path.push(format!("{}.gz", name));
 
-    let file = File::open(&path).ok()?;
+    let file = File::open(&path).unwrap_or_else(|_| {
+        panic!(
+            "fixture '{}' not found — run `cargo run --bin refresh-test-fixtures`",
+            name
+        )
+    });
     let mut decoder = GzDecoder::new(file);
     let mut content = String::new();
-    decoder.read_to_string(&mut content).ok()?;
-    serde_json::from_str(&content).ok()
+    decoder
+        .read_to_string(&mut content)
+        .expect("failed to decompress fixture");
+    serde_json::from_str(&content).expect("failed to parse fixture JSON")
 }
 
 // ── Positive cases (predecessor CIK expected) ─────────────────────────────────
@@ -62,16 +69,7 @@ fn try_load_related_ciks(name: &str) -> Option<Vec<String>> {
 /// filings from 2005 through 2026 are returned (23 total), spanning both CIKs.
 #[test]
 fn goog_has_predecessor_google_inc() {
-    let ciks = match try_load_related_ciks("GOOG_related_ciks.json") {
-        Some(v) => v,
-        None => {
-            eprintln!(
-                "SKIP: fixture 'GOOG_related_ciks.json' not found \
-                 — run `cargo run --bin refresh_test_fixtures`"
-            );
-            return;
-        }
-    };
+    let ciks = load_related_ciks("GOOG_related_ciks.json");
 
     assert!(
         ciks.contains(&"0001288776".to_string()),
@@ -89,16 +87,7 @@ fn goog_has_predecessor_google_inc() {
 /// returns the same result regardless of which ticker class is queried.
 #[test]
 fn googl_has_same_predecessor_as_goog() {
-    let ciks = match try_load_related_ciks("GOOGL_related_ciks.json") {
-        Some(v) => v,
-        None => {
-            eprintln!(
-                "SKIP: fixture 'GOOGL_related_ciks.json' not found \
-                 — run `cargo run --bin refresh_test_fixtures`"
-            );
-            return;
-        }
-    };
+    let ciks = load_related_ciks("GOOGL_related_ciks.json");
 
     assert!(
         ciks.contains(&"0001288776".to_string()),
@@ -115,16 +104,7 @@ fn googl_has_same_predecessor_as_goog() {
 /// registrant since Apple Computer Inc. first appeared in EDGAR in 1993.
 #[test]
 fn aapl_has_no_predecessor() {
-    let ciks = match try_load_related_ciks("AAPL_related_ciks.json") {
-        Some(v) => v,
-        None => {
-            eprintln!(
-                "SKIP: fixture 'AAPL_related_ciks.json' not found \
-                 — run `cargo run --bin refresh_test_fixtures`"
-            );
-            return;
-        }
-    };
+    let ciks = load_related_ciks("AAPL_related_ciks.json");
     assert!(
         ciks.is_empty(),
         "AAPL should have no predecessor CIKs, got: {:?}",
@@ -137,16 +117,7 @@ fn aapl_has_no_predecessor() {
 /// co-registration filing ever listed a second CIK alongside 1326801.
 #[test]
 fn meta_has_no_predecessor() {
-    let ciks = match try_load_related_ciks("META_related_ciks.json") {
-        Some(v) => v,
-        None => {
-            eprintln!(
-                "SKIP: fixture 'META_related_ciks.json' not found \
-                 — run `cargo run --bin refresh_test_fixtures`"
-            );
-            return;
-        }
-    };
+    let ciks = load_related_ciks("META_related_ciks.json");
     assert!(
         ciks.is_empty(),
         "META should have no predecessor CIKs, got: {:?}",
@@ -157,16 +128,7 @@ fn meta_has_no_predecessor() {
 /// Microsoft has operated under a single CIK (789019) since its 1986 IPO.
 #[test]
 fn msft_has_no_predecessor() {
-    let ciks = match try_load_related_ciks("MSFT_related_ciks.json") {
-        Some(v) => v,
-        None => {
-            eprintln!(
-                "SKIP: fixture 'MSFT_related_ciks.json' not found \
-                 — run `cargo run --bin refresh_test_fixtures`"
-            );
-            return;
-        }
-    };
+    let ciks = load_related_ciks("MSFT_related_ciks.json");
     assert!(
         ciks.is_empty(),
         "MSFT should have no predecessor CIKs, got: {:?}",
@@ -177,16 +139,7 @@ fn msft_has_no_predecessor() {
 /// NVIDIA has operated under a single CIK (1045810) since its 1999 IPO.
 #[test]
 fn nvda_has_no_predecessor() {
-    let ciks = match try_load_related_ciks("NVDA_related_ciks.json") {
-        Some(v) => v,
-        None => {
-            eprintln!(
-                "SKIP: fixture 'NVDA_related_ciks.json' not found \
-                 — run `cargo run --bin refresh_test_fixtures`"
-            );
-            return;
-        }
-    };
+    let ciks = load_related_ciks("NVDA_related_ciks.json");
     assert!(
         ciks.is_empty(),
         "NVDA should have no predecessor CIKs, got: {:?}",
@@ -197,16 +150,7 @@ fn nvda_has_no_predecessor() {
 /// Amazon has operated under a single CIK (1018724) since its 1997 IPO.
 #[test]
 fn amzn_has_no_predecessor() {
-    let ciks = match try_load_related_ciks("AMZN_related_ciks.json") {
-        Some(v) => v,
-        None => {
-            eprintln!(
-                "SKIP: fixture 'AMZN_related_ciks.json' not found \
-                 — run `cargo run --bin refresh_test_fixtures`"
-            );
-            return;
-        }
-    };
+    let ciks = load_related_ciks("AMZN_related_ciks.json");
     assert!(
         ciks.is_empty(),
         "AMZN should have no predecessor CIKs, got: {:?}",

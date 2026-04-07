@@ -1,0 +1,33 @@
+[package]
+name = "sec-fetcher-test-fixtures"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+# Never published to crates.io — this crate exists only to hold test fixtures
+# and integration tests, keeping the publishable sec-fetcher artifact lean.
+publish = false
+autobins = false
+
+[[bin]]
+name = "refresh-test-fixtures"
+path = "src/bin/refresh_test_fixtures.rs"
+
+# Needed by the refresh-test-fixtures binary and by the integration tests.
+[dependencies]
+sec-fetcher = { path = ".." }
+chrono = "0.4.44"
+flate2 = "1.1"
+reqwest = { version = "0.13.2", features = ["json"] }
+serde_json = "1.0.149"
+tokio = { version = "1.50.0", features = ["full"] }
+
+# Only needed by the integration tests in tests/.
+[dev-dependencies]
+indoc = "2.0.7"
+polars.workspace = true
+rust_decimal = { version = "1.41.0", features = ["serde"] }
+rust_decimal_macros = "1.40.0"
+sec-fetcher-shared = { path = "../sec-fetcher-shared" }
+strum = "0.28.0"

@@ -3701,7 +3701,6 @@ dependencies = [
  "dashmap",
  "dirs",
  "email_address",
- "flate2",
  "futures",
  "html-to-markdown-rs",
  "html2text",
@@ -3739,6 +3738,24 @@ dependencies = [
 [[package]]
 name = "sec-fetcher-shared"
 version = "0.4.0-alpha"
+
+[[package]]
+name = "sec-fetcher-test-fixtures"
+version = "0.4.0-alpha"
+dependencies = [
+ "chrono",
+ "flate2",
+ "indoc",
+ "polars",
+ "reqwest",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "sec-fetcher",
+ "sec-fetcher-shared",
+ "serde_json",
+ "strum",
+ "tokio",
+]
 
 [[package]]
 name = "security-framework"
