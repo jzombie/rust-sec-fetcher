@@ -42,5 +42,8 @@ pub use fetch_sic_codes::fetch_sic_codes;
 mod fetch_company_description;
 pub use fetch_company_description::fetch_company_description;
 
+mod fetch_10k_sections;
+pub use fetch_10k_sections::{TenKSections, fetch_10k_sections, fetch_10k_sections_for_filing};
+
 mod fetch_and_render;
 pub use fetch_and_render::fetch_and_render;
