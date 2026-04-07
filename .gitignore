@@ -7,3 +7,4 @@ sec_fetcher_config.toml
 **/*.bin
 
 **/temp_*
+**/*.csv

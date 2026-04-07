@@ -46,6 +46,10 @@ path = "src/bin/pulls/us_gaap_bulk.rs"
 name = "pull-fund-holdings"
 path = "src/bin/pulls/fund_holdings.rs"
 
+[[bin]]
+name = "pull-tenk-audit"
+path = "src/bin/pulls/tenk_audit.rs"
+
 [features]
 # Enables OS keychain integration for persisting the SEC contact email across
 # sessions.  Requires libdbus-1-dev / pkg-config on Linux (provided
@@ -96,6 +100,7 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 
 [dev-dependencies]
+flate2 = "1.1.9"
 indoc = "2.0.7"
 mockito = "1.7.2"
 rust_decimal = { version = "1.41.0", features = ["serde"] }

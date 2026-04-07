@@ -3701,6 +3701,7 @@ dependencies = [
  "dashmap",
  "dirs",
  "email_address",
+ "flate2",
  "futures",
  "html-to-markdown-rs",
  "html2text",
