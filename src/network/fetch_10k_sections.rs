@@ -88,11 +88,7 @@ pub async fn fetch_best_10k_document(
                         || type_upper == "ARS"
                         || type_upper.starts_with("EX-13")
                 }
-                1 => {
-                    lower.ends_with(".htm")
-                        || lower.ends_with(".html")
-                        || lower.ends_with(".txt")
-                }
+                1 => lower.ends_with(".htm") || lower.ends_with(".html") || lower.ends_with(".txt"),
                 _ => false,
             };
             if !matches_tier {

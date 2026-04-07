@@ -132,14 +132,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
             None => {
                 eprintln!("Warning: {} not found in this filing.", section_key);
-                eprintln!(
-                    "Available sections: {}",
-                    {
-                        let mut keys: Vec<&str> = sections.keys().collect();
-                        keys.sort_by(|a, b| section_sort_key(a).cmp(&section_sort_key(b)));
-                        keys.join(", ")
-                    }
-                );
+                eprintln!("Available sections: {}", {
+                    let mut keys: Vec<&str> = sections.keys().collect();
+                    keys.sort_by(|a, b| section_sort_key(a).cmp(&section_sort_key(b)));
+                    keys.join(", ")
+                });
             }
         }
     }

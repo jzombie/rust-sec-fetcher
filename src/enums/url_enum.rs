@@ -173,8 +173,7 @@ impl Url {
             ),
             Url::SgmlSubmissionTxt(cik, accession_number) => format!(
                 "https://www.sec.gov/Archives/edgar/data/{}/{}.txt",
-                cik,
-                accession_number,
+                cik, accession_number,
             ),
             Url::CompanyTickersJson => "https://www.sec.gov/files/company_tickers.json".to_string(),
             Url::CompanyTickersTxt => "https://www.sec.gov/include/ticker.txt".to_string(),
