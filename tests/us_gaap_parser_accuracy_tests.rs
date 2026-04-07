@@ -91,9 +91,11 @@ fn validate_dataframe_against_json(df: &DataFrame, json_data: &Value) {
                     let mut candidates = Vec::new();
 
                     for obs in obs_array {
-                        // REPLICATE PARSER RULE: skip event-driven 8-K / 8-K/A filings.
+                        // REPLICATE PARSER RULES: skip if no fp, or form is 8-K/8-K/A.
+                        let obs_fp = obs["fp"].as_str().unwrap_or("").trim();
                         let obs_form = obs["form"].as_str().unwrap_or("");
-                        if obs_form.eq_ignore_ascii_case("8-K")
+                        if obs_fp.is_empty()
+                            || obs_form.eq_ignore_ascii_case("8-K")
                             || obs_form.eq_ignore_ascii_case("8-K/A")
                         {
                             continue;
@@ -518,17 +520,15 @@ fn test_canonical_order_column_exists_and_monotonic() {
 }
 
 #[test]
-fn test_8k_rows_excluded_from_time_series_fundamentals() {
-    // AAPL's companyfacts JSON contains observations tagged with form "8-K" —
-    // confirmed present in the raw fixture data.  After parsing, no row in the
-    // output DataFrame may have been sourced exclusively from an 8-K or 8-K/A
-    // filing.  Periodic filings (10-K, 10-Q) must still be present.
+fn test_event_driven_filings_excluded_from_time_series() {
+    // AAPL's companyfacts fixture contains 8-K observations, some with fp empty
+    // and some with fp="FY" (earnings press releases).  Both must be excluded:
+    // the parser drops observations where fp is empty OR the form is 8-K/8-K/A.
     let json_data = load_fixture("AAPL_companyfacts.json");
 
     let df = parse_us_gaap_fundamentals(json_data).expect("Failed to parse AAPL companyfacts");
 
-    // Every row that survived must come from a periodic filing, never from an
-    // event-driven 8-K or 8-K/A.
+    // No output row may have an 8-K form.
     let form_col = df.column("form").unwrap().str().unwrap();
     for i in 0..df.height() {
         if let Some(form) = form_col.get(i) {
@@ -538,6 +538,19 @@ fn test_8k_rows_excluded_from_time_series_fundamentals() {
                 i,
                 form
             );
+        }
+    }
+
+    // No output row may have an empty fp.
+    let fp_col = df.column("fp").unwrap().str().unwrap();
+    for i in 0..df.height() {
+        match fp_col.get(i) {
+            Some(fp) => assert!(
+                !fp.trim().is_empty(),
+                "Row {} has empty fp — observations without a fiscal period must be excluded",
+                i
+            ),
+            None => panic!("Row {} has null fp", i),
         }
     }
 

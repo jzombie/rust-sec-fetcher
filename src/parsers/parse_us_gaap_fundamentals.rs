@@ -8,32 +8,41 @@ use std::error::Error;
 
 pub type TickerFundamentalsDataFrame = DataFrame;
 
-// TODO: Include potential support for Form 10-SA or whatever will be used for semi-annual reporting
-
 /// Parses a US GAAP fundamentals JSON object into a Polars DataFrame containing
 /// **periodic time-series financial data** (10-K, 10-Q, and related amendments).
 ///
-/// Event-driven filings (8-K and 8-K/A) are excluded during extraction.  They do
-/// not carry a canonical fiscal period (`fp` is typically blank), are sparsely
-/// tagged, and often duplicate values already present in the authoritative periodic
-/// filing for the same period.  Only periodic filings that form a coherent
-/// time-series financial record are retained.
+/// # Filing inclusion
 ///
-/// # Sorting and Deduplication Logic
-/// The parser processes the JSON facts list and performs the following steps to ensure
-/// the DataFrame contains the most accurate and up-to-date information:
+/// Two rules filter observations before they enter the dataset:
 ///
-/// 1. **Extraction**: All facts are extracted with their metadata (fy, fp, filed, accn).
-///    8-K / 8-K/A rows are skipped at this stage.
-/// 2. **Chronological Sorting (Filings)**: The intermediate DataFrame is sorted by the 'filed'
-///    date in descending order (`.sort(["filed"], descending=true)`).
-/// 3. **Deduplication (Last-in Wins)**: When multiple records exist for the same fiscal period
-///    (same `fy` and `fp` keys), the `pivot` operation aggregates using the `.first()` function.
-///    Because the data was pre-sorted by `filed` descending, `.first()` selects the record
-///    from the most recent filing (e.g., an amendment `10-Q/A` filed later will overwrite
-///    the original `10-Q`).
-/// 4. **Row Ordering**: The final DataFrame is sorted by Fiscal Year (`fy`) descending, and
-///    then by Fiscal Period (`fp`) descending (FY > Q3 > Q2 > Q1).
+/// 1. **No fiscal period** (`fp` empty or missing) — the observation has no
+///    canonical period assignment and cannot participate in the time-series.
+/// 2. **Form is 8-K or 8-K/A** — press-release filings are excluded explicitly
+///    because they sometimes carry a period tag (e.g. `fp="FY"` on an earnings
+///    release) yet are not authoritative: the periodic 10-K or 10-Q reports the
+///    same data more completely.
+///
+/// All other observations — regardless of form type — are retained and flow
+/// through the same merge logic.
+///
+/// # Amendment handling
+///
+/// Amendments (any form ending with `/A`) are not special-cased.  Their values
+/// win naturally because they carry a later `filed` date, sorting ahead of the
+/// original in the `filed DESC` pass.
+///
+/// Merging is **tag-level**, not row-level:
+/// - A partial amendment that corrects only a subset of tags will have its
+///   corrected tags win while leaving untouched tags populated from the original
+///   filing — both coexist in the same output row.
+/// - A late-filed amendment only affects the `(fy, fp)` period it belongs to;
+///   other periods are completely isolated by the pivot key.
+///
+/// Row-level provenance metadata (`accn`, `form`, `filed`) is taken from the
+/// most-recently-filed filing for that period.  The `/A` suffix is stripped from
+/// `form` and a separate `is_amendment` boolean is produced.  `is_amendment =
+/// true` means the most-recently-filed filing for that period was an amendment —
+/// not that every value on the row came from it.
 pub fn parse_us_gaap_fundamentals(
     serde_json_value: Value,
 ) -> Result<TickerFundamentalsDataFrame, Box<dyn Error>> {
@@ -63,11 +72,17 @@ pub fn parse_us_gaap_fundamentals(
                     if let Some(units) = fact_info["units"].as_object() {
                         for (unit, observations) in units {
                             for obs in observations.as_array().unwrap_or(&Vec::new()) {
-                                // Exclude event-driven filings: 8-K and 8-K/A do not
-                                // carry a canonical fiscal period and are not part of the
-                                // periodic time-series financial record.
+                                // Skip event-driven filings. Two complementary rules:
+                                //   1. No `fp`: observation carries no fiscal period at all.
+                                //   2. Form is 8-K / 8-K/A: press-release filings that
+                                //      sometimes carry a period tag (e.g. fp="FY" on an
+                                //      earnings release) but are not authoritative — the
+                                //      periodic 10-K/10-Q covers the same data more
+                                //      completely.
+                                let obs_fp = obs["fp"].as_str().unwrap_or("").trim();
                                 let obs_form = obs["form"].as_str().unwrap_or("");
-                                if obs_form.eq_ignore_ascii_case("8-K")
+                                if obs_fp.is_empty()
+                                    || obs_form.eq_ignore_ascii_case("8-K")
                                     || obs_form.eq_ignore_ascii_case("8-K/A")
                                 {
                                     continue;
@@ -176,13 +191,15 @@ pub fn parse_us_gaap_fundamentals(
         "accn" => &accn_values
     )?;
 
-    // Sort Logic:
-    // 1. 'filed' descending: Prioritize the latest filing date (Amendments > Original).
-    // 2. 'end' descending: Within the same filing (or same filed date), prioritize the Latest Instant/Period End.
-    //    This is CRITICAL for Balance Sheet (Instant) items in quarterly filings.
-    //    A Q1 filing contains both Current Q1 End (2025-03-31) and Prior Year End (2024-12-31).
-    //    Both are tagged 'Q1' by the SEC in some contexts, but we want the '2025-03-31' value for the Q1 row.
-    //    Sorting by 'end' descending ensures the latest date comes first, so .first() picks the actual Q1 balance.
+    // Sort by `filed` DESC then `end` DESC.  The most-recently-filed observation
+    // for any `(fact_name, fy, fp)` triple sorts first, so any later filing
+    // (amendment or otherwise) wins without form-type-specific logic.
+    //
+    // The secondary `end` DESC key handles balance-sheet (instant) tags in
+    // quarterly filings: a 10-Q contains both the current quarter-end balance
+    // (e.g. 2025-03-31) and the prior year-end comparative (e.g. 2024-12-31),
+    // both tagged `(fy=2025, fp=Q1)`.  Sorting by `end` DESC ensures `.first()`
+    // picks the current-quarter balance.
     df = df.sort(
         ["filed", "end"],
         SortMultipleOptions::default()
@@ -190,8 +207,18 @@ pub fn parse_us_gaap_fundamentals(
             .with_nulls_last(true),
     )?;
 
-    // Extract metadata (filed, form, accn, end) for the latest filing per (fy, fp)
-    // We clone because we need to reuse df for the pivot
+    // Metadata extraction: select provenance metadata (accn, form, filed,
+    // period_end) for each `(fy, fp)` period from the most-recently-filed
+    // filing.  `unique(["fy","fp"], First)` on the already-sorted df gives the
+    // first (= most-recently-filed) row per period.
+    //
+    // Note the asymmetry with the tag-level pivot below: the pivot merges values
+    // tag-by-tag, so a partial amendment's corrected tags win while untouched
+    // tags come from the original.  Metadata is a full-row selection — the
+    // most-recently-filed filing wins the entire metadata block even if it only
+    // corrected one tag.  Consequence: `is_amendment = true` means the
+    // most-recently-filed filing for that period was an amendment; it does NOT
+    // guarantee every value on that row came from the amendment.
     let meta_df = df
         .clone()
         .lazy()
@@ -209,7 +236,16 @@ pub fn parse_us_gaap_fundamentals(
         )
         .collect()?;
 
-    // Perform a single pivot (values include units)
+    // Tag-level pivot keyed on `(fy, fp)` with `.first()` aggregation.
+    // Because the DataFrame is sorted `filed DESC`, `.first()` independently
+    // selects the most-recently-filed observation for each tag in each period
+    // bucket — this is the core of the tag-level merge.
+    //
+    // A partial amendment that only re-files a subset of tags will have those
+    // tags win while untouched tags fall through to the original filing's obs.
+    // A late-filed amendment is confined to its own `(fy, fp)` bucket by the
+    // pivot key; other periods are unaffected.  The logic is entirely
+    // form-agnostic: any filing with a later `filed` date wins.
     let mut pivot_df = pivot(
         &df,
         ["fact_name"]
@@ -244,13 +280,10 @@ pub fn parse_us_gaap_fundamentals(
         )
         .collect()?;
 
-    // Normalize the `form` column: strip the `/A` amendment suffix so that the
-    // base form type is stored (e.g. `"10-Q/A"` → `"10-Q"`).  The amendment fact
-    // is surfaced as a separate `is_amendment` boolean column so callers can still
-    // distinguish amended rows from originals.
-    //
-    // This runs after the join so it operates on the already-deduplicated winning
-    // row (the latest-filed filing per (fy, fp) pair).
+    // Strip the `/A` suffix from the winning form so the base type is stored
+    // (e.g. `"10-Q/A"` → `"10-Q"`).  Works for any SEC form type.  The
+    // amendment fact is surfaced via `is_amendment` so callers can filter
+    // amended rows without re-parsing the form string.
     let (is_amendment_values, normalized_form_values): (Vec<bool>, Vec<Option<String>>) = {
         let form_col = pivot_df.column("form")?.str()?;
         form_col
@@ -265,10 +298,11 @@ pub fn parse_us_gaap_fundamentals(
     pivot_df.with_column(Series::new("is_amendment".into(), is_amendment_values))?;
     pivot_df.with_column(Series::new("form".into(), normalized_form_values))?;
 
-    // Compute fp_rank using the shared sec-fetcher-shared crate so that all period
-    // token aliases (H1, H2, SA1, SA2, 6M, 12M, Q4, …) sort correctly.
-    // The old hardcoded Polars when/then only handled Q1–Q3 + FY, leaving Q4
-    // and all semi-annual/monthly tokens at rank 0 (wrong order).
+    // Output ordering: sort by `fy DESC` then canonical `fp` rank, and attach
+    // a `canonical_order` index (0 = most recent period).  The rank is computed
+    // via the shared crate so all period token aliases (H1, H2, SA1, SA2, 6M,
+    // 12M, Q4, …) sort correctly.  The temporary `fp_rank` column is dropped
+    // before returning.
     let fp_ranks: Vec<i32> = pivot_df
         .column("fp")?
         .str()?
