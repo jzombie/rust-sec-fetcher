@@ -340,6 +340,8 @@ Since primary documents for 10-Ks are .htm files, you need to:
 
 - https://sec-edgar-api.readthedocs.io/en/latest/
 - https://github.com/janlukasschroeder/sec-api-python
+- https://github.com/alphanome-ai/sec-parser
+- https://github.com/lefterisloukas/edgar-crawler (esp. 10-K item parsing)
 
 ## Ideas / Future Work
 
