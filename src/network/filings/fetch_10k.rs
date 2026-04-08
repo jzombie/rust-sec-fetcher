@@ -1,3 +1,4 @@
+use crate::enums::FormType;
 use crate::models::{Cik, CikSubmission};
 use crate::network::{SecClient, fetch_all_entity_submissions};
 use std::error::Error;
@@ -70,15 +71,25 @@ pub async fn fetch_10k_filings(
 /// Extracted as a pure function so it can be tested offline against fixture
 /// data without a live network connection.
 pub fn merge_10k_submissions(submissions: &[CikSubmission]) -> Vec<CikSubmission> {
-    let mut results: Vec<CikSubmission> = CikSubmission::by_form(submissions, "10-K")
-        .into_iter()
-        .cloned()
+    // Collect all four form types: original and amended variants of both the
+    // current (10-K) and pre-2002 legacy (10-K405) form.  Each amendment has
+    // its own accession number and may supersede only a subset of the original
+    // filing's disclosures; both documents are preserved as separate rows so
+    // callers can choose how to handle them.
+    const ANNUAL_REPORT_FORMS: &[FormType] = &[
+        FormType::TenK,
+        FormType::TenKA,
+        FormType::TenK405,
+        FormType::TenK405A,
+    ];
+    let mut results: Vec<CikSubmission> = ANNUAL_REPORT_FORMS
+        .iter()
+        .flat_map(|ft| {
+            CikSubmission::by_form(submissions, ft.as_edgar_str())
+                .into_iter()
+                .cloned()
+        })
         .collect();
-    let mut k405: Vec<CikSubmission> = CikSubmission::by_form(submissions, "10-K405")
-        .into_iter()
-        .cloned()
-        .collect();
-    results.append(&mut k405);
     // Re-sort newest-first by filing_date (submissions list is already ordered
     // newest-first per form, but mixing the two types may interleave them).
     results.sort_by(|a, b| b.filing_date.cmp(&a.filing_date));

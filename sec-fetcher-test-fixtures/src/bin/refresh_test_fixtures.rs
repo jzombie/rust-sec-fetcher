@@ -32,7 +32,7 @@ use chrono::Datelike;
 use flate2::Compression;
 use flate2::write::GzEncoder;
 use sec_fetcher::config::ConfigManager;
-use sec_fetcher::enums::Url;
+use sec_fetcher::enums::{FormType, Url};
 use sec_fetcher::models::{AccessionNumber, Cik, CikSubmission, TickerSymbol};
 use sec_fetcher::network::{
     SecClient, fetch_8k_filings, fetch_10k_filings, fetch_best_10k_document,
@@ -147,6 +147,16 @@ const FIXTURES: &[Fixture] = &[
     Fixture {
         output: "BA_submissions.json",
         ticker: "BA",
+        kind: FixtureKind::Submissions,
+    },
+    // GPC (Genuine Parts Co, CIK 0000040987) filed a 10-K/A on 2019-08-09
+    // amending its FY2018 annual report (original 10-K filed 2019-02-25).
+    // Both filings appear in the "recent" block of the submissions JSON.
+    // Used by `fetch_10k_amendment_tests` to verify that 10-K/A filings
+    // are included in `merge_10k_submissions` output.
+    Fixture {
+        output: "GPC_submissions.json",
+        ticker: "GPC",
         kind: FixtureKind::Submissions,
     },
     // ── companyfacts (full XBRL-tagged financials) ────────────────────────
@@ -530,9 +540,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let filing = filings
                 .iter()
                 .find(|f| {
-                    f.filing_date
+                    // Exclude amendments (10-K/A, 10-K405/A): raw section
+                    // extraction fixtures should use the original annual report,
+                    // not a later amendment that may have different structure.
+                    let is_original = matches!(f.form_type(), FormType::TenK | FormType::TenK405);
+                    let matches_year = f
+                        .filing_date
                         .map(|d| d.year() == *year as i32)
-                        .unwrap_or(false)
+                        .unwrap_or(false);
+                    is_original && matches_year
                 })
                 .ok_or_else(|| {
                     format!(
