@@ -238,13 +238,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 match fetch_best_10k_document(&client, &filing).await {
                                     Ok(bytes) => {
                                         let text = String::from_utf8_lossy(&bytes);
-                                        let sections = extract_sections_from_document(&text);
-                                        let n = sections.keys().count();
-                                        info!(
-                                            "  {} {} {} — {} items",
-                                            ticker, filed_date, form_type, n
-                                        );
-                                        (Some(sections), String::new())
+                                        match extract_sections_from_document(&text) {
+                                            Ok(sections) => {
+                                                let n = sections.keys().count();
+                                                info!(
+                                                    "  {} {} {} — {} items",
+                                                    ticker, filed_date, form_type, n
+                                                );
+                                                (Some(sections), String::new())
+                                            }
+                                            Err(e) => {
+                                                let msg = format!("parse: {}", e);
+                                                error!(
+                                                    "  {} {} {}: {}",
+                                                    ticker, filed_date, form_type, msg
+                                                );
+                                                (None, msg)
+                                            }
+                                        }
                                     }
                                     Err(e) => {
                                         let msg = format!("doc: {}", e);

@@ -59,7 +59,9 @@ pub async fn fetch_best_10k_document(
     // Fast path: primary document is self-contained.
     if {
         let t = String::from_utf8_lossy(&prim_bytes);
-        extract_sections_from_document(&t).is_adequate()
+        extract_sections_from_document(&t)
+            .unwrap_or_default()
+            .is_adequate()
     } {
         return Ok(prim_bytes);
     }
@@ -110,7 +112,9 @@ pub async fn fetch_best_10k_document(
                     let b = r.bytes().await?;
                     if {
                         let t = String::from_utf8_lossy(&b);
-                        extract_sections_from_document(&t).is_adequate()
+                        extract_sections_from_document(&t)
+                            .unwrap_or_default()
+                            .is_adequate()
                     } {
                         return Ok(b);
                     }
@@ -293,5 +297,5 @@ async fn fetch_sections_from_url(
     }
 
     let raw = response.text().await?;
-    Ok(extract_sections_from_document(&raw))
+    Ok(extract_sections_from_document(&raw)?)
 }

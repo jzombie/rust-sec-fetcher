@@ -46,7 +46,7 @@ mod fetch_company_description;
 pub use fetch_company_description::fetch_company_description;
 
 mod fetch_10k_sections;
-pub use crate::parsers::{TenKSections, extract_sections_from_document};
+pub use crate::parsers::{Html2TextPanic, TenKSections, extract_sections_from_document};
 pub use fetch_10k_sections::{
     fetch_10k_sections, fetch_10k_sections_for_filing, fetch_best_10k_document,
 };

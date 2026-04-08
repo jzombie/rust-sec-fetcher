@@ -60,7 +60,8 @@ fn load_raw_fixture(name: &str) -> String {
 fn assert_sections_extracted(fixture_name: &str, min_chars: usize) {
     let raw = load_raw_fixture(fixture_name);
 
-    let sections = extract_sections_from_document(&raw);
+    let sections = extract_sections_from_document(&raw)
+        .expect("html2text panicked on fixture — this fixture may be malformed");
 
     let item1_len = sections.item1().map_or(0, |s| s.len());
     let item7_len = sections.item7().map_or(0, |s| s.len());

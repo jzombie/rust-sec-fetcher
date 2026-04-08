@@ -58,6 +58,24 @@ static MDA_END_RE: Lazy<Regex> = Lazy::new(|| {
 
 // ── Public types ──────────────────────────────────────────────────────────────
 
+/// Error returned when `html2text` panics on a malformed HTML document.
+///
+/// html2text has a known byte-index panic bug (text_renderer.rs:2035) on
+/// certain EDGAR documents.  This error surfaces through
+/// [`extract_sections_from_document`] so callers can decide how to handle it
+/// (e.g. write an error row in an audit CSV, fall back to a different
+/// document, or skip the filing entirely).
+#[derive(Debug)]
+pub struct Html2TextPanic;
+
+impl std::fmt::Display for Html2TextPanic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "html2text panicked on malformed document")
+    }
+}
+
+impl std::error::Error for Html2TextPanic {}
+
 /// All sections extracted from a 10-K filing, keyed by normalized item name.
 ///
 /// Keys use the form `"item_N"` or `"item_NA"` (lowercase, underscore separator):
@@ -167,12 +185,12 @@ impl TenKSections {
 /// 7. If Item 7 is too short (incorporates-by-reference), run a fallback
 ///    search for the standalone "MANAGEMENT'S DISCUSSION AND ANALYSIS"
 ///    heading and extract the prose that follows it.
-pub fn extract_sections_from_document(raw: &str) -> TenKSections {
-    let text = html_to_plain(raw);
+pub fn extract_sections_from_document(raw: &str) -> Result<TenKSections, Html2TextPanic> {
+    let text = html_to_plain(raw)?;
     let cleaned = clean_plain_text(&text);
     let mut sections = extract_items(&cleaned);
     apply_item7_fallback(&cleaned, &mut sections);
-    sections
+    Ok(sections)
 }
 
 // ── HTML / SGML → plain text ──────────────────────────────────────────────────
@@ -185,7 +203,21 @@ pub fn extract_sections_from_document(raw: &str) -> TenKSections {
 ///   XBRL manifests that appear as dense character noise in plain text.
 /// - **SGML / plain-text bundles** — simple tag-strip regex (html2text would
 ///   mis-parse the SGML meta-tags as HTML content).
-fn html_to_plain(raw: &str) -> String {
+/// Calls `html2text` and returns `Err(Html2TextPanic)` if it panics on a
+/// malformed document.
+///
+/// html2text has a known panic bug (byte-index out of bounds in
+/// text_renderer.rs) on certain EDGAR documents.
+fn html2text_to_plain(html: &str) -> Result<String, Html2TextPanic> {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        html2text::config::plain_no_decorate()
+            .string_from_read(html.as_bytes(), 1_000_000)
+            .unwrap_or_default()
+    }))
+    .map_err(|_| Html2TextPanic)
+}
+
+fn html_to_plain(raw: &str) -> Result<String, Html2TextPanic> {
     let peek = raw[..raw.len().min(2048)].to_ascii_lowercase();
     let is_html = peek.contains("<!doctype")
         || peek.contains("<html")
@@ -195,16 +227,14 @@ fn html_to_plain(raw: &str) -> String {
     if is_html {
         // Remove iXBRL header blocks before handing off to html2text; they
         // contain dense machine-readable metadata with no prose value.
-        let no_xbrl = IX_HEADER_RE.replace_all(raw, "");
+        let no_xbrl = IX_HEADER_RE.replace_all(raw, "").into_owned();
         // Width 1_000_000 prevents html2text from wrapping long lines, which
         // would break the `^` anchors used by the item-heading regex.
-        html2text::config::plain_no_decorate()
-            .string_from_read(no_xbrl.as_bytes(), 1_000_000)
-            .unwrap_or_default()
+        html2text_to_plain(&no_xbrl)
     } else {
         // SGML era: strip every tag with a single O(n) regex; entities are
         // left as-is (they don't affect item-heading detection).
-        TAG_STRIP_RE.replace_all(raw, " ").into_owned()
+        Ok(TAG_STRIP_RE.replace_all(raw, " ").into_owned())
     }
 }
 
