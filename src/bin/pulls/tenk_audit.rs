@@ -39,7 +39,7 @@
 //! | `filed_date` | Filing date (YYYY-MM-DD) |
 //! | `form_type` | `10-K` or `10-K405` |
 //! | `items_found` | Semicolon-separated list of item keys extracted |
-//! | `item_1_chars` … `item_16_chars` | Character count for every `TenKItem` |
+//! | `item_1_chars` ... `item_16_chars` | Character count for every `TenKItem` |
 //! | `error` | Non-empty when the fetch or parse step failed |
 
 use clap::Parser;
@@ -130,7 +130,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut rdr = ReaderBuilder::new()
             .has_headers(true)
             .from_path(&args.output)?;
-        // cik=index 1, accession_number=index 2
         for result in rdr.records() {
             let record = result?;
             let cik = record.get(1).unwrap_or("").to_string();
@@ -193,6 +192,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let items_arc = Arc::new(items);
     let seen_arc = Arc::new(seen);
 
+    // Base dir for storing raw original filings: <output_parent>/tenk_audit_raw/<TICKER>/
+    // Sibling to the CSV output so both land in the same working directory.
+    let output_base = args.output.clone();
+
     let (row_tx, row_rx) = mpsc::unbounded_channel::<Vec<String>>();
 
     let producer = {
@@ -203,6 +206,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         async move {
             let mut stream = futures::stream::iter(company_tickers.into_iter().enumerate())
                 .map(|(i, entry)| {
+                    let output_base = output_base.clone();
                     let client = Arc::clone(&client);
                     let items = Arc::clone(&items_arc);
                     let seen = Arc::clone(&seen_arc);
@@ -246,6 +250,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             let (sections_opt, err_msg) =
                                 match fetch_best_10k_document(&client, &filing).await {
                                     Ok(bytes) => {
+                                        // Save the original full document once to:
+                                        //   <output_parent>/tenk_audit_raw/<TICKER>/<acc>_<filename>
+                                        // The accession prefix makes every filename unique even
+                                        // when multiple filings share a common primary-document name.
+                                        let parent = output_base
+                                            .parent()
+                                            .map(|p| p.to_path_buf())
+                                            .unwrap_or_else(|| PathBuf::from("."));
+                                        let dir = parent
+                                            .join("tenk_audit_raw")
+                                            .join(sanitize_name(&ticker));
+                                        match std::fs::create_dir_all(&dir) {
+                                            Err(e) => {
+                                                warn!("Failed to create dir {:?}: {}", dir, e)
+                                            }
+                                            Ok(()) => {
+                                                // Filename = accession number + original extension.
+                                                // Unique by definition; matches the CSV column directly.
+                                                let ext =
+                                                    std::path::Path::new(&filing.primary_document)
+                                                        .extension()
+                                                        .and_then(|e| e.to_str())
+                                                        .unwrap_or("txt");
+                                                let path = dir.join(format!(
+                                                    "{}.{}",
+                                                    sanitize_name(&acc),
+                                                    ext
+                                                ));
+                                                if let Err(e) =
+                                                    std::fs::write(&path, bytes.as_ref())
+                                                {
+                                                    warn!(
+                                                        "Failed to write filing to {:?}: {}",
+                                                        path, e
+                                                    );
+                                                }
+                                            }
+                                        }
+
                                         let text = String::from_utf8_lossy(&bytes);
                                         match extract_sections_from_document(&text) {
                                             Ok(sections) => {
@@ -276,8 +319,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     }
                                 };
 
-                            // Emit items in document order (Item 1 … Item 16)
-                            // rather than HashMap iteration order.
                             let items_found = sections_opt
                                 .as_ref()
                                 .map(|s| {
@@ -391,4 +432,19 @@ fn snippet(text: Option<&str>) -> String {
             collapsed.chars().take(150).collect()
         }
     }
+}
+
+/// Sanitize a string for use as a filesystem path component (directory name or
+/// filename).  Replaces path separators, control characters, and other
+/// shell-unsafe characters with `_`.  Preserves case, dots, alphanumerics,
+/// hyphens, and underscores as-is, so ticker names stay uppercase and file
+/// extensions are kept intact.
+fn sanitize_name(name: &str) -> String {
+    name.chars()
+        .map(|c| match c {
+            '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
+            c if c.is_control() => '_',
+            c => c,
+        })
+        .collect()
 }
