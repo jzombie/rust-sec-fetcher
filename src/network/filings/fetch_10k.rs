@@ -62,7 +62,7 @@ pub async fn fetch_10k_filings(
     cik: Cik,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
     let submissions = fetch_all_entity_submissions(client, cik).await?;
-    Ok(merge_10k_submissions(&submissions))
+    Ok(collect_10k_filings(&submissions))
 }
 
 /// Merges 10-K and 10-K405 submissions from a combined list, sorts
@@ -70,7 +70,7 @@ pub async fn fetch_10k_filings(
 ///
 /// Extracted as a pure function so it can be tested offline against fixture
 /// data without a live network connection.
-pub fn merge_10k_submissions(submissions: &[CikSubmission]) -> Vec<CikSubmission> {
+pub fn collect_10k_filings(submissions: &[CikSubmission]) -> Vec<CikSubmission> {
     // Collect all four form types: original and amended variants of both the
     // current (10-K) and pre-2002 legacy (10-K405) form.  Each amendment has
     // its own accession number and may supersede only a subset of the original

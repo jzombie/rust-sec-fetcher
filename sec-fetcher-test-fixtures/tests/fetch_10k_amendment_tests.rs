@@ -1,4 +1,4 @@
-// Regression tests: `merge_10k_submissions` must include 10-K/A (amended
+// Regression tests: `collect_10k_filings` must include 10-K/A (amended
 // annual report) filings alongside the original 10-K.
 //
 // GPC (Genuine Parts Co, CIK 0000040987) filed a 10-K/A on 2019-08-09
@@ -6,11 +6,11 @@
 // Both appear in the "recent" block of the submissions JSON, so the fixture
 // exercises the amendment code path without fetching additional pages.
 // Before the fix, amendments were silently dropped because
-// `merge_10k_submissions` only collected "10-K" and "10-K405".
+// `collect_10k_filings` only collected "10-K" and "10-K405".
 
 use sec_fetcher::enums::FormType;
 use sec_fetcher::models::{Cik, CikSubmission};
-use sec_fetcher::network::{merge_10k_submissions, parse_cik_submissions_json};
+use sec_fetcher::network::{collect_10k_filings, parse_cik_submissions_json};
 
 mod common;
 
@@ -32,15 +32,15 @@ fn gpc_fixture_contains_10k_amendment() {
     );
 }
 
-/// `merge_10k_submissions` must include 10-K/A filings in its output.
+/// `collect_10k_filings` must include 10-K/A filings in its output.
 #[test]
-fn merge_10k_submissions_includes_amendments() {
+fn collect_10k_filings_includes_amendments() {
     let subs = gpc_submissions();
-    let merged = merge_10k_submissions(&subs);
+    let merged = collect_10k_filings(&subs);
     let has_amendment = merged.iter().any(|s| s.form_type() == FormType::TenKA);
     assert!(
         has_amendment,
-        "merge_10k_submissions dropped all 10-K/A filings for GPC"
+        "collect_10k_filings dropped all 10-K/A filings for GPC"
     );
 }
 
@@ -49,7 +49,7 @@ fn merge_10k_submissions_includes_amendments() {
 #[test]
 fn original_and_amendment_are_both_present() {
     let subs = gpc_submissions();
-    let merged = merge_10k_submissions(&subs);
+    let merged = collect_10k_filings(&subs);
 
     // GPC FY2018: original 10-K filed 2019-02-25, amendment filed 2019-08-09.
     let original_acc = "0000040987-19-000015";
@@ -76,9 +76,9 @@ fn original_and_amendment_are_both_present() {
 
 /// The merged list must still be sorted newest-first when amendments are present.
 #[test]
-fn merged_list_with_amendments_is_sorted_newest_first() {
+fn annual_report_filings_sorted_newest_first_with_amendments() {
     let subs = gpc_submissions();
-    let merged = merge_10k_submissions(&subs);
+    let merged = collect_10k_filings(&subs);
 
     assert!(!merged.is_empty(), "no 10-K* filings found for GPC");
     for window in merged.windows(2) {

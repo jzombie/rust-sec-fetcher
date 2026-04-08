@@ -153,7 +153,7 @@ const FIXTURES: &[Fixture] = &[
     // amending its FY2018 annual report (original 10-K filed 2019-02-25).
     // Both filings appear in the "recent" block of the submissions JSON.
     // Used by `fetch_10k_amendment_tests` to verify that 10-K/A filings
-    // are included in `merge_10k_submissions` output.
+    // are included in `collect_10k_filings` output.
     Fixture {
         output: "GPC_submissions.json",
         ticker: "GPC",

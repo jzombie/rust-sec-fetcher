@@ -236,7 +236,14 @@ pub fn parse_us_gaap_fundamentals(
         )
         .collect()?;
 
-    // Tag-level pivot keyed on `(fy, fp)` with `.first()` aggregation.
+    // COALESCE: Tag-level coalescing step.
+    // This block performs the "coalesce" operation: it pivots tag-level
+    // observations into period-level rows keyed by `(fy, fp)` and uses
+    // `.first()` (after sorting by `filed DESC`) to select the most-recently-
+    // filed value for each tag.  This effectively coalesces values from
+    // original filings and any amendments into a single canonical row per
+    // period.
+    //
     // Because the DataFrame is sorted `filed DESC`, `.first()` independently
     // selects the most-recently-filed observation for each tag in each period
     // bucket — this is the core of the tag-level merge.

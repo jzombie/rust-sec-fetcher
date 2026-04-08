@@ -14,7 +14,7 @@ mod fetch_schedule_13g;
 mod filing_index;
 
 pub use fetch_8k::fetch_8k_filings;
-pub use fetch_10k::{fetch_10k_filings, merge_10k_submissions};
+pub use fetch_10k::{collect_10k_filings, fetch_10k_filings};
 pub use fetch_10q::fetch_10q_filings;
 pub use fetch_13f::{fetch_13f, fetch_13f_filings};
 pub use fetch_def14a::fetch_def14a_filings;

@@ -27,11 +27,11 @@ pub use fetch_edgar_feed::{
 
 mod filings;
 pub use filings::{
-    fetch_8k_filings, fetch_10k_filings, fetch_10q_filings, fetch_13f, fetch_13f_filings,
-    fetch_def14a_filings, fetch_filing_index, fetch_filing_index_by_url, fetch_filings,
-    fetch_form4, fetch_form4_filings, fetch_nport, fetch_nport_filings, fetch_s1_filings,
-    fetch_s2_filings, fetch_s3_filings, fetch_schedule_13d_filings, fetch_schedule_13g_filings,
-    merge_10k_submissions,
+    collect_10k_filings, fetch_8k_filings, fetch_10k_filings, fetch_10q_filings, fetch_13f,
+    fetch_13f_filings, fetch_def14a_filings, fetch_filing_index, fetch_filing_index_by_url,
+    fetch_filings, fetch_form4, fetch_form4_filings, fetch_nport, fetch_nport_filings,
+    fetch_s1_filings, fetch_s2_filings, fetch_s3_filings, fetch_schedule_13d_filings,
+    fetch_schedule_13g_filings,
 };
 
 mod fetch_edgar_master_index;

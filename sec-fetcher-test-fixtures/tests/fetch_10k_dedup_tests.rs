@@ -13,7 +13,7 @@
 // fixture files — no network calls, no synthetic data.
 
 use sec_fetcher::models::{Cik, CikSubmission};
-use sec_fetcher::network::{merge_10k_submissions, parse_cik_submissions_json};
+use sec_fetcher::network::{collect_10k_filings, parse_cik_submissions_json};
 use std::collections::HashSet;
 
 mod common;
@@ -69,7 +69,7 @@ fn combined_aep_submissions_contain_duplicate_10k_accessions() {
     let all = all_aep_submissions();
 
     // Build the raw (un-deduped) merged list — intentionally bypass
-    // merge_10k_submissions so we can confirm the input data actually contains
+    // collect_10k_filings so we can confirm the input data actually contains
     // duplicates before the library fix is applied.
     let mut raw: Vec<CikSubmission> = CikSubmission::by_form(&all, "10-K")
         .into_iter()
@@ -95,7 +95,7 @@ fn combined_aep_submissions_contain_duplicate_10k_accessions() {
     );
 }
 
-/// Fix verification: `merge_10k_submissions` (the library function called by
+/// Fix verification: `collect_10k_filings` (the library function called by
 /// `fetch_10k_filings`) must return each accession number exactly once
 /// regardless of how many co-registrant CIKs list it.
 #[test]
@@ -103,24 +103,24 @@ fn fetch_10k_filings_dedup_eliminates_co_registrant_duplicates() {
     let all = all_aep_submissions();
 
     // Call the actual library function — not a reimplementation.
-    let results = merge_10k_submissions(&all);
+    let results = collect_10k_filings(&all);
 
     let mut seen: HashSet<String> = HashSet::new();
     for f in &results {
         let acc = f.accession_number.to_string();
         assert!(
             seen.insert(acc.clone()),
-            "duplicate accession {} in merge_10k_submissions output for AEP + subsidiaries",
+            "duplicate accession {} in collect_10k_filings output for AEP + subsidiaries",
             acc
         );
     }
 }
 
-/// Sanity: `merge_10k_submissions` returns a non-empty list sorted newest-first.
+/// Sanity: `collect_10k_filings` returns a non-empty list sorted newest-first.
 #[test]
 fn aep_has_10k_filings_sorted_newest_first() {
     let all = all_aep_submissions();
-    let results = merge_10k_submissions(&all);
+    let results = collect_10k_filings(&all);
 
     assert!(
         !results.is_empty(),
