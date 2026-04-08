@@ -160,9 +160,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // ── Fetch full ticker list ────────────────────────────────────────────────
 
-    let company_tickers = fetch_company_tickers(&client, false).await?;
+    let all_tickers = fetch_company_tickers(&client, false).await?;
+    // company_tickers.json lists one entry per primary ticker symbol, but the
+    // same CIK (registrant) can appear under multiple symbols (e.g. GOOG and
+    // GOOGL both map to Alphabet).  Deduplicate by CIK here so each
+    // registrant's filings are fetched exactly once.
+    let mut seen_ciks: HashSet<String> = HashSet::new();
+    let company_tickers: Vec<_> = all_tickers
+        .into_iter()
+        .filter(|t| seen_ciks.insert(t.cik.to_string()))
+        .collect();
     let total_tickers = company_tickers.len();
-    info!("Total primary listings: {}", total_tickers);
+    info!("Total unique CIKs to process: {}", total_tickers);
 
     // ── Pipelined producer / consumer ─────────────────────────────────────────
     //

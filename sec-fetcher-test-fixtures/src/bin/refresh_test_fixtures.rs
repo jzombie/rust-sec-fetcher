@@ -33,7 +33,7 @@ use flate2::Compression;
 use flate2::write::GzEncoder;
 use sec_fetcher::config::ConfigManager;
 use sec_fetcher::enums::Url;
-use sec_fetcher::models::{AccessionNumber, CikSubmission, TickerSymbol};
+use sec_fetcher::models::{AccessionNumber, Cik, CikSubmission, TickerSymbol};
 use sec_fetcher::network::{
     SecClient, fetch_8k_filings, fetch_10k_filings, fetch_best_10k_document,
     fetch_cik_by_ticker_symbol, fetch_filing_index, fetch_related_ciks,
@@ -65,6 +65,14 @@ struct Fixture {
 }
 
 enum FixtureKind {
+    /// Raw `submissions/CIK{}.json` for an entity that has no ticker symbol
+    /// (e.g. a utility subsidiary that co-files its parent's 10-K).
+    /// The `ticker` field in the enclosing [`Fixture`] is used only as a
+    /// human-readable label in progress output; it is not resolved to a CIK.
+    SubmissionsByCik {
+        /// The numeric CIK value.
+        cik: u64,
+    },
     /// `https://data.sec.gov/submissions/CIK{}.json`
     Submissions,
     /// `https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json`
@@ -407,6 +415,64 @@ const FIXTURES: &[Fixture] = &[
         ticker: "AMZN",
         kind: FixtureKind::RelatedCiks,
     },
+    // ── fetch_10k_filings dedup regression ───────────────────────────────────
+    //
+    // AEP (American Electric Power, CIK 0000004904) co-files its annual 10-K
+    // together with seven operating subsidiaries.  Each subsidiary's submissions
+    // JSON lists the SAME 10-K accession numbers as the primary.  Before the
+    // dedup fix, `fetch_10k_filings` (which calls `fetch_all_entity_submissions`
+    // to merge primary + subsidiaries) could return the same accession up to
+    // eight times — once per CIK — producing duplicate rows in the audit CSV.
+    //
+    // These fixtures are used by `tests/fetch_10k_dedup_tests.rs` to:
+    //   1. Confirm the bug trigger exists (same accession span multiple CIKs).
+    //   2. Assert the dedup fix eliminates duplicates in the merged result.
+    Fixture {
+        output: "AEP_submissions.json",
+        ticker: "AEP",
+        kind: FixtureKind::Submissions,
+    },
+    Fixture {
+        output: "AEP_related_ciks.json",
+        ticker: "AEP",
+        kind: FixtureKind::RelatedCiks,
+    },
+    // AEP operating subsidiaries (no exchange-listed tickers):
+    Fixture {
+        output: "AEP_subsidiary_6879_submissions.json",
+        ticker: "Appalachian Power Co", // label only — CIK resolved from kind
+        kind: FixtureKind::SubmissionsByCik { cik: 6879 },
+    },
+    Fixture {
+        output: "AEP_subsidiary_50172_submissions.json",
+        ticker: "Indiana Michigan Power Co",
+        kind: FixtureKind::SubmissionsByCik { cik: 50172 },
+    },
+    Fixture {
+        output: "AEP_subsidiary_73986_submissions.json",
+        ticker: "Ohio Power Co",
+        kind: FixtureKind::SubmissionsByCik { cik: 73986 },
+    },
+    Fixture {
+        output: "AEP_subsidiary_81027_submissions.json",
+        ticker: "Public Service Co of Oklahoma",
+        kind: FixtureKind::SubmissionsByCik { cik: 81027 },
+    },
+    Fixture {
+        output: "AEP_subsidiary_92487_submissions.json",
+        ticker: "Southwestern Electric Power Co",
+        kind: FixtureKind::SubmissionsByCik { cik: 92487 },
+    },
+    Fixture {
+        output: "AEP_subsidiary_1702494_submissions.json",
+        ticker: "AEP Transmission Company LLC",
+        kind: FixtureKind::SubmissionsByCik { cik: 1702494 },
+    },
+    Fixture {
+        output: "AEP_subsidiary_1721781_submissions.json",
+        ticker: "AEP Texas Inc",
+        kind: FixtureKind::SubmissionsByCik { cik: 1721781 },
+    },
 ];
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -436,7 +502,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         print!("  {} ({}) ... ", fixture.output, fixture.ticker);
         std::io::stdout().flush()?;
 
-        let cik = fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new(fixture.ticker)).await?;
+        let cik = if let FixtureKind::SubmissionsByCik { cik } = &fixture.kind {
+            Cik::from_u64(*cik).map_err(|e| format!("Invalid CIK {}: {}", cik, e))?
+        } else {
+            fetch_cik_by_ticker_symbol(&client, &TickerSymbol::new(fixture.ticker)).await?
+        };
 
         // ── RelatedCiks: no URL — call fetch_related_ciks and serialise result ──
         if matches!(fixture.kind, FixtureKind::RelatedCiks) {
@@ -488,7 +558,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         let url: String = match fixture.kind {
-            FixtureKind::Submissions => Url::CikSubmission(cik).value(),
+            FixtureKind::Submissions | FixtureKind::SubmissionsByCik { .. } => {
+                Url::CikSubmission(cik).value()
+            }
             FixtureKind::CompanyFacts => Url::CompanyFacts(cik).value(),
             FixtureKind::EightKPrimary => {
                 let filings = fetch_8k_filings(&client, cik).await?;

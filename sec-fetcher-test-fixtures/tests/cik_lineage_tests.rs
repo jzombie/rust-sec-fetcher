@@ -28,33 +28,11 @@
 //! | NVDA   | `[]`                 | NVIDIA, stable CIK |
 //! | AMZN   | `[]`                 | Amazon, stable CIK |
 
-use flate2::read::GzDecoder;
-use std::fs::File;
-use std::io::Read;
-use std::path::PathBuf;
+mod common;
 
-// ── Fixture loader ────────────────────────────────────────────────────────────
-
-/// Loads a `RelatedCiks` fixture from `tests/fixtures/{name}.gz`.
-///
-/// Panics if the file is missing — run `cargo run --bin refresh-test-fixtures`.
 fn load_related_ciks(name: &str) -> Vec<String> {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("tests/fixtures");
-    path.push(format!("{}.gz", name));
-
-    let file = File::open(&path).unwrap_or_else(|_| {
-        panic!(
-            "fixture '{}' not found — run `cargo run --bin refresh-test-fixtures`",
-            name
-        )
-    });
-    let mut decoder = GzDecoder::new(file);
-    let mut content = String::new();
-    decoder
-        .read_to_string(&mut content)
-        .expect("failed to decompress fixture");
-    serde_json::from_str(&content).expect("failed to parse fixture JSON")
+    serde_json::from_value(common::fixture_json(name))
+        .expect("fixture is not a JSON array of strings")
 }
 
 // ── Positive cases (predecessor CIK expected) ─────────────────────────────────

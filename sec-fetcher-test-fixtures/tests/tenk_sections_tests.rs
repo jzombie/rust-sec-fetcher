@@ -25,34 +25,12 @@
 //! If a fixture is missing, the test panics directing the developer to run
 //! the fixture refresh binary.
 
-use flate2::read::GzDecoder;
 use sec_fetcher::network::extract_sections_from_document;
-use std::fs::File;
-use std::io::Read;
-use std::path::PathBuf;
 
-// ── Fixture loader ────────────────────────────────────────────────────────────
+mod common;
 
-/// Loads a raw document fixture from `tests/fixtures/{name}.gz`.
-///
-/// Panics if the file does not exist — run `cargo run --bin refresh-test-fixtures`.
 fn load_raw_fixture(name: &str) -> String {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("tests/fixtures");
-    path.push(format!("{}.gz", name));
-
-    let file = File::open(&path).unwrap_or_else(|_| {
-        panic!(
-            "fixture '{}' not found — run `cargo run --bin refresh-test-fixtures`",
-            name
-        )
-    });
-    let mut decoder = GzDecoder::new(file);
-    let mut content = String::new();
-    decoder
-        .read_to_string(&mut content)
-        .expect("failed to decompress fixture");
-    content
+    common::fixture_string(name)
 }
 
 /// Asserts that `extract_sections_from_document` extracts both Item 1 and

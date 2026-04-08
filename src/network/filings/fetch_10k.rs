@@ -61,11 +61,20 @@ pub async fn fetch_10k_filings(
     cik: Cik,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
     let submissions = fetch_all_entity_submissions(client, cik).await?;
-    let mut results: Vec<CikSubmission> = CikSubmission::by_form(&submissions, "10-K")
+    Ok(merge_10k_submissions(&submissions))
+}
+
+/// Merges 10-K and 10-K405 submissions from a combined list, sorts
+/// newest-first, and deduplicates by accession number.
+///
+/// Extracted as a pure function so it can be tested offline against fixture
+/// data without a live network connection.
+pub fn merge_10k_submissions(submissions: &[CikSubmission]) -> Vec<CikSubmission> {
+    let mut results: Vec<CikSubmission> = CikSubmission::by_form(submissions, "10-K")
         .into_iter()
         .cloned()
         .collect();
-    let mut k405: Vec<CikSubmission> = CikSubmission::by_form(&submissions, "10-K405")
+    let mut k405: Vec<CikSubmission> = CikSubmission::by_form(submissions, "10-K405")
         .into_iter()
         .cloned()
         .collect();
@@ -73,5 +82,11 @@ pub async fn fetch_10k_filings(
     // Re-sort newest-first by filing_date (submissions list is already ordered
     // newest-first per form, but mixing the two types may interleave them).
     results.sort_by(|a, b| b.filing_date.cmp(&a.filing_date));
-    Ok(results)
+    // Deduplicate by accession number: EDGAR can tag the same submission under
+    // both "10-K" and "10-K405" form types, and co-registrant subsidiaries
+    // list the same accession numbers as their parent.  Without this, each
+    // accession can appear once per co-registrant CIK in the merged list.
+    let mut seen_acc = std::collections::HashSet::new();
+    results.retain(|s| seen_acc.insert(s.accession_number.to_string()));
+    results
 }

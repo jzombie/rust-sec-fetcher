@@ -12,33 +12,15 @@
 //! Run `cargo run --bin refresh-test-fixtures` to recreate the fixture file.
 
 use chrono::NaiveDate;
-use flate2::read::GzDecoder;
 use indoc::indoc;
 use rust_decimal_macros::dec;
 use sec_fetcher::models::Form4Transaction;
 use sec_fetcher::parsers::parse_form4_xml;
-use std::fs::File;
-use std::io::Read;
-use std::path::PathBuf;
 
-// ── Fixture loader ────────────────────────────────────────────────────────────
+mod common;
 
 fn load_text_fixture(name: &str) -> String {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("tests/fixtures");
-    path.push(format!("{}.gz", name));
-    let file = File::open(&path).unwrap_or_else(|_| {
-        panic!(
-            "fixture '{}' not found — run `cargo run --bin refresh-test-fixtures`",
-            name
-        )
-    });
-    let mut decoder = GzDecoder::new(file);
-    let mut text = String::new();
-    decoder
-        .read_to_string(&mut text)
-        .expect("failed to decompress fixture");
-    text
+    common::fixture_string(name)
 }
 
 // ── Real-data tests (AAPL_form4_levinson.xml) ────────────────────────────────

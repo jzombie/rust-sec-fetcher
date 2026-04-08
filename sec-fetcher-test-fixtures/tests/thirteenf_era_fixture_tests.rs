@@ -29,36 +29,14 @@
 //! directing the developer to run the fixture refresh binary.
 
 use chrono::NaiveDate;
-use flate2::read::GzDecoder;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use sec_fetcher::parsers::parse_13f_xml;
-use std::fs::File;
-use std::io::Read;
-use std::path::PathBuf;
 
-// ── Fixture loader ────────────────────────────────────────────────────────────
+mod common;
 
-/// Loads a raw XML fixture from `tests/fixtures/{name}.gz`.
-///
-/// Panics if the file does not exist — run `cargo run --bin refresh-test-fixtures`.
 fn load_xml_fixture(name: &str) -> String {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("tests/fixtures");
-    path.push(format!("{}.gz", name));
-
-    let file = File::open(&path).unwrap_or_else(|_| {
-        panic!(
-            "fixture '{}' not found — run `cargo run --bin refresh-test-fixtures`",
-            name
-        )
-    });
-    let mut decoder = GzDecoder::new(file);
-    let mut xml = String::new();
-    decoder
-        .read_to_string(&mut xml)
-        .expect("failed to decompress fixture");
-    xml
+    common::fixture_string(name)
 }
 
 // ── Helper ────────────────────────────────────────────────────────────────────
