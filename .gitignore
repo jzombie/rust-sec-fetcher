@@ -8,3 +8,7 @@ sec_fetcher_config.toml
 
 **/temp_*
 **/*.csv
+
+/.tmp
+/hf_upload_folder
+**/__pycache__
