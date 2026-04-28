@@ -12,7 +12,7 @@ duckdb.sql(f"""
             regexp_extract(filename, '([^/]+)/([^/]+)\.htm', 1) AS ticker_symbol,
             regexp_extract(filename, '([^/]+)/([^/]+)\.htm', 2) AS accession_number,
             column0 AS raw_text
-        FROM read_csv('data/*/*.htm', 
+        FROM read_csv('data/tenk_audit_raw/*/*.htm', 
                       columns={{'column0': 'VARCHAR'}}, 
                       delim=None, 
                       header=False, 
