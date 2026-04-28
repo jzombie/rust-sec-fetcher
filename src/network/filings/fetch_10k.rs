@@ -1,5 +1,6 @@
+use crate::enums::FormType;
 use crate::models::{Cik, CikSubmission};
-use crate::network::{SecClient, fetch_cik_submissions};
+use crate::network::{SecClient, fetch_all_entity_submissions};
 use std::error::Error;
 
 /// Fetches all 10-K and 10-K405 annual report filings for a given CIK,
@@ -60,18 +61,43 @@ pub async fn fetch_10k_filings(
     client: &SecClient,
     cik: Cik,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
-    let submissions = fetch_cik_submissions(client, cik).await?;
-    let mut results: Vec<CikSubmission> = CikSubmission::by_form(&submissions, "10-K")
-        .into_iter()
-        .cloned()
+    let submissions = fetch_all_entity_submissions(client, cik).await?;
+    Ok(collect_10k_filings(&submissions))
+}
+
+/// Merges 10-K and 10-K405 submissions from a combined list, sorts
+/// newest-first, and deduplicates by accession number.
+///
+/// Extracted as a pure function so it can be tested offline against fixture
+/// data without a live network connection.
+pub fn collect_10k_filings(submissions: &[CikSubmission]) -> Vec<CikSubmission> {
+    // Collect all four form types: original and amended variants of both the
+    // current (10-K) and pre-2002 legacy (10-K405) form.  Each amendment has
+    // its own accession number and may supersede only a subset of the original
+    // filing's disclosures; both documents are preserved as separate rows so
+    // callers can choose how to handle them.
+    const ANNUAL_REPORT_FORMS: &[FormType] = &[
+        FormType::TenK,
+        FormType::TenKA,
+        FormType::TenK405,
+        FormType::TenK405A,
+    ];
+    let mut results: Vec<CikSubmission> = ANNUAL_REPORT_FORMS
+        .iter()
+        .flat_map(|ft| {
+            CikSubmission::by_form(submissions, ft.as_edgar_str())
+                .into_iter()
+                .cloned()
+        })
         .collect();
-    let mut k405: Vec<CikSubmission> = CikSubmission::by_form(&submissions, "10-K405")
-        .into_iter()
-        .cloned()
-        .collect();
-    results.append(&mut k405);
     // Re-sort newest-first by filing_date (submissions list is already ordered
     // newest-first per form, but mixing the two types may interleave them).
     results.sort_by(|a, b| b.filing_date.cmp(&a.filing_date));
-    Ok(results)
+    // Deduplicate by accession number: EDGAR can tag the same submission under
+    // both "10-K" and "10-K405" form types, and co-registrant subsidiaries
+    // list the same accession numbers as their parent.  Without this, each
+    // accession can appear once per co-registrant CIK in the merged list.
+    let mut seen_acc = std::collections::HashSet::new();
+    results.retain(|s| seen_acc.insert(s.accession_number.to_string()));
+    results
 }

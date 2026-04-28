@@ -12,30 +12,14 @@
 //! Run `cargo run --bin refresh-test-fixtures` to recreate the fixture file.
 
 use chrono::NaiveDate;
-use flate2::read::GzDecoder;
 use sec_fetcher::enums::FormType;
 use sec_fetcher::models::MasterIndexEntry;
 use sec_fetcher::parsers::parse_master_idx;
-use std::fs::File;
-use std::io::Read;
-use std::path::PathBuf;
 
-// ── Fixture loader ────────────────────────────────────────────────────────────
-
-fn try_load_text_fixture(name: &str) -> Option<String> {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("tests/fixtures");
-    path.push(format!("{}.gz", name));
-    let file = File::open(&path).ok()?;
-    let mut decoder = GzDecoder::new(file);
-    let mut text = String::new();
-    decoder.read_to_string(&mut text).ok()?;
-    Some(text)
-}
+mod common;
 
 fn q4_2025() -> Vec<MasterIndexEntry> {
-    let text = try_load_text_fixture("master_idx_2025_Q4.idx")
-        .expect("run `cargo run --bin refresh-test-fixtures`");
+    let text = common::fixture_string("master_idx_2025_Q4.idx");
     parse_master_idx(&text).unwrap()
 }
 
