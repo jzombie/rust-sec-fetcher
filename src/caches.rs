@@ -58,3 +58,62 @@ impl Caches {
         self.preprocessor_cache.clone()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+
+    #[test]
+    fn test_caches_open_creates_directory() {
+        let temp_dir = std::env::temp_dir().join("caches_test_open");
+        let _ = std::fs::remove_dir_all(&temp_dir);
+
+        assert!(!temp_dir.exists());
+        let caches = Caches::open(&temp_dir).expect("Caches::open failed");
+        assert!(temp_dir.exists(), "Cache directory should have been created");
+
+        let http_cache = caches.get_http_cache_store();
+        let preprocessor_cache = caches.get_preprocessor_cache();
+
+        // Both stores should be valid Arc<DataStore> instances
+        assert_eq!(
+            Arc::as_ptr(&http_cache) as *const (),
+            Arc::as_ptr(&caches.get_http_cache_store()) as *const (),
+            "get_http_cache_store should return the same Arc"
+        );
+        assert_eq!(
+            Arc::as_ptr(&preprocessor_cache) as *const (),
+            Arc::as_ptr(&caches.get_preprocessor_cache()) as *const (),
+            "get_preprocessor_cache should return the same Arc"
+        );
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_caches_open_existing_directory() {
+        let temp_dir = std::env::temp_dir().join("caches_test_existing");
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        std::fs::create_dir_all(&temp_dir).unwrap();
+
+        let result = Caches::open(&temp_dir);
+        assert!(result.is_ok(), "Caches::open on existing dir failed: {:?}", result.err());
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_caches_debug_format() {
+        let temp_dir = std::env::temp_dir().join("caches_test_debug");
+        let _ = std::fs::remove_dir_all(&temp_dir);
+
+        let caches = Caches::open(&temp_dir).unwrap();
+        let debug = format!("{:?}", caches);
+        assert!(debug.contains("Caches"));
+        assert!(debug.contains("http_cache"));
+        assert!(debug.contains("preprocessor_cache"));
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+}

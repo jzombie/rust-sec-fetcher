@@ -241,6 +241,7 @@ pub(super) fn flatten_tables(markdown: &str) -> String {
                 result.push('\n');
                 table_lines.clear();
             }
+            
             result.push_str(line);
             result.push('\n');
         }
@@ -251,4 +252,204 @@ pub(super) fn flatten_tables(markdown: &str) -> String {
     }
 
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // -- collapse_blank_lines --
+
+    #[test]
+    fn test_collapse_blank_lines_no_change() {
+        let input = "hello\nworld\n";
+        assert_eq!(collapse_blank_lines(input), "hello\nworld\n");
+    }
+
+    #[test]
+    fn test_collapse_blank_lines_single_blank() {
+        let input = "hello\n\nworld\n";
+        assert_eq!(collapse_blank_lines(input), "hello\n\nworld\n");
+    }
+
+    #[test]
+    fn test_collapse_blank_lines_multiple_blanks() {
+        let input = "hello\n\n\n\nworld\n";
+        assert_eq!(collapse_blank_lines(input), "hello\n\nworld\n");
+    }
+
+    #[test]
+    fn test_collapse_blank_lines_trailing_blanks() {
+        let input = "hello\n\n\n";
+        assert_eq!(collapse_blank_lines(input), "hello\n\n");
+    }
+
+    #[test]
+    fn test_collapse_blank_lines_leading_blanks() {
+        let input = "\n\n\nhello\n";
+        // Function keeps at most 1 blank line between content
+        assert_eq!(collapse_blank_lines(input), "\nhello\n");
+    }
+
+    #[test]
+    fn test_collapse_blank_lines_trim_trailing_whitespace() {
+        let input = "hello   \nworld  \n";
+        assert_eq!(collapse_blank_lines(input), "hello\nworld\n");
+    }
+
+    #[test]
+    fn test_collapse_blank_lines_empty_string() {
+        assert_eq!(collapse_blank_lines(""), "");
+    }
+
+    // -- strip_xbrl_noise --
+
+    #[test]
+    fn test_strip_xbrl_noise_removes_ix_header() {
+        let html = "<html><body><ix:header><some>metadata</some></ix:header><p>Content</p></body></html>";
+        let result = strip_xbrl_noise(html);
+        assert!(!result.contains("<ix:header"));
+        assert!(result.contains("<p>Content</p>"));
+    }
+
+    #[test]
+    fn test_strip_xbrl_noise_removes_hidden_div() {
+        let html = r#"<html><body><div style="display:none">hidden</div><p>visible</p></body></html>"#;
+        let result = strip_xbrl_noise(html);
+        assert!(!result.contains("hidden"));
+        assert!(result.contains("visible"));
+    }
+
+    #[test]
+    fn test_strip_xbrl_noise_no_noise() {
+        let html = "<html><body><p>Clean content</p></body></html>";
+        let result = strip_xbrl_noise(html);
+        assert_eq!(result, html);
+    }
+
+    #[test]
+    fn test_strip_xbrl_noise_empty_string() {
+        assert_eq!(strip_xbrl_noise(""), "");
+    }
+
+    // -- parse_table_row --
+
+    #[test]
+    fn test_parse_table_row_standard() {
+        let row = parse_table_row("| Name | Value | Date |");
+        assert_eq!(row, vec!["Name", "Value", "Date"]);
+    }
+
+    #[test]
+    fn test_parse_table_row_with_empty_first_cell() {
+        let row = parse_table_row("|             | Q1 2025 | Q4 2024 |");
+        assert_eq!(row, vec!["", "Q1 2025", "Q4 2024"]);
+    }
+
+    #[test]
+    fn test_parse_table_row_no_pipes() {
+        let row = parse_table_row("hello");
+        assert_eq!(row, vec!["hello"]);
+    }
+
+    // -- is_separator_row --
+
+    #[test]
+    fn test_is_separator_row_true() {
+        assert!(is_separator_row("|---|---|---|"));
+    }
+
+    #[test]
+    fn test_is_separator_row_with_colons() {
+        assert!(is_separator_row("|:---|:---:|---:|"));
+    }
+
+    #[test]
+    fn test_is_separator_row_false_for_data() {
+        assert!(!is_separator_row("| a | b | c |"));
+    }
+
+    // -- flatten_tables --
+
+    #[test]
+    fn test_flatten_tables_no_tables() {
+        let md = "Hello\n\nWorld\n";
+        assert_eq!(flatten_tables(md), "Hello\n\nWorld\n");
+    }
+
+    #[test]
+    fn test_flatten_tables_empty_input() {
+        assert_eq!(flatten_tables(""), "");
+    }
+
+    #[test]
+    fn test_flatten_tables_simple_table() {
+        let md = "| Name | Value |\n|------|-------|\n| AAPL | $175  |\n";
+        let result = flatten_tables(md);
+        assert!(result.contains("Name: AAPL"));
+        assert!(result.contains("Value: $175"));
+    }
+
+    #[test]
+    fn test_table_to_sentences_standard() {
+        let lines = vec!["| Name | Value | Date |", "| AAPL | $175  | 2025 |"];
+        let result = table_to_sentences(&lines);
+        assert!(result.contains("Name: AAPL"));
+        assert!(result.contains("Value: $175"));
+        assert!(result.contains("Date: 2025"));
+    }
+
+    #[test]
+    fn test_table_to_sentences_row_label_pattern() {
+        let lines = vec![
+            "|             | Q1 2025 | Q4 2024 |",
+            "| Revenue     | 95,359  | 90,753  |",
+        ];
+        let result = table_to_sentences(&lines);
+        assert!(result.contains("Revenue"));
+        assert!(result.contains("Q1 2025"));
+        assert!(result.contains("95,359"));
+    }
+
+    #[test]
+    fn test_table_to_sentences_empty_rows_skipped() {
+        let lines = vec![
+            "| Name | Value |",
+            "|------|-------|",
+            "| AAPL | $175  |",
+            "|      |       |",
+        ];
+        let result = table_to_sentences(&lines);
+        assert!(result.contains("Name: AAPL, Value: $175"));
+        // Empty row should not produce output
+        assert!(!result.contains("Name: , Value:"));
+    }
+
+    #[test]
+    fn test_table_to_sentences_empty_data() {
+        let lines: Vec<&str> = vec![];
+        assert_eq!(table_to_sentences(&lines), "");
+    }
+
+    #[test]
+    fn test_table_to_sentences_empty_cells_use_placeholder() {
+        let lines = vec!["| Name | Value |", "| AAPL |       |"];
+        let result = table_to_sentences(&lines);
+        assert!(result.contains("Value: —"));
+    }
+
+    #[test]
+    fn test_render_html_to_clean_markdown_strips_xbrl() {
+        let html = "<html><body><ix:header>meta</ix:header><p>Hello</p></body></html>";
+        let result = render_html_to_clean_markdown(html).unwrap();
+        assert!(!result.contains("meta"));
+        assert!(result.contains("Hello"));
+    }
+
+    #[test]
+    fn test_render_html_to_clean_markdown_invalid_html() {
+        // Even malformed HTML should not panic
+        let result = render_html_to_clean_markdown("<p>unclosed");
+        assert!(result.is_ok());
+    }
 }

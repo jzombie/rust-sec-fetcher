@@ -1,6 +1,6 @@
 use sec_fetcher::config::{
-    APP_NAME_ENV_VAR, APP_VERSION_ENV_VAR, ConfigManager, DEFAULT_APP_NAME, DEFAULT_APP_VERSION,
-    EMAIL_ENV_VAR,
+    APP_NAME_ENV_VAR, APP_VERSION_ENV_VAR, AppConfig, ConfigManager, DEFAULT_APP_NAME,
+    DEFAULT_APP_VERSION, EMAIL_ENV_VAR,
 };
 use sec_fetcher::network::SecClient;
 use sec_fetcher::utils::set_interactive_mode_override;
@@ -491,5 +491,50 @@ app_version = "2.0.0-file""#,
     }
     unsafe {
         std::env::remove_var(APP_VERSION_ENV_VAR);
+    }
+}
+
+// ============================================================================
+// AppConfig tests
+// ============================================================================
+
+#[test]
+fn test_app_config_default() {
+    let config = AppConfig::default();
+    assert_eq!(config.email, None);
+    assert_eq!(config.app_name, None);
+    assert_eq!(config.app_version, None);
+    assert_eq!(config.max_concurrent, Some(1));
+    assert_eq!(config.min_delay_ms, Some(500));
+    assert_eq!(config.max_retries, Some(5));
+    assert_eq!(config.cache_base_dir, None);
+}
+
+#[test]
+fn test_app_config_pretty_print() {
+    let config = AppConfig::default();
+    let printed = config.pretty_print();
+    // Should serialize to a TOML-like string
+    assert!(!printed.is_empty());
+    assert!(printed.contains("max_concurrent"));
+    assert!(printed.contains("min_delay_ms"));
+    assert!(printed.contains("max_retries"));
+}
+
+#[test]
+fn test_app_config_get_valid_keys() {
+    let keys = AppConfig::get_valid_keys();
+    // Should include all configurable fields
+    let key_names: Vec<&str> = keys.iter().map(|(k, _)| k.as_str()).collect();
+    assert!(key_names.contains(&"email"));
+    assert!(key_names.contains(&"app_name"));
+    assert!(key_names.contains(&"app_version"));
+    assert!(key_names.contains(&"max_concurrent"));
+    assert!(key_names.contains(&"min_delay_ms"));
+    assert!(key_names.contains(&"max_retries"));
+    assert!(key_names.contains(&"cache_base_dir"));
+    // Each key should have a type string
+    for (key, type_name) in &keys {
+        assert!(!type_name.is_empty(), "Key '{}' has empty type", key);
     }
 }

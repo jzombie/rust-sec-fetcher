@@ -282,6 +282,158 @@ mod tests {
         let c = normalize_symbol("aapl");
         assert_eq!(c, vec!["AAPL".to_string()]);
     }
+
+    // -- extract_first_year --
+
+    #[test]
+    fn test_extract_first_year_from_combined() {
+        assert_eq!(extract_first_year("2024Q3"), Some(2024));
+    }
+
+    #[test]
+    fn test_extract_first_year_from_plain_year() {
+        assert_eq!(extract_first_year("2024"), Some(2024));
+    }
+
+    #[test]
+    fn test_extract_first_year_from_longer_string() {
+        assert_eq!(extract_first_year("FY ended 2024-12-31"), Some(2024));
+    }
+
+    #[test]
+    fn test_extract_first_year_out_of_range_low() {
+        assert_eq!(extract_first_year("1899"), None);
+    }
+
+    #[test]
+    fn test_extract_first_year_out_of_range_high() {
+        assert_eq!(extract_first_year("2101"), None);
+    }
+
+    #[test]
+    fn test_extract_first_year_no_digits() {
+        assert_eq!(extract_first_year("hello world"), None);
+    }
+
+    #[test]
+    fn test_extract_first_year_short_string() {
+        assert_eq!(extract_first_year("23"), None);
+    }
+
+    #[test]
+    fn test_extract_first_year_empty_string() {
+        assert_eq!(extract_first_year(""), None);
+    }
+
+    // -- parse_period --
+
+    #[test]
+    fn test_parse_period_year_only() {
+        assert_eq!(
+            parse_period("2024").unwrap(),
+            Period::Year { year: 2024 }
+        );
+    }
+
+    #[test]
+    fn test_parse_period_year_quarter() {
+        assert_eq!(
+            parse_period("2024Q3").unwrap(),
+            Period::YearQuarter {
+                year: 2024,
+                quarter: 3
+            }
+        );
+    }
+
+    #[test]
+    fn test_parse_period_year_fy() {
+        assert_eq!(
+            parse_period("2024FY").unwrap(),
+            Period::YearQuarter {
+                year: 2024,
+                quarter: 4
+            }
+        );
+    }
+
+    #[test]
+    fn test_parse_period_year_h1() {
+        assert_eq!(
+            parse_period("2024H1").unwrap(),
+            Period::YearQuarter {
+                year: 2024,
+                quarter: 2
+            }
+        );
+    }
+
+    #[test]
+    fn test_parse_period_year_9m() {
+        assert_eq!(
+            parse_period("2024 9M").unwrap(),
+            Period::YearQuarter {
+                year: 2024,
+                quarter: 3
+            }
+        );
+    }
+
+    #[test]
+    fn test_parse_period_whitespace_trimmed() {
+        assert_eq!(
+            parse_period("  2024Q2  ").unwrap(),
+            Period::YearQuarter {
+                year: 2024,
+                quarter: 2
+            }
+        );
+    }
+
+    #[test]
+    fn test_parse_period_missing_year() {
+        let err = parse_period("Q3").unwrap_err();
+        assert!(err.contains("missing year"));
+    }
+
+    #[test]
+    fn test_parse_period_empty_string() {
+        let err = parse_period("").unwrap_err();
+        assert!(err.contains("missing year"));
+    }
+
+    // -- normalize_symbol --
+
+    #[test]
+    fn test_normalize_symbol_dash_to_dot() {
+        let c = normalize_symbol("BRK-B");
+        assert!(c.contains(&"BRK.B".to_string()));
+        assert!(c.contains(&"BRK-B".to_string()));
+    }
+
+    #[test]
+    fn test_normalize_symbol_no_change_needed() {
+        let c = normalize_symbol("AAPL");
+        assert_eq!(c, vec!["AAPL".to_string()]);
+    }
+
+    #[test]
+    fn test_normalize_symbol_dot_and_dash_both_present() {
+        let c = normalize_symbol("brk.b");
+        assert!(c.contains(&"BRK.B".to_string()));
+        assert!(c.contains(&"BRK-B".to_string()));
+        // Exactly 2 variants (no duplicates)
+        assert_eq!(c.len(), 2);
+    }
+
+    // -- normalize_fp_label --
+
+    #[test]
+    fn test_normalize_fp_label_q4_case_insensitive() {
+        assert_eq!(normalize_fp_label("Q4"), "FY");
+        assert_eq!(normalize_fp_label("q4"), "FY");
+        assert_eq!(normalize_fp_label("  Q4  "), "FY");
+    }
 }
 
 /// A parsed fiscal period — either a specific year+quarter or a bare year.
