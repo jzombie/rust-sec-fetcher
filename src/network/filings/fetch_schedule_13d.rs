@@ -1,5 +1,5 @@
 use crate::models::{Cik, CikSubmission};
-use crate::network::{SecClient, fetch_cik_submissions};
+use crate::network::{SecClient, fetch_all_entity_submissions};
 use std::error::Error;
 
 /// Fetches all SC 13D and SC 13D/A beneficial ownership report filings for a
@@ -77,7 +77,7 @@ pub async fn fetch_schedule_13d_filings(
     client: &SecClient,
     cik: Cik,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
-    let submissions = fetch_cik_submissions(client, cik).await?;
+    let submissions = fetch_all_entity_submissions(client, cik).await?;
     let mut results: Vec<CikSubmission> = CikSubmission::by_form(&submissions, "SC 13D")
         .into_iter()
         .cloned()

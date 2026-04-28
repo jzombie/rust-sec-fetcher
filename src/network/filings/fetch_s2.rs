@@ -1,5 +1,5 @@
 use crate::models::{Cik, CikSubmission};
-use crate::network::{SecClient, fetch_cik_submissions};
+use crate::network::{SecClient, fetch_all_entity_submissions};
 use std::error::Error;
 
 /// Fetches all S-2 and S-2/A registration statement filings for a given CIK,
@@ -57,7 +57,7 @@ pub async fn fetch_s2_filings(
     client: &SecClient,
     cik: Cik,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
-    let submissions = fetch_cik_submissions(client, cik).await?;
+    let submissions = fetch_all_entity_submissions(client, cik).await?;
     let mut results: Vec<CikSubmission> = CikSubmission::by_form(&submissions, "S-2")
         .into_iter()
         .cloned()

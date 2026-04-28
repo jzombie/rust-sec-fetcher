@@ -7,6 +7,9 @@ pub use form_type_enum::FormType;
 mod fundamental_concept_enum;
 pub use fundamental_concept_enum::FundamentalConcept;
 
+mod tenk_item_enum;
+pub use tenk_item_enum::TenKItem;
+
 mod ticker_origin_enum;
 pub use ticker_origin_enum::TickerOrigin;
 

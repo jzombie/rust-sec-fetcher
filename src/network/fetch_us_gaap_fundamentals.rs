@@ -1,6 +1,6 @@
 use crate::enums::Url;
 use crate::models::{AccessionNumber, Cik, Ticker, TickerSymbol};
-use crate::network::{SecClient, fetch_cik_submissions};
+use crate::network::{SecClient, fetch_all_entity_submissions};
 use polars::prelude::*;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -75,7 +75,7 @@ pub async fn fetch_us_gaap_fundamentals(
     // Fetch submissions to resolve accession numbers -> primary document URLs.
     // The companyfacts API only provides accession numbers; the primary document
     // filename (e.g. "aapl-20241228.htm") comes from the submissions API.
-    match fetch_cik_submissions(client, cik.clone()).await {
+    match fetch_all_entity_submissions(client, cik.clone()).await {
         Ok(submissions) => {
             // Build map: accn (dashed, e.g. "0000320193-25-000008") -> primary document URL
             let primary_doc_map: HashMap<String, String> = submissions

@@ -77,6 +77,9 @@ pub enum FormType {
     /// most analysis.
     #[strum(props(edgar = "10-K405", retired = "true"))]
     TenK405,
+    /// Amendment to a historical 10-K405 annual report — `"10-K405/A"`.
+    #[strum(props(edgar = "10-K405/A", retired = "true"))]
+    TenK405A,
 
     /// Quarterly report — `"10-Q"`.
     #[strum(props(edgar = "10-Q"))]

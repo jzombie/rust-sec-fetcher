@@ -25,50 +25,18 @@
 //!    across both eras, and all weights sum to approximately (within rounding)
 //!    100%.
 //!
-//! If any fixture file is missing, the test is skipped with a clear message
+//! If any fixture file is missing, the test panics with a clear message
 //! directing the developer to run the fixture refresh binary.
 
 use chrono::NaiveDate;
-use flate2::read::GzDecoder;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use sec_fetcher::parsers::parse_13f_xml;
-use std::fs::File;
-use std::io::Read;
-use std::path::PathBuf;
 
-// ── Fixture loader ────────────────────────────────────────────────────────────
+mod common;
 
-/// Loads a raw XML fixture from `tests/fixtures/{name}.gz`.
-///
-/// Returns `None` if the file does not exist (fixtures must be downloaded by
-/// running `cargo run --bin refresh-test-fixtures`).
-fn try_load_xml_fixture(name: &str) -> Option<String> {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("tests/fixtures");
-    path.push(format!("{}.gz", name));
-
-    let file = File::open(&path).ok()?;
-    let mut decoder = GzDecoder::new(file);
-    let mut xml = String::new();
-    decoder.read_to_string(&mut xml).ok()?;
-    Some(xml)
-}
-
-/// Returns the XML for a fixture, or skips the test if the fixture is absent.
-macro_rules! load_xml_fixture_or_skip {
-    ($name:expr) => {
-        match try_load_xml_fixture($name) {
-            Some(xml) => xml,
-            None => {
-                eprintln!(
-                    "SKIP: fixture '{}' not found — run `cargo run --bin refresh-test-fixtures`",
-                    $name
-                );
-                return;
-            }
-        }
-    };
+fn load_xml_fixture(name: &str) -> String {
+    common::fixture_string(name)
 }
 
 // ── Helper ────────────────────────────────────────────────────────────────────
@@ -94,7 +62,7 @@ fn ancient_aapl_price_per_share_is_plausible() {
     // <value> in the XML is raw **thousands**: AAPL raw=95634
     // → after ×1000: value_usd = $95,634,000 for 692,000 shares → ~$138/sh.
     // AAPL traded ~$138–150 in Q3-2022 — so [120, 175] is a generous sanity band.
-    let xml = load_xml_fixture_or_skip!("BRK_B_13f_ancient.xml");
+    let xml = load_xml_fixture("BRK_B_13f_ancient.xml");
     let filing_date = NaiveDate::from_ymd_opt(2022, 11, 14).unwrap();
     let price = aapl_price_per_share(&xml, filing_date);
     assert!(
@@ -107,7 +75,7 @@ fn ancient_aapl_price_per_share_is_plausible() {
 
 #[test]
 fn ancient_weight_pct_sums_to_100() {
-    let xml = load_xml_fixture_or_skip!("BRK_B_13f_ancient.xml");
+    let xml = load_xml_fixture("BRK_B_13f_ancient.xml");
     let filing_date = NaiveDate::from_ymd_opt(2022, 11, 14).unwrap();
     let holdings = parse_13f_xml(&xml, Some(filing_date)).unwrap();
     let sum: Decimal = holdings.iter().map(|h| h.weight_pct.value()).sum();
@@ -126,7 +94,7 @@ fn ancient_weight_pct_is_normalized_pct_type() {
     // If normalize_13f_value_usd accidentally skips the ×1000, value_usd would
     // be ~1000× too small and weight_pct would still be valid — but the
     // price-per-share test above would catch that separately.
-    let xml = load_xml_fixture_or_skip!("BRK_B_13f_ancient.xml");
+    let xml = load_xml_fixture("BRK_B_13f_ancient.xml");
     let filing_date = NaiveDate::from_ymd_opt(2022, 11, 14).unwrap();
     let holdings = parse_13f_xml(&xml, Some(filing_date)).unwrap();
     assert!(!holdings.is_empty(), "expected at least one holding");
@@ -150,7 +118,7 @@ fn transition_aapl_price_per_share_is_plausible() {
     // <value> is raw **actual USD**: AAPL raw=133289470
     // → value_usd = $133,289,470 for 1,025,856 shares → ~$130/sh.
     // AAPL traded ~$125–140 in Q4-2022 — so [110, 165] is a sensible band.
-    let xml = load_xml_fixture_or_skip!("BRK_B_13f_transition.xml");
+    let xml = load_xml_fixture("BRK_B_13f_transition.xml");
     let filing_date = NaiveDate::from_ymd_opt(2023, 2, 14).unwrap();
     let price = aapl_price_per_share(&xml, filing_date);
     assert!(
@@ -163,7 +131,7 @@ fn transition_aapl_price_per_share_is_plausible() {
 
 #[test]
 fn transition_weight_pct_sums_to_100() {
-    let xml = load_xml_fixture_or_skip!("BRK_B_13f_transition.xml");
+    let xml = load_xml_fixture("BRK_B_13f_transition.xml");
     let filing_date = NaiveDate::from_ymd_opt(2023, 2, 14).unwrap();
     let holdings = parse_13f_xml(&xml, Some(filing_date)).unwrap();
     let sum: Decimal = holdings.iter().map(|h| h.weight_pct.value()).sum();
@@ -183,7 +151,7 @@ fn era_crossover_produces_different_value_usd_for_same_raw() {
     //  - With the correct 2022-11-14 date  → thousands → value_usd is large
     //  - With a wrong 2023-01-01+ date     → pass-through → value_usd is small
     //   (This proves the routing is not a no-op.)
-    let xml = load_xml_fixture_or_skip!("BRK_B_13f_ancient.xml");
+    let xml = load_xml_fixture("BRK_B_13f_ancient.xml");
 
     let ancient_date = NaiveDate::from_ymd_opt(2022, 11, 14).unwrap();
     let modern_date = NaiveDate::from_ymd_opt(2023, 1, 1).unwrap();
@@ -216,26 +184,25 @@ fn era_crossover_produces_different_value_usd_for_same_raw() {
 fn modern_aapl_price_per_share_is_plausible() {
     // BRK-B Q4-2025 (0001193125-26-054580, filed 2026-02-17).
     // <value> is actual USD.  AAPL traded ~$230–260 in Q4-2025.
-    let xml = load_xml_fixture_or_skip!("BRK_B_13f_modern.xml");
+    let xml = load_xml_fixture("BRK_B_13f_modern.xml");
     let filing_date = NaiveDate::from_ymd_opt(2026, 2, 17).unwrap();
 
     let holdings = parse_13f_xml(&xml, Some(filing_date)).unwrap();
-    // BRK-B fully exited AAPL by Q4-2024; if AAPL is absent, skip gracefully.
-    if let Some(aapl) = holdings.iter().find(|h| h.cusip == AAPL_CUSIP) {
-        let price = aapl.value_usd / aapl.shares;
-        assert!(
-            price > dec!(100) && price < dec!(600),
-            "modern AAPL price/share = {} — outside expected [100, 600] range",
-            price
-        );
-    } else {
-        eprintln!("INFO: AAPL not present in Q4-2025 BRK-B filing (position may have been exited)");
-    }
+    let aapl = holdings
+        .iter()
+        .find(|h| h.cusip == AAPL_CUSIP)
+        .expect("AAPL not present in modern BRK-B 13F fixture");
+    let price = aapl.value_usd / aapl.shares;
+    assert!(
+        price > dec!(100) && price < dec!(600),
+        "modern AAPL price/share = {} — outside expected [100, 600] range",
+        price
+    );
 }
 
 #[test]
 fn modern_weight_pct_sums_to_100() {
-    let xml = load_xml_fixture_or_skip!("BRK_B_13f_modern.xml");
+    let xml = load_xml_fixture("BRK_B_13f_modern.xml");
     let filing_date = NaiveDate::from_ymd_opt(2026, 2, 17).unwrap();
     let holdings = parse_13f_xml(&xml, Some(filing_date)).unwrap();
     assert!(
@@ -257,7 +224,7 @@ fn modern_holdings_have_large_value_usd() {
     // (no ×1000 applied), values would still be in the millions — but if
     // ×1000 were INCORRECTLY applied to modern data, values would be trillion-scale.
     // Check that no single position exceeds $1 trillion (a clear sign of ×1000 misfire).
-    let xml = load_xml_fixture_or_skip!("BRK_B_13f_modern.xml");
+    let xml = load_xml_fixture("BRK_B_13f_modern.xml");
     let filing_date = NaiveDate::from_ymd_opt(2026, 2, 17).unwrap();
     let holdings = parse_13f_xml(&xml, Some(filing_date)).unwrap();
     for h in &holdings {
