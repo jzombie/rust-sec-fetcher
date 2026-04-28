@@ -76,10 +76,8 @@ pub fn parse_13f_xml(
                         shares = text.parse::<Decimal>().unwrap_or(dec!(0));
                     }
                     "sshPrnamtType" => shares_type = text,
-                    "putCall" => {
-                        if !text.is_empty() {
-                            put_call = Some(text);
-                        }
+                    "putCall" if !text.is_empty() => {
+                        put_call = Some(text);
                     }
                     "investmentDiscretion" => investment_discretion = text,
                     _ => {}
@@ -123,7 +121,7 @@ pub fn parse_13f_xml(
         h.weight_pct = compute_13f_weight_pct(h.value_usd, total);
     }
 
-    holdings.sort_by(|a, b| b.value_usd.cmp(&a.value_usd));
+    holdings.sort_by_key(|b| std::cmp::Reverse(b.value_usd));
     Ok(holdings)
 }
 

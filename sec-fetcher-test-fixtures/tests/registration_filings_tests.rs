@@ -92,7 +92,7 @@ fn s1_combined_newest_amendment_precedes_initial() {
         .into_iter()
         .chain(CikSubmission::by_form(&subs, "S-1/A"))
         .collect();
-    combined.sort_by(|a, b| b.filing_date.cmp(&a.filing_date));
+    combined.sort_by_key(|b| std::cmp::Reverse(b.filing_date));
     // 3 amendments + 1 initial = 4 total; last entry is the S-1
     assert_eq!(combined.len(), 4);
     assert_eq!(combined.last().unwrap().form, "S-1");
@@ -188,7 +188,7 @@ fn sc13d_combined_amendment_precedes_initial() {
         .into_iter()
         .chain(CikSubmission::by_form(&subs, "SC 13D/A"))
         .collect();
-    combined.sort_by(|a, b| b.filing_date.cmp(&a.filing_date));
+    combined.sort_by_key(|b| std::cmp::Reverse(b.filing_date));
     assert_eq!(combined.len(), 2);
     assert_eq!(combined[0].form, "SC 13D/A");
     assert_eq!(combined[1].form, "SC 13D");

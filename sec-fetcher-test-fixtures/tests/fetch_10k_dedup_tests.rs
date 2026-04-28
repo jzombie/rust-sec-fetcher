@@ -52,7 +52,7 @@ fn all_aep_submissions() -> Vec<CikSubmission> {
         let mut subs = load_submissions(&name, cik);
         all.append(&mut subs);
     }
-    all.sort_by(|a, b| b.filing_date.cmp(&a.filing_date));
+    all.sort_by_key(|b| std::cmp::Reverse(b.filing_date));
     all
 }
 

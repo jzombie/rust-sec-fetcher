@@ -92,7 +92,7 @@ pub fn collect_10k_filings(submissions: &[CikSubmission]) -> Vec<CikSubmission> 
         .collect();
     // Re-sort newest-first by filing_date (submissions list is already ordered
     // newest-first per form, but mixing the two types may interleave them).
-    results.sort_by(|a, b| b.filing_date.cmp(&a.filing_date));
+    results.sort_by_key(|b| std::cmp::Reverse(b.filing_date));
     // Deduplicate by accession number: EDGAR can tag the same submission under
     // both "10-K" and "10-K405" form types, and co-registrant subsidiaries
     // list the same accession numbers as their parent.  Without this, each

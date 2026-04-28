@@ -137,7 +137,7 @@ pub async fn fetch_all_entity_submissions(
     }
 
     // Primary submissions are already newest-first; predecessors may not be.
-    all.sort_by(|a, b| b.filing_date.cmp(&a.filing_date));
+    all.sort_by_key(|b| std::cmp::Reverse(b.filing_date));
 
     Ok(all)
 }

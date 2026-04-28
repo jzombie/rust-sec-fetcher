@@ -93,6 +93,6 @@ pub async fn fetch_schedule_13g_filings(
         .cloned()
         .collect();
     results.append(&mut amendments);
-    results.sort_by(|a, b| b.filing_date.cmp(&a.filing_date));
+    results.sort_by_key(|b| std::cmp::Reverse(b.filing_date));
     Ok(results)
 }

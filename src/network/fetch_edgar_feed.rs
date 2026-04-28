@@ -438,7 +438,7 @@ pub async fn fetch_edgar_feeds_since(
         .iter()
         .flat_map(|d| d.entries.iter().cloned())
         .collect();
-    entries.sort_by(|a, b| b.updated.cmp(&a.updated));
+    entries.sort_by_key(|b| std::cmp::Reverse(b.updated));
 
     let high_water = results.iter().filter_map(|d| d.high_water).max();
 

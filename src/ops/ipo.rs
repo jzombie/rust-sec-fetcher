@@ -43,7 +43,7 @@ pub async fn get_ipo_registration_filings(
     }
 
     // Sort newest-first so callers can use index 0 as "latest".
-    all.sort_by(|a, b| b.filing_date.cmp(&a.filing_date));
+    all.sort_by_key(|b| std::cmp::Reverse(b.filing_date));
 
     Ok(all)
 }

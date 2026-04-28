@@ -143,4 +143,3 @@ indoc.workspace = true
 mockito.workspace = true
 rust_decimal = { workspace = true, features = ["serde"] }
 rust_decimal_macros.workspace = true
-
