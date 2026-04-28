@@ -85,7 +85,6 @@ reqwest-drive = "0.13.2-alpha.2"
 rust_decimal = { version = "1.41.0", features = ["serde"] }
 rust_decimal_macros = "1.40.0"
 schemars = "1.2.1"
-scraper = "0.26.0"
 sec-fetcher-shared.workspace = true
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
