@@ -1,6 +1,6 @@
 use crate::enums::Url;
 use crate::models::{Cik, CikSubmission, NportInvestment};
-use crate::network::{SecClient, fetch_cik_submissions, fetch_company_tickers};
+use crate::network::{SecClient, fetch_all_entity_submissions, fetch_company_tickers};
 use crate::parsers::parse_nport_xml;
 use std::error::Error;
 
@@ -36,7 +36,7 @@ pub async fn fetch_nport_filings(
     client: &SecClient,
     cik: Cik,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
-    let submissions = fetch_cik_submissions(client, cik).await?;
+    let submissions = fetch_all_entity_submissions(client, cik).await?;
     Ok(CikSubmission::by_form(&submissions, "NPORT-P")
         .into_iter()
         .cloned()

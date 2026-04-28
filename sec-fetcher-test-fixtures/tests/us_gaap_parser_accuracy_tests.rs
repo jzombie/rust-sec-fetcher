@@ -1,26 +1,12 @@
-use flate2::read::GzDecoder;
 use polars::prelude::*;
 use sec_fetcher::parsers::parse_us_gaap_fundamentals;
 use sec_fetcher_shared::US_GAAP_CSV_META_COLUMNS;
-use serde_json::Value;
-use serde_json::json;
-use std::fs::File;
-use std::path::PathBuf;
+use serde_json::{Value, json};
 
-/// Load a fixture by its logical name (e.g. `"AAPL_companyfacts.json"`).
-/// Stored on disk as `{name}.gz` and decompressed in memory.
-/// Run `cargo run --bin refresh_test_fixtures` to create or update fixtures.
-fn load_fixture(name: &str) -> Value {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("tests/fixtures");
-    path.push(format!("{}.gz", name));
-    let file = File::open(&path).unwrap_or_else(|_| {
-        panic!(
-            "missing fixture: {} (run `cargo run --bin refresh_test_fixtures`)",
-            path.display()
-        )
-    });
-    serde_json::from_reader(GzDecoder::new(file)).expect("fixture is not valid JSON")
+mod common;
+
+fn load_fixture(name: &str) -> serde_json::Value {
+    common::fixture_json(name)
 }
 
 /// Helper function to validate EVERY parsed fact in the dataframe against the source JSON.

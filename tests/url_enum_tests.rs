@@ -171,3 +171,16 @@ fn sic_codes_url() {
     let url = Url::SicCodes.value();
     assert_eq!(url, "https://www.sec.gov/info/edgar/siccodes.htm");
 }
+
+#[test]
+fn sgml_submission_txt_url() {
+    // AAPL 1994 10-K — matches the path in master.idx:
+    // edgar/data/320193/0000320193-94-000016.txt
+    let url = Url::SgmlSubmissionTxt(cik(320193), accn(320193, 94, 16)).value();
+    assert_eq!(
+        url,
+        "https://www.sec.gov/Archives/edgar/data/0000320193/0000320193-94-000016.txt"
+    );
+    // Must use the dashed (formatted) accession number as the filename.
+    assert!(url.ends_with("0000320193-94-000016.txt"));
+}

@@ -10,27 +10,13 @@
 //     Includes S-3 (2024-10-15)
 
 use chrono::NaiveDate;
-use flate2::read::GzDecoder;
 use sec_fetcher::models::{Cik, CikSubmission};
 use sec_fetcher::network::parse_cik_submissions_json;
-use serde_json::Value;
-use std::fs::File;
-use std::path::PathBuf;
 
-/// Load a fixture by its logical name (e.g. `"RDDT_submissions.json"`).
-/// The file is stored on disk as `{name}.gz` and decompressed in memory.
-/// Run `cargo run --example refresh_test_fixtures` to update the fixtures.
-fn load_fixture(name: &str) -> Value {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("tests/fixtures");
-    path.push(format!("{}.gz", name));
-    let file = File::open(&path).unwrap_or_else(|_| {
-        panic!(
-            "missing fixture: {} (run `cargo run --example refresh_test_fixtures`)",
-            path.display()
-        )
-    });
-    serde_json::from_reader(GzDecoder::new(file)).expect("fixture is not valid JSON")
+mod common;
+
+fn load_fixture(name: &str) -> serde_json::Value {
+    common::fixture_json(name)
 }
 
 /// Reddit, Inc. — full EDGAR download, CIK 1713445 (ticker: RDDT).

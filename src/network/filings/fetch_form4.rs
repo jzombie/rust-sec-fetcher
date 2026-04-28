@@ -1,6 +1,6 @@
 use crate::enums::Url;
 use crate::models::{Cik, CikSubmission, Form4Transaction};
-use crate::network::{SecClient, fetch_cik_submissions};
+use crate::network::{SecClient, fetch_all_entity_submissions};
 use crate::parsers::parse_form4_xml;
 use std::error::Error;
 
@@ -34,7 +34,7 @@ pub async fn fetch_form4_filings(
     client: &SecClient,
     cik: Cik,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
-    let submissions = fetch_cik_submissions(client, cik).await?;
+    let submissions = fetch_all_entity_submissions(client, cik).await?;
     let mut results: Vec<CikSubmission> = CikSubmission::by_form(&submissions, "4")
         .into_iter()
         .cloned()
