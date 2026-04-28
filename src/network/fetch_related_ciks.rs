@@ -88,18 +88,18 @@ pub async fn fetch_related_ciks(
             // for a by-CIK query, but guard defensively.
             if !ciks_arr
                 .iter()
-                .any(|v| v.as_str().map_or(false, |s| s == primary_str))
+                .any(|v| v.as_str().is_some_and(|s| s == primary_str))
             {
                 continue;
             }
 
             for cik_val in ciks_arr {
-                if let Some(s) = cik_val.as_str() {
-                    if let Ok(n) = s.trim_start_matches('0').parse::<u64>() {
-                        if n != primary_cik.value && !related.iter().any(|c: &Cik| c.value == n) {
-                            related.push(Cik { value: n });
-                        }
-                    }
+                if let Some(s) = cik_val.as_str()
+                    && let Ok(n) = s.trim_start_matches('0').parse::<u64>()
+                    && n != primary_cik.value
+                    && !related.iter().any(|c: &Cik| c.value == n)
+                {
+                    related.push(Cik { value: n });
                 }
             }
         }

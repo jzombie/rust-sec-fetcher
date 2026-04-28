@@ -73,7 +73,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         if tenk.is_empty() {
             println!("  No 10-K filings found.");
         } else {
-            println!("  {:<12} {:<14} {}", "Filed", "CIK", "Accession");
+            println!("  {:<12} {:<14} Accession", "Filed", "CIK");
             println!("  {}", "─".repeat(60));
             for s in &tenk {
                 let date = s

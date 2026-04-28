@@ -74,7 +74,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             eprintln!("No 10-K filings found.");
             return Ok(());
         }
-        println!("{:<12}  {:<20}  {}", "Date", "Accession Number", "Form");
+        println!("{:<12}  {:<20}  Form", "Date", "Accession Number");
         for f in &filings {
             let date = f
                 .filing_date
@@ -108,7 +108,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     if section_key == "all" {
         let mut keys: Vec<&str> = sections.keys().collect();
-        keys.sort_by(|a, b| section_sort_key(a).cmp(&section_sort_key(b)));
+        keys.sort_by_key(|a| section_sort_key(a));
         if keys.is_empty() {
             eprintln!("Warning: no sections found in this filing.");
         }
@@ -134,7 +134,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 eprintln!("Warning: {} not found in this filing.", section_key);
                 eprintln!("Available sections: {}", {
                     let mut keys: Vec<&str> = sections.keys().collect();
-                    keys.sort_by(|a, b| section_sort_key(a).cmp(&section_sort_key(b)));
+                    keys.sort_by_key(|a| section_sort_key(a));
                     keys.join(", ")
                 });
             }

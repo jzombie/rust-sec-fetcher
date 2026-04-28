@@ -57,12 +57,13 @@ pub async fn fetch_best_10k_document(
     let prim_bytes = prim_resp.bytes().await?;
 
     // Fast path: primary document is self-contained.
-    if {
+    let primary_adequate = {
         let t = String::from_utf8_lossy(&prim_bytes);
         extract_sections_from_document(&t)
             .unwrap_or_default()
             .is_adequate()
-    } {
+    };
+    if primary_adequate {
         return Ok(prim_bytes);
     }
 
@@ -107,17 +108,17 @@ pub async fn fetch_best_10k_document(
             if let Ok(r) = sec_client
                 .raw_request(reqwest::Method::GET, &url, None, None)
                 .await
+                && r.status().is_success()
             {
-                if r.status().is_success() {
-                    let b = r.bytes().await?;
-                    if {
-                        let t = String::from_utf8_lossy(&b);
-                        extract_sections_from_document(&t)
-                            .unwrap_or_default()
-                            .is_adequate()
-                    } {
-                        return Ok(b);
-                    }
+                let b = r.bytes().await?;
+                let doc_adequate = {
+                    let t = String::from_utf8_lossy(&b);
+                    extract_sections_from_document(&t)
+                        .unwrap_or_default()
+                        .is_adequate()
+                };
+                if doc_adequate {
+                    return Ok(b);
                 }
             }
         }

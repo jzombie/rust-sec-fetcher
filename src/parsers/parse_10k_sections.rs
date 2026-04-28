@@ -203,8 +203,8 @@ pub fn extract_sections_from_document(raw: &str) -> Result<TenKSections, Html2Te
 ///   XBRL manifests that appear as dense character noise in plain text.
 /// - **SGML / plain-text bundles** — simple tag-strip regex (html2text would
 ///   mis-parse the SGML meta-tags as HTML content).
-/// Calls `html2text` and returns `Err(Html2TextPanic)` if it panics on a
-/// malformed document.
+///   Calls `html2text` and returns `Err(Html2TextPanic)` if it panics on a
+///   malformed document.
 ///
 /// html2text has a known panic bug (byte-index out of bounds in
 /// text_renderer.rs) on certain EDGAR documents.
@@ -392,17 +392,17 @@ fn apply_item7_fallback(text: &str, sections: &mut TenKSections) {
         }
     }
 
-    if best_len >= MIN_ITEM7_CHARS {
-        if let Some(content) = best {
-            sections
-                .0
-                .entry("item_7".to_string())
-                .and_modify(|v| {
-                    if content.len() > v.len() {
-                        *v = content.clone();
-                    }
-                })
-                .or_insert(content);
-        }
+    if best_len >= MIN_ITEM7_CHARS
+        && let Some(content) = best
+    {
+        sections
+            .0
+            .entry("item_7".to_string())
+            .and_modify(|v| {
+                if content.len() > v.len() {
+                    *v = content.clone();
+                }
+            })
+            .or_insert(content);
     }
 }
