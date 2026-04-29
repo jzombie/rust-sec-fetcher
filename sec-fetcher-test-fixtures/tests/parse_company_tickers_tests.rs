@@ -6,12 +6,11 @@
 /// 2. Real-data tests against the live `company_tickers.json` fixture (~10 000 entries).
 ///
 /// Run `cargo run --bin refresh-test-fixtures` to recreate the fixture file.
-use flate2::read::GzDecoder;
 use sec_fetcher::enums::TickerOrigin;
 use sec_fetcher::parsers::{parse_company_tickers_json, parse_ticker_txt};
 use serde_json::json;
-use std::fs::File;
-use std::path::PathBuf;
+
+mod common;
 
 // ── parse_company_tickers_json ────────────────────────────────────────────────
 
@@ -120,16 +119,7 @@ fn handles_whitespace_only_lines() {
 //   NVDA → CIK 1045810 ("NVIDIA CORP")
 
 fn load_json_fixture(name: &str) -> serde_json::Value {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("tests/fixtures");
-    path.push(format!("{}.gz", name));
-    let file = File::open(&path).unwrap_or_else(|_| {
-        panic!(
-            "missing fixture '{}' — run `cargo run --bin refresh-test-fixtures`",
-            name
-        )
-    });
-    serde_json::from_reader(GzDecoder::new(file)).expect("fixture is not valid JSON")
+    common::fixture_json(name)
 }
 
 fn all_company_tickers() -> Vec<sec_fetcher::models::Ticker> {

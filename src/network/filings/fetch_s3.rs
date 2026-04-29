@@ -1,5 +1,5 @@
 use crate::models::{Cik, CikSubmission};
-use crate::network::{SecClient, fetch_cik_submissions};
+use crate::network::{SecClient, fetch_all_entity_submissions};
 use std::error::Error;
 
 /// Fetches all S-3 and S-3/A shelf registration statement filings for a given
@@ -61,7 +61,7 @@ pub async fn fetch_s3_filings(
     client: &SecClient,
     cik: Cik,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
-    let submissions = fetch_cik_submissions(client, cik).await?;
+    let submissions = fetch_all_entity_submissions(client, cik).await?;
     let mut results: Vec<CikSubmission> = CikSubmission::by_form(&submissions, "S-3")
         .into_iter()
         .cloned()
@@ -71,6 +71,6 @@ pub async fn fetch_s3_filings(
         .cloned()
         .collect();
     results.append(&mut amendments);
-    results.sort_by(|a, b| b.filing_date.cmp(&a.filing_date));
+    results.sort_by_key(|b| std::cmp::Reverse(b.filing_date));
     Ok(results)
 }

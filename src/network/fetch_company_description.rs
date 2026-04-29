@@ -136,6 +136,7 @@ fn parse_item1_business(html: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use indoc::formatdoc;
 
     /// Helper: build a minimal 10-K HTML with a TOC entry and a real section.
     ///
@@ -144,8 +145,8 @@ mod tests {
     /// This is the exact scenario we debugged on Apple's 10-K.
     fn make_10k_html(prose: &str) -> String {
         let filler = "x".repeat(3000);
-        format!(
-            r#"<html><body>
+        formatdoc! {r#"
+            <html><body>
             <p>Table of Contents</p>
             <p>Item 1. Business</p>
             <p>Item 1A. Risk Factors</p>
@@ -160,7 +161,7 @@ mod tests {
                 <p>Various risks apply.</p>
             </div>
             </body></html>"#
-        )
+        }
     }
 
     #[test]
@@ -236,8 +237,8 @@ mod tests {
     fn decodes_html_entities_and_strips_tags() {
         // html2text must handle &amp;, &quot;, and inline tags.
         let prose = "Apple&apos;s products include the <em>iPhone</em> &amp; Mac.";
-        let html = format!(
-            r#"<html><body>
+        let html = formatdoc! {r#"
+            <html><body>
             <p>Item 1. Business</p>
             <p>Item 1A.</p>
             <p>x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x</p>
@@ -246,7 +247,7 @@ mod tests {
             <div><h1>Item 1A. Risk Factors</h1></div>
             </body></html>"#,
             prose = "x".repeat(3000) + &format!("<p>{prose}</p>")
-        );
+        };
         let result = parse_item1_business(&html);
         // We don't assert exact text (html2text entity handling may vary),
         // but it must return something and not contain raw HTML tags.

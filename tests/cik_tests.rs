@@ -101,6 +101,80 @@ fn test_cik_lookup_derived_instrument_fallback_no_primary() {
     assert_eq!(cik, Cik::from_u64(999999).unwrap());
 }
 
+// ============================================================================
+// TickerOrigin enum
+// ============================================================================
+
+#[test]
+fn test_ticker_origin_variants() {
+    use sec_fetcher::enums::TickerOrigin;
+    // Verify all three variants exist and are distinct
+    match TickerOrigin::PrimaryListing {
+        TickerOrigin::PrimaryListing => {} // ok
+        _ => panic!("Expected PrimaryListing"),
+    }
+    match TickerOrigin::DerivedInstrument {
+        TickerOrigin::DerivedInstrument => {} // ok
+        _ => panic!("Expected DerivedInstrument"),
+    }
+    match TickerOrigin::InvestmentCompany {
+        TickerOrigin::InvestmentCompany => {} // ok
+        _ => panic!("Expected InvestmentCompany"),
+    }
+}
+
+#[test]
+fn test_ticker_origin_display() {
+    use sec_fetcher::enums::TickerOrigin;
+    assert_eq!(TickerOrigin::PrimaryListing.to_string(), "PrimaryListing");
+    assert_eq!(
+        TickerOrigin::DerivedInstrument.to_string(),
+        "DerivedInstrument"
+    );
+    assert_eq!(
+        TickerOrigin::InvestmentCompany.to_string(),
+        "InvestmentCompany"
+    );
+}
+
+#[test]
+fn test_ticker_origin_debug() {
+    use sec_fetcher::enums::TickerOrigin;
+    let dbg = format!("{:?}", TickerOrigin::PrimaryListing);
+    assert_eq!(dbg, "PrimaryListing");
+}
+
+#[test]
+fn test_ticker_origin_equality() {
+    use sec_fetcher::enums::TickerOrigin;
+    assert_eq!(TickerOrigin::PrimaryListing, TickerOrigin::PrimaryListing);
+    assert_ne!(
+        TickerOrigin::PrimaryListing,
+        TickerOrigin::DerivedInstrument
+    );
+}
+
+#[test]
+fn test_ticker_origin_serialize_deserialize() {
+    use sec_fetcher::enums::TickerOrigin;
+    let json = serde_json::to_string(&TickerOrigin::PrimaryListing).unwrap();
+    assert_eq!(json, "\"PrimaryListing\"");
+    let deserialized: TickerOrigin = serde_json::from_str(&json).unwrap();
+    assert_eq!(deserialized, TickerOrigin::PrimaryListing);
+}
+
+#[test]
+fn test_ticker_origin_from_str() {
+    use sec_fetcher::enums::TickerOrigin;
+    use std::str::FromStr;
+    let origin = TickerOrigin::from_str("PrimaryListing").unwrap();
+    assert_eq!(origin, TickerOrigin::PrimaryListing);
+    let origin = TickerOrigin::from_str("DerivedInstrument").unwrap();
+    assert_eq!(origin, TickerOrigin::DerivedInstrument);
+    let origin = TickerOrigin::from_str("InvestmentCompany").unwrap();
+    assert_eq!(origin, TickerOrigin::InvestmentCompany);
+}
+
 // Lookup is case-insensitive via normalization.
 #[test]
 fn test_cik_lookup_case_insensitive() {
@@ -116,4 +190,38 @@ fn test_cik_lookup_case_insensitive() {
 fn test_cik_lookup_not_found() {
     let tickers = vec![make_ticker("AAPL", 320193, TickerOrigin::PrimaryListing)];
     assert!(Cik::get_company_cik_by_ticker_symbol(&tickers, &TickerSymbol::new("NOPE")).is_err());
+}
+
+// ============================================================================
+// CikError display
+// ============================================================================
+
+#[test]
+fn test_cik_error_invalid_length_display() {
+    let err = CikError::InvalidLength;
+    assert_eq!(err.to_string(), "CIK length exceeds 10 digits");
+}
+
+#[test]
+fn test_cik_error_parse_error_display() {
+    let inner = "abc".parse::<u64>().unwrap_err();
+    let err = CikError::ParseError(inner);
+    let msg = err.to_string();
+    assert!(msg.contains("Failed to parse CIK"));
+    assert!(msg.contains("invalid digit"));
+}
+
+// ============================================================================
+// InvestmentCompany origin lookup (fallback to instrument's own CIK)
+// ============================================================================
+
+#[test]
+fn test_cik_lookup_investment_company_fallback() {
+    let tickers = vec![make_ticker(
+        "VTSAX",
+        123456,
+        TickerOrigin::InvestmentCompany,
+    )];
+    let cik = Cik::get_company_cik_by_ticker_symbol(&tickers, &TickerSymbol::new("VTSAX")).unwrap();
+    assert_eq!(cik, Cik::from_u64(123456).unwrap());
 }

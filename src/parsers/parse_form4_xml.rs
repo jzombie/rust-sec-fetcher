@@ -153,7 +153,7 @@ pub fn parse_form4_xml(
     }
 
     // Sort newest transaction first.
-    transactions.sort_by(|a, b| b.transaction_date.cmp(&a.transaction_date));
+    transactions.sort_by_key(|b| std::cmp::Reverse(b.transaction_date));
     Ok(transactions)
 }
 

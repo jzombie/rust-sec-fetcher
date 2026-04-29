@@ -1,5 +1,5 @@
 use crate::models::{Cik, CikSubmission};
-use crate::network::{SecClient, fetch_cik_submissions};
+use crate::network::{SecClient, fetch_all_entity_submissions};
 use std::error::Error;
 
 /// Fetches all 10-Q quarterly report filings for a given CIK, ordered
@@ -44,7 +44,7 @@ pub async fn fetch_10q_filings(
     client: &SecClient,
     cik: Cik,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
-    let submissions = fetch_cik_submissions(client, cik).await?;
+    let submissions = fetch_all_entity_submissions(client, cik).await?;
     Ok(CikSubmission::by_form(&submissions, "10-Q")
         .into_iter()
         .cloned()

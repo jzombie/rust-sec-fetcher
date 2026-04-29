@@ -10,6 +10,7 @@
 ///   handles the conversion transparently based on `filing_date`.
 /// - `weight_pct` is on the **0–100 percentage scale** (e.g. `75.0000` means 75%).
 /// - `weight_pct` values across all holdings must sum to **exactly 100.0000**.
+use indoc::indoc;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use sec_fetcher::parsers::parse_13f_xml;
@@ -19,31 +20,33 @@ use sec_fetcher::parsers::parse_13f_xml;
 /// Uses actual USD values as stored in the modern EDGAR 13F-HR XML schema.
 /// AAPL: value = $15 000 000 (75% of total $20 000 000)
 /// MSFT: value =  $5 000 000 (25% of total $20 000 000)
-const TWO_POSITION_13F: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
-<informationTable>
-  <infoTable>
-    <nameOfIssuer>APPLE INC</nameOfIssuer>
-    <titleOfClass>COM</titleOfClass>
-    <cusip>037833100</cusip>
-    <value>15000000</value>
-    <shrsOrPrnAmt>
-      <sshPrnamt>85000</sshPrnamt>
-      <sshPrnamtType>SH</sshPrnamtType>
-    </shrsOrPrnAmt>
-    <investmentDiscretion>SOLE</investmentDiscretion>
-  </infoTable>
-  <infoTable>
-    <nameOfIssuer>MICROSOFT CORP</nameOfIssuer>
-    <titleOfClass>COM</titleOfClass>
-    <cusip>594918104</cusip>
-    <value>5000000</value>
-    <shrsOrPrnAmt>
-      <sshPrnamt>14000</sshPrnamt>
-      <sshPrnamtType>SH</sshPrnamtType>
-    </shrsOrPrnAmt>
-    <investmentDiscretion>SOLE</investmentDiscretion>
-  </infoTable>
-</informationTable>"#;
+const TWO_POSITION_13F: &str = indoc! {r#"
+    <?xml version="1.0" encoding="UTF-8"?>
+    <informationTable>
+      <infoTable>
+        <nameOfIssuer>APPLE INC</nameOfIssuer>
+        <titleOfClass>COM</titleOfClass>
+        <cusip>037833100</cusip>
+        <value>15000000</value>
+        <shrsOrPrnAmt>
+          <sshPrnamt>85000</sshPrnamt>
+          <sshPrnamtType>SH</sshPrnamtType>
+        </shrsOrPrnAmt>
+        <investmentDiscretion>SOLE</investmentDiscretion>
+      </infoTable>
+      <infoTable>
+        <nameOfIssuer>MICROSOFT CORP</nameOfIssuer>
+        <titleOfClass>COM</titleOfClass>
+        <cusip>594918104</cusip>
+        <value>5000000</value>
+        <shrsOrPrnAmt>
+          <sshPrnamt>14000</sshPrnamt>
+          <sshPrnamtType>SH</sshPrnamtType>
+        </shrsOrPrnAmt>
+        <investmentDiscretion>SOLE</investmentDiscretion>
+      </infoTable>
+    </informationTable>
+"#};
 
 /// Three positions with unequal weights; tests rounding and ordering.
 ///
@@ -52,10 +55,11 @@ const TWO_POSITION_13F: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 /// AAPL: value = $25 000 000 (25.0000%)
 /// MSFT: value = $15 000 000 (15.0000%)
 /// Total: $100 000 000 → 100.0000%
-const THREE_POSITION_13F: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
-<informationTable>
-  <infoTable>
-    <nameOfIssuer>NVIDIA CORP</nameOfIssuer>
+const THREE_POSITION_13F: &str = indoc! {r#"
+    <?xml version="1.0" encoding="UTF-8"?>
+    <informationTable>
+      <infoTable>
+        <nameOfIssuer>NVIDIA CORP</nameOfIssuer>
     <titleOfClass>COM</titleOfClass>
     <cusip>67066G104</cusip>
     <value>60000000</value>
@@ -86,8 +90,9 @@ const THREE_POSITION_13F: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
       <sshPrnamtType>SH</sshPrnamtType>
     </shrsOrPrnAmt>
     <investmentDiscretion>SOLE</investmentDiscretion>
-  </infoTable>
-</informationTable>"#;
+      </infoTable>
+    </informationTable>
+"#};
 
 // ── value_usd: stored verbatim from XML (actual USD) ─────────────────────────
 
@@ -203,20 +208,22 @@ fn shares_and_shares_type_are_parsed() {
 
 #[test]
 fn single_position_has_100_pct_weight() {
-    const SINGLE: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
-<informationTable>
-  <infoTable>
-    <nameOfIssuer>APPLE INC</nameOfIssuer>
-    <titleOfClass>COM</titleOfClass>
-    <cusip>037833100</cusip>
-    <value>42000000</value>
-    <shrsOrPrnAmt>
-      <sshPrnamt>200000</sshPrnamt>
-      <sshPrnamtType>SH</sshPrnamtType>
-    </shrsOrPrnAmt>
-    <investmentDiscretion>SOLE</investmentDiscretion>
-  </infoTable>
-</informationTable>"#;
+    const SINGLE: &str = indoc! {r#"
+        <?xml version="1.0" encoding="UTF-8"?>
+        <informationTable>
+          <infoTable>
+            <nameOfIssuer>APPLE INC</nameOfIssuer>
+            <titleOfClass>COM</titleOfClass>
+            <cusip>037833100</cusip>
+            <value>42000000</value>
+            <shrsOrPrnAmt>
+              <sshPrnamt>200000</sshPrnamt>
+              <sshPrnamtType>SH</sshPrnamtType>
+            </shrsOrPrnAmt>
+            <investmentDiscretion>SOLE</investmentDiscretion>
+          </infoTable>
+        </informationTable>
+    "#};
     let holdings = parse_13f_xml(SINGLE, None).unwrap();
     assert_eq!(holdings.len(), 1);
     assert_eq!(holdings[0].weight_pct.value(), dec!(100.0000));
@@ -228,25 +235,27 @@ fn single_position_has_100_pct_weight() {
 fn fractional_weights_rounded_to_4dp() {
     // 1/3 = 33.3333...%; 2/3 = 66.6666...%
     // With round_dp(4): 33.3333 and 66.6667
-    const THIRDS: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
-<informationTable>
-  <infoTable>
-    <nameOfIssuer>ALPHA INC</nameOfIssuer>
-    <titleOfClass>COM</titleOfClass>
-    <cusip>000000001</cusip>
-    <value>2000000</value>
-    <shrsOrPrnAmt><sshPrnamt>1</sshPrnamt><sshPrnamtType>SH</sshPrnamtType></shrsOrPrnAmt>
-    <investmentDiscretion>SOLE</investmentDiscretion>
-  </infoTable>
-  <infoTable>
-    <nameOfIssuer>BETA INC</nameOfIssuer>
-    <titleOfClass>COM</titleOfClass>
-    <cusip>000000002</cusip>
-    <value>1000000</value>
-    <shrsOrPrnAmt><sshPrnamt>1</sshPrnamt><sshPrnamtType>SH</sshPrnamtType></shrsOrPrnAmt>
-    <investmentDiscretion>SOLE</investmentDiscretion>
-  </infoTable>
-</informationTable>"#;
+    const THIRDS: &str = indoc! {r#"
+        <?xml version="1.0" encoding="UTF-8"?>
+        <informationTable>
+          <infoTable>
+            <nameOfIssuer>ALPHA INC</nameOfIssuer>
+            <titleOfClass>COM</titleOfClass>
+            <cusip>000000001</cusip>
+            <value>2000000</value>
+            <shrsOrPrnAmt><sshPrnamt>1</sshPrnamt><sshPrnamtType>SH</sshPrnamtType></shrsOrPrnAmt>
+            <investmentDiscretion>SOLE</investmentDiscretion>
+          </infoTable>
+          <infoTable>
+            <nameOfIssuer>BETA INC</nameOfIssuer>
+            <titleOfClass>COM</titleOfClass>
+            <cusip>000000002</cusip>
+            <value>1000000</value>
+            <shrsOrPrnAmt><sshPrnamt>1</sshPrnamt><sshPrnamtType>SH</sshPrnamtType></shrsOrPrnAmt>
+            <investmentDiscretion>SOLE</investmentDiscretion>
+          </infoTable>
+        </informationTable>
+    "#};
     let holdings = parse_13f_xml(THIRDS, None).unwrap();
     // ALPHA: 2/3 * 100 = 66.6666...% → rounds to 66.6667 at 4dp
     // BETA:  1/3 * 100 = 33.3333...% → rounds to 33.3333 at 4dp

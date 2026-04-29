@@ -77,16 +77,17 @@ fn parse_sic_codes_html(html: &str) -> Result<Vec<SicCode>, Box<dyn Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use indoc::indoc;
 
     #[test]
     fn parses_basic_sic_table() {
-        let html = r#"
+        let html = indoc! {r#"
             <table>
                 <tr><th>SIC Code</th><th>Office</th><th>Industry Title</th></tr>
                 <tr><td>3571</td><td>Office of Technology</td><td>ELECTRONIC COMPUTERS</td></tr>
                 <tr><td>6020</td><td>Office of Finance</td><td>SAVINGS INSTITUTION, FEDERALLY CHARTERED</td></tr>
             </table>
-        "#;
+        "#};
         let codes = parse_sic_codes_html(html).unwrap();
         assert_eq!(codes.len(), 2);
         assert_eq!(codes[0].code, 3571);
@@ -97,11 +98,11 @@ mod tests {
 
     #[test]
     fn decodes_html_entities_in_cells() {
-        let html = r#"
+        let html = indoc! {r#"
             <table>
                 <tr><td>0100</td><td>Office of Finance</td><td>CROPS &amp; FARMING</td></tr>
             </table>
-        "#;
+        "#};
         let codes = parse_sic_codes_html(html).unwrap();
         assert_eq!(codes.len(), 1);
         assert_eq!(codes[0].description, "CROPS & FARMING");
@@ -109,11 +110,11 @@ mod tests {
 
     #[test]
     fn strips_nested_tags_from_cells() {
-        let html = r#"
+        let html = indoc! {r#"
             <table>
                 <tr><td>7372</td><td><b>Office of Technology</b></td><td>PREPACKAGED SOFTWARE</td></tr>
             </table>
-        "#;
+        "#};
         let codes = parse_sic_codes_html(html).unwrap();
         assert_eq!(codes.len(), 1);
         assert_eq!(codes[0].office, "Office of Technology");
@@ -121,13 +122,13 @@ mod tests {
 
     #[test]
     fn skips_header_and_non_numeric_rows() {
-        let html = r#"
+        let html = indoc! {r#"
             <table>
                 <tr><th>SIC</th><th>Office</th><th>Title</th></tr>
                 <tr><td>not-a-number</td><td>x</td><td>y</td></tr>
                 <tr><td>0111</td><td>Office of Finance</td><td>WHEAT</td></tr>
             </table>
-        "#;
+        "#};
         let codes = parse_sic_codes_html(html).unwrap();
         assert_eq!(codes.len(), 1);
         assert_eq!(codes[0].code, 111);

@@ -12,29 +12,16 @@
 // To verify coverage against live EDGAR data, use the dedicated binary:
 //     cargo run --bin check_form_type_coverage
 
-use flate2::read::GzDecoder;
 use sec_fetcher::enums::FormType;
 use sec_fetcher::models::{Cik, CikSubmission};
-use sec_fetcher::network::parse_cik_submissions_json;
-use serde_json::Value;
+use sec_fetcher::parsers::parse_cik_submissions_json;
 use std::collections::HashSet;
-use std::fs::File;
-use std::path::PathBuf;
 use strum::IntoEnumIterator;
 
-// ── Fixture helpers ───────────────────────────────────────────────────────────
+mod common;
 
-fn load_fixture(name: &str) -> Value {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("tests/fixtures");
-    path.push(format!("{}.gz", name));
-    let file = File::open(&path).unwrap_or_else(|_| {
-        panic!(
-            "missing fixture: {} (run `cargo run --bin refresh_test_fixtures`)",
-            path.display()
-        )
-    });
-    serde_json::from_reader(GzDecoder::new(file)).expect("fixture is not valid JSON")
+fn load_fixture(name: &str) -> serde_json::Value {
+    common::fixture_json(name)
 }
 
 fn aapl_cik() -> Cik {

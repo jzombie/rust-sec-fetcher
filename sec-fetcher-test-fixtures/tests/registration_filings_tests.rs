@@ -10,27 +10,13 @@
 //     Includes S-3 (2024-10-15)
 
 use chrono::NaiveDate;
-use flate2::read::GzDecoder;
 use sec_fetcher::models::{Cik, CikSubmission};
-use sec_fetcher::network::parse_cik_submissions_json;
-use serde_json::Value;
-use std::fs::File;
-use std::path::PathBuf;
+use sec_fetcher::parsers::parse_cik_submissions_json;
 
-/// Load a fixture by its logical name (e.g. `"RDDT_submissions.json"`).
-/// The file is stored on disk as `{name}.gz` and decompressed in memory.
-/// Run `cargo run --example refresh_test_fixtures` to update the fixtures.
-fn load_fixture(name: &str) -> Value {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("tests/fixtures");
-    path.push(format!("{}.gz", name));
-    let file = File::open(&path).unwrap_or_else(|_| {
-        panic!(
-            "missing fixture: {} (run `cargo run --example refresh_test_fixtures`)",
-            path.display()
-        )
-    });
-    serde_json::from_reader(GzDecoder::new(file)).expect("fixture is not valid JSON")
+mod common;
+
+fn load_fixture(name: &str) -> serde_json::Value {
+    common::fixture_json(name)
 }
 
 /// Reddit, Inc. — full EDGAR download, CIK 1713445 (ticker: RDDT).
@@ -106,7 +92,7 @@ fn s1_combined_newest_amendment_precedes_initial() {
         .into_iter()
         .chain(CikSubmission::by_form(&subs, "S-1/A"))
         .collect();
-    combined.sort_by(|a, b| b.filing_date.cmp(&a.filing_date));
+    combined.sort_by_key(|b| std::cmp::Reverse(b.filing_date));
     // 3 amendments + 1 initial = 4 total; last entry is the S-1
     assert_eq!(combined.len(), 4);
     assert_eq!(combined.last().unwrap().form, "S-1");
@@ -202,7 +188,7 @@ fn sc13d_combined_amendment_precedes_initial() {
         .into_iter()
         .chain(CikSubmission::by_form(&subs, "SC 13D/A"))
         .collect();
-    combined.sort_by(|a, b| b.filing_date.cmp(&a.filing_date));
+    combined.sort_by_key(|b| std::cmp::Reverse(b.filing_date));
     assert_eq!(combined.len(), 2);
     assert_eq!(combined[0].form, "SC 13D/A");
     assert_eq!(combined[1].form, "SC 13D");

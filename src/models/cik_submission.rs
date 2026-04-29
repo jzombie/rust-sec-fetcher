@@ -288,4 +288,122 @@ mod tests {
             2024
         );
     }
+
+    // ------------------------------------------------------------------
+    // Tests for is_earnings_release, is_mid_quarter_event,
+    // significant_items, as_edgar_archive_url, as_primary_document_url
+    // ------------------------------------------------------------------
+
+    fn sub_with_items(form: &str, items: Vec<&str>, primary_doc: &str) -> CikSubmission {
+        CikSubmission {
+            cik: Cik::from_u64(320193).unwrap(),
+            entity_type: Some("operating".to_string()),
+            accession_number: AccessionNumber::from_str("0000320193-24-000001").unwrap(),
+            form: form.to_string(),
+            primary_document: primary_doc.to_string(),
+            filing_date: chrono::NaiveDate::from_ymd_opt(2024, 6, 15),
+            items: items.into_iter().map(|s| s.to_string()).collect(),
+        }
+    }
+
+    #[test]
+    fn earnings_release_with_item_202() {
+        let s = sub_with_items("8-K", vec!["2.02", "9.01"], "primary.htm");
+        assert!(s.is_earnings_release());
+    }
+
+    #[test]
+    fn earnings_release_with_legacy_item_12() {
+        let s = sub_with_items("8-K", vec!["12"], "primary.htm");
+        assert!(s.is_earnings_release());
+    }
+
+    #[test]
+    fn non_earnings_release_without_matching_items() {
+        let s = sub_with_items("8-K", vec!["5.02", "9.01"], "primary.htm");
+        assert!(!s.is_earnings_release());
+    }
+
+    #[test]
+    fn non_earnings_release_when_no_items() {
+        let s = sub_with_items("8-K", vec![], "primary.htm");
+        assert!(!s.is_earnings_release());
+    }
+
+    #[test]
+    fn non_earnings_release_for_non_8k() {
+        // is_earnings_release only checks items, not form type — the item "2.02"
+        // is what matters, regardless of form label.
+        let s = sub_with_items("10-Q", vec!["2.02"], "primary.htm");
+        assert!(
+            s.is_earnings_release(),
+            "is_earnings_release checks items only, not form type"
+        );
+    }
+
+    #[test]
+    fn mid_quarter_event_for_8k_with_non_earnings_items() {
+        let s = sub_with_items("8-K", vec!["5.02"], "primary.htm");
+        assert!(s.is_mid_quarter_event());
+    }
+
+    #[test]
+    fn not_mid_quarter_if_earnings_release() {
+        let s = sub_with_items("8-K", vec!["2.02", "9.01"], "primary.htm");
+        assert!(!s.is_mid_quarter_event());
+    }
+
+    #[test]
+    fn not_mid_quarter_if_not_8k() {
+        let s = sub_with_items("10-Q", vec!["5.02"], "primary.htm");
+        assert!(!s.is_mid_quarter_event());
+    }
+
+    #[test]
+    fn not_mid_quarter_if_only_901_item() {
+        let s = sub_with_items("8-K", vec!["9.01"], "primary.htm");
+        assert!(!s.is_mid_quarter_event());
+    }
+
+    #[test]
+    fn not_mid_quarter_if_no_items_at_all() {
+        let s = sub_with_items("8-K", vec![], "primary.htm");
+        assert!(!s.is_mid_quarter_event());
+    }
+
+    #[test]
+    fn significant_items_filters_901() {
+        let s = sub_with_items("8-K", vec!["2.02", "9.01", "5.02"], "primary.htm");
+        let sig = s.significant_items();
+        assert_eq!(sig.len(), 2);
+        assert_eq!(sig[0], "2.02");
+        assert_eq!(sig[1], "5.02");
+    }
+
+    #[test]
+    fn significant_items_empty_when_all_901() {
+        let s = sub_with_items("8-K", vec!["9.01"], "primary.htm");
+        assert!(s.significant_items().is_empty());
+    }
+
+    #[test]
+    fn as_edgar_archive_url_contains_cik_and_accession() {
+        let s = sub_with_items("8-K", vec![], "primary.htm");
+        let url = s.as_edgar_archive_url();
+        // URL uses 10-digit padded CIK and unformatted (no-dash) accession:
+        // https://www.sec.gov/Archives/edgar/data/0000320193/000032019324000001
+        assert!(url.contains("/0000320193/"));
+        assert!(url.contains("000032019324000001"));
+    }
+
+    #[test]
+    fn as_primary_document_url_includes_document_name() {
+        let s = sub_with_items("8-K", vec![], "primary.htm");
+        let url = s.as_primary_document_url();
+        assert!(
+            url.contains("primary.htm"),
+            "URL should end with primary document name: {url}"
+        );
+        assert!(url.contains("320193"), "URL should contain CIK: {url}");
+    }
 }

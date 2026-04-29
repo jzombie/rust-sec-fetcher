@@ -8,6 +8,7 @@
 /// - `pct_val` must NOT be multiplied by 100 at any level; that would produce
 ///   values like 775.46 from 7.7546.
 /// - `val_usd` is the USD value directly from `<valUSD>` (no scaling applied).
+use indoc::indoc;
 use rust_decimal_macros::dec;
 use sec_fetcher::models::Ticker;
 use sec_fetcher::parsers::parse_nport_xml;
@@ -16,72 +17,76 @@ use sec_fetcher::parsers::parse_nport_xml;
 ///
 /// NVIDIA:  pctVal = 7.7546   (7.7546% of fund NAV)
 /// Prologis: pctVal = 0.0073  (0.0073% of fund NAV — a tiny bond position)
-const TWO_POSITION_NPORT: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
-<edgarSubmission>
-  <formData>
-    <invstOrSec>
-      <name>NVIDIA CORP</name>
-      <lei>5493003BDMRS0ERX6872</lei>
-      <title>NVIDIA CORP</title>
-      <cusip>67066G104</cusip>
-      <identifiers>
-        <isin value="US67066G1040"/>
-      </identifiers>
-      <balance>100000</balance>
-      <units>NS</units>
-      <curCd>USD</curCd>
-      <valUSD>7754618000.00</valUSD>
-      <pctVal>7.7546</pctVal>
-      <payoffProfile>Long</payoffProfile>
-      <assetCat>EC</assetCat>
-      <issuerCat>CORP</issuerCat>
-      <invCountry>US</invCountry>
-    </invstOrSec>
-    <invstOrSec>
-      <name>PROLOGIS LP</name>
-      <lei>GL16H1DHB0QSHP25F723</lei>
-      <title>Prologis LP</title>
-      <cusip>74340XCH2</cusip>
-      <identifiers>
-        <isin value="US74340XCH26"/>
-      </identifiers>
-      <balance>724000</balance>
-      <units>PA</units>
-      <curCd>USD</curCd>
-      <valUSD>713480.28</valUSD>
-      <pctVal>0.007357911161</pctVal>
-      <payoffProfile>Long</payoffProfile>
-      <assetCat>DBT</assetCat>
-      <issuerCat></issuerCat>
-      <invCountry>US</invCountry>
-    </invstOrSec>
-  </formData>
-</edgarSubmission>"#;
+const TWO_POSITION_NPORT: &str = indoc! {r#"
+    <?xml version="1.0" encoding="UTF-8"?>
+    <edgarSubmission>
+      <formData>
+        <invstOrSec>
+          <name>NVIDIA CORP</name>
+          <lei>5493003BDMRS0ERX6872</lei>
+          <title>NVIDIA CORP</title>
+          <cusip>67066G104</cusip>
+          <identifiers>
+            <isin value="US67066G1040"/>
+          </identifiers>
+          <balance>100000</balance>
+          <units>NS</units>
+          <curCd>USD</curCd>
+          <valUSD>7754618000.00</valUSD>
+          <pctVal>7.7546</pctVal>
+          <payoffProfile>Long</payoffProfile>
+          <assetCat>EC</assetCat>
+          <issuerCat>CORP</issuerCat>
+          <invCountry>US</invCountry>
+        </invstOrSec>
+        <invstOrSec>
+          <name>PROLOGIS LP</name>
+          <lei>GL16H1DHB0QSHP25F723</lei>
+          <title>Prologis LP</title>
+          <cusip>74340XCH2</cusip>
+          <identifiers>
+            <isin value="US74340XCH26"/>
+          </identifiers>
+          <balance>724000</balance>
+          <units>PA</units>
+          <curCd>USD</curCd>
+          <valUSD>713480.28</valUSD>
+          <pctVal>0.007357911161</pctVal>
+          <payoffProfile>Long</payoffProfile>
+          <assetCat>DBT</assetCat>
+          <issuerCat></issuerCat>
+          <invCountry>US</invCountry>
+        </invstOrSec>
+      </formData>
+    </edgarSubmission>
+"#};
 
 /// Fixture with a mid-weight position to catch off-by-one-order-of-magnitude errors.
-const MID_WEIGHT_NPORT: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
-<edgarSubmission>
-  <formData>
-    <invstOrSec>
-      <name>APPLE INC</name>
-      <lei>HWUPKR0MPOU8FGXBT394</lei>
-      <title>APPLE INC</title>
-      <cusip>037833100</cusip>
-      <identifiers>
-        <isin value="US0378331005"/>
-      </identifiers>
-      <balance>500000</balance>
-      <units>NS</units>
-      <curCd>USD</curCd>
-      <valUSD>101500000.00</valUSD>
-      <pctVal>5.1234</pctVal>
-      <payoffProfile>Long</payoffProfile>
-      <assetCat>EC</assetCat>
-      <issuerCat>CORP</issuerCat>
-      <invCountry>US</invCountry>
-    </invstOrSec>
-  </formData>
-</edgarSubmission>"#;
+const MID_WEIGHT_NPORT: &str = indoc! {r#"
+    <?xml version="1.0" encoding="UTF-8"?>
+    <edgarSubmission>
+      <formData>
+        <invstOrSec>
+          <name>APPLE INC</name>
+          <lei>HWUPKR0MPOU8FGXBT394</lei>
+          <title>APPLE INC</title>
+          <cusip>037833100</cusip>
+          <identifiers>
+            <isin value="US0378331005"/>
+          </identifiers>
+          <balance>500000</balance>
+          <units>NS</units>
+          <curCd>USD</curCd>
+          <valUSD>101500000.00</valUSD>
+          <pctVal>5.1234</pctVal>
+          <payoffProfile>Long</payoffProfile>
+          <assetCat>EC</assetCat>
+          <issuerCat>CORP</issuerCat>
+          <invCountry>US</invCountry>
+        </invstOrSec>
+      </formData>
+    </edgarSubmission>
+"#};
 
 // ── pct_val scale: must be 0-100, NOT 0-1 ───────────────────────────────────
 

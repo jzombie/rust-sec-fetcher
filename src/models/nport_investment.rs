@@ -44,6 +44,6 @@ impl NportInvestment {
     /// Sorts a list of investments by `pct_val` in descending order.
     pub fn sort_by_pct_val_desc(investments: &mut [NportInvestment]) {
         // Pct implements Ord, so this comparison is safe and correct.
-        investments.sort_by(|a, b| b.pct_val.cmp(&a.pct_val));
+        investments.sort_by_key(|b| std::cmp::Reverse(b.pct_val));
     }
 }

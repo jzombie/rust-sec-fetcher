@@ -7,3 +7,10 @@ sec_fetcher_config.toml
 **/*.bin
 
 **/temp_*
+**/*.csv
+
+/.tmp
+/hf_upload_folder
+**/__pycache__
+
+/coverage-*

@@ -1,5 +1,5 @@
 use crate::models::{Cik, CikSubmission};
-use crate::network::{SecClient, fetch_cik_submissions};
+use crate::network::{SecClient, fetch_all_entity_submissions};
 use std::error::Error;
 
 /// Fetches all DEF 14A (definitive proxy statement) filings for a given CIK,
@@ -58,7 +58,7 @@ pub async fn fetch_def14a_filings(
     client: &SecClient,
     cik: Cik,
 ) -> Result<Vec<CikSubmission>, Box<dyn Error>> {
-    let submissions = fetch_cik_submissions(client, cik).await?;
+    let submissions = fetch_all_entity_submissions(client, cik).await?;
     Ok(CikSubmission::by_form(&submissions, "DEF 14A")
         .into_iter()
         .cloned()

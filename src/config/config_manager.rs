@@ -301,12 +301,34 @@ impl ConfigManager {
     }
 
     /// Determines the standard config file location.
+    ///
+    /// Search order:
+    /// 1. System config dir (e.g. `~/Library/Application Support/sec-fetcher/config.toml`).
+    /// 2. Walk up from the current working directory looking for
+    ///    `sec_fetcher_config.toml` — this lets sub-crates (e.g.
+    ///    `sec-fetcher-test-fixtures`) find the config in the workspace root
+    ///    regardless of which directory `cargo run` is invoked from.
+    /// 3. Relative filename in the current directory (original fallback).
     pub fn get_config_path() -> PathBuf {
         if let Some(path) = Self::get_suggested_system_path()
             && path.exists()
         {
             return path;
         }
-        PathBuf::from(&*DEFAULT_CONFIG_PATH)
+
+        let default_name = &*DEFAULT_CONFIG_PATH;
+        if let Ok(mut dir) = std::env::current_dir() {
+            loop {
+                let candidate = dir.join(default_name);
+                if candidate.exists() {
+                    return candidate;
+                }
+                if !dir.pop() {
+                    break;
+                }
+            }
+        }
+
+        PathBuf::from(default_name)
     }
 }

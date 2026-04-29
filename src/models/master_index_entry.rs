@@ -36,3 +36,54 @@ impl MasterIndexEntry {
         self.form_type.parse().unwrap()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::NaiveDate;
+
+    fn make_entry() -> MasterIndexEntry {
+        MasterIndexEntry {
+            cik: "320193".to_string(),
+            company_name: "APPLE INC".to_string(),
+            form_type: "10-K".to_string(),
+            date_filed: NaiveDate::from_ymd_opt(2024, 11, 1).unwrap(),
+            filename: "edgar/data/320193/0000320193-24-000123-index.htm".to_string(),
+        }
+    }
+
+    #[test]
+    fn as_url_returns_edgar_archive_url() {
+        let entry = make_entry();
+        let url = entry.as_url();
+        assert!(url.contains("edgar/data/320193/0000320193-24-000123-index.htm"));
+        assert!(url.starts_with("https://"));
+    }
+
+    #[test]
+    fn form_type_parses_known_type() {
+        let entry = make_entry();
+        let ft = entry.form_type();
+        assert_eq!(ft.as_edgar_str(), "10-K");
+    }
+
+    #[test]
+    fn form_type_parses_unknown_as_other() {
+        let entry = MasterIndexEntry {
+            form_type: "SOMETHING_WEIRD".to_string(),
+            ..make_entry()
+        };
+        let ft = entry.form_type();
+        assert!(matches!(ft, FormType::Other(_)));
+        assert_eq!(ft.as_edgar_str(), "SOMETHING_WEIRD");
+    }
+
+    #[test]
+    fn debug_format_includes_fields() {
+        let entry = make_entry();
+        let debug = format!("{:?}", entry);
+        assert!(debug.contains("320193"));
+        assert!(debug.contains("APPLE INC"));
+        assert!(debug.contains("10-K"));
+    }
+}

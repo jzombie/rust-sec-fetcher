@@ -77,6 +77,9 @@ pub enum FormType {
     /// most analysis.
     #[strum(props(edgar = "10-K405", retired = "true"))]
     TenK405,
+    /// Amendment to a historical 10-K405 annual report — `"10-K405/A"`.
+    #[strum(props(edgar = "10-K405/A", retired = "true"))]
+    TenK405A,
 
     /// Quarterly report — `"10-Q"`.
     #[strum(props(edgar = "10-Q"))]
@@ -511,5 +514,41 @@ mod tests {
         for ft in FormType::iter() {
             assert_eq!(ft.as_ref(), ft.to_string().as_str());
         }
+    }
+
+    #[test]
+    fn retired_variants_have_retired_property() {
+        // These specific variants are known to be retired
+        assert!(FormType::TenK405.is_retired());
+    }
+
+    #[test]
+    fn active_variants_are_not_retired() {
+        assert!(!FormType::TenK.is_retired());
+        assert!(!FormType::EightK.is_retired());
+        assert!(!FormType::TenQ.is_retired());
+    }
+
+    #[test]
+    fn as_edgar_str_for_other() {
+        let ft = FormType::Other("CUSTOM-FORM".to_string());
+        assert_eq!(ft.as_edgar_str(), "CUSTOM-FORM");
+    }
+
+    #[test]
+    fn ipo_registration_form_types_contains_expected() {
+        assert!(FormType::IPO_REGISTRATION_FORM_TYPES.contains(&FormType::S1));
+        assert!(FormType::IPO_REGISTRATION_FORM_TYPES.contains(&FormType::S1A));
+        assert!(FormType::IPO_REGISTRATION_FORM_TYPES.contains(&FormType::F1));
+        assert!(FormType::IPO_REGISTRATION_FORM_TYPES.contains(&FormType::F1A));
+        assert!(!FormType::IPO_REGISTRATION_FORM_TYPES.contains(&FormType::TenK));
+        assert_eq!(FormType::IPO_REGISTRATION_FORM_TYPES.len(), 4);
+    }
+
+    #[test]
+    fn ipo_pricing_form_types_contains_424b4() {
+        assert!(FormType::IPO_PRICING_FORM_TYPES.contains(&FormType::Prospectus424B4));
+        assert!(!FormType::IPO_PRICING_FORM_TYPES.contains(&FormType::S1));
+        assert_eq!(FormType::IPO_PRICING_FORM_TYPES.len(), 1);
     }
 }

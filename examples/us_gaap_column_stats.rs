@@ -104,7 +104,7 @@ fn main() {
         .into_iter()
         .map(|(name, count)| ColumnCount { name, count })
         .collect();
-    sorted_columns.sort_by(|a, b| b.count.cmp(&a.count));
+    sorted_columns.sort_by_key(|b| std::cmp::Reverse(b.count));
 
     println!("Column Distribution:");
     for col in &sorted_columns {
