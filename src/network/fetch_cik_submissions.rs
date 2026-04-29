@@ -62,6 +62,7 @@ fn extract_filings_from_block(
     }
 }
 
+// TODO: Move to parsers
 /// Parses a raw SEC submissions JSON value into a list of [`CikSubmission`]s.
 ///
 /// This is the pure parsing core of [`fetch_cik_submissions`], exposed for

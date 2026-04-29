@@ -406,3 +406,248 @@ fn apply_item7_fallback(text: &str, sections: &mut TenKSections) {
             .or_insert(content);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── TenKSections unit tests ──────────────────────────────────────────────
+
+    #[test]
+    fn empty_sections_has_no_keys() {
+        let s = TenKSections::empty();
+        assert!(s.keys().next().is_none());
+        assert!(s.iter().next().is_none());
+    }
+
+    #[test]
+    fn get_returns_section_content() {
+        let mut map = HashMap::new();
+        map.insert("item_1".to_string(), "Business Description".to_string());
+        let s = TenKSections(map);
+        assert_eq!(s.get("item_1"), Some("Business Description"));
+        assert_eq!(s.get("nonexistent"), None);
+    }
+
+    #[test]
+    fn item_accessors_return_correct_sections() {
+        let mut map = HashMap::new();
+        map.insert("item_1".to_string(), "Business".to_string());
+        map.insert("item_1a".to_string(), "Risk Factors".to_string());
+        map.insert("item_2".to_string(), "Properties".to_string());
+        map.insert("item_3".to_string(), "Legal".to_string());
+        map.insert("item_7".to_string(), "MD&A".to_string());
+        map.insert("item_7a".to_string(), "Market Risk".to_string());
+        map.insert("item_8".to_string(), "Financials".to_string());
+        let s = TenKSections(map);
+        assert_eq!(s.item1(), Some("Business"));
+        assert_eq!(s.item1a(), Some("Risk Factors"));
+        assert_eq!(s.item2(), Some("Properties"));
+        assert_eq!(s.item3(), Some("Legal"));
+        assert_eq!(s.item7(), Some("MD&A"));
+        assert_eq!(s.item7a(), Some("Market Risk"));
+        assert_eq!(s.item8(), Some("Financials"));
+    }
+
+    #[test]
+    fn item_accessors_return_none_when_missing() {
+        let s = TenKSections::empty();
+        assert!(s.item1().is_none());
+        assert!(s.item1a().is_none());
+        assert!(s.item2().is_none());
+        assert!(s.item3().is_none());
+        assert!(s.item7().is_none());
+        assert!(s.item7a().is_none());
+        assert!(s.item8().is_none());
+    }
+
+    #[test]
+    fn is_adequate_requires_both_item1_and_item7() {
+        let mut map = HashMap::new();
+        map.insert("item_1".to_string(), "x".repeat(400));
+        map.insert("item_7".to_string(), "y".repeat(2000));
+        let s = TenKSections(map);
+        assert!(s.is_adequate());
+    }
+
+    #[test]
+    fn is_adequate_false_when_item1_too_short() {
+        let mut map = HashMap::new();
+        map.insert("item_1".to_string(), "short".to_string());
+        map.insert("item_7".to_string(), "y".repeat(2000));
+        let s = TenKSections(map);
+        assert!(!s.is_adequate());
+    }
+
+    #[test]
+    fn is_adequate_false_when_item7_too_short() {
+        let mut map = HashMap::new();
+        map.insert("item_1".to_string(), "x".repeat(400));
+        map.insert("item_7".to_string(), "short".to_string());
+        let s = TenKSections(map);
+        assert!(!s.is_adequate());
+    }
+
+    #[test]
+    fn is_adequate_false_when_both_missing() {
+        assert!(!TenKSections::empty().is_adequate());
+    }
+
+    #[test]
+    fn merge_with_keeps_longer_content() {
+        let mut map1 = HashMap::new();
+        map1.insert("item_1".to_string(), "short".to_string());
+        let mut s1 = TenKSections(map1);
+        let mut map2 = HashMap::new();
+        map2.insert("item_1".to_string(), "longer content here".to_string());
+        let s2 = TenKSections(map2);
+        s1.merge_with(s2);
+        assert_eq!(s1.item1(), Some("longer content here"));
+    }
+
+    #[test]
+    fn merge_with_adds_new_keys() {
+        let mut s1 = TenKSections::empty();
+        let mut map2 = HashMap::new();
+        map2.insert("item_7".to_string(), "MD&A".to_string());
+        let s2 = TenKSections(map2);
+        s1.merge_with(s2);
+        assert_eq!(s1.item7(), Some("MD&A"));
+    }
+
+    #[test]
+    fn keys_returns_all_keys() {
+        let mut map = HashMap::new();
+        map.insert("item_1".to_string(), "a".to_string());
+        map.insert("item_7".to_string(), "b".to_string());
+        let s = TenKSections(map);
+        let mut keys: Vec<&str> = s.keys().collect();
+        keys.sort();
+        assert_eq!(keys, vec!["item_1", "item_7"]);
+    }
+
+    #[test]
+    fn iter_returns_key_value_pairs() {
+        let mut map = HashMap::new();
+        map.insert("item_1".to_string(), "Business".to_string());
+        let s = TenKSections(map);
+        let pairs: Vec<(&str, &str)> = s.iter().collect();
+        assert_eq!(pairs, vec![("item_1", "Business")]);
+    }
+
+    #[test]
+    fn empty_sections_debug_format() {
+        let s = TenKSections::empty();
+        let debug = format!("{:?}", s);
+        assert!(debug.contains("{}") || debug.contains("TenKSections"));
+    }
+
+    // ── Integration tests via SGML path (avoids html2text) ──────────────────
+
+    fn parse_sgml(raw: &str) -> Result<TenKSections, Html2TextPanic> {
+        extract_sections_from_document(raw)
+    }
+
+    #[test]
+    fn sgml_basic_item_extraction() {
+        let raw = format!(
+            "ITEM 1. BUSINESS\n{}\nITEM 7. MANAGEMENT'S DISCUSSION\n{}\nITEM 8. FINANCIAL STATEMENTS\n{}\n",
+            "Our business is great. ".repeat(50),
+            "Analysis and discussion. ".repeat(300),
+            "Financials. ".repeat(50),
+        );
+        let s = parse_sgml(&raw).unwrap();
+        assert!(s.item1().unwrap().contains("business"));
+        assert!(s.item7().unwrap().contains("Analysis"));
+        assert!(s.is_adequate());
+    }
+
+    #[test]
+    fn sgml_spaced_item_header_normalized() {
+        let raw = format!(
+            "I T E M   1.  BUSINESS\n{}\nI T E M   7.  MANAGEMENT'S DISCUSSION\n{}\nI T E M   8.  FINANCIAL STATEMENTS\n{}\n",
+            "Spaced business. ".repeat(50),
+            "Spaced analysis. ".repeat(300),
+            "Financials. ".repeat(50),
+        );
+        let s = parse_sgml(&raw).unwrap();
+        assert!(s.item1().unwrap().contains("Spaced"));
+        assert!(s.item7().unwrap().contains("Spaced"));
+    }
+
+    #[test]
+    fn sgml_page_numbers_removed() {
+        let raw = format!(
+            "ITEM 1. BUSINESS\n{}\n  - 42 -  \nITEM 1A. RISK FACTORS\n{}\n1234\nITEM 7. MANAGEMENT'S DISCUSSION\n{}\nITEM 8. FINANCIAL STATEMENTS\n{}\n",
+            "Content. ".repeat(50),
+            "Risks. ".repeat(58),
+            "MD&A. ".repeat(300),
+            "Financials. ".repeat(50),
+        );
+        let s = parse_sgml(&raw).unwrap();
+        assert!(!s.item1().unwrap().contains("42"));
+        assert!(s.item1a().unwrap().contains("Risks"));
+        assert!(s.item7().unwrap().contains("MD&A"));
+    }
+
+    #[test]
+    fn sgml_short_section_discarded() {
+        let raw = format!(
+            "ITEM 1. BUSINESS\nshort\nITEM 7. MANAGEMENT'S DISCUSSION\n{}\nITEM 8. FINANCIAL STATEMENTS\n{}\n",
+            "MD&A content. ".repeat(300),
+            "Financials. ".repeat(50),
+        );
+        let s = parse_sgml(&raw).unwrap();
+        assert!(s.item1().is_none(), "Short section should be discarded");
+        assert!(s.item7().is_some());
+    }
+
+    #[test]
+    fn sgml_multiple_item_types() {
+        let raw = format!(
+            "ITEM 1. BUSINESS\n{}\nITEM 2. PROPERTIES\n{}\nITEM 3. LEGAL PROCEEDINGS\n{}\nITEM 7. MANAGEMENT'S DISCUSSION\n{}\nITEM 8. FINANCIAL STATEMENTS\n{}\n",
+            "Business. ".repeat(50),
+            "Properties. ".repeat(50),
+            "Legal. ".repeat(58),
+            "MD&A. ".repeat(300),
+            "Financials. ".repeat(50),
+        );
+        let s = parse_sgml(&raw).unwrap();
+        assert!(s.item1().is_some());
+        assert!(s.item2().is_some());
+        assert!(s.item3().is_some());
+        assert!(s.item7().is_some());
+    }
+
+    #[test]
+    fn sgml_item7_fallback_via_mda_title() {
+        let raw = format!(
+            "ITEM 1. BUSINESS\n{}\nITEM 7. MANAGEMENT'S DISCUSSION\nshort stub\nMANAGEMENT'S DISCUSSION AND ANALYSIS OF FINANCIAL CONDITION\n{}\nITEM 8. FINANCIAL STATEMENTS\n{}\n",
+            "Business. ".repeat(50),
+            "Detailed MD&A content here. ".repeat(300),
+            "Financials. ".repeat(50),
+        );
+        let s = parse_sgml(&raw).unwrap();
+        let item7 = s.item7().unwrap();
+        assert!(
+            item7.contains("Detailed MD&A"),
+            "Fallback should find MDA heading"
+        );
+        assert!(item7.len() >= 2000);
+    }
+
+    #[test]
+    fn html2text_panic_display_and_error_trait() {
+        let err = Html2TextPanic;
+        assert_eq!(err.to_string(), "html2text panicked on malformed document");
+        let boxed: Box<dyn std::error::Error> = Box::new(Html2TextPanic);
+        assert_eq!(boxed.to_string(), "html2text panicked on malformed document");
+    }
+
+    #[test]
+    fn tag_strip_regex_works_on_sgml_tags() {
+        let input = "<PAGE>1</PAGE>\n<CAPTION>Table</CAPTION>\nText here";
+        let result = TAG_STRIP_RE.replace_all(input, " ");
+        assert_eq!(result, " 1 \n Table \nText here");
+    }
+}

@@ -12,3 +12,5 @@ sec_fetcher_config.toml
 /.tmp
 /hf_upload_folder
 **/__pycache__
+
+/coverage-*

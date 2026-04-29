@@ -197,3 +197,33 @@ fn test_cik_lookup_not_found() {
     let tickers = vec![make_ticker("AAPL", 320193, TickerOrigin::PrimaryListing)];
     assert!(Cik::get_company_cik_by_ticker_symbol(&tickers, &TickerSymbol::new("NOPE")).is_err());
 }
+
+// ============================================================================
+// CikError display
+// ============================================================================
+
+#[test]
+fn test_cik_error_invalid_length_display() {
+    let err = CikError::InvalidLength;
+    assert_eq!(err.to_string(), "CIK length exceeds 10 digits");
+}
+
+#[test]
+fn test_cik_error_parse_error_display() {
+    let inner = "abc".parse::<u64>().unwrap_err();
+    let err = CikError::ParseError(inner);
+    let msg = err.to_string();
+    assert!(msg.contains("Failed to parse CIK"));
+    assert!(msg.contains("invalid digit"));
+}
+
+// ============================================================================
+// InvestmentCompany origin lookup (fallback to instrument's own CIK)
+// ============================================================================
+
+#[test]
+fn test_cik_lookup_investment_company_fallback() {
+    let tickers = vec![make_ticker("VTSAX", 123456, TickerOrigin::InvestmentCompany)];
+    let cik = Cik::get_company_cik_by_ticker_symbol(&tickers, &TickerSymbol::new("VTSAX")).unwrap();
+    assert_eq!(cik, Cik::from_u64(123456).unwrap());
+}

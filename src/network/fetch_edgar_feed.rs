@@ -447,3 +447,215 @@ pub async fn fetch_edgar_feeds_since(
         high_water,
     })
 }
+
+// ---------------------------------------------------------------------------
+// Tests for parse_edgar_atom_feed
+// ---------------------------------------------------------------------------
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Build an Atom `<entry>` element (without the surrounding `<feed>`).
+    fn entry_xml(
+        title: &str,
+        id: &str,
+        updated: &str,
+        link_href: &str,
+        summary: &str,
+        category_term: &str,
+    ) -> String {
+        // TODO: Use indoc! for formatting
+        format!(
+            r#"    <entry>
+      <title>{title}</title>
+      <id>{id}</id>
+      <updated>{updated}</updated>
+      <link href="{link_href}" rel="alternate" type="text/html"/>
+      <category term="{category_term}" label="{category_term}"/>
+      <summary>{summary}</summary>
+    </entry>"#,
+        )
+    }
+
+    /// Build a complete Atom feed XML with the given entry XML strings.
+    fn feed_xml(entries: &[&str]) -> String {
+        let body = entries.join("\n");
+        format!(
+            r#"<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+{body}
+</feed>"#,
+        )
+    }
+
+    /// Convenience: single-entry feed for a standard Apple 8-K.
+    fn aapl_feed() -> String {
+        // TODO: Does this comment imply the parser is incorrect?
+        // NOTE: The parser captures summary Text nodes only between the summary
+        // open/close tags.  HTML markup like <br> would split the text into
+        // multiple nodes; the parser only reads the first one.  Use a single
+        // plain-text summary so the full item list is captured.
+        let entry = entry_xml(
+            "8-K - Apple Inc. (0000320193) (Filer)",
+            "urn:tag:sec.gov,2008:accession-number=0000320193-24-000001",
+            "2024-06-15T10:30:00-04:00",
+            "/Archives/edgar/data/320193/0000320193-24-000001-index.htm",
+            "Filed: 2024-06-15 AccNo: 0000320193-24-000001 Item 2.02: Results Item 9.01: Financial Statements",
+            "8-K",
+        );
+        feed_xml(&[&entry])
+    }
+
+    #[test]
+    fn parse_empty_feed_returns_no_entries() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+</feed>"#;
+        let entries = parse_edgar_atom_feed(xml).unwrap();
+        assert!(entries.is_empty());
+    }
+
+    #[test]
+    fn parse_single_entry() {
+        let xml = aapl_feed();
+        let entries = parse_edgar_atom_feed(&xml).unwrap();
+        assert_eq!(entries.len(), 1);
+
+        let e = &entries[0];
+        assert_eq!(e.accession_number, "0000320193-24-000001");
+        assert_eq!(e.form_type, "8-K");
+        assert_eq!(e.company_name, "Apple Inc.");
+        assert_eq!(e.filing_href, "/Archives/edgar/data/320193/0000320193-24-000001-index.htm");
+        assert!(e.cik.is_some());
+        assert_eq!(e.cik.as_ref().unwrap().value, 320193);
+        assert_eq!(e.filing_date, Some(NaiveDate::from_ymd_opt(2024, 6, 15).unwrap()));
+        assert_eq!(e.updated, DateTime::parse_from_rfc3339("2024-06-15T10:30:00-04:00").unwrap());
+        assert_eq!(e.items, vec!["2.02", "9.01"]);
+    }
+
+    #[test]
+    fn parse_multiple_entries() {
+        let e1 = entry_xml(
+            "10-Q - Apple Inc. (0000320193) (Filer)",
+            "urn:tag:sec.gov,2008:accession-number=0000320193-24-000002",
+            "2024-07-20T09:00:00-04:00",
+            "/Archives/edgar/data/320193/0000320193-24-000002-index.htm",
+            "Filed: 2024-07-20 AccNo: 0000320193-24-000002",
+            "10-Q",
+        );
+        let e2 = entry_xml(
+            "8-K - Microsoft Corporation (0000789019) (Filer)",
+            "urn:tag:sec.gov,2008:accession-number=0000789019-24-000001",
+            "2024-07-19T14:00:00-04:00",
+            "/Archives/edgar/data/789019/0000789019-24-000001-index.htm",
+            "Filed: 2024-07-19 AccNo: 0000789019-24-000001 Item 5.02: Departure Item 9.01: Financial Statements",
+            "8-K",
+        );
+        let xml = feed_xml(&[&e1, &e2]);
+        let entries = parse_edgar_atom_feed(&xml).unwrap();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].company_name, "Apple Inc.");
+        assert_eq!(entries[1].company_name, "Microsoft Corporation");
+    }
+
+    #[test]
+    fn form_type_and_company_name_vary_with_feed_content() {
+        let entry = entry_xml(
+            "NPORT-P - Vanguard Index Funds (0001234567) (Filer)",
+            "urn:tag:sec.gov,2008:accession-number=0001234567-24-000003",
+            "2024-08-01T12:00:00-04:00",
+            "/Archives/edgar/data/1234567/0001234567-24-000003-index.htm",
+            "Filed: 2024-08-01 AccNo: 0001234567-24-000003",
+            "NPORT-P",
+        );
+        let xml = feed_xml(&[&entry]);
+        let entries = parse_edgar_atom_feed(&xml).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].form_type, "NPORT-P");
+        assert_eq!(entries[0].company_name, "Vanguard Index Funds");
+    }
+
+    #[test]
+    fn parses_pre_2004_legacy_item_format() {
+        // Pre-2004 items use plain integers like "Item 5:" instead of "Item 5.02:"
+        let entry = entry_xml(
+            "8-K - Apple Inc. (0000320193) (Filer)",
+            "urn:tag:sec.gov,2008:accession-number=0000320193-99-000001",
+            "1999-03-15T11:00:00-05:00",
+            "/Archives/edgar/data/320193/0000320193-99-000001-index.htm",
+            "Filed: 1999-03-15 AccNo: 0000320193-99-000001 Item 5: Old format Item 7: Financials",
+            "8-K",
+        );
+        let xml = feed_xml(&[&entry]);
+        let entries = parse_edgar_atom_feed(&xml).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].items, vec!["5", "7"]);
+    }
+
+    #[test]
+    fn handles_entry_without_items() {
+        let entry = entry_xml(
+            "10-K - Apple Inc. (0000320193) (Filer)",
+            "urn:tag:sec.gov,2008:accession-number=0000320193-24-000004",
+            "2024-10-31T16:00:00-04:00",
+            "/Archives/edgar/data/320193/0000320193-24-000004-index.htm",
+            "Filed: 2024-10-31 AccNo: 0000320193-24-000004",
+            "10-K",
+        );
+        let xml = feed_xml(&[&entry]);
+        let entries = parse_edgar_atom_feed(&xml).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert!(entries[0].items.is_empty());
+    }
+
+    #[test]
+    fn handles_entry_without_filing_date() {
+        let entry = entry_xml(
+            "4 - Cook Timothy D (0000320193) (Filer)",
+            "urn:tag:sec.gov,2008:accession-number=0000320193-24-000005",
+            "2024-11-01T09:00:00-04:00",
+            "/Archives/edgar/data/320193/0000320193-24-000005-index.htm",
+            "AccNo: 0000320193-24-000005",  // No "Filed:" prefix
+            "4",
+        );
+        let xml = feed_xml(&[&entry]);
+        let entries = parse_edgar_atom_feed(&xml).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert!(entries[0].filing_date.is_none());
+    }
+
+    #[test]
+    fn fallback_company_name_when_regex_does_not_match() {
+        // Title that doesn't match the COMPANY_FROM_TITLE regex
+        let entry = entry_xml(
+            "Some Nonstandard Title (No Filer)",
+            "urn:tag:sec.gov,2008:accession-number=0000320193-24-000006",
+            "2024-12-01T08:00:00-05:00",
+            "/Archives/edgar/data/320193/0000320193-24-000006-index.htm",
+            "Filed: 2024-12-01 AccNo: 0000320193-24-000006",
+            "8-K",
+        );
+        let xml = feed_xml(&[&entry]);
+        let entries = parse_edgar_atom_feed(&xml).unwrap();
+        assert_eq!(entries.len(), 1);
+        // Falls back to the full title string
+        assert_eq!(entries[0].company_name, "Some Nonstandard Title (No Filer)");
+    }
+
+    #[test]
+    fn missing_cik_when_url_has_no_archive_pattern() {
+        // href without /Archives/edgar/data/NNNN/ pattern
+        let entry = entry_xml(
+            "8-K - Test Company (0000123456) (Filer)",
+            "urn:tag:sec.gov,2008:accession-number=0000123456-24-000007",
+            "2024-12-15T10:00:00-05:00",
+            "https://efts.sec.gov/LATEST/some-other-path",
+            "Filed: 2024-12-15 AccNo: 0000123456-24-000007",
+            "8-K",
+        );
+        let xml = feed_xml(&[&entry]);
+        let entries = parse_edgar_atom_feed(&xml).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert!(entries[0].cik.is_none(), "CIK should be None when URL lacks archive pattern");
+    }
+}
