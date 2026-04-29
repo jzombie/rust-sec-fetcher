@@ -176,7 +176,7 @@ fn test_diff_identical_lists() {
 #[test]
 fn test_diff_identical_single_position() {
     let p = pos("037833100", "AAPL", 100_000, dec!(100));
-    let diff = diff_holdings(&[p.clone()], &[p]);
+    let diff = diff_holdings(std::slice::from_ref(&p.clone()), &[p]);
     assert!(diff.added.is_empty());
     assert!(diff.removed.is_empty());
     assert!(diff.changed.is_empty());
