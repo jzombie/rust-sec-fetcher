@@ -74,7 +74,8 @@ mod tests {
             ..make_entry()
         };
         let ft = entry.form_type();
-        assert_eq!(ft.as_edgar_str(), "Other");
+        assert!(matches!(ft, FormType::Other(_)));
+        assert_eq!(ft.as_edgar_str(), "SOMETHING_WEIRD");
     }
 
     #[test]
