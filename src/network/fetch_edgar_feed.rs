@@ -179,14 +179,27 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
             },
 
             Event::Text(e) => {
-                if let (Some(field), Some(p)) = (current_field.take(), &mut current) {
+                if let Some(p) = &mut current {
                     let text = e.decode()?.to_string();
-                    match field {
-                        "title" => p.title = text,
-                        "updated" => p.updated = text,
-                        "id" => p.id = text,
-                        "summary" => p.summary = text,
-                        _ => {}
+                    match current_field {
+                        Some("summary") => {
+                            // Summary may span multiple text nodes if embedded HTML
+                            // (e.g. <br/>) splits the content. Accumulate all
+                            // fragments rather than overwriting with only the first.
+                            p.summary.push_str(&text);
+                        }
+                        Some(field) => {
+                            // These elements always contain a single text node, so
+                            // consume the field tracker to ignore any stray text.
+                            current_field = None;
+                            match field {
+                                "title" => p.title = text,
+                                "updated" => p.updated = text,
+                                "id" => p.id = text,
+                                _ => {}
+                            }
+                        }
+                        None => {}
                     }
                 }
             }
@@ -490,11 +503,9 @@ mod tests {
 
     /// Convenience: single-entry feed for a standard Apple 8-K.
     fn aapl_feed() -> String {
-        // TODO: Does this comment imply the parser is incorrect?
-        // NOTE: The parser captures summary Text nodes only between the summary
-        // open/close tags.  HTML markup like <br> would split the text into
-        // multiple nodes; the parser only reads the first one.  Use a single
-        // plain-text summary so the full item list is captured.
+        // This test helper uses a plain-text summary for simplicity.  The
+        // parser accumulates all Text nodes within <summary>, so it handles
+        // both plain-text and HTML-containing summaries correctly.
         let entry = entry_xml(
             "8-K - Apple Inc. (0000320193) (Filer)",
             "urn:tag:sec.gov,2008:accession-number=0000320193-24-000001",
@@ -539,6 +550,39 @@ mod tests {
             e.updated,
             DateTime::parse_from_rfc3339("2024-06-15T10:30:00-04:00").unwrap()
         );
+        assert_eq!(e.items, vec!["2.02", "9.01"]);
+    }
+
+    #[test]
+    fn summary_with_embedded_html_accumulates_all_text_nodes() {
+        // Build an entry whose <summary> contains <br/> elements that would
+        // split the text into multiple quick-xml Text events.  The parser
+        // must accumulate them rather than capturing only the first fragment.
+        // We verify through `items` (parsed from the accumulated summary) and
+        // `filing_date` (parsed from the first fragment) to confirm both early
+        // and late text nodes are correctly captured.
+        let xml = feed_xml(&[&format!(
+            r#"    <entry>
+      <title>8-K - Apple Inc. (0000320193) (Filer)</title>
+      <id>urn:tag:sec.gov,2008:accession-number=0000320193-24-000001</id>
+      <updated>2024-06-15T10:30:00-04:00</updated>
+      <link href="/Archives/edgar/data/320193/0000320193-24-000001-index.htm" rel="alternate" type="text/html"/>
+      <category term="8-K" label="8-K"/>
+      <summary>Filed: 2024-06-15 AccNo: 0000320193-24-000001<br/>Item 2.02: Results<br/>Item 9.01: Financial Statements</summary>
+    </entry>"#,
+        )]);
+        let entries = parse_edgar_atom_feed(&xml).unwrap();
+        assert_eq!(entries.len(), 1);
+        let e = &entries[0];
+        assert_eq!(e.accession_number, "0000320193-24-000001");
+        // `filing_date` is parsed from the first text fragment ("Filed: 2024-06-15...") —
+        // this confirms the early text node is captured.
+        assert_eq!(
+            e.filing_date,
+            Some(NaiveDate::from_ymd_opt(2024, 6, 15).unwrap())
+        );
+        // `items` are parsed from the later fragments ("Item 2.02:...", "Item 9.01:...") —
+        // this confirms the text nodes after <br/> are also accumulated.
         assert_eq!(e.items, vec!["2.02", "9.01"]);
     }
 

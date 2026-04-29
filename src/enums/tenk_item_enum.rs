@@ -4,7 +4,7 @@ use strum_macros::EnumIter;
 /// A standard numbered item of an SEC Form 10-K annual report.
 ///
 /// Variants are ordered exactly as they appear in the filing structure so that
-/// [`TenKItem::iter()`] produces them in document order.  This ordering is
+/// `TenKItem::iter()` produces them in document order.  This ordering is
 /// relied on by the section-extraction algorithm: each item's end boundary is
 /// located by the first heading of any *later* item.
 ///

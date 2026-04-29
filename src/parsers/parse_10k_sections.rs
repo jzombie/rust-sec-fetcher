@@ -142,8 +142,8 @@ impl TenKSections {
 
     /// True when Item 1 and Item 7 are both present and substantial.
     ///
-    /// Uses [`MIN_ITEM7_CHARS`] as the floor for Item 7, not the general
-    /// [`MIN_SECTION_CHARS`].  Real MD&A bodies are always longer than
+    /// Uses `MIN_ITEM7_CHARS` as the floor for Item 7, not the general
+    /// `MIN_SECTION_CHARS`.  Real MD&A bodies are always longer than
     /// `MIN_ITEM7_CHARS`; incorporate-by-reference stubs are typically
     /// 500–1 500 chars and would fail this check, causing the network layer
     /// to keep searching the filing index for a better document.

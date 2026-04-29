@@ -112,7 +112,7 @@ pub async fn fetch_related_ciks(
 /// CIKs it has ever been registered under.
 ///
 /// For the vast majority of entities (those that have never reorganised as a
-/// holding company) the result is identical to calling [`fetch_cik_submissions`]
+/// holding company) the result is identical to calling [`fetch_cik_submissions()`]
 /// directly — one extra cached EFTS lookup is the only overhead.
 ///
 /// For entities that *have* reorganised (e.g. `GOOG` → Alphabet Inc.), the
