@@ -329,10 +329,7 @@ mod tests {
 
     #[test]
     fn test_parse_period_year_only() {
-        assert_eq!(
-            parse_period("2024").unwrap(),
-            Period::Year { year: 2024 }
-        );
+        assert_eq!(parse_period("2024").unwrap(), Period::Year { year: 2024 });
     }
 
     #[test]

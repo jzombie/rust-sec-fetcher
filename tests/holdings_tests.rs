@@ -7,7 +7,9 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use sec_fetcher::models::{NportInvestment, ThirteenfHolding};
 use sec_fetcher::normalize::Pct;
-use sec_fetcher::ops::holdings::{diff_holdings, positions_from_13f, positions_from_nport, Position};
+use sec_fetcher::ops::holdings::{
+    Position, diff_holdings, positions_from_13f, positions_from_nport,
+};
 
 // ============================================================================
 // helpers
@@ -112,7 +114,12 @@ fn test_13f_empty() {
 
 #[test]
 fn test_13f_single() {
-    let holdings = vec![holding_13f("037833100", "APPLE INC", 116_333_000, dec!(45.20))];
+    let holdings = vec![holding_13f(
+        "037833100",
+        "APPLE INC",
+        116_333_000,
+        dec!(45.20),
+    )];
     let positions = positions_from_13f(&holdings);
     assert_eq!(positions.len(), 1);
     assert_eq!(positions[0].cusip, "037833100");
@@ -156,7 +163,10 @@ fn test_diff_both_empty() {
 
 #[test]
 fn test_diff_identical_lists() {
-    let positions = vec![pos("037833100", "AAPL", 100_000, dec!(50)), pos("594918104", "MSFT", 100_000, dec!(50))];
+    let positions = vec![
+        pos("037833100", "AAPL", 100_000, dec!(50)),
+        pos("594918104", "MSFT", 100_000, dec!(50)),
+    ];
     let diff = diff_holdings(&positions, &positions);
     assert!(diff.added.is_empty(), "No new buys");
     assert!(diff.removed.is_empty(), "No full sells");
@@ -236,7 +246,10 @@ fn test_diff_small_change_below_threshold() {
     bumped.weight = Pct::from_pct(dec!(50.05)); // +0.05, below 0.10 threshold
 
     let diff = diff_holdings(&[shared], &[bumped]);
-    assert!(diff.changed.is_empty(), "0.05 pct change is below threshold");
+    assert!(
+        diff.changed.is_empty(),
+        "0.05 pct change is below threshold"
+    );
     assert!(diff.added.is_empty());
     assert!(diff.removed.is_empty());
 }
@@ -285,10 +298,10 @@ fn test_diff_changed_sorted_by_delta_descending() {
         .collect();
 
     let new: Vec<Position> = [
-        ("037833100", dec!(50)),  // +20
-        ("594918104", dec!(20)),  // -10
-        ("67066G104", dec!(25)),  // -5  (still above 0.10 threshold)
-        ("02079K305", dec!(5)),   // -25
+        ("037833100", dec!(50)), // +20
+        ("594918104", dec!(20)), // -10
+        ("67066G104", dec!(25)), // -5  (still above 0.10 threshold)
+        ("02079K305", dec!(5)),  // -25
     ]
     .into_iter()
     .map(|(c, w)| pos(c, "NAME", 100_000, w))
@@ -299,15 +312,24 @@ fn test_diff_changed_sorted_by_delta_descending() {
     // 0-100 scale: deltas are 20, 10, 5, 25 — all ≥ 0.10.
     // Sorted by abs delta descending: GOOGL (25), AAPL (20), MSFT (10), NVDA (5)
     assert_eq!(diff.changed.len(), 4);
-    assert_eq!(diff.changed[0].0.cusip, "02079K305", "GOOGL first: delta=25");
-    assert_eq!(diff.changed[1].0.cusip, "037833100", "AAPL second: delta=20");
+    assert_eq!(
+        diff.changed[0].0.cusip, "02079K305",
+        "GOOGL first: delta=25"
+    );
+    assert_eq!(
+        diff.changed[1].0.cusip, "037833100",
+        "AAPL second: delta=20"
+    );
     assert_eq!(diff.changed[2].0.cusip, "594918104", "MSFT third: delta=10");
     assert_eq!(diff.changed[3].0.cusip, "67066G104", "NVDA fourth: delta=5");
 }
 
 #[test]
 fn test_diff_empty_old_all_new_are_adds() {
-    let new = vec![pos("037833100", "AAPL", 100_000, dec!(50)), pos("594918104", "MSFT", 100_000, dec!(50))];
+    let new = vec![
+        pos("037833100", "AAPL", 100_000, dec!(50)),
+        pos("594918104", "MSFT", 100_000, dec!(50)),
+    ];
     let diff = diff_holdings(&[], &new);
     assert_eq!(diff.added.len(), 2);
     assert!(diff.removed.is_empty());
@@ -316,7 +338,10 @@ fn test_diff_empty_old_all_new_are_adds() {
 
 #[test]
 fn test_diff_empty_new_all_old_are_removes() {
-    let old = vec![pos("037833100", "AAPL", 100_000, dec!(50)), pos("594918104", "MSFT", 100_000, dec!(50))];
+    let old = vec![
+        pos("037833100", "AAPL", 100_000, dec!(50)),
+        pos("594918104", "MSFT", 100_000, dec!(50)),
+    ];
     let diff = diff_holdings(&old, &[]);
     assert_eq!(diff.removed.len(), 2);
     assert!(diff.added.is_empty());
@@ -341,7 +366,7 @@ fn test_diff_full_lifecycle() {
     let new = vec![
         // AAPL: 50.00 → 50.04 = +0.04, below 0.10 threshold → not "changed"
         pos("037833100", "AAPL", 550_000, dec!(50.04)),
-        pos("67066G104", "NVDA", 450_000, dec!(49.96)),  // new buy
+        pos("67066G104", "NVDA", 450_000, dec!(49.96)), // new buy
     ];
 
     let diff = diff_holdings(&old, &new);
@@ -350,7 +375,10 @@ fn test_diff_full_lifecycle() {
     assert_eq!(diff.added[0].cusip, "67066G104");
 
     assert_eq!(diff.removed.len(), 2, "MSFT and GOOGL were sold");
-    assert!(diff.changed.is_empty(), "AAPL +0.04 is below 0.10 threshold");
+    assert!(
+        diff.changed.is_empty(),
+        "AAPL +0.04 is below 0.10 threshold"
+    );
 }
 
 // ============================================================================

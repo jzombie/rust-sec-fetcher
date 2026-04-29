@@ -241,7 +241,7 @@ pub(super) fn flatten_tables(markdown: &str) -> String {
                 result.push('\n');
                 table_lines.clear();
             }
-            
+
             result.push_str(line);
             result.push('\n');
         }
@@ -306,7 +306,8 @@ mod tests {
 
     #[test]
     fn test_strip_xbrl_noise_removes_ix_header() {
-        let html = "<html><body><ix:header><some>metadata</some></ix:header><p>Content</p></body></html>";
+        let html =
+            "<html><body><ix:header><some>metadata</some></ix:header><p>Content</p></body></html>";
         let result = strip_xbrl_noise(html);
         assert!(!result.contains("<ix:header"));
         assert!(result.contains("<p>Content</p>"));
@@ -314,7 +315,8 @@ mod tests {
 
     #[test]
     fn test_strip_xbrl_noise_removes_hidden_div() {
-        let html = r#"<html><body><div style="display:none">hidden</div><p>visible</p></body></html>"#;
+        let html =
+            r#"<html><body><div style="display:none">hidden</div><p>visible</p></body></html>"#;
         let result = strip_xbrl_noise(html);
         assert!(!result.contains("hidden"));
         assert!(result.contains("visible"));

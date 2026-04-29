@@ -22,16 +22,27 @@ fn test_accession_number_display_format() {
 #[test]
 fn test_accession_number_error_display() {
     let err = AccessionNumberError::InvalidLength;
-    assert_eq!(err.to_string(), "Accession number must be 18 digits (XXXXXXXXXX-YY-NNNNNN)");
+    assert_eq!(
+        err.to_string(),
+        "Accession number must be 18 digits (XXXXXXXXXX-YY-NNNNNN)"
+    );
 
     let parse_err = "bad".parse::<u32>().unwrap_err();
     let err = AccessionNumberError::ParseError(parse_err);
     let msg = err.to_string();
-    assert!(msg.contains("Failed to parse"), "ParseError display should mention parse failure: {}", msg);
+    assert!(
+        msg.contains("Failed to parse"),
+        "ParseError display should mention parse failure: {}",
+        msg
+    );
 
     let err = AccessionNumberError::CikError(CikError::InvalidLength);
     let msg = err.to_string();
-    assert!(msg.contains("CIK"), "CikError display should mention CIK: {}", msg);
+    assert!(
+        msg.contains("CIK"),
+        "CikError display should mention CIK: {}",
+        msg
+    );
 }
 
 #[test]

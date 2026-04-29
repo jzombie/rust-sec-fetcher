@@ -641,7 +641,10 @@ mod tests {
         let err = Html2TextPanic;
         assert_eq!(err.to_string(), "html2text panicked on malformed document");
         let boxed: Box<dyn std::error::Error> = Box::new(Html2TextPanic);
-        assert_eq!(boxed.to_string(), "html2text panicked on malformed document");
+        assert_eq!(
+            boxed.to_string(),
+            "html2text panicked on malformed document"
+        );
     }
 
     #[test]

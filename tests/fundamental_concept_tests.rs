@@ -12,9 +12,8 @@ fn test_fundamental_concept_round_trips() {
     use strum::IntoEnumIterator;
     for concept in FundamentalConcept::iter() {
         let display = concept.to_string();
-        let parsed = FundamentalConcept::from_str(&display).unwrap_or_else(|_| {
-            panic!("Failed to parse FundamentalConcept from '{display}'")
-        });
+        let parsed = FundamentalConcept::from_str(&display)
+            .unwrap_or_else(|_| panic!("Failed to parse FundamentalConcept from '{display}'"));
         assert_eq!(concept, parsed, "Round-trip failed for variant {concept}");
     }
 }
@@ -51,7 +50,10 @@ fn test_fundamental_concept_invalid_variant() {
 #[test]
 fn test_fundamental_concept_case_sensitive() {
     let result = FundamentalConcept::from_str("assets");
-    assert!(result.is_err(), "strum EnumString is case-sensitive by default");
+    assert!(
+        result.is_err(),
+        "strum EnumString is case-sensitive by default"
+    );
 }
 
 /// Verifies Debug output for a few variants.

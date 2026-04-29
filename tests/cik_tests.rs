@@ -126,10 +126,7 @@ fn test_ticker_origin_variants() {
 #[test]
 fn test_ticker_origin_display() {
     use sec_fetcher::enums::TickerOrigin;
-    assert_eq!(
-        TickerOrigin::PrimaryListing.to_string(),
-        "PrimaryListing"
-    );
+    assert_eq!(TickerOrigin::PrimaryListing.to_string(), "PrimaryListing");
     assert_eq!(
         TickerOrigin::DerivedInstrument.to_string(),
         "DerivedInstrument"
@@ -150,10 +147,7 @@ fn test_ticker_origin_debug() {
 #[test]
 fn test_ticker_origin_equality() {
     use sec_fetcher::enums::TickerOrigin;
-    assert_eq!(
-        TickerOrigin::PrimaryListing,
-        TickerOrigin::PrimaryListing
-    );
+    assert_eq!(TickerOrigin::PrimaryListing, TickerOrigin::PrimaryListing);
     assert_ne!(
         TickerOrigin::PrimaryListing,
         TickerOrigin::DerivedInstrument
@@ -223,7 +217,11 @@ fn test_cik_error_parse_error_display() {
 
 #[test]
 fn test_cik_lookup_investment_company_fallback() {
-    let tickers = vec![make_ticker("VTSAX", 123456, TickerOrigin::InvestmentCompany)];
+    let tickers = vec![make_ticker(
+        "VTSAX",
+        123456,
+        TickerOrigin::InvestmentCompany,
+    )];
     let cik = Cik::get_company_cik_by_ticker_symbol(&tickers, &TickerSymbol::new("VTSAX")).unwrap();
     assert_eq!(cik, Cik::from_u64(123456).unwrap());
 }

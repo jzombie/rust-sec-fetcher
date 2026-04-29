@@ -525,11 +525,20 @@ mod tests {
         assert_eq!(e.accession_number, "0000320193-24-000001");
         assert_eq!(e.form_type, "8-K");
         assert_eq!(e.company_name, "Apple Inc.");
-        assert_eq!(e.filing_href, "/Archives/edgar/data/320193/0000320193-24-000001-index.htm");
+        assert_eq!(
+            e.filing_href,
+            "/Archives/edgar/data/320193/0000320193-24-000001-index.htm"
+        );
         assert!(e.cik.is_some());
         assert_eq!(e.cik.as_ref().unwrap().value, 320193);
-        assert_eq!(e.filing_date, Some(NaiveDate::from_ymd_opt(2024, 6, 15).unwrap()));
-        assert_eq!(e.updated, DateTime::parse_from_rfc3339("2024-06-15T10:30:00-04:00").unwrap());
+        assert_eq!(
+            e.filing_date,
+            Some(NaiveDate::from_ymd_opt(2024, 6, 15).unwrap())
+        );
+        assert_eq!(
+            e.updated,
+            DateTime::parse_from_rfc3339("2024-06-15T10:30:00-04:00").unwrap()
+        );
         assert_eq!(e.items, vec!["2.02", "9.01"]);
     }
 
@@ -615,7 +624,7 @@ mod tests {
             "urn:tag:sec.gov,2008:accession-number=0000320193-24-000005",
             "2024-11-01T09:00:00-04:00",
             "/Archives/edgar/data/320193/0000320193-24-000005-index.htm",
-            "AccNo: 0000320193-24-000005",  // No "Filed:" prefix
+            "AccNo: 0000320193-24-000005", // No "Filed:" prefix
             "4",
         );
         let xml = feed_xml(&[&entry]);
@@ -656,6 +665,9 @@ mod tests {
         let xml = feed_xml(&[&entry]);
         let entries = parse_edgar_atom_feed(&xml).unwrap();
         assert_eq!(entries.len(), 1);
-        assert!(entries[0].cik.is_none(), "CIK should be None when URL lacks archive pattern");
+        assert!(
+            entries[0].cik.is_none(),
+            "CIK should be None when URL lacks archive pattern"
+        );
     }
 }

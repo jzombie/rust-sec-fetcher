@@ -19,11 +19,21 @@ fn apple_ticker() -> Ticker {
 }
 
 fn microsoft_ticker() -> Ticker {
-    make_ticker("MSFT", 789019, "Microsoft Corporation", TickerOrigin::PrimaryListing)
+    make_ticker(
+        "MSFT",
+        789019,
+        "Microsoft Corporation",
+        TickerOrigin::PrimaryListing,
+    )
 }
 
 fn google_ticker() -> Ticker {
-    make_ticker("GOOGL", 1652044, "Alphabet Inc.", TickerOrigin::PrimaryListing)
+    make_ticker(
+        "GOOGL",
+        1652044,
+        "Alphabet Inc.",
+        TickerOrigin::PrimaryListing,
+    )
 }
 
 #[test]
@@ -47,7 +57,10 @@ fn test_fuzzy_match_partial_name() {
 fn test_fuzzy_match_no_match_returns_none() {
     let tickers = vec![apple_ticker(), microsoft_ticker()];
     let result = Ticker::get_by_fuzzy_matched_name(&tickers, "NonExistentCompanyXYZ", None);
-    assert!(result.is_none(), "Should return None for non-matching query");
+    assert!(
+        result.is_none(),
+        "Should return None for non-matching query"
+    );
 }
 
 #[test]
@@ -82,18 +95,36 @@ fn test_fuzzy_match_preferred_over_derived() {
 
 #[test]
 fn test_fuzzy_match_company_name_with_comma() {
-    let pnc = make_ticker("PNC", 713676, "PNC FINANCIAL SERVICES GROUP, INC.", TickerOrigin::PrimaryListing);
+    let pnc = make_ticker(
+        "PNC",
+        713676,
+        "PNC FINANCIAL SERVICES GROUP, INC.",
+        TickerOrigin::PrimaryListing,
+    );
     let tickers = vec![pnc];
     let result = Ticker::get_by_fuzzy_matched_name(&tickers, "PNC Financial Services", None);
-    assert!(result.is_some(), "Should match PNC despite 'GROUP, INC.' being filtered");
+    assert!(
+        result.is_some(),
+        "Should match PNC despite 'GROUP, INC.' being filtered"
+    );
     assert_eq!(result.unwrap().symbol.to_string(), "PNC");
 }
 
 #[test]
 fn test_fuzzy_match_company_abbreviation() {
     let tickers = vec![
-        make_ticker("JPM", 19617, "JPMORGAN CHASE & CO", TickerOrigin::PrimaryListing),
-        make_ticker("BAC", 70858, "BANK OF AMERICA CORP", TickerOrigin::PrimaryListing),
+        make_ticker(
+            "JPM",
+            19617,
+            "JPMORGAN CHASE & CO",
+            TickerOrigin::PrimaryListing,
+        ),
+        make_ticker(
+            "BAC",
+            70858,
+            "BANK OF AMERICA CORP",
+            TickerOrigin::PrimaryListing,
+        ),
     ];
     let result = Ticker::get_by_fuzzy_matched_name(&tickers, "JPMorgan Chase", None);
     assert!(result.is_some(), "Should match JPMorgan Chase & Co");
@@ -104,8 +135,18 @@ fn test_fuzzy_match_company_abbreviation() {
 fn test_fuzzy_match_matches_correct_company_from_multiple() {
     let tickers = vec![
         make_ticker("AAPL", 320193, "Apple Inc.", TickerOrigin::PrimaryListing),
-        make_ticker("APLE", 1608676, "Apple Hospitality REIT Inc.", TickerOrigin::PrimaryListing),
-        make_ticker("APPN", 1649801, "Appian Corporation", TickerOrigin::PrimaryListing),
+        make_ticker(
+            "APLE",
+            1608676,
+            "Apple Hospitality REIT Inc.",
+            TickerOrigin::PrimaryListing,
+        ),
+        make_ticker(
+            "APPN",
+            1649801,
+            "Appian Corporation",
+            TickerOrigin::PrimaryListing,
+        ),
     ];
     // "Apple Inc" gives 2/2 (100%) vs Apple Inc., 2/4 (50%) vs Apple Hospitality => threshold 0.6
     let result = Ticker::get_by_fuzzy_matched_name(&tickers, "Apple Inc", None);
@@ -116,19 +157,28 @@ fn test_fuzzy_match_matches_correct_company_from_multiple() {
 
 #[test]
 fn test_fuzzy_match_national_association_normalization() {
-    let tickers = vec![
-        make_ticker("BAC", 70858, "BANK OF AMERICA CORP NATIONAL ASSOCIATION", TickerOrigin::PrimaryListing),
-    ];
+    let tickers = vec![make_ticker(
+        "BAC",
+        70858,
+        "BANK OF AMERICA CORP NATIONAL ASSOCIATION",
+        TickerOrigin::PrimaryListing,
+    )];
     let result = Ticker::get_by_fuzzy_matched_name(&tickers, "Bank of America NA", None);
     assert!(result.is_some(), "Should match with NA abbreviation");
 }
 
 #[test]
 fn test_fuzzy_match_single_letter_joins() {
-    let tickers = vec![
-        make_ticker("ABC", 12345, "A B C Company", TickerOrigin::PrimaryListing),
-    ];
+    let tickers = vec![make_ticker(
+        "ABC",
+        12345,
+        "A B C Company",
+        TickerOrigin::PrimaryListing,
+    )];
     let result = Ticker::get_by_fuzzy_matched_name(&tickers, "ABC Company", None);
-    assert!(result.is_some(), "Should match where single letters join together");
+    assert!(
+        result.is_some(),
+        "Should match where single letters join together"
+    );
     assert_eq!(result.unwrap().symbol.to_string(), "ABC");
 }

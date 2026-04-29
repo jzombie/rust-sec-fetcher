@@ -38,12 +38,18 @@ fn test_parse_cik_submissions_json_basic() {
     assert_eq!(submissions.len(), 2);
     assert_eq!(submissions[0].cik.to_string(), "0000320193");
     assert_eq!(submissions[0].form_type().to_string(), "10-K");
-    assert_eq!(submissions[0].filing_date.unwrap().to_string(), "2024-11-01");
+    assert_eq!(
+        submissions[0].filing_date.unwrap().to_string(),
+        "2024-11-01"
+    );
     assert_eq!(submissions[0].items.len(), 0); // empty items
 
     assert_eq!(submissions[1].form_type().to_string(), "8-K");
     assert_eq!(submissions[1].items, vec!["2.02", "9.01"]);
-    assert_eq!(submissions[1].filing_date.unwrap().to_string(), "2024-10-15");
+    assert_eq!(
+        submissions[1].filing_date.unwrap().to_string(),
+        "2024-10-15"
+    );
 }
 
 #[test]
@@ -54,7 +60,10 @@ fn test_parse_cik_submissions_json_missing_recent() {
     });
     let cik = Cik::from_str("0000320193").unwrap();
     let submissions = parse_cik_submissions_json(&data, cik);
-    assert!(submissions.is_empty(), "Expected empty when filings.recent is missing");
+    assert!(
+        submissions.is_empty(),
+        "Expected empty when filings.recent is missing"
+    );
 }
 
 #[test]
@@ -77,7 +86,10 @@ fn test_parse_cik_submissions_json_empty_recent() {
     });
     let cik = Cik::from_str("0000320193").unwrap();
     let submissions = parse_cik_submissions_json(&data, cik);
-    assert!(submissions.is_empty(), "Expected empty when filings.recent has no entries");
+    assert!(
+        submissions.is_empty(),
+        "Expected empty when filings.recent has no entries"
+    );
 }
 
 #[test]
@@ -118,11 +130,17 @@ fn test_parse_company_tickers_json_basic() {
     let tickers = parse_company_tickers_json(&data).unwrap();
     assert_eq!(tickers.len(), 2);
 
-    let aapl = tickers.iter().find(|t| t.symbol.to_string() == "AAPL").unwrap();
+    let aapl = tickers
+        .iter()
+        .find(|t| t.symbol.to_string() == "AAPL")
+        .unwrap();
     assert_eq!(aapl.company_name, "Apple Inc.");
     assert_eq!(aapl.cik.to_string(), "0000320193");
 
-    let msft = tickers.iter().find(|t| t.symbol.to_string() == "MSFT").unwrap();
+    let msft = tickers
+        .iter()
+        .find(|t| t.symbol.to_string() == "MSFT")
+        .unwrap();
     assert_eq!(msft.company_name, "Microsoft Corporation");
     assert_eq!(msft.cik.to_string(), "0000789019");
 }
@@ -180,7 +198,11 @@ fn test_parse_ticker_txt_empty() {
 fn test_parse_ticker_txt_skips_malformed_lines() {
     let text = "AAPL\t320193\nBAD_LINE\nMSFT\t789019\n\t\nNO_CIK\t\n";
     let tickers = parse_ticker_txt(text);
-    assert_eq!(tickers.len(), 2, "Should skip lines without tab, empty lines, and lines with missing CIK");
+    assert_eq!(
+        tickers.len(),
+        2,
+        "Should skip lines without tab, empty lines, and lines with missing CIK"
+    );
     assert_eq!(tickers[0].symbol.to_string(), "AAPL");
     assert_eq!(tickers[1].symbol.to_string(), "MSFT");
 }
@@ -226,7 +248,10 @@ fn test_parse_master_idx_basic() {
     assert_eq!(entries[0].company_name, "APPLE INC");
     assert_eq!(entries[0].form_type, "10-K");
     assert_eq!(entries[0].date_filed.to_string(), "2024-11-01");
-    assert_eq!(entries[0].filename, "edgar/data/320193/1234/primary-document.htm");
+    assert_eq!(
+        entries[0].filename,
+        "edgar/data/320193/1234/primary-document.htm"
+    );
 
     assert_eq!(entries[1].company_name, "MICROSOFT CORP");
     assert_eq!(entries[1].form_type, "10-Q");
@@ -260,7 +285,10 @@ fn test_parse_master_idx_skips_bad_date() {
                 320193|APPLE INC|10-K|not-a-date|edgar/data/320193/1234/primary-document.htm\n";
 
     let entries = parse_master_idx(text).unwrap();
-    assert!(entries.is_empty(), "Should skip rows with unparseable dates");
+    assert!(
+        entries.is_empty(),
+        "Should skip rows with unparseable dates"
+    );
 }
 
 #[test]
@@ -282,5 +310,9 @@ fn test_parse_master_idx_handles_empty_lines() {
                 789019|MICROSOFT CORP|10-Q|2024-10-29|edgar/data/789019/5678/primary-document.htm\n";
 
     let entries = parse_master_idx(text).unwrap();
-    assert_eq!(entries.len(), 2, "Empty lines between data should be handled");
+    assert_eq!(
+        entries.len(),
+        2,
+        "Empty lines between data should be handled"
+    );
 }

@@ -29,7 +29,10 @@ fn test_ticker_origin_debug() {
 #[test]
 fn test_ticker_origin_equality() {
     assert_eq!(TickerOrigin::PrimaryListing, TickerOrigin::PrimaryListing);
-    assert_ne!(TickerOrigin::PrimaryListing, TickerOrigin::DerivedInstrument);
+    assert_ne!(
+        TickerOrigin::PrimaryListing,
+        TickerOrigin::DerivedInstrument
+    );
 }
 
 #[test]

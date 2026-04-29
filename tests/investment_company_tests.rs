@@ -26,42 +26,34 @@ fn test_get_fund_cik_found() {
         make_company("0001234567", "VFINX"),
         make_company("0007654321", "FXAIX"),
     ];
-    let cik = InvestmentCompany::get_fund_cik_by_ticker_symbol(
-        &companies,
-        &TickerSymbol::new("VFINX"),
-    )
-    .unwrap();
+    let cik =
+        InvestmentCompany::get_fund_cik_by_ticker_symbol(&companies, &TickerSymbol::new("VFINX"))
+            .unwrap();
     assert_eq!(cik, Cik::from_u64(1234567).unwrap());
 }
 
 #[test]
 fn test_get_fund_cik_not_found() {
     let companies = vec![make_company("0001234567", "VFINX")];
-    let result = InvestmentCompany::get_fund_cik_by_ticker_symbol(
-        &companies,
-        &TickerSymbol::new("UNKNOWN"),
-    );
+    let result =
+        InvestmentCompany::get_fund_cik_by_ticker_symbol(&companies, &TickerSymbol::new("UNKNOWN"));
     assert!(result.is_err());
 }
 
 #[test]
 fn test_get_fund_cik_case_insensitive() {
     let companies = vec![make_company("0001234567", "VFINX")];
-    let cik = InvestmentCompany::get_fund_cik_by_ticker_symbol(
-        &companies,
-        &TickerSymbol::new("vfinx"),
-    )
-    .unwrap();
+    let cik =
+        InvestmentCompany::get_fund_cik_by_ticker_symbol(&companies, &TickerSymbol::new("vfinx"))
+            .unwrap();
     assert_eq!(cik, Cik::from_u64(1234567).unwrap());
 }
 
 #[test]
 fn test_get_fund_cik_empty_companies() {
     let companies: Vec<InvestmentCompany> = vec![];
-    let result = InvestmentCompany::get_fund_cik_by_ticker_symbol(
-        &companies,
-        &TickerSymbol::new("VFINX"),
-    );
+    let result =
+        InvestmentCompany::get_fund_cik_by_ticker_symbol(&companies, &TickerSymbol::new("VFINX"));
     assert!(result.is_err());
 }
 
@@ -70,10 +62,8 @@ fn test_get_fund_cik_missing_cik_number() {
     let mut company = make_company("0001234567", "VFINX");
     company.cik_number = None;
     let companies = vec![company];
-    let result = InvestmentCompany::get_fund_cik_by_ticker_symbol(
-        &companies,
-        &TickerSymbol::new("VFINX"),
-    );
+    let result =
+        InvestmentCompany::get_fund_cik_by_ticker_symbol(&companies, &TickerSymbol::new("VFINX"));
     assert!(result.is_err());
 }
 
@@ -82,10 +72,8 @@ fn test_get_fund_cik_invalid_cik_format() {
     let mut company = make_company("invalid", "VFINX");
     company.cik_number = Some("not-a-number".to_string());
     let companies = vec![company];
-    let result = InvestmentCompany::get_fund_cik_by_ticker_symbol(
-        &companies,
-        &TickerSymbol::new("VFINX"),
-    );
+    let result =
+        InvestmentCompany::get_fund_cik_by_ticker_symbol(&companies, &TickerSymbol::new("VFINX"));
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("CIK"));
 }

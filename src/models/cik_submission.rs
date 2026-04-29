@@ -335,7 +335,10 @@ mod tests {
         // is_earnings_release only checks items, not form type — the item "2.02"
         // is what matters, regardless of form label.
         let s = sub_with_items("10-Q", vec!["2.02"], "primary.htm");
-        assert!(s.is_earnings_release(), "is_earnings_release checks items only, not form type");
+        assert!(
+            s.is_earnings_release(),
+            "is_earnings_release checks items only, not form type"
+        );
     }
 
     #[test]
@@ -397,7 +400,10 @@ mod tests {
     fn as_primary_document_url_includes_document_name() {
         let s = sub_with_items("8-K", vec![], "primary.htm");
         let url = s.as_primary_document_url();
-        assert!(url.contains("primary.htm"), "URL should end with primary document name: {url}");
+        assert!(
+            url.contains("primary.htm"),
+            "URL should end with primary document name: {url}"
+        );
         assert!(url.contains("320193"), "URL should contain CIK: {url}");
     }
 }

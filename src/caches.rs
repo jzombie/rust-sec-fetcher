@@ -71,7 +71,10 @@ mod tests {
 
         assert!(!temp_dir.exists());
         let caches = Caches::open(&temp_dir).expect("Caches::open failed");
-        assert!(temp_dir.exists(), "Cache directory should have been created");
+        assert!(
+            temp_dir.exists(),
+            "Cache directory should have been created"
+        );
 
         let http_cache = caches.get_http_cache_store();
         let preprocessor_cache = caches.get_preprocessor_cache();
@@ -98,7 +101,11 @@ mod tests {
         std::fs::create_dir_all(&temp_dir).unwrap();
 
         let result = Caches::open(&temp_dir);
-        assert!(result.is_ok(), "Caches::open on existing dir failed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Caches::open on existing dir failed: {:?}",
+            result.err()
+        );
 
         let _ = std::fs::remove_dir_all(&temp_dir);
     }

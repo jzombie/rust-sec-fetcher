@@ -74,8 +74,14 @@ fn test_tail_single_element() {
 #[test]
 fn test_write_to_csv_creates_file() {
     let records = vec![
-        Record { name: "Alice".into(), value: "100".into() },
-        Record { name: "Bob".into(), value: "200".into() },
+        Record {
+            name: "Alice".into(),
+            value: "100".into(),
+        },
+        Record {
+            name: "Bob".into(),
+            value: "200".into(),
+        },
     ];
 
     let temp_dir = std::env::temp_dir();

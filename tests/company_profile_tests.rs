@@ -1,5 +1,5 @@
-use sec_fetcher::models::{Cik, CompanyProfile};
 use chrono::NaiveDate;
+use sec_fetcher::models::{Cik, CompanyProfile};
 
 fn make_profile(owner_org: Option<&str>, fiscal_year_end: Option<&str>) -> CompanyProfile {
     CompanyProfile {
