@@ -4,8 +4,9 @@
 /// These tests operate on static JSON / text bodies so they never hit the
 /// real SEC EDGAR network.
 use sec_fetcher::models::Cik;
-use sec_fetcher::network::parse_cik_submissions_json;
-use sec_fetcher::parsers::{parse_company_tickers_json, parse_master_idx, parse_ticker_txt};
+use sec_fetcher::parsers::{
+    parse_cik_submissions_json, parse_company_tickers_json, parse_master_idx, parse_ticker_txt,
+};
 use serde_json::json;
 
 // ---------------------------------------------------------------------------

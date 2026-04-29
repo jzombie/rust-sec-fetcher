@@ -22,3 +22,6 @@ pub use parse_company_tickers::{parse_company_tickers_json, parse_ticker_txt};
 
 mod parse_10k_sections;
 pub use parse_10k_sections::{Html2TextPanic, TenKSections, extract_sections_from_document};
+
+mod parse_cik_submissions;
+pub use parse_cik_submissions::{parse_cik_submissions_block, parse_cik_submissions_json};

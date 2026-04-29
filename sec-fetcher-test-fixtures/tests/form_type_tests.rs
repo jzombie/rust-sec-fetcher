@@ -14,7 +14,7 @@
 
 use sec_fetcher::enums::FormType;
 use sec_fetcher::models::{Cik, CikSubmission};
-use sec_fetcher::network::parse_cik_submissions_json;
+use sec_fetcher::parsers::parse_cik_submissions_json;
 use std::collections::HashSet;
 use strum::IntoEnumIterator;
 
