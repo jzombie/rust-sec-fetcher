@@ -3581,7 +3581,7 @@ checksum = "1c107b6f4780854c8b126e228ea8869f4d7b71260f962fefb57b996b8959ba6b"
 
 [[package]]
 name = "sec-fetcher"
-version = "0.4.0-alpha"
+version = "0.5.0-alpha"
 dependencies = [
  "bitcode",
  "bytes",
@@ -3628,11 +3628,11 @@ dependencies = [
 
 [[package]]
 name = "sec-fetcher-shared"
-version = "0.4.0-alpha"
+version = "0.5.0-alpha"
 
 [[package]]
 name = "sec-fetcher-test-fixtures"
-version = "0.4.0-alpha"
+version = "0.5.0-alpha"
 dependencies = [
  "chrono",
  "flate2",
