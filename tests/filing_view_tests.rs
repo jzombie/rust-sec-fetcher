@@ -27,6 +27,7 @@
 ///   tests/fixtures/<TICKER>_8k_primary.html
 ///   tests/fixtures/<TICKER>_8k_exhibit.html
 use flate2::read::GzDecoder;
+use indoc::indoc;
 use sec_fetcher::views::{EmbeddingTextView, FilingView, MarkdownView};
 use std::io::Read;
 
@@ -71,60 +72,68 @@ fn assert_not_contains(output: &str, unexpected: &str, label: &str) {
 /// Financial table with a blank first header — the row-label pattern found in
 /// virtually every SEC earnings release.  `headers[0]` is empty; `cells[0]` is
 /// the metric name (Revenue, Net Income, …).
-const FINANCIAL_TABLE_HTML: &str = r#"<!DOCTYPE html>
-<html><body>
-<h1>Quarterly Financial Results</h1>
-<table>
-  <tr><th></th><th>Q1 2025</th><th>Q1 2024</th></tr>
-  <tr><td>Revenue</td><td>$12,345</td><td>$10,987</td></tr>
-  <tr><td>Net Income</td><td>$2,100</td><td>$1,870</td></tr>
-  <tr><td>Earnings per Share</td><td>$1.23</td><td>$1.08</td></tr>
-</table>
-</body></html>"#;
+const FINANCIAL_TABLE_HTML: &str = indoc! {r#"
+    <!DOCTYPE html>
+    <html><body>
+    <h1>Quarterly Financial Results</h1>
+    <table>
+      <tr><th></th><th>Q1 2025</th><th>Q1 2024</th></tr>
+      <tr><td>Revenue</td><td>$12,345</td><td>$10,987</td></tr>
+      <tr><td>Net Income</td><td>$2,100</td><td>$1,870</td></tr>
+      <tr><td>Earnings per Share</td><td>$1.23</td><td>$1.08</td></tr>
+    </table>
+    </body></html>
+"#};
 
 /// Standard table where all header cells are non-blank; each row value is
 /// paired with its column header.
-const STANDARD_TABLE_HTML: &str = r#"<!DOCTYPE html>
-<html><body>
-<h2>Segment Results</h2>
-<table>
-  <tr><th>Segment</th><th>Revenue</th><th>Operating Income</th></tr>
-  <tr><td>Cloud Services</td><td>$7,200</td><td>$2,160</td></tr>
-  <tr><td>Enterprise Software</td><td>$3,500</td><td>$875</td></tr>
-  <tr><td>Professional Services</td><td>$1,645</td><td>$329</td></tr>
-</table>
-</body></html>"#;
+const STANDARD_TABLE_HTML: &str = indoc! {r#"
+    <!DOCTYPE html>
+    <html><body>
+    <h2>Segment Results</h2>
+    <table>
+      <tr><th>Segment</th><th>Revenue</th><th>Operating Income</th></tr>
+      <tr><td>Cloud Services</td><td>$7,200</td><td>$2,160</td></tr>
+      <tr><td>Enterprise Software</td><td>$3,500</td><td>$875</td></tr>
+      <tr><td>Professional Services</td><td>$1,645</td><td>$329</td></tr>
+    </table>
+    </body></html>
+"#};
 
 /// Table with an empty cell in the last column — the empty value must not be
 /// silently dropped.  `EmbeddingTextView` should emit "Period B: —".
-const SPARSE_TABLE_HTML: &str = r#"<!DOCTYPE html>
-<html><body>
-<table>
-  <tr><th></th><th>Period A</th><th>Period B</th></tr>
-  <tr><td>Revenue</td><td>$1,000</td><td></td></tr>
-  <tr><td>EBITDA</td><td>$400</td><td>$380</td></tr>
-</table>
-</body></html>"#;
+const SPARSE_TABLE_HTML: &str = indoc! {r#"
+    <!DOCTYPE html>
+    <html><body>
+    <table>
+      <tr><th></th><th>Period A</th><th>Period B</th></tr>
+      <tr><td>Revenue</td><td>$1,000</td><td></td></tr>
+      <tr><td>EBITDA</td><td>$400</td><td>$380</td></tr>
+    </table>
+    </body></html>
+"#};
 
 /// iXBRL filing: contains an `<ix:header>` block (pure machine metadata) and a
 /// hidden `<div style="display:none">` (duplicate XBRL data).  Both must be
 /// stripped; only the visible prose must appear in the output.
-const XBRL_NOISE_HTML: &str = r#"<!DOCTYPE html>
-<html><body>
-<ix:header>
-  <ix:resources>
-    <ix:context id="ctx-1" MACHINE_ONLY_TOKEN_XBRL_MANIFEST>
-      <ix:entity><ix:identifier>0000320193</ix:identifier></ix:entity>
-    </ix:context>
-  </ix:resources>
-</ix:header>
-<div style="display:none">
-  <ix:nonNumeric name="dei:EntityName">HIDDEN_DUPLICATE_CONTENT</ix:nonNumeric>
-</div>
-<h1>Annual Report</h1>
-<p>The company achieved record results in the fiscal year.</p>
-<p>Revenue grew 12% year over year to $391 billion.</p>
-</body></html>"#;
+const XBRL_NOISE_HTML: &str = indoc! {r#"
+    <!DOCTYPE html>
+    <html><body>
+    <ix:header>
+      <ix:resources>
+        <ix:context id="ctx-1" MACHINE_ONLY_TOKEN_XBRL_MANIFEST>
+          <ix:entity><ix:identifier>0000320193</ix:identifier></ix:entity>
+        </ix:context>
+      </ix:resources>
+    </ix:header>
+    <div style="display:none">
+      <ix:nonNumeric name="dei:EntityName">HIDDEN_DUPLICATE_CONTENT</ix:nonNumeric>
+    </div>
+    <h1>Annual Report</h1>
+    <p>The company achieved record results in the fiscal year.</p>
+    <p>Revenue grew 12% year over year to $391 billion.</p>
+    </body></html>
+"#};
 
 /// Tests `render_text` (plain-text path): excessive blank lines must collapse.
 const MULTI_BLANK_TEXT: &str =

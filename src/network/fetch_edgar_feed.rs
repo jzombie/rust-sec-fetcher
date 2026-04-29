@@ -467,6 +467,7 @@ pub async fn fetch_edgar_feeds_since(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use indoc::{formatdoc, indoc};
 
     /// Build an Atom `<entry>` element (without the surrounding `<feed>`).
     fn entry_xml(
@@ -477,28 +478,27 @@ mod tests {
         summary: &str,
         category_term: &str,
     ) -> String {
-        // TODO: Use indoc! for formatting
-        format!(
-            r#"    <entry>
-      <title>{title}</title>
-      <id>{id}</id>
-      <updated>{updated}</updated>
-      <link href="{link_href}" rel="alternate" type="text/html"/>
-      <category term="{category_term}" label="{category_term}"/>
-      <summary>{summary}</summary>
-    </entry>"#,
-        )
+        formatdoc! {r#"
+            <entry>
+              <title>{title}</title>
+              <id>{id}</id>
+              <updated>{updated}</updated>
+              <link href="{link_href}" rel="alternate" type="text/html"/>
+              <category term="{category_term}" label="{category_term}"/>
+              <summary>{summary}</summary>
+            </entry>"#,
+        }
     }
 
     /// Build a complete Atom feed XML with the given entry XML strings.
     fn feed_xml(entries: &[&str]) -> String {
         let body = entries.join("\n");
-        format!(
-            r#"<?xml version="1.0" encoding="UTF-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
-{body}
-</feed>"#,
-        )
+        formatdoc! {r#"
+            <?xml version="1.0" encoding="UTF-8"?>
+            <feed xmlns="http://www.w3.org/2005/Atom">
+            {body}
+            </feed>"#,
+        }
     }
 
     /// Convenience: single-entry feed for a standard Apple 8-K.
@@ -519,9 +519,10 @@ mod tests {
 
     #[test]
     fn parse_empty_feed_returns_no_entries() {
-        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
-</feed>"#;
+        let xml = indoc! {r#"
+            <?xml version="1.0" encoding="UTF-8"?>
+            <feed xmlns="http://www.w3.org/2005/Atom">
+            </feed>"#};
         let entries = parse_edgar_atom_feed(xml).unwrap();
         assert!(entries.is_empty());
     }
@@ -561,16 +562,15 @@ mod tests {
         // We verify through `items` (parsed from the accumulated summary) and
         // `filing_date` (parsed from the first fragment) to confirm both early
         // and late text nodes are correctly captured.
-        let xml = feed_xml(&[&format!(
-            r#"    <entry>
-      <title>8-K - Apple Inc. (0000320193) (Filer)</title>
-      <id>urn:tag:sec.gov,2008:accession-number=0000320193-24-000001</id>
-      <updated>2024-06-15T10:30:00-04:00</updated>
-      <link href="/Archives/edgar/data/320193/0000320193-24-000001-index.htm" rel="alternate" type="text/html"/>
-      <category term="8-K" label="8-K"/>
-      <summary>Filed: 2024-06-15 AccNo: 0000320193-24-000001<br/>Item 2.02: Results<br/>Item 9.01: Financial Statements</summary>
-    </entry>"#,
-        )]);
+        let xml = feed_xml(&[&indoc! {r#"
+            <entry>
+              <title>8-K - Apple Inc. (0000320193) (Filer)</title>
+              <id>urn:tag:sec.gov,2008:accession-number=0000320193-24-000001</id>
+              <updated>2024-06-15T10:30:00-04:00</updated>
+              <link href="/Archives/edgar/data/320193/0000320193-24-000001-index.htm" rel="alternate" type="text/html"/>
+              <category term="8-K" label="8-K"/>
+              <summary>Filed: 2024-06-15 AccNo: 0000320193-24-000001<br/>Item 2.02: Results<br/>Item 9.01: Financial Statements</summary>
+            </entry>"#}]);
         let entries = parse_edgar_atom_feed(&xml).unwrap();
         assert_eq!(entries.len(), 1);
         let e = &entries[0];

@@ -1,3 +1,4 @@
+use indoc::indoc;
 use sec_fetcher::config::{
     APP_NAME_ENV_VAR, APP_VERSION_ENV_VAR, AppConfig, ConfigManager, DEFAULT_APP_NAME,
     DEFAULT_APP_VERSION, EMAIL_ENV_VAR,
@@ -44,12 +45,12 @@ fn create_temp_config(contents: &str) -> (tempfile::TempDir, PathBuf) {
 
 #[test]
 fn test_load_custom_config() {
-    let config_contents = r#"
+    let config_contents = indoc! {r#"
         email = "test@example.com"
         max_concurrent = 10
         min_delay_ms = 500
         max_retries = 3
-    "#;
+    "#};
 
     let (temp_dir, config_path) = create_temp_config(config_contents); // Store TempDir
 
@@ -152,13 +153,13 @@ fn test_config_file_email_takes_precedence_over_env_var() {
 
 #[test]
 fn test_fails_on_invalid_key() {
-    let config_contents = r#"
+    let config_contents = indoc! {r#"
         email = "test@example.com"
         max_concurrent = 10
         min_delay_ms = 500
         max_retries = 3
         invalid_key = "this_should_fail"
-    "#;
+    "#};
 
     let (_temp_dir, config_path) = create_temp_config(config_contents);
 
@@ -190,10 +191,10 @@ fn test_app_name_from_config_file() {
         std::env::remove_var(APP_VERSION_ENV_VAR);
     }
 
-    let config_contents = r#"
+    let config_contents = indoc! {r#"
         email = "test@example.com"
         app_name = "my-custom-app"
-    "#;
+    "#};
 
     let (_temp_dir, config_path) = create_temp_config(config_contents);
 
@@ -213,9 +214,9 @@ fn test_app_name_absent_is_none() {
         std::env::remove_var(APP_NAME_ENV_VAR);
     } // ensure env var doesn't interfere
 
-    let config_contents = r#"
+    let config_contents = indoc! {r#"
         email = "test@example.com"
-    "#;
+    "#};
 
     let (_temp_dir, config_path) = create_temp_config(config_contents);
 
@@ -308,10 +309,10 @@ fn test_app_version_from_config_file() {
         std::env::remove_var(APP_VERSION_ENV_VAR);
     }
 
-    let config_contents = r#"
+    let config_contents = indoc! {r#"
         email = "test@example.com"
         app_version = "3.1.4"
-    "#;
+    "#};
 
     let (_temp_dir, config_path) = create_temp_config(config_contents);
     let config_manager = ConfigManager::from_config(Some(config_path))

@@ -30,14 +30,13 @@ fn make_feed(entries: &[(&str, &str)]) -> String {
         .collect::<Vec<_>>()
         .join("\n");
 
-    format!(
-        r#"<?xml version="1.0" encoding="UTF-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
-  <title>EDGAR</title>
-  <updated>2026-03-15T18:00:00-04:00</updated>
-{body}
-</feed>"#
-    )
+    formatdoc! {r#"
+        <?xml version="1.0" encoding="UTF-8"?>
+        <feed xmlns="http://www.w3.org/2005/Atom">
+          <title>EDGAR</title>
+          <updated>2026-03-15T18:00:00-04:00</updated>
+        {body}
+        </feed>"#}
 }
 
 /// Apply the same delta filter logic as `fetch_edgar_feed_since`.
