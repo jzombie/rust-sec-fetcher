@@ -18,6 +18,9 @@
 //!
 //! If a file already exists on disk for a given `(ticker, accession_number)`,
 //! it is skipped.  This makes the run safe to interrupt and resume.
+//!
+//! To re-fetch all documents from scratch, delete the output directory or
+//! use a fresh `--output-dir`.
 
 use clap::Parser;
 use futures::StreamExt;
@@ -27,7 +30,16 @@ use sec_fetcher::{
 };
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use tracing::{error, info};
+
+// ── Global counters ───────────────────────────────────────────────────────────
+
+static GLOBAL_TICKERS_OK: AtomicUsize = AtomicUsize::new(0);
+static GLOBAL_TICKERS_ERR: AtomicUsize = AtomicUsize::new(0);
+static GLOBAL_DOWNLOADED: AtomicUsize = AtomicUsize::new(0);
+static GLOBAL_SKIPPED: AtomicUsize = AtomicUsize::new(0);
+static GLOBAL_FAILED: AtomicUsize = AtomicUsize::new(0);
 
 // ── CLI ───────────────────────────────────────────────────────────────────────
 
@@ -85,34 +97,57 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let total_tickers = company_tickers.len();
     info!("Total unique CIKs to process: {}", total_tickers);
 
+    // ── Track current ticker index globally for progress ──────────────────────
+
+    let ticker_index = Arc::new(AtomicUsize::new(0));
+
     // ── Pipelined producer / consumer ─────────────────────────────────────────
     //
     // Each per-ticker future:
     //   1. Fetches the filing list for that ticker.
     //   2. For each filing not yet on disk, downloads and saves the document.
+    //   3. Logs a summary line with per-ticker status.
 
     let output_dir = args.output_dir.clone();
     let log_dir = output_dir.clone();
 
     let producer = async move {
-        let mut stream = futures::stream::iter(company_tickers.into_iter().enumerate())
-            .map(|(i, entry)| {
+        let mut stream = futures::stream::iter(company_tickers.into_iter())
+            .map(|entry| {
                 let output_dir = output_dir.clone();
                 let client = Arc::clone(&client);
+                let idx = ticker_index.fetch_add(1, Ordering::Relaxed);
                 async move {
                     let ticker = entry.symbol.to_string();
-                    info!("[{}/{}] {}", i + 1, total_tickers, ticker);
+                    let ticker_idx = idx + 1; // 1-based for display
+
+                    // ── Per-ticker counters ───────────────────────────────────
+                    let mut downloaded: usize = 0;
+                    let mut skipped: usize = 0;
+                    let mut failed: usize = 0;
 
                     let filings = match fetch_10k_filings(&client, entry.cik).await {
                         Ok(f) => f,
                         Err(e) => {
-                            error!("  {}: filings fetch failed: {}", ticker, e);
+                            error!(
+                                "[{ticker}] [{ticker_idx}/{total_tickers}] filing list failed: {e}"
+                            );
+                            GLOBAL_TICKERS_ERR.fetch_add(1, Ordering::Relaxed);
                             return;
                         }
                     };
 
+                    let total_filings = filings.len();
+                    info!(
+                        "[{ticker}] [{ticker_idx}/{total_tickers}] found {total_filings} 10-K filing(s)"
+                    );
+
                     for filing in &filings {
                         let acc = filing.accession_number.to_string();
+                        let date_str = filing
+                            .filing_date
+                            .map(|d| d.to_string())
+                            .unwrap_or_else(|| "unknown-date".to_string());
 
                         // Determine filename on disk.
                         let ticker_dir = output_dir.join(sanitize_dir_name(&ticker));
@@ -124,27 +159,60 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                         // Skip if already downloaded.
                         if dest.exists() {
+                            skipped += 1;
+                            info!(
+                                "[{ticker}]   {date_str}  {acc}  — SKIP (exists on disk)"
+                            );
                             continue;
                         }
+
+                        info!(
+                            "[{ticker}]   {date_str}  {acc}  — DOWNLOADING ..."
+                        );
 
                         let bytes = match fetch_best_10k_document(&client, filing).await {
                             Ok(b) => b,
                             Err(e) => {
-                                error!("  {} {}: document fetch failed: {}", ticker, acc, e);
+                                failed += 1;
+                                error!(
+                                    "[{ticker}]   {date_str}  {acc}  — FAILED: {e}"
+                                );
                                 continue;
                             }
                         };
 
                         // Save to disk.
                         if let Err(e) = std::fs::create_dir_all(&ticker_dir) {
-                            error!("  Failed to create dir {:?}: {}", ticker_dir, e);
+                            failed += 1;
+                            error!("[{ticker}]   {date_str}  {acc}  — FAILED: cannot create dir {ticker_dir:?}: {e}");
                             continue;
                         }
                         if let Err(e) = std::fs::write(&dest, bytes.as_ref()) {
-                            error!("  Failed to write {:?}: {}", dest, e);
+                            failed += 1;
+                            error!("[{ticker}]   {date_str}  {acc}  — FAILED: cannot write {dest:?}: {e}");
                             continue;
                         }
+
+                        downloaded += 1;
+                        info!(
+                            "[{ticker}]   {date_str}  {acc}  — saved ({size}B)",
+                            size = bytes.len()
+                        );
                     }
+
+                    // ── Per-ticker summary ────────────────────────────────────
+                    GLOBAL_DOWNLOADED.fetch_add(downloaded, Ordering::Relaxed);
+                    GLOBAL_SKIPPED.fetch_add(skipped, Ordering::Relaxed);
+                    GLOBAL_FAILED.fetch_add(failed, Ordering::Relaxed);
+                    GLOBAL_TICKERS_OK.fetch_add(1, Ordering::Relaxed);
+
+                    info!(
+                        "[{ticker}] [{ticker_idx}/{total_tickers}] done — \
+                         {total_filings} filing(s): \
+                         {downloaded} downloaded, \
+                         {skipped} skipped, \
+                         {failed} failed"
+                    );
                 }
             })
             .buffer_unordered(max_concurrent);
@@ -154,7 +222,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     producer.await;
 
-    info!("Done — documents saved under {:?}", log_dir);
+    // ── Final report ──────────────────────────────────────────────────────────
+
+    let final_downloaded = GLOBAL_DOWNLOADED.load(Ordering::Relaxed);
+    let final_skipped = GLOBAL_SKIPPED.load(Ordering::Relaxed);
+    let final_failed = GLOBAL_FAILED.load(Ordering::Relaxed);
+    let final_ok = GLOBAL_TICKERS_OK.load(Ordering::Relaxed);
+    let final_err = GLOBAL_TICKERS_ERR.load(Ordering::Relaxed);
+
+    info!(
+        "═══ Done — documents saved under {:?} ═══\n\
+         Tickers processed: {final_ok} OK, {final_err} failed\n\
+         Documents: {final_downloaded} downloaded, {final_skipped} skipped, {final_failed} failed",
+        log_dir,
+    );
     Ok(())
 }
 
