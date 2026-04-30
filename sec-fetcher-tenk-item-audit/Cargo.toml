@@ -1,0 +1,27 @@
+[package]
+name = "sec-fetcher-tenk-item-audit"
+description = "Shared utilities for auditing the 10-K section parser."
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+autobins = false
+
+# The library has zero external dependencies so that sec-fetcher (or any
+# other crate) can depend on it without circular-dependency issues.
+# The binary below additionally needs sec-fetcher at link time.
+
+[dependencies]
+sec-fetcher = { path = ".." }
+clap = { workspace = true, features = ["derive"] }
+csv.workspace = true
+strum.workspace = true
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+
+[[bin]]
+name = "audit-tenk-local"
+path = "src/bin/audit_tenk_local.rs"
