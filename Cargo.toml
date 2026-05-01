@@ -11,7 +11,7 @@ keywords.workspace = true
 categories.workspace = true
 autobins = false
 [workspace]
-members = ["sec-fetcher-shared", "sec-fetcher-test-fixtures"]
+members = ["sec-fetcher-shared", "sec-fetcher-test-fixtures", "sec-fetcher-tenk-item-audit"]
 
 [workspace.package]
 version = "0.5.0-alpha"
@@ -86,8 +86,8 @@ name = "pull-fund-holdings"
 path = "src/bin/pulls/fund_holdings.rs"
 
 [[bin]]
-name = "pull-tenk-audit"
-path = "src/bin/pulls/tenk_audit.rs"
+name = "pull-tenk-items"
+path = "src/bin/pulls/tenk_items.rs"
 
 [features]
 # Enables OS keychain integration for persisting the SEC contact email across

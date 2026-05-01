@@ -19,7 +19,7 @@ import time
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-SRC = "data/tenk_audit_raw"
+SRC = "data/tenk_items"
 DST = "hf_upload_folder"
 
 # Close the current output file and start a new one when it exceeds this
