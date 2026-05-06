@@ -56,7 +56,7 @@ schemars = "1.2.1"
 sec-fetcher-shared = { path = "sec-fetcher-shared", version = "0.5.0-alpha" }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
-serde_with = "3.18.0"
+serde_with = "3.19.0"
 simd-r-drive = "0.16.0-alpha"
 simd-r-drive-extensions = "0.16.0-alpha"
 strum = "0.28.0"
