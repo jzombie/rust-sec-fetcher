@@ -28,7 +28,7 @@ tokio = { version = "1.50.0", features = ["full"] }
 [dev-dependencies]
 indoc = "2.0.7"
 polars.workspace = true
-rust_decimal = { version = "1.41.0", features = ["serde"] }
+rust_decimal = { version = "1.42.0", features = ["serde"] }
 rust_decimal_macros = "1.40.0"
 sec-fetcher-shared = { path = "../sec-fetcher-shared" }
 strum = "0.28.0"

@@ -50,7 +50,7 @@ rayon = "1.11.0"
 regex = "1.12.3"
 reqwest = { version = "0.13.2", features = ["json"] }
 reqwest-drive = "0.13.2-alpha.2"
-rust_decimal = { version = "1.41.0", features = ["serde"] }
+rust_decimal = { version = "1.42.0", features = ["serde"] }
 rust_decimal_macros = "1.40.0"
 schemars = "1.2.1"
 sec-fetcher-shared = { path = "sec-fetcher-shared", version = "0.5.0-alpha" }
