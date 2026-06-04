@@ -518,14 +518,30 @@ pub fn parse_period(period: &str) -> Result<Period, String> {
 /// `is_amendment` (index 6): `true` when the winning row for this period came from an
 /// amendment filing (i.e. the original `form` value ended with `/A`, e.g. `"10-Q/A"`).
 /// The `form` column itself is normalised to the base type (`"10-Q"`).
+// ── Individual metadata column name constants ───────────────────────────
+// Each constant names one of the metadata columns present in every per-symbol
+// US-GAAP CSV file.  The canonical array below is built from these so that
+// consumers can reference a specific column by its constant instead of by
+// hardcoding a string literal or relying on array position.
+
+pub const CSV_CANONICAL_ORDER: &str = "canonical_order";
+pub const CSV_FY: &str = "fy";
+pub const CSV_FP: &str = "fp";
+pub const CSV_PERIOD_END: &str = "period_end";
+pub const CSV_FILED: &str = "filed";
+pub const CSV_FORM: &str = "form";
+pub const CSV_IS_AMENDMENT: &str = "is_amendment";
+pub const CSV_ACCN: &str = "accn";
+pub const CSV_FILING_URL: &str = "filing_url";
+
 pub const US_GAAP_CSV_META_COLUMNS: &[&str] = &[
-    "canonical_order",
-    "fy",
-    "fp",
-    "period_end",
-    "filed",
-    "form",
-    "is_amendment",
-    "accn",
-    "filing_url",
+    CSV_CANONICAL_ORDER,
+    CSV_FY,
+    CSV_FP,
+    CSV_PERIOD_END,
+    CSV_FILED,
+    CSV_FORM,
+    CSV_IS_AMENDMENT,
+    CSV_ACCN,
+    CSV_FILING_URL,
 ];
