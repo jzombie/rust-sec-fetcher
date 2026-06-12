@@ -39,3 +39,6 @@ pub use company_profile::CompanyProfile;
 
 mod sic_code;
 pub use sic_code::SicCode;
+
+mod xbrl_anchoring;
+pub use xbrl_anchoring::CustomTagAnchoring;

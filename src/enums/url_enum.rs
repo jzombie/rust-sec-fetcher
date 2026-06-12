@@ -19,6 +19,16 @@ pub enum Url {
     /// Format: <https://www.sec.gov/Archives/edgar/data/>{CIK}/{accn_unformatted}/{accn_formatted}-index.htm
     CikAccessionIndex(Cik, AccessionNumber),
 
+    /// Points to the JSON EDGAR filing index for a specific filing.
+    /// Format: <https://www.sec.gov/Archives/edgar/data/>{CIK}/{accn_unformatted}/index.json
+    ///
+    /// The JSON index contains a `directory` object with an `item` array, each
+    /// entry having `name`, `type` (MIME type like `"text.gif"`), `description`,
+    /// and `size`.  Note: the `type` field is a MIME type, not the SEC document
+    /// type — use the HTML `-index.htm` page to discover document types like
+    /// `"EX-101.DEF"`.
+    CikAccessionIndexJson(Cik, AccessionNumber),
+
     /// Points to the `primary_doc.xml` of a specific filing, using
     /// CIK and Accession Number.
     CikAccessionPrimaryDocument(Cik, AccessionNumber),
@@ -161,6 +171,11 @@ impl Url {
                 cik,
                 accession_number.to_unformatted_string(),
                 accession_number,
+            ),
+            Url::CikAccessionIndexJson(cik, accession_number) => format!(
+                "https://www.sec.gov/Archives/edgar/data/{}/{}/index.json",
+                cik,
+                accession_number.to_unformatted_string(),
             ),
             Url::CikAccessionPrimaryDocument(cik, accession_number) => format!(
                 "{}/primary_doc.xml",

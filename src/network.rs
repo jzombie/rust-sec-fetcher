@@ -46,6 +46,9 @@ pub use fetch_sic_codes::fetch_sic_codes;
 mod fetch_company_description;
 pub use fetch_company_description::fetch_company_description;
 
+mod fetch_xbrl_anchoring;
+pub use fetch_xbrl_anchoring::fetch_custom_tag_anchoring;
+
 mod fetch_10k_sections;
 pub use crate::parsers::{Html2TextPanic, TenKSections, extract_sections_from_document};
 pub use fetch_10k_sections::{
