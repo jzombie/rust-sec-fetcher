@@ -3610,6 +3610,18 @@ name = "sec-fetcher-shared"
 version = "0.5.0-alpha"
 
 [[package]]
+name = "sec-fetcher-tenk-item-audit"
+version = "0.5.0-alpha"
+dependencies = [
+ "clap",
+ "csv",
+ "sec-fetcher",
+ "strum",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "sec-fetcher-test-fixtures"
 version = "0.5.0-alpha"
 dependencies = [
