@@ -98,19 +98,15 @@ pub fn parse_calculation_linkbase(xml: &str) -> Result<Vec<SummationItemArc>, Bo
                                 "to" => to = Some(val.to_string()),
                                 "weight" => weight = val.parse::<f64>().unwrap_or(1.0),
                                 "order" => order = val.parse::<i32>().ok(),
-                                "arcrole" => {
-                                    if SUMMATION_ITEM_ARCROLES.contains(&val) {
-                                        is_summation = true;
-                                    }
+                                "arcrole" if SUMMATION_ITEM_ARCROLES.contains(&val) => {
+                                    is_summation = true;
                                 }
                                 _ => {}
                             }
                         }
 
-                        if is_summation {
-                            if let (Some(from), Some(to)) = (from, to) {
-                                arcs.push((from, to, weight, order));
-                            }
+                        if is_summation && let (Some(from), Some(to)) = (from, to) {
+                            arcs.push((from, to, weight, order));
                         }
                     }
                     _ => {}

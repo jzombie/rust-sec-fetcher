@@ -523,7 +523,6 @@ pub fn parse_period(period: &str) -> Result<Period, String> {
 // US-GAAP CSV file.  The canonical array below is built from these so that
 // consumers can reference a specific column by its constant instead of by
 // hardcoding a string literal or relying on array position.
-
 pub const CSV_CANONICAL_ORDER: &str = "canonical_order";
 pub const CSV_FY: &str = "fy";
 pub const CSV_FP: &str = "fp";

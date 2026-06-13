@@ -134,10 +134,10 @@ fn collect_files_recursive(
         let path = entry.path();
 
         // Skip hidden entries
-        if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-            if name.starts_with('.') {
-                continue;
-            }
+        if let Some(name) = path.file_name().and_then(|n| n.to_str())
+            && name.starts_with('.')
+        {
+            continue;
         }
 
         if path.is_dir() {
@@ -167,14 +167,12 @@ fn collect_files_recursive(
 /// Returns the ticker directory name when the file is exactly two levels deep
 /// beneath `root`; returns an empty string otherwise.
 pub fn guess_ticker(file_path: &Path, root: &Path) -> String {
-    if let Some(parent) = file_path.parent() {
-        if let Some(ticker_dir) = parent.file_name().and_then(|n| n.to_str()) {
-            if let Some(grandparent) = parent.parent() {
-                if grandparent == root {
-                    return ticker_dir.to_string();
-                }
-            }
-        }
+    if let Some(parent) = file_path.parent()
+        && let Some(ticker_dir) = parent.file_name().and_then(|n| n.to_str())
+        && let Some(grandparent) = parent.parent()
+        && grandparent == root
+    {
+        return ticker_dir.to_string();
     }
     String::new()
 }

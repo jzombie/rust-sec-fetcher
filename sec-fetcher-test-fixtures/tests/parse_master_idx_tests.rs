@@ -11,8 +11,6 @@
 //!
 //! Run `cargo run --bin refresh-test-fixtures` to recreate the fixture file.
 
-use std::path::PathBuf;
-
 use chrono::NaiveDate;
 use sec_fetcher::enums::FormType;
 use sec_fetcher::models::MasterIndexEntry;

@@ -16,9 +16,7 @@
 //! ```
 
 use clap::Parser;
-use core::cmp::Reverse;
 use csv::ReaderBuilder;
-use polars::prelude::*;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fmt;

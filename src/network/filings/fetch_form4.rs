@@ -93,7 +93,7 @@ pub async fn fetch_form4(
     let doc_name = submission
         .primary_document
         .file_name()
-        .map(|n| PathBuf::from(n))
+        .map(PathBuf::from)
         .unwrap_or_else(|| submission.primary_document.clone());
 
     let url = Url::CikAccessionDocument(

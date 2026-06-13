@@ -95,13 +95,11 @@ pub fn parse_label_linkbase(xml: &str) -> Result<HashMap<String, String>, Box<dy
                     _ => {}
                 }
             }
-            Ok(Event::Text(ref e)) => {
-                if capturing_text {
-                    if let Some(ref label_key) = current_label_ref {
-                        let text = e.decode().unwrap_or_default().trim().to_string();
-                        if !text.is_empty() && !label_texts.contains_key(label_key) {
-                            label_texts.insert(label_key.clone(), text);
-                        }
+            Ok(Event::Text(ref e)) if capturing_text => {
+                if let Some(ref label_key) = current_label_ref {
+                    let text = e.decode().unwrap_or_default().trim().to_string();
+                    if !text.is_empty() && !label_texts.contains_key(label_key) {
+                        label_texts.insert(label_key.clone(), text);
                     }
                 }
             }
@@ -122,10 +120,10 @@ pub fn parse_label_linkbase(xml: &str) -> Result<HashMap<String, String>, Box<dy
     // Resolve: loc → labelArc → label_text → concept fragment
     let mut result = HashMap::new();
     for (loc_label, concept_id) in &locators {
-        if let Some(lab_label) = label_arcs.get(loc_label) {
-            if let Some(label_text) = label_texts.get(lab_label) {
-                result.insert(concept_id.clone(), label_text.clone());
-            }
+        if let Some(lab_label) = label_arcs.get(loc_label)
+            && let Some(label_text) = label_texts.get(lab_label)
+        {
+            result.insert(concept_id.clone(), label_text.clone());
         }
     }
 
