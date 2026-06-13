@@ -161,10 +161,7 @@ impl Url {
             ),
             Url::CikSubmission(cik) => format!("https://data.sec.gov/submissions/CIK{}.json", cik),
             Url::CikSubmissionPage(filename) => {
-                format!(
-                    "https://data.sec.gov/submissions/{}",
-                    filename.display()
-                )
+                format!("https://data.sec.gov/submissions/{}", filename.display())
             }
             Url::CikAccession(cik, accession_number) => format!(
                 "https://www.sec.gov/Archives/edgar/data/{}/{}",

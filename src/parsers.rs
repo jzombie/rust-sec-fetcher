@@ -27,14 +27,10 @@ mod parse_cik_submissions;
 pub use parse_cik_submissions::{parse_cik_submissions_block, parse_cik_submissions_json};
 
 mod parse_xbrl_definition_linkbase;
-pub use parse_xbrl_definition_linkbase::{
-    ConceptRef, DefinitionArc, parse_definition_linkbase,
-};
+pub use parse_xbrl_definition_linkbase::{ConceptRef, DefinitionArc, parse_definition_linkbase};
 
 mod parse_xbrl_extension_schema;
-pub use parse_xbrl_extension_schema::{
-    CustomElement, ExtensionSchema, parse_extension_schema,
-};
+pub use parse_xbrl_extension_schema::{CustomElement, ExtensionSchema, parse_extension_schema};
 
 mod parse_xbrl_label_linkbase;
 pub use parse_xbrl_label_linkbase::parse_label_linkbase;

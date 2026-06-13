@@ -195,7 +195,9 @@ impl FilingIndex {
 
     /// Returns the definition linkbase document (`EX-101.DEF`), if present.
     pub fn definition_linkbase(&self) -> Option<&FilingDocument> {
-        self.documents.iter().find(|doc| doc.is_definition_linkbase())
+        self.documents
+            .iter()
+            .find(|doc| doc.is_definition_linkbase())
     }
 
     /// Returns the extension schema document (`EX-101.SCH`), if present.

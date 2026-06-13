@@ -43,8 +43,7 @@ pub fn parse_label_linkbase(xml: &str) -> Result<HashMap<String, String>, Box<dy
                         let mut label = None;
                         for attr in e.attributes().flatten() {
                             let attr_local = local_name(attr.key.as_ref());
-                            let val =
-                                std::str::from_utf8(attr.value.as_ref()).unwrap_or("");
+                            let val = std::str::from_utf8(attr.value.as_ref()).unwrap_or("");
                             match attr_local.as_str() {
                                 "href" => href = Some(val.to_string()),
                                 "label" => label = Some(val.to_string()),
@@ -65,8 +64,7 @@ pub fn parse_label_linkbase(xml: &str) -> Result<HashMap<String, String>, Box<dy
                         let mut role = String::new();
                         for attr in e.attributes().flatten() {
                             let attr_local = local_name(attr.key.as_ref());
-                            let val =
-                                std::str::from_utf8(attr.value.as_ref()).unwrap_or("");
+                            let val = std::str::from_utf8(attr.value.as_ref()).unwrap_or("");
                             match attr_local.as_str() {
                                 "label" => label_ref = Some(val.to_string()),
                                 "role" => role = val.to_string(),
@@ -83,8 +81,7 @@ pub fn parse_label_linkbase(xml: &str) -> Result<HashMap<String, String>, Box<dy
                         let mut to = None;
                         for attr in e.attributes().flatten() {
                             let attr_local = local_name(attr.key.as_ref());
-                            let val =
-                                std::str::from_utf8(attr.value.as_ref()).unwrap_or("");
+                            let val = std::str::from_utf8(attr.value.as_ref()).unwrap_or("");
                             match attr_local.as_str() {
                                 "from" => from = Some(val.to_string()),
                                 "to" => to = Some(val.to_string()),
@@ -116,11 +113,7 @@ pub fn parse_label_linkbase(xml: &str) -> Result<HashMap<String, String>, Box<dy
                 }
             }
             Ok(Event::Eof) => break,
-            Err(e) => {
-                return Err(
-                    format!("XML parse error in label linkbase: {}", e).into(),
-                )
-            }
+            Err(e) => return Err(format!("XML parse error in label linkbase: {}", e).into()),
             _ => {}
         }
         buf.clear();
@@ -199,8 +192,14 @@ mod tests {
 
         let labels = parse_label_linkbase(xml).unwrap();
         assert_eq!(labels.len(), 2);
-        assert_eq!(labels.get("bac_Fees").map(|s| s.as_str()), Some("Fees and Commissions"));
-        assert_eq!(labels.get("bac_Expense").map(|s| s.as_str()), Some("Product Delivery Expense"));
+        assert_eq!(
+            labels.get("bac_Fees").map(|s| s.as_str()),
+            Some("Fees and Commissions")
+        );
+        assert_eq!(
+            labels.get("bac_Expense").map(|s| s.as_str()),
+            Some("Product Delivery Expense")
+        );
     }
 
     #[test]

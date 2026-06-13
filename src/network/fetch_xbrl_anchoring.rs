@@ -13,10 +13,16 @@ const MAX_FILINGS_TO_SCAN: usize = 10;
 
 /// Periodic form types that carry full financial statements with XBRL tagging.
 const PERIODIC_FORM_TYPES: &[&str] = &[
-    "10-K", "10-K/A", "10-K405", "10-K405/A",
-    "10-Q", "10-Q/A",
-    "20-F", "20-F/A",
-    "40-F", "40-F/A",
+    "10-K",
+    "10-K/A",
+    "10-K405",
+    "10-K405/A",
+    "10-Q",
+    "10-Q/A",
+    "20-F",
+    "20-F/A",
+    "40-F",
+    "40-F/A",
 ];
 
 /// Fetches custom→standard polarity anchoring for a ticker by downloading and
@@ -79,12 +85,9 @@ pub async fn fetch_custom_tag_anchoring(
             Some(doc) => doc.clone(),
             None => continue,
         };
-        let cal_url = Url::CikAccessionDocument(
-            cik.clone(),
-            filing.accession_number.clone(),
-            cal_doc.name,
-        )
-        .value();
+        let cal_url =
+            Url::CikAccessionDocument(cik.clone(), filing.accession_number.clone(), cal_doc.name)
+                .value();
         let cal_xml = match fetch_text(client, &cal_url).await {
             Some(x) => x,
             None => continue,

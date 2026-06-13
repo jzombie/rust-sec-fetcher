@@ -70,7 +70,8 @@ pub fn parse_extension_schema(xml: &str) -> Result<ExtensionSchema, Box<dyn Erro
                                 }
                                 _ => {
                                     // XML namespace declarations like xmlns:aapl="..."
-                                    let name_str = std::str::from_utf8(attr.key.as_ref()).unwrap_or("");
+                                    let name_str =
+                                        std::str::from_utf8(attr.key.as_ref()).unwrap_or("");
                                     if let Some(prefix) = name_str.strip_prefix("xmlns:") {
                                         namespace_map.insert(prefix.to_string(), val.to_string());
                                     }
@@ -160,11 +161,7 @@ pub fn parse_extension_schema(xml: &str) -> Result<ExtensionSchema, Box<dyn Erro
                 depth = depth.saturating_sub(1);
             }
             Ok(Event::Eof) => break,
-            Err(e) => {
-                return Err(
-                    format!("XML parse error in extension schema: {}", e).into(),
-                )
-            }
+            Err(e) => return Err(format!("XML parse error in extension schema: {}", e).into()),
             _ => {}
         }
         buf.clear();

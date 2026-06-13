@@ -97,20 +97,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             .include_header(true)
                             .finish(&mut fundamentals_df)
                         {
-                            error_log
-                                .insert(ticker.to_string(), format!("CSV write error: {}", e));
+                            error_log.insert(ticker.to_string(), format!("CSV write error: {}", e));
                         }
                     }
                     Err(e) => {
-                        error_log.insert(
-                            ticker.to_string(),
-                            format!("File creation error: {}", e),
-                        );
+                        error_log.insert(ticker.to_string(), format!("File creation error: {}", e));
                     }
                 }
             }
             Err(e) => {
-                error_log.insert(ticker.to_string(), format!("Fundamentals fetch error: {}", e));
+                error_log.insert(
+                    ticker.to_string(),
+                    format!("Fundamentals fetch error: {}", e),
+                );
                 continue;
             }
         }
@@ -151,10 +150,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
             Err(e) => {
-                error_log.insert(
-                    ticker.to_string(),
-                    format!("Anchoring fetch error: {}", e),
-                );
+                error_log.insert(ticker.to_string(), format!("Anchoring fetch error: {}", e));
             }
         }
     }

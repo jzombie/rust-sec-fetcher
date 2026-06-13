@@ -52,7 +52,10 @@ fn aapl_10k_fields_are_exact() {
     assert_eq!(e.company_name, "Apple Inc.");
     assert_eq!(e.form_type, "10-K");
     assert_eq!(e.date_filed, NaiveDate::from_ymd_opt(2025, 10, 31).unwrap());
-    assert_eq!(e.filename.as_os_str(), "edgar/data/320193/0000320193-25-000079.txt");
+    assert_eq!(
+        e.filename.as_os_str(),
+        "edgar/data/320193/0000320193-25-000079.txt"
+    );
 }
 
 #[test]
@@ -63,7 +66,10 @@ fn aapl_8k_fields_are_exact() {
     assert_eq!(e.company_name, "Apple Inc.");
     assert_eq!(e.form_type, "8-K");
     assert_eq!(e.date_filed, NaiveDate::from_ymd_opt(2025, 10, 30).unwrap());
-    assert_eq!(e.filename.as_os_str(), "edgar/data/320193/0000320193-25-000077.txt");
+    assert_eq!(
+        e.filename.as_os_str(),
+        "edgar/data/320193/0000320193-25-000077.txt"
+    );
 }
 
 #[test]
@@ -74,7 +80,10 @@ fn msft_10q_fields_are_exact() {
     assert_eq!(e.company_name, "MICROSOFT CORP");
     assert_eq!(e.form_type, "10-Q");
     assert_eq!(e.date_filed, NaiveDate::from_ymd_opt(2025, 10, 29).unwrap());
-    assert_eq!(e.filename.as_os_str(), "edgar/data/789019/0001193125-25-256321.txt");
+    assert_eq!(
+        e.filename.as_os_str(),
+        "edgar/data/789019/0001193125-25-256321.txt"
+    );
 }
 
 /// Every field of the AAPL and MSFT entries must differ.  If the parser

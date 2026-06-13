@@ -161,7 +161,8 @@ fn edgar_full_index_url() {
 
 #[test]
 fn edgar_archive_url() {
-    let url = Url::EdgarArchive(PathBuf::from("edgar/data/320193/0000320193-24-000006.txt")).value();
+    let url =
+        Url::EdgarArchive(PathBuf::from("edgar/data/320193/0000320193-24-000006.txt")).value();
     assert_eq!(
         url,
         "https://www.sec.gov/Archives/edgar/data/320193/0000320193-24-000006.txt"

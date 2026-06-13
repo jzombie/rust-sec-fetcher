@@ -43,7 +43,8 @@ pub fn parse_calculation_linkbase(xml: &str) -> Result<Vec<SummationItemArc>, Bo
     let mut reader = Reader::from_str(xml);
     reader.config_mut().trim_text(true);
 
-    let mut locators: std::collections::HashMap<String, ConceptRef> = std::collections::HashMap::new();
+    let mut locators: std::collections::HashMap<String, ConceptRef> =
+        std::collections::HashMap::new();
     let mut arcs: Vec<(String, String, f64, Option<i32>)> = Vec::new();
 
     let mut buf = Vec::new();
@@ -66,8 +67,7 @@ pub fn parse_calculation_linkbase(xml: &str) -> Result<Vec<SummationItemArc>, Bo
                         let mut label = None;
                         for attr in e.attributes().flatten() {
                             let attr_local = local_name(attr.key.as_ref());
-                            let val =
-                                std::str::from_utf8(attr.value.as_ref()).unwrap_or("");
+                            let val = std::str::from_utf8(attr.value.as_ref()).unwrap_or("");
                             match attr_local.as_str() {
                                 "href" => href = Some(val.to_string()),
                                 "label" => label = Some(val.to_string()),
@@ -92,17 +92,12 @@ pub fn parse_calculation_linkbase(xml: &str) -> Result<Vec<SummationItemArc>, Bo
 
                         for attr in e.attributes().flatten() {
                             let attr_local = local_name(attr.key.as_ref());
-                            let val =
-                                std::str::from_utf8(attr.value.as_ref()).unwrap_or("");
+                            let val = std::str::from_utf8(attr.value.as_ref()).unwrap_or("");
                             match attr_local.as_str() {
                                 "from" => from = Some(val.to_string()),
                                 "to" => to = Some(val.to_string()),
-                                "weight" => {
-                                    weight = val.parse::<f64>().unwrap_or(1.0)
-                                }
-                                "order" => {
-                                    order = val.parse::<i32>().ok()
-                                }
+                                "weight" => weight = val.parse::<f64>().unwrap_or(1.0),
+                                "order" => order = val.parse::<i32>().ok(),
                                 "arcrole" => {
                                     if SUMMATION_ITEM_ARCROLES.contains(&val) {
                                         is_summation = true;
@@ -128,11 +123,7 @@ pub fn parse_calculation_linkbase(xml: &str) -> Result<Vec<SummationItemArc>, Bo
                 }
             }
             Ok(Event::Eof) => break,
-            Err(e) => {
-                return Err(
-                    format!("XML parse error in calculation linkbase: {}", e).into(),
-                )
-            }
+            Err(e) => return Err(format!("XML parse error in calculation linkbase: {}", e).into()),
             _ => {}
         }
         buf.clear();

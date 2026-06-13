@@ -568,7 +568,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let gz_path = fixtures_dir.join(format!("{}.gz", fixture.output));
 
         if gz_path.exists() {
-            println!("  {} ({}) — exists, skipping", fixture.output, fixture.ticker);
+            println!(
+                "  {} ({}) — exists, skipping",
+                fixture.output, fixture.ticker
+            );
             continue;
         }
 
@@ -723,7 +726,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Url::CikAccessionDocument(sub.cik, sub.accession_number, xml_doc.name.clone())
                     .value()
             }
-            FixtureKind::FilingDocument { accession, doc_type } => {
+            FixtureKind::FilingDocument {
+                accession,
+                doc_type,
+            } => {
                 let acc_num = AccessionNumber::from_str(accession)
                     .map_err(|e| format!("Invalid accession '{}': {}", accession, e))?;
                 let sub = CikSubmission {
@@ -746,12 +752,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             doc_type, accession
                         )
                     })?;
-                Url::CikAccessionDocument(
-                    sub.cik,
-                    sub.accession_number,
-                    doc.name.clone(),
-                )
-                .value()
+                Url::CikAccessionDocument(sub.cik, sub.accession_number, doc.name.clone()).value()
             }
             FixtureKind::MasterIdx { year, quarter } => {
                 Url::EdgarFullIndex { year, quarter }.value()

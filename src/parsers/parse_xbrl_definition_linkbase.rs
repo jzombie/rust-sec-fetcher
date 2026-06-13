@@ -30,8 +30,21 @@ pub struct DefinitionArc {
 /// Known standard namespace prefixes used by the SEC taxonomies.
 /// Concepts under these namespaces are standard; everything else is custom.
 const STANDARD_NAMESPACES: &[&str] = &[
-    "us-gaap", "dei", "srt", "invest", "country", "stpr", "naics",
-    "sic", "currency", "ecd", "utr", "xref", "rrr", "ffd", "cef",
+    "us-gaap",
+    "dei",
+    "srt",
+    "invest",
+    "country",
+    "stpr",
+    "naics",
+    "sic",
+    "currency",
+    "ecd",
+    "utr",
+    "xref",
+    "rrr",
+    "ffd",
+    "cef",
     "ifrs-full",
 ];
 
@@ -332,7 +345,10 @@ mod tests {
         assert_eq!(arc.to.namespace.as_deref(), Some("aapl"));
         assert_eq!(arc.to.name, "MyCustomRevenue");
 
-        assert_eq!(arc.arcrole, "http://xbrl.org/arcrole/2008/definition-arcrole/general-special");
+        assert_eq!(
+            arc.arcrole,
+            "http://xbrl.org/arcrole/2008/definition-arcrole/general-special"
+        );
     }
 
     #[test]
@@ -378,8 +394,10 @@ mod tests {
 
     #[test]
     fn test_parse_href_concept_standard() {
-        let concept = parse_href_concept("http://xbrl.sec.gov/stm/2024/us-gaap-2024.xsd#us-gaap_NetIncomeLoss")
-            .unwrap();
+        let concept = parse_href_concept(
+            "http://xbrl.sec.gov/stm/2024/us-gaap-2024.xsd#us-gaap_NetIncomeLoss",
+        )
+        .unwrap();
         assert!(concept.is_standard);
         assert_eq!(concept.namespace.as_deref(), Some("us-gaap"));
         assert_eq!(concept.name, "NetIncomeLoss");
@@ -387,8 +405,7 @@ mod tests {
 
     #[test]
     fn test_parse_href_concept_custom() {
-        let concept = parse_href_concept("msft-20241231.xsd#msft_MyCustomTag")
-            .unwrap();
+        let concept = parse_href_concept("msft-20241231.xsd#msft_MyCustomTag").unwrap();
         assert!(!concept.is_standard);
         assert_eq!(concept.namespace.as_deref(), Some("msft"));
         assert_eq!(concept.name, "MyCustomTag");
