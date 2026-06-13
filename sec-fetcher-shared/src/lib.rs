@@ -545,3 +545,13 @@ pub const US_GAAP_CSV_META_COLUMNS: &[&str] = &[
     CSV_ACCN,
     CSV_FILING_URL,
 ];
+
+/// Canonical output-directory name for the current US-GAAP fundamentals dataset.
+///
+/// All binaries and examples that read or write the bulk CSV output should
+/// use this constant so a dataset refresh only needs one change.
+// TODO: Move this to a config file or auto-derive from today's date.
+//       Hardcoding a date means every bulk-run update requires a source
+//       change and recompile.  The constant exists only to keep consumers
+//       in sync until a better mechanism is introduced.
+pub const CURRENT_US_GAAP_DATA_DIR: &str = "data/12-jun-2026-us-gaap";

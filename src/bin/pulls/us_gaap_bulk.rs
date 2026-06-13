@@ -5,7 +5,7 @@
 //!
 //! ```sh
 //! # RUST_LOG=sec_fetcher=info,reqwest_drive=debug
-//! cargo run --bin pull-us-gaap-bulk --release -- --output-dir data/16-mar-2026-us-gaap
+//! cargo run --bin pull-us-gaap-bulk --release -- --output-dir data/12-jun-2026-us-gaap
 //! ```
 
 use clap::Parser;
@@ -14,6 +14,7 @@ use sec_fetcher::{
     config::ConfigManager,
     models::TickerSymbol,
     network::{SecClient, fetch_company_tickers, fetch_us_gaap_fundamentals},
+    parsers::CURRENT_US_GAAP_DATA_DIR,
     utils::VecExtensions,
 };
 use std::collections::HashMap;
@@ -27,8 +28,7 @@ use std::path::PathBuf;
 )]
 struct Args {
     /// Output directory (will be created if it does not exist).
-    /// Example: data/16-mar-2026-us-gaap
-    #[arg(long, short = 'o')]
+    #[arg(long, short = 'o', default_value = CURRENT_US_GAAP_DATA_DIR)]
     output_dir: PathBuf,
 }
 

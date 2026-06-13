@@ -5,19 +5,21 @@
 //! is a ranked list showing which GAAP concepts are most commonly reported by
 //! SEC filers in the dataset.
 //!
-//! The default input directory is `data/14-mar-2026-us-gaap`, which is the
+//! The default input directory is controlled by
+//! [`sec_fetcher::parsers::CURRENT_US_GAAP_DATA_DIR`], which is the
 //! bulk GAAP dataset produced by `pull-us-gaap-bulk`.
 //!
 //! # Usage
 //!
 //! ```text
 //! cargo run --example us_gaap_column_stats
-//! cargo run --example us_gaap_column_stats -- --dir data/14-mar-2026-us-gaap
+//! cargo run --example us_gaap_column_stats -- --dir data/12-jun-2026-us-gaap
 //! ```
 
 use clap::Parser;
-use csv::ReaderBuilder;
-use rayon::prelude::*;
+use core::cmp::Reverse;
+use polars::prelude::*;
+use sec_fetcher::parsers::CURRENT_US_GAAP_DATA_DIR;
 use std::collections::HashMap;
 use std::fmt;
 use std::fs;
@@ -27,7 +29,7 @@ use std::path::Path;
 #[command(about = "Count column-header frequencies across all CSV files in a directory")]
 struct Args {
     /// Directory containing the CSV files to analyze
-    #[arg(default_value = "data/14-mar-2026-us-gaap")]
+    #[arg(default_value = CURRENT_US_GAAP_DATA_DIR)]
     dir: String,
 }
 
