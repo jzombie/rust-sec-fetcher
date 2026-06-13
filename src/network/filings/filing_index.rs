@@ -67,7 +67,7 @@ fn parse_filing_index_html(html: &str) -> Result<FilingIndex, Box<dyn Error>> {
             .to_string();
 
         documents.push(FilingDocument {
-            name,
+            name: name.into(),
             document_type,
         });
     }

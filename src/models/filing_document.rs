@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 /// Represents a single document entry within an SEC EDGAR filing index.
 ///
 /// Parsed from the EDGAR HTML filing index page (`{accession}-index.htm`).
@@ -19,7 +21,7 @@
 #[derive(Debug, Clone)]
 pub struct FilingDocument {
     /// File name within the filing archive (e.g. `"ex991.htm"`).
-    pub name: String,
+    pub name: PathBuf,
 
     /// SEC document type string (e.g. `"EX-99.1"`, `"8-K"`).
     pub document_type: String,
@@ -136,13 +138,13 @@ impl FilingDocument {
 
     /// Returns `true` if the file is an HTML document.
     pub fn is_html(&self) -> bool {
-        let n = self.name.to_lowercase();
+        let n = self.name.to_string_lossy().to_lowercase();
         n.ends_with(".htm") || n.ends_with(".html")
     }
 
     /// Returns `true` if the file is a plain-text document.
     pub fn is_text(&self) -> bool {
-        self.name.to_lowercase().ends_with(".txt")
+        self.name.to_string_lossy().to_lowercase().ends_with(".txt")
     }
 }
 

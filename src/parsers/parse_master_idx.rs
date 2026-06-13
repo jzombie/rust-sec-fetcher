@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::models::MasterIndexEntry;
 use chrono::NaiveDate;
 use std::error::Error;
@@ -46,7 +48,7 @@ pub fn parse_master_idx(text: &str) -> Result<Vec<MasterIndexEntry>, Box<dyn Err
             company_name: parts[1].trim().to_string(),
             form_type: parts[2].trim().to_string(),
             date_filed,
-            filename: parts[4].trim().to_string(),
+            filename: PathBuf::from(parts[4].trim()),
         });
     }
 

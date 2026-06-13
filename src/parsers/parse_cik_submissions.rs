@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::models::{AccessionNumber, Cik, CikSubmission};
 use chrono::NaiveDate;
 use serde_json::Value;
@@ -59,7 +61,7 @@ pub fn parse_cik_submissions_block(
             entity_type: entity_type.clone(),
             accession_number,
             form: form_val.as_str().unwrap_or("").to_string(),
-            primary_document: doc_val.as_str().unwrap_or("").to_string(),
+            primary_document: PathBuf::from(doc_val.as_str().unwrap_or("")),
             filing_date: filing_date_parsed,
             items,
         });

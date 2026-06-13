@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::enums::Url;
 use crate::models::{Cik, CikSubmission, Form4Transaction};
 use crate::network::{SecClient, fetch_all_entity_submissions};
@@ -90,8 +92,8 @@ pub async fn fetch_form4(
     // we always fetch the raw XML from the archive root.
     let doc_name = submission
         .primary_document
-        .rfind('/')
-        .map(|pos| submission.primary_document[pos + 1..].to_string())
+        .file_name()
+        .map(|n| PathBuf::from(n))
         .unwrap_or_else(|| submission.primary_document.clone());
 
     let url = Url::CikAccessionDocument(

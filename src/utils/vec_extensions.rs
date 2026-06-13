@@ -2,6 +2,7 @@ use csv::Writer;
 use serde::Serialize;
 use std::error::Error;
 use std::fs::File;
+use std::path::Path;
 
 pub trait VecExtensions<T> {
     fn head(&self, count: usize) -> &[T];
@@ -14,7 +15,7 @@ pub trait VecExtensions<T> {
     ///
     /// # Errors
     /// Returns an error if writing fails.
-    fn write_to_csv(&self, file_path: &str) -> Result<(), Box<dyn Error>>
+    fn write_to_csv(&self, file_path: &Path) -> Result<(), Box<dyn Error>>
     where
         T: Serialize;
 }
@@ -28,7 +29,7 @@ impl<T> VecExtensions<T> for Vec<T> {
         &self[self.len().saturating_sub(count)..]
     }
 
-    fn write_to_csv(&self, file_path: &str) -> Result<(), Box<dyn Error>>
+    fn write_to_csv(&self, file_path: &Path) -> Result<(), Box<dyn Error>>
     where
         T: Serialize,
     {

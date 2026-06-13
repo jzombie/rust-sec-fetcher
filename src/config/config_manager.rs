@@ -100,8 +100,12 @@ pub struct ConfigManager {
     _cache_dir: Option<tempfile::TempDir>,
 }
 
-static DEFAULT_CONFIG_PATH: LazyLock<String> =
-    LazyLock::new(|| format!("{}_config.toml", env!("CARGO_PKG_NAME").replace("-", "_")));
+static DEFAULT_CONFIG_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
+    PathBuf::from(format!(
+        "{}_config.toml",
+        env!("CARGO_PKG_NAME").replace("-", "_")
+    ))
+});
 
 impl ConfigManager {
     /// Loads configuration using the default path.

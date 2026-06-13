@@ -25,8 +25,6 @@ use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const DEFAULT_DATA_DIR: &str = "data/EXAMPLE-us-gaap";
-
 #[derive(Parser)]
 #[command(about = "Search US GAAP CSV files for rows containing a given XBRL tag")]
 struct Args {
@@ -34,8 +32,8 @@ struct Args {
     tag: String,
 
     /// Directory of US GAAP CSV files
-    #[arg(long, short = 'd', default_value = DEFAULT_DATA_DIR)]
-    dir: String,
+    #[arg(long, short = 'd')]
+    dir: PathBuf,
 
     /// Maximum values to display per file (0 = no limit)
     #[arg(long, default_value_t = 20)]
@@ -71,11 +69,10 @@ impl fmt::Display for TagMatch {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    let data_dir = Path::new(&args.dir);
 
     let mut matches: Vec<TagMatch> = Vec::new();
 
-    for entry in fs::read_dir(data_dir)? {
+    for entry in fs::read_dir(&args.dir)? {
         let entry = entry?;
         let path = entry.path();
 

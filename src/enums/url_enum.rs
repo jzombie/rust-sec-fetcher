@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::models::{AccessionNumber, Cik};
 pub type Year = usize;
 
@@ -11,7 +13,7 @@ pub enum Url {
     CikSubmission(Cik),
 
     /// Points to a paginated submissions file (e.g. CIK0000320193-submissions-001.json).
-    CikSubmissionPage(String),
+    CikSubmissionPage(PathBuf),
 
     CikAccession(Cik, AccessionNumber),
 
@@ -35,7 +37,7 @@ pub enum Url {
 
     /// Points to a named document within a specific filing archive.
     /// Format: <https://www.sec.gov/Archives/edgar/data/>{CIK}/{accn_unformatted}/{filename}
-    CikAccessionDocument(Cik, AccessionNumber, String),
+    CikAccessionDocument(Cik, AccessionNumber, PathBuf),
 
     /// Primary-document URL for a pre-2000 SGML filing bundle.
     ///
@@ -125,7 +127,7 @@ pub enum Url {
     /// e.g. `edgar/data/320193/0000320193-94-000002.txt`.
     ///
     /// See [`crate::models::MasterIndexEntry::as_url`].
-    EdgarArchive(String),
+    EdgarArchive(PathBuf),
 
     /// The SEC EDGAR Standard Industrial Classification (SIC) code list.
     ///
@@ -159,7 +161,10 @@ impl Url {
             ),
             Url::CikSubmission(cik) => format!("https://data.sec.gov/submissions/CIK{}.json", cik),
             Url::CikSubmissionPage(filename) => {
-                format!("https://data.sec.gov/submissions/{}", filename)
+                format!(
+                    "https://data.sec.gov/submissions/{}",
+                    filename.display()
+                )
             }
             Url::CikAccession(cik, accession_number) => format!(
                 "https://www.sec.gov/Archives/edgar/data/{}/{}",
@@ -184,7 +189,7 @@ impl Url {
             Url::CikAccessionDocument(cik, accession_number, filename) => format!(
                 "{}/{}",
                 Url::CikAccession(cik.clone(), accession_number.clone()).value(),
-                filename,
+                filename.display(),
             ),
             Url::SgmlSubmissionTxt(cik, accession_number) => format!(
                 "https://www.sec.gov/Archives/edgar/data/{}/{}.txt",
@@ -216,7 +221,9 @@ impl Url {
                 "https://www.sec.gov/Archives/edgar/full-index/{}/QTR{}/master.idx",
                 year, quarter
             ),
-            Url::EdgarArchive(path) => format!("https://www.sec.gov/Archives/{}", path),
+            Url::EdgarArchive(path) => {
+                format!("https://www.sec.gov/Archives/{}", path.display())
+            }
             Url::SicCodes => "https://www.sec.gov/info/edgar/siccodes.htm".to_string(),
             Url::EftsCoRegistrantsByName { entity_name } => {
                 // Percent-encode the name as a quoted phrase for the q= parameter.

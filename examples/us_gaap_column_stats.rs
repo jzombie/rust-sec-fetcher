@@ -21,16 +21,14 @@ use polars::prelude::*;
 use std::collections::HashMap;
 use std::fmt;
 use std::fs;
-use std::path::Path;
-
-const DEFAULT_DATA_DIR: &str = "data/EXAMPLE-us-gaap";
+use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 #[command(about = "Count column-header frequencies across all CSV files in a directory")]
 struct Args {
     /// Directory containing the CSV files to analyze
-    #[arg(long, short = 'd', default_value = DEFAULT_DATA_DIR)]
-    dir: String,
+    #[arg(long, short = 'd')]
+    dir: PathBuf,
 }
 
 /// A column name together with the number of CSV files it appears in.
@@ -46,7 +44,7 @@ impl fmt::Display for ColumnCount {
 }
 
 /// Reads all CSV files in the given directory and counts occurrences of column headers.
-fn count_column_occurrences(dir: &str) -> HashMap<String, usize> {
+fn count_column_occurrences(dir: &Path) -> HashMap<String, usize> {
     let mut column_counts = HashMap::new();
 
     let files: Vec<_> = fs::read_dir(dir)
