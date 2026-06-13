@@ -130,6 +130,17 @@ enum FixtureKind {
     /// predecessor) and conservative (returns empty when no reorganisation
     /// occurred).
     RelatedCiks,
+    /// Any named XBRL exhibit document within a specific filing.
+    ///
+    /// The filing index is fetched to discover the exact filename for the
+    /// given `doc_type` (e.g. `"EX-101.CAL"`, `"EX-101.DEF"`, `"EX-101.LAB"`,
+    /// `"EX-101.SCH"`), then that document is downloaded.
+    FilingDocument {
+        /// Full formatted accession number (e.g. `"0000070858-26-000249"`).
+        accession: &'static str,
+        /// SEC document type string, case-insensitive (e.g. `"EX-101.CAL"`).
+        doc_type: &'static str,
+    },
 }
 
 const FIXTURES: &[Fixture] = &[
@@ -483,6 +494,53 @@ const FIXTURES: &[Fixture] = &[
         ticker: "AEP Texas Inc",
         kind: FixtureKind::SubmissionsByCik { cik: 1721781 },
     },
+    // ── XBRL exhibit fixtures (custom-tag anchoring tests) ────────────────────
+    //
+    // BAC (Bank of America) has extensive custom extension tags.  The latest
+    // 10-Q at the time of writing has ~487 calculation arcs and ~409 labels.
+    // These fixtures let the XBRL parser tests run offline.
+    //
+    // All use the same accession (BAC Q1-2026 10-Q):
+    Fixture {
+        output: "BAC_companyfacts.json",
+        ticker: "BAC",
+        kind: FixtureKind::CompanyFacts,
+    },
+    Fixture {
+        output: "BAC_10q_20260331_cal.xml",
+        ticker: "BAC",
+        kind: FixtureKind::FilingDocument {
+            accession: "0000070858-26-000249",
+            doc_type: "EX-101.CAL",
+        },
+    },
+    Fixture {
+        output: "BAC_10q_20260331_lab.xml",
+        ticker: "BAC",
+        kind: FixtureKind::FilingDocument {
+            accession: "0000070858-26-000249",
+            doc_type: "EX-101.LAB",
+        },
+    },
+    Fixture {
+        output: "BAC_10q_20260331_sch.xsd",
+        ticker: "BAC",
+        kind: FixtureKind::FilingDocument {
+            accession: "0000070858-26-000249",
+            doc_type: "EX-101.SCH",
+        },
+    },
+    // ── XBRL definition linkbase (for dimension-arc tests) ─────────────────
+    //
+    // JPM has a definition linkbase with ~469 dimensional arcs.
+    Fixture {
+        output: "JPM_10q_20260331_def.xml",
+        ticker: "JPM",
+        kind: FixtureKind::FilingDocument {
+            accession: "0001628280-26-029344",
+            doc_type: "EX-101.DEF",
+        },
+    },
 ];
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -508,6 +566,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for fixture in FIXTURES {
         let gz_path = fixtures_dir.join(format!("{}.gz", fixture.output));
+
+        if gz_path.exists() {
+            println!("  {} ({}) — exists, skipping", fixture.output, fixture.ticker);
+            continue;
+        }
 
         print!("  {} ({}) ... ", fixture.output, fixture.ticker);
         std::io::stdout().flush()?;
@@ -659,6 +722,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     })?;
                 Url::CikAccessionDocument(sub.cik, sub.accession_number, xml_doc.name.clone())
                     .value()
+            }
+            FixtureKind::FilingDocument { accession, doc_type } => {
+                let acc_num = AccessionNumber::from_str(accession)
+                    .map_err(|e| format!("Invalid accession '{}': {}", accession, e))?;
+                let sub = CikSubmission {
+                    cik: cik.clone(),
+                    entity_type: None,
+                    accession_number: acc_num,
+                    form: "10-Q".to_string(),
+                    primary_document: "primary_doc.xml".into(),
+                    filing_date: None,
+                    items: vec![],
+                };
+                let index = fetch_filing_index(&client, &sub).await?;
+                let doc = index
+                    .documents
+                    .iter()
+                    .find(|d| d.document_type.to_uppercase() == doc_type.to_uppercase())
+                    .ok_or_else(|| {
+                        format!(
+                            "No '{}' document in filing index for accession {}",
+                            doc_type, accession
+                        )
+                    })?;
+                Url::CikAccessionDocument(
+                    sub.cik,
+                    sub.accession_number,
+                    doc.name.clone(),
+                )
+                .value()
             }
             FixtureKind::MasterIdx { year, quarter } => {
                 Url::EdgarFullIndex { year, quarter }.value()

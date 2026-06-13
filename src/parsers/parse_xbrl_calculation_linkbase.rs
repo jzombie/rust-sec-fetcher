@@ -182,19 +182,21 @@ fn parse_href_concept(href: &str) -> Option<ConceptRef> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use indoc::indoc;
 
     #[test]
     fn test_parse_simple_calculation_linkbase() {
-        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
-<link:linkbase xmlns:link="http://www.xbrl.org/2003/linkbase"
-               xmlns:xlink="http://www.w3.org/1999/xlink">
-  <link:calculationLink xlink:type="extended" xlink:role="http://www.apple.com/role/IncomeStatement">
-    <link:loc xlink:type="locator" xlink:href="http://xbrl.sec.gov/stm/2024/us-gaap-2024.xsd#us-gaap_Revenues" xlink:label="rev_lbl"/>
-    <link:loc xlink:type="locator" xlink:href="aapl-20240928.xsd#aapl_MyCustomRevenue" xlink:label="myrev_lbl"/>
-    <link:calculationArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/summation-item"
-                         xlink:from="rev_lbl" xlink:to="myrev_lbl" weight="1.0" order="1"/>
-  </link:calculationLink>
-</link:linkbase>"#;
+        let xml = indoc! {r#"
+            <?xml version="1.0" encoding="UTF-8"?>
+            <link:linkbase xmlns:link="http://www.xbrl.org/2003/linkbase"
+                           xmlns:xlink="http://www.w3.org/1999/xlink">
+              <link:calculationLink xlink:type="extended" xlink:role="http://www.apple.com/role/IncomeStatement">
+                <link:loc xlink:type="locator" xlink:href="http://xbrl.sec.gov/stm/2024/us-gaap-2024.xsd#us-gaap_Revenues" xlink:label="rev_lbl"/>
+                <link:loc xlink:type="locator" xlink:href="aapl-20240928.xsd#aapl_MyCustomRevenue" xlink:label="myrev_lbl"/>
+                <link:calculationArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/summation-item"
+                                     xlink:from="rev_lbl" xlink:to="myrev_lbl" weight="1.0" order="1"/>
+              </link:calculationLink>
+            </link:linkbase>"#};
 
         let arcs = parse_calculation_linkbase(xml).unwrap();
         assert_eq!(arcs.len(), 1);
@@ -207,16 +209,17 @@ mod tests {
 
     #[test]
     fn test_parse_negative_weight() {
-        let xml = r#"<?xml version="1.0"?>
-<link:linkbase xmlns:link="http://www.xbrl.org/2003/linkbase"
-               xmlns:xlink="http://www.w3.org/1999/xlink">
-  <link:calculationLink xlink:type="extended" xlink:role="http://example.com/role/GrossProfit">
-    <link:loc xlink:type="locator" xlink:href="us-gaap.xsd#us-gaap_GrossProfit" xlink:label="gp_lbl"/>
-    <link:loc xlink:type="locator" xlink:href="ext.xsd#aapl_CustomCostOfRevenue" xlink:label="cost_lbl"/>
-    <link:calculationArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/summation-item"
-                         xlink:from="gp_lbl" xlink:to="cost_lbl" weight="-1.0" order="10"/>
-  </link:calculationLink>
-</link:linkbase>"#;
+        let xml = indoc! {r#"
+            <?xml version="1.0"?>
+            <link:linkbase xmlns:link="http://www.xbrl.org/2003/linkbase"
+                           xmlns:xlink="http://www.w3.org/1999/xlink">
+              <link:calculationLink xlink:type="extended" xlink:role="http://example.com/role/GrossProfit">
+                <link:loc xlink:type="locator" xlink:href="us-gaap.xsd#us-gaap_GrossProfit" xlink:label="gp_lbl"/>
+                <link:loc xlink:type="locator" xlink:href="ext.xsd#aapl_CustomCostOfRevenue" xlink:label="cost_lbl"/>
+                <link:calculationArc xlink:type="arc" xlink:arcrole="http://www.xbrl.org/2003/arcrole/summation-item"
+                                     xlink:from="gp_lbl" xlink:to="cost_lbl" weight="-1.0" order="10"/>
+              </link:calculationLink>
+            </link:linkbase>"#};
 
         let arcs = parse_calculation_linkbase(xml).unwrap();
         assert_eq!(arcs.len(), 1);
@@ -226,9 +229,10 @@ mod tests {
 
     #[test]
     fn test_parse_empty_calculation_linkbase() {
-        let xml = r#"<?xml version="1.0"?>
-<link:linkbase xmlns:link="http://www.xbrl.org/2003/linkbase">
-</link:linkbase>"#;
+        let xml = indoc! {r#"
+            <?xml version="1.0"?>
+            <link:linkbase xmlns:link="http://www.xbrl.org/2003/linkbase">
+            </link:linkbase>"#};
         let arcs = parse_calculation_linkbase(xml).unwrap();
         assert!(arcs.is_empty());
     }

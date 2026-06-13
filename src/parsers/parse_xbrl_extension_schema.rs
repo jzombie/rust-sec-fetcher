@@ -198,20 +198,22 @@ fn local_name(name: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use indoc::indoc;
 
     #[test]
     fn test_parse_simple_extension_schema() {
-        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
-<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-            xmlns:aapl="http://www.apple.com/20240928"
-            xmlns:xbrli="http://www.xbrl.org/2003/instance"
-            targetNamespace="http://www.apple.com/20240928"
-            elementFormDefault="qualified">
-  <xsd:element name="MyCustomRevenue" id="aapl_MyCustomRevenue"
-               substitutionGroup="xbrli:item" type="xbrli:monetaryItemType" xbrli:balance="credit"/>
-  <xsd:element name="MyCustomAsset" id="aapl_MyCustomAsset"
-               substitutionGroup="xbrli:item" type="xbrli:monetaryItemType" xbrli:balance="debit"/>
-</xsd:schema>"#;
+        let xml = indoc! {r#"
+            <?xml version="1.0" encoding="UTF-8"?>
+            <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                        xmlns:aapl="http://www.apple.com/20240928"
+                        xmlns:xbrli="http://www.xbrl.org/2003/instance"
+                        targetNamespace="http://www.apple.com/20240928"
+                        elementFormDefault="qualified">
+              <xsd:element name="MyCustomRevenue" id="aapl_MyCustomRevenue"
+                           substitutionGroup="xbrli:item" type="xbrli:monetaryItemType" xbrli:balance="credit"/>
+              <xsd:element name="MyCustomAsset" id="aapl_MyCustomAsset"
+                           substitutionGroup="xbrli:item" type="xbrli:monetaryItemType" xbrli:balance="debit"/>
+            </xsd:schema>"#};
 
         let schema = parse_extension_schema(xml).unwrap();
         assert_eq!(
@@ -242,10 +244,11 @@ mod tests {
 
     #[test]
     fn test_parse_empty_schema() {
-        let xml = r#"<?xml version="1.0"?>
-<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-            targetNamespace="http://example.com">
-</xsd:schema>"#;
+        let xml = indoc! {r#"
+            <?xml version="1.0"?>
+            <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                        targetNamespace="http://example.com">
+            </xsd:schema>"#};
 
         let schema = parse_extension_schema(xml).unwrap();
         assert_eq!(

@@ -304,19 +304,21 @@ pub fn local_name(name: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use indoc::indoc;
 
     #[test]
     fn test_parse_simple_definition_linkbase() {
-        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
-<link:linkbase xmlns:link="http://www.xbrl.org/2003/linkbase"
-               xmlns:xlink="http://www.w3.org/1999/xlink">
-  <link:definitionLink xlink:type="extended" xlink:role="http://www.apple.com/role/MyRole">
-    <link:loc xlink:type="locator" xlink:href="http://xbrl.sec.gov/stm/2024/us-gaap-2024.xsd#us-gaap_Revenues" xlink:label="us-gaap_Revenues"/>
-    <link:loc xlink:type="locator" xlink:href="aapl-20240928.xsd#aapl_MyCustomRevenue" xlink:label="aapl_MyCustomRevenue"/>
-    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/arcrole/2008/definition-arcrole/general-special"
-                        xlink:from="us-gaap_Revenues" xlink:to="aapl_MyCustomRevenue" order="1"/>
-  </link:definitionLink>
-</link:linkbase>"#;
+        let xml = indoc! {r#"
+            <?xml version="1.0" encoding="UTF-8"?>
+            <link:linkbase xmlns:link="http://www.xbrl.org/2003/linkbase"
+                           xmlns:xlink="http://www.w3.org/1999/xlink">
+              <link:definitionLink xlink:type="extended" xlink:role="http://www.apple.com/role/MyRole">
+                <link:loc xlink:type="locator" xlink:href="http://xbrl.sec.gov/stm/2024/us-gaap-2024.xsd#us-gaap_Revenues" xlink:label="us-gaap_Revenues"/>
+                <link:loc xlink:type="locator" xlink:href="aapl-20240928.xsd#aapl_MyCustomRevenue" xlink:label="aapl_MyCustomRevenue"/>
+                <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/arcrole/2008/definition-arcrole/general-special"
+                                    xlink:from="us-gaap_Revenues" xlink:to="aapl_MyCustomRevenue" order="1"/>
+              </link:definitionLink>
+            </link:linkbase>"#};
 
         let arcs = parse_definition_linkbase(xml).unwrap();
         assert_eq!(arcs.len(), 1);
@@ -335,22 +337,23 @@ mod tests {
 
     #[test]
     fn test_parse_with_multiple_arcs() {
-        let xml = r#"<?xml version="1.0"?>
-<link:linkbase xmlns:link="http://www.xbrl.org/2003/linkbase"
-               xmlns:xlink="http://www.w3.org/1999/xlink">
-  <link:definitionLink xlink:type="extended" xlink:role="http://example.com/role/1">
-    <link:loc xlink:type="locator" xlink:href="us-gaap-2024.xsd#us-gaap_Assets" xlink:label="Assets_lbl"/>
-    <link:loc xlink:type="locator" xlink:href="ext.xsd#aapl_MyAssets" xlink:label="MyAssets_lbl"/>
-    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/arcrole/2008/definition-arcrole/general-special"
-                        xlink:from="Assets_lbl" xlink:to="MyAssets_lbl" order="1"/>
-  </link:definitionLink>
-  <link:definitionLink xlink:type="extended" xlink:role="http://example.com/role/2">
-    <link:loc xlink:type="locator" xlink:href="us-gaap-2024.xsd#us-gaap_Revenues" xlink:label="Rev_lbl"/>
-    <link:loc xlink:type="locator" xlink:href="ext.xsd#aapl_MyRevenue" xlink:label="MyRev_lbl"/>
-    <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/arcrole/2008/definition-arcrole/general-special"
-                        xlink:from="Rev_lbl" xlink:to="MyRev_lbl" order="2"/>
-  </link:definitionLink>
-</link:linkbase>"#;
+        let xml = indoc! {r#"
+            <?xml version="1.0"?>
+            <link:linkbase xmlns:link="http://www.xbrl.org/2003/linkbase"
+                           xmlns:xlink="http://www.w3.org/1999/xlink">
+              <link:definitionLink xlink:type="extended" xlink:role="http://example.com/role/1">
+                <link:loc xlink:type="locator" xlink:href="us-gaap-2024.xsd#us-gaap_Assets" xlink:label="Assets_lbl"/>
+                <link:loc xlink:type="locator" xlink:href="ext.xsd#aapl_MyAssets" xlink:label="MyAssets_lbl"/>
+                <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/arcrole/2008/definition-arcrole/general-special"
+                                    xlink:from="Assets_lbl" xlink:to="MyAssets_lbl" order="1"/>
+              </link:definitionLink>
+              <link:definitionLink xlink:type="extended" xlink:role="http://example.com/role/2">
+                <link:loc xlink:type="locator" xlink:href="us-gaap-2024.xsd#us-gaap_Revenues" xlink:label="Rev_lbl"/>
+                <link:loc xlink:type="locator" xlink:href="ext.xsd#aapl_MyRevenue" xlink:label="MyRev_lbl"/>
+                <link:definitionArc xlink:type="arc" xlink:arcrole="http://xbrl.org/arcrole/2008/definition-arcrole/general-special"
+                                    xlink:from="Rev_lbl" xlink:to="MyRev_lbl" order="2"/>
+              </link:definitionLink>
+            </link:linkbase>"#};
 
         let arcs = parse_definition_linkbase(xml).unwrap();
         assert_eq!(arcs.len(), 2);
@@ -364,9 +367,10 @@ mod tests {
 
     #[test]
     fn test_parse_empty_linkbase() {
-        let xml = r#"<?xml version="1.0"?>
-<link:linkbase xmlns:link="http://www.xbrl.org/2003/linkbase">
-</link:linkbase>"#;
+        let xml = indoc! {r#"
+            <?xml version="1.0"?>
+            <link:linkbase xmlns:link="http://www.xbrl.org/2003/linkbase">
+            </link:linkbase>"#};
 
         let arcs = parse_definition_linkbase(xml).unwrap();
         assert!(arcs.is_empty());
