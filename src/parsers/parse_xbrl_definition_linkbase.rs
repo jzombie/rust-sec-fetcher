@@ -35,6 +35,12 @@ const STANDARD_NAMESPACES: &[&str] = &[
     "ifrs-full",
 ];
 
+/// Returns `true` if the given namespace prefix is a recognised standard
+/// SEC/IFRS taxonomy namespace.
+pub fn is_standard_namespace(prefix: &str) -> bool {
+    STANDARD_NAMESPACES.contains(&prefix)
+}
+
 /// Parses an XBRL definition linkbase XML string and returns the list
 /// of definition arcs (custom→standard concept relationships).
 ///
@@ -271,7 +277,7 @@ fn parse_href_concept(href: &str) -> Option<ConceptRef> {
         let prefix = &concept_str[..underscore_pos];
         let name = &concept_str[underscore_pos + 1..];
         if !prefix.is_empty() && !name.is_empty() {
-            let is_std = STANDARD_NAMESPACES.contains(&prefix);
+            let is_std = is_standard_namespace(prefix);
             return Some(ConceptRef {
                 namespace: Some(prefix.to_string()),
                 name: name.to_string(),
@@ -288,7 +294,7 @@ fn parse_href_concept(href: &str) -> Option<ConceptRef> {
     })
 }
 
-fn local_name(name: &[u8]) -> String {
+pub fn local_name(name: &[u8]) -> String {
     let s = std::str::from_utf8(name).unwrap_or("");
     s.rfind(':')
         .map(|i| s[i + 1..].to_string())

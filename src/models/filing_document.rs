@@ -206,6 +206,18 @@ impl FilingIndex {
         self.documents.iter().find(|doc| doc.is_xbrl_instance())
     }
 
+    /// Returns the label linkbase document (`EX-101.LAB`), if present.
+    pub fn label_linkbase(&self) -> Option<&FilingDocument> {
+        self.documents.iter().find(|doc| doc.is_label_linkbase())
+    }
+
+    /// Returns the calculation linkbase document (`EX-101.CAL`), if present.
+    pub fn calculation_linkbase(&self) -> Option<&FilingDocument> {
+        self.documents
+            .iter()
+            .find(|doc| doc.is_calculation_linkbase())
+    }
+
     /// Returns only press release exhibits (`EX-99.x`).
     ///
     /// These are typically earnings announcements, Regulation FD voluntary

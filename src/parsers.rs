@@ -35,3 +35,9 @@ mod parse_xbrl_extension_schema;
 pub use parse_xbrl_extension_schema::{
     CustomElement, ExtensionSchema, parse_extension_schema,
 };
+
+mod parse_xbrl_label_linkbase;
+pub use parse_xbrl_label_linkbase::parse_label_linkbase;
+
+mod parse_xbrl_calculation_linkbase;
+pub use parse_xbrl_calculation_linkbase::{SummationItemArc, parse_calculation_linkbase};
