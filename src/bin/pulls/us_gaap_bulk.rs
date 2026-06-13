@@ -120,11 +120,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         }
 
+        print!("  Anchoring... ");
         match fetch_custom_tag_anchoring(&client, &company_tickers, ticker).await {
             Ok(mut anchoring_df) => {
-                if anchoring_df.height() == 0 {
+                let count = anchoring_df.height();
+                if count == 0 {
+                    println!("no custom tags found");
                     continue;
                 }
+                println!("{} relationships", count);
                 let file_path = anchoring_dir.join(format!("{}.csv", ticker));
                 match File::create(&file_path) {
                     Ok(mut file) => {
