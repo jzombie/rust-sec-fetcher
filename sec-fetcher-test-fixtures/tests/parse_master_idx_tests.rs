@@ -11,6 +11,8 @@
 //!
 //! Run `cargo run --bin refresh-test-fixtures` to recreate the fixture file.
 
+use std::path::PathBuf;
+
 use chrono::NaiveDate;
 use sec_fetcher::enums::FormType;
 use sec_fetcher::models::MasterIndexEntry;
@@ -27,7 +29,7 @@ fn q4_2025() -> Vec<MasterIndexEntry> {
 fn by_accession<'a>(entries: &'a [MasterIndexEntry], accession: &str) -> &'a MasterIndexEntry {
     entries
         .iter()
-        .find(|e| e.filename.contains(accession))
+        .find(|e| e.filename.to_string_lossy().contains(accession))
         .unwrap_or_else(|| panic!("entry for accession '{}' not found in fixture", accession))
 }
 
@@ -50,7 +52,7 @@ fn aapl_10k_fields_are_exact() {
     assert_eq!(e.company_name, "Apple Inc.");
     assert_eq!(e.form_type, "10-K");
     assert_eq!(e.date_filed, NaiveDate::from_ymd_opt(2025, 10, 31).unwrap());
-    assert_eq!(e.filename, "edgar/data/320193/0000320193-25-000079.txt");
+    assert_eq!(e.filename.as_os_str(), "edgar/data/320193/0000320193-25-000079.txt");
 }
 
 #[test]
@@ -61,7 +63,7 @@ fn aapl_8k_fields_are_exact() {
     assert_eq!(e.company_name, "Apple Inc.");
     assert_eq!(e.form_type, "8-K");
     assert_eq!(e.date_filed, NaiveDate::from_ymd_opt(2025, 10, 30).unwrap());
-    assert_eq!(e.filename, "edgar/data/320193/0000320193-25-000077.txt");
+    assert_eq!(e.filename.as_os_str(), "edgar/data/320193/0000320193-25-000077.txt");
 }
 
 #[test]
@@ -72,7 +74,7 @@ fn msft_10q_fields_are_exact() {
     assert_eq!(e.company_name, "MICROSOFT CORP");
     assert_eq!(e.form_type, "10-Q");
     assert_eq!(e.date_filed, NaiveDate::from_ymd_opt(2025, 10, 29).unwrap());
-    assert_eq!(e.filename, "edgar/data/789019/0001193125-25-256321.txt");
+    assert_eq!(e.filename.as_os_str(), "edgar/data/789019/0001193125-25-256321.txt");
 }
 
 /// Every field of the AAPL and MSFT entries must differ.  If the parser
@@ -92,14 +94,14 @@ fn aapl_and_msft_entries_are_independent() {
 
     // Cross-contamination: Apple's CIK must not appear in MSFT's filename.
     assert!(
-        !msft.filename.contains("320193"),
+        !msft.filename.to_string_lossy().contains("320193"),
         "MSFT filename '{}' must not contain Apple's CIK",
-        msft.filename
+        msft.filename.display()
     );
     assert!(
-        !aapl.filename.contains("789019"),
+        !aapl.filename.to_string_lossy().contains("789019"),
         "AAPL filename '{}' must not contain MSFT's CIK",
-        aapl.filename
+        aapl.filename.display()
     );
 }
 

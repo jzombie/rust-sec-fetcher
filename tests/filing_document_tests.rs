@@ -1,10 +1,12 @@
 /// Unit tests for [`sec_fetcher::models::FilingDocument`] and
 /// [`sec_fetcher::models::FilingIndex`].
+use std::path::PathBuf;
+
 use sec_fetcher::models::{FilingDocument, FilingIndex};
 
 fn doc(name: &str, doc_type: &str) -> FilingDocument {
     FilingDocument {
-        name: name.to_string(),
+        name: PathBuf::from(name),
         document_type: doc_type.to_string(),
     }
 }

@@ -144,7 +144,7 @@ async fn run<V: FilingView>(
                 rendered_pr.document_type, rendered_pr.url
             );
             println!("---");
-            println!("## {} — {}", rendered_pr.document_type, rendered_pr.name);
+            println!("## {} — {}", rendered_pr.document_type, rendered_pr.name.display());
             println!();
             println!("{}", rendered_pr.content);
             println!();

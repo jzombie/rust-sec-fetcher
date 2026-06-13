@@ -76,7 +76,7 @@ fn filing_date_parses_correctly() {
 fn primary_document_parses_correctly() {
     let subs = aapl_submissions();
     let ten_k = by_accession(&subs, "0000320193-25-000079");
-    assert_eq!(ten_k.primary_document, "aapl-20250927.htm");
+    assert_eq!(ten_k.primary_document.as_os_str(), "aapl-20250927.htm");
 }
 
 #[test]

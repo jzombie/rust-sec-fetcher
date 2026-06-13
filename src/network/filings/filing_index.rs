@@ -100,7 +100,7 @@ fn parse_filing_index_html(html: &str) -> Result<FilingIndex, Box<dyn Error>> {
 ///
 /// let index = fetch_filing_index(&client, latest).await?;
 /// for exhibit in index.exhibits() {
-///     println!("{} — {}", exhibit.document_type, exhibit.name);
+///     println!("{} — {}", exhibit.document_type, exhibit.name.display());
 /// }
 /// # Ok(())
 /// # }
@@ -133,7 +133,7 @@ pub async fn fetch_filing_index(
 /// let url = "https://www.sec.gov/Archives/edgar/data/320193/000110465926027911/0001104659-26-027911-index.htm";
 /// let index = fetch_filing_index_by_url(&client, url).await?;
 /// for doc in index.substantive_exhibits() {
-///     println!("{} — {}", doc.document_type, doc.name);
+///     println!("{} — {}", doc.document_type, doc.name.display());
 /// }
 /// # Ok(())
 /// # }

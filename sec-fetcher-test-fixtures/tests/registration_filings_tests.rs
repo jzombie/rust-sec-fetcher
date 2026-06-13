@@ -66,7 +66,7 @@ fn s1_initial_filing_date_and_accession() {
     assert_eq!(s1.len(), 1);
     assert_eq!(s1[0].filing_date, NaiveDate::from_ymd_opt(2024, 2, 22));
     assert_eq!(s1[0].accession_number.to_string(), "0001628280-24-006294");
-    assert_eq!(s1[0].primary_document, "reddits-1q423.htm");
+    assert_eq!(s1[0].primary_document.as_os_str(), "reddits-1q423.htm");
 }
 
 #[test]
@@ -119,7 +119,7 @@ fn s3_filing_date_and_accession() {
     assert_eq!(s3.len(), 1);
     assert_eq!(s3[0].filing_date, NaiveDate::from_ymd_opt(2024, 10, 15));
     assert_eq!(s3[0].accession_number.to_string(), "0001193125-24-237177");
-    assert_eq!(s3[0].primary_document, "d871346ds3.htm");
+    assert_eq!(s3[0].primary_document.as_os_str(), "d871346ds3.htm");
 }
 
 #[test]
@@ -141,7 +141,7 @@ fn def14a_filing_date_and_accession() {
         proxies[0].accession_number.to_string(),
         "0001713445-25-000092"
     );
-    assert_eq!(proxies[0].primary_document, "rddt-20250428.htm");
+    assert_eq!(proxies[0].primary_document.as_os_str(), "rddt-20250428.htm");
 }
 
 #[test]
@@ -163,7 +163,7 @@ fn sc13d_initial_filing_date_and_accession() {
         filings[0].accession_number.to_string(),
         "0001193125-24-130868"
     );
-    assert_eq!(filings[0].primary_document, "d804372dsc13d.htm");
+    assert_eq!(filings[0].primary_document.as_os_str(), "d804372dsc13d.htm");
 }
 
 #[test]

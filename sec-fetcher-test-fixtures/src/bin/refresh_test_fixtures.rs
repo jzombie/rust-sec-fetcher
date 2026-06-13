@@ -597,11 +597,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .exhibits()
                     .into_iter()
                     .find(|ex| {
-                        let n = ex.name.to_ascii_lowercase();
+                        let n = ex.name.to_string_lossy().to_ascii_lowercase();
                         !skip.iter().any(|e| n.ends_with(e))
                     })
                     .ok_or_else(|| format!("No renderable exhibit for '{}'", fixture.ticker))?;
-                format!("{}/{}", base, exhibit.name)
+                format!("{}/{}", base, exhibit.name.display())
             }
             FixtureKind::ThirteenF { accession } => {
                 // Build a minimal CikSubmission with the known accession number
@@ -613,7 +613,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     entity_type: None,
                     accession_number: acc_num,
                     form: "13F-HR".to_string(),
-                    primary_document: "primary_doc.xml".to_string(),
+                    primary_document: "primary_doc.xml".into(),
                     filing_date: None,
                     items: vec![],
                 };
@@ -639,7 +639,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     entity_type: None,
                     accession_number: acc_num,
                     form: "4".to_string(),
-                    primary_document: "primary_doc.xml".to_string(),
+                    primary_document: "primary_doc.xml".into(),
                     filing_date: None,
                     items: vec![],
                 };

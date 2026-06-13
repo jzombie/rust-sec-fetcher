@@ -127,12 +127,12 @@ async fn run<V: FilingView>(
     if !rendered.exhibits.is_empty() {
         eprintln!("Found {} substantive exhibit(s):", rendered.exhibits.len());
         for ex in &rendered.exhibits {
-            eprintln!("  {} — {}", ex.document_type, ex.name);
+            eprintln!("  {} — {}", ex.document_type, ex.name.display());
         }
         for ex in &rendered.exhibits {
             eprintln!("Rendering: {}", ex.url);
             println!("---");
-            println!("## Exhibit: {} ({})", ex.document_type, ex.name);
+            println!("## Exhibit: {} ({})", ex.document_type, ex.name.display());
             println!();
             println!("{}", ex.content);
             println!();

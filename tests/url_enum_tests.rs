@@ -2,6 +2,8 @@
 ///
 /// Verifies that every `Url` variant produces the expected fully-qualified URL
 /// string.  CIK and AccessionNumber values are kept minimal for readability.
+use std::path::PathBuf;
+
 use sec_fetcher::enums::Url;
 use sec_fetcher::models::{AccessionNumber, Cik};
 
@@ -39,7 +41,7 @@ fn cik_submission_url() {
 
 #[test]
 fn cik_submission_page_url() {
-    let url = Url::CikSubmissionPage("CIK0000320193-submissions-001.json".to_string()).value();
+    let url = Url::CikSubmissionPage(PathBuf::from("CIK0000320193-submissions-001.json")).value();
     assert_eq!(
         url,
         "https://data.sec.gov/submissions/CIK0000320193-submissions-001.json"
@@ -80,7 +82,7 @@ fn cik_accession_primary_document_url() {
 #[test]
 fn cik_accession_document_url() {
     let a = accn(320193, 24, 123456);
-    let url = Url::CikAccessionDocument(cik(320193), a, "report.htm".to_string()).value();
+    let url = Url::CikAccessionDocument(cik(320193), a, PathBuf::from("report.htm")).value();
     assert_eq!(
         url,
         "https://www.sec.gov/Archives/edgar/data/0000320193/000032019324123456/report.htm"
@@ -159,7 +161,7 @@ fn edgar_full_index_url() {
 
 #[test]
 fn edgar_archive_url() {
-    let url = Url::EdgarArchive("edgar/data/320193/0000320193-24-000006.txt".to_string()).value();
+    let url = Url::EdgarArchive(PathBuf::from("edgar/data/320193/0000320193-24-000006.txt")).value();
     assert_eq!(
         url,
         "https://www.sec.gov/Archives/edgar/data/320193/0000320193-24-000006.txt"
