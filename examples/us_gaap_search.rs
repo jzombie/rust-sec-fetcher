@@ -7,25 +7,25 @@
 //! This is useful for quickly surveying what values a particular GAAP concept
 //! takes across different SEC filers (e.g. `Assets`, `Revenues`, `NetIncomeLoss`).
 //!
-//! The default input directory is controlled by
-//! [`sec_fetcher::parsers::CURRENT_US_GAAP_DATA_DIR`], which is the
-//! bulk GAAP dataset produced by `pull-us-gaap-bulk`.
+//! The default input directory is `data/EXAMPLE-us-gaap`.  Replace this with
+//! the output directory from a `pull-us-gaap-bulk` run.
 //!
 //! # Usage
 //!
 //! ```text
 //! cargo run --example us_gaap_search -- Assets
 //! cargo run --example us_gaap_search -- Revenues --max-values 5
-//! cargo run --example us_gaap_search -- NetIncomeLoss --dir data/12-jun-2026-us-gaap
+//! cargo run --example us_gaap_search -- NetIncomeLoss --dir data/EXAMPLE-us-gaap
 //! ```
 
 use clap::Parser;
 use csv::Reader;
-use sec_fetcher::parsers::CURRENT_US_GAAP_DATA_DIR;
 use std::error::Error;
 use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
+
+const DEFAULT_DATA_DIR: &str = "data/EXAMPLE-us-gaap";
 
 #[derive(Parser)]
 #[command(about = "Search US GAAP CSV files for rows containing a given XBRL tag")]
@@ -34,7 +34,7 @@ struct Args {
     tag: String,
 
     /// Directory of US GAAP CSV files
-    #[arg(long, default_value = CURRENT_US_GAAP_DATA_DIR)]
+    #[arg(long, short = 'd', default_value = DEFAULT_DATA_DIR)]
     dir: String,
 
     /// Maximum values to display per file (0 = no limit)
