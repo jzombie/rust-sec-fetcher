@@ -468,7 +468,7 @@ Licensed under the [PolyForm Noncommercial License 1.0.0][polyform-license-page]
 [polyform-license-badge]: https://img.shields.io/badge/license-PolyForm%20NC%201.0.0-blue.svg
 
 [coveralls-page]: https://coveralls.io/github/jzombie/rust-sec-fetcher?branch=main
-[coveralls-badge]: https://img.shields.io/coveralls/github/jzombie/rust-sec-fetcher
+[coveralls-badge]: https://coveralls.io/repos/github/jzombie/rust-sec-fetcher/badge.svg?branch=main
 
 [deepwiki-page]: https://deepwiki.com/jzombie/rust-sec-fetcher
 [deepwiki-badge]: https://deepwiki.com/badge.svg
