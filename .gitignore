@@ -2,6 +2,7 @@
 **/data
 **/data.old
 sec_fetcher_config.toml
+.DS_Store
 
 **/out.txt
 **/*.bin
