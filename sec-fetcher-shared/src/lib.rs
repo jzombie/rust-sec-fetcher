@@ -546,21 +546,13 @@ pub const US_GAAP_CSV_META_COLUMNS: &[&str] = &[
 ];
 
 /// Single unified root for everything this workspace writes: repo-relative
-/// `./data`. Bulk outputs, taxonomy XSDs all live under it:
-/// `data/latest-us-gaap/`, `data/taxonomies/`.
+/// `./data`. Bulk outputs live under it: `data/latest-us-gaap/`.
 /// Override per-run with explicit CLI args (`--output-dir`); no env keys.
 pub const DEFAULT_DATA_DIR: &str = "data";
 /// Bulk output leaf under the home.
 pub const BULK_OUTPUT_LEAF: &str = "latest-us-gaap";
-/// Taxonomy leaf under the home.
-pub const TAXONOMY_LEAF: &str = "taxonomies";
 /// HTTP/file cache leaf under the home.
 pub const CACHE_LEAF: &str = "cache";
-
-/// File prefix for vendored FASB taxonomy XSDs (`us-gaap-{year}.xsd`).
-pub const TAXONOMY_FILE_PREFIX: &str = "us-gaap-";
-/// File extension for vendored FASB taxonomy XSDs.
-pub const TAXONOMY_FILE_EXT: &str = ".xsd";
 
 /// Resolves the single project data directory: always repo-relative `./data`.
 /// Use an explicit `--output-dir` arg for any other location.

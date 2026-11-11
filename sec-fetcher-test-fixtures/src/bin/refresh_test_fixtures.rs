@@ -135,6 +135,10 @@ enum FixtureKind {
     /// The filing index is fetched to discover the exact filename for the
     /// given `doc_type` (e.g. `"EX-101.CAL"`, `"EX-101.DEF"`, `"EX-101.LAB"`,
     /// `"EX-101.SCH"`), then that document is downloaded.
+    ///
+    /// No current fixture uses this kind (companyfacts-only scope); kept
+    /// for ad-hoc refresh runs.
+    #[allow(dead_code)]
     FilingDocument {
         /// Full formatted accession number (e.g. `"0000070858-26-000249"`).
         accession: &'static str,
@@ -505,41 +509,6 @@ const FIXTURES: &[Fixture] = &[
         output: "BAC_companyfacts.json",
         ticker: "BAC",
         kind: FixtureKind::CompanyFacts,
-    },
-    Fixture {
-        output: "BAC_10q_20260331_cal.xml",
-        ticker: "BAC",
-        kind: FixtureKind::FilingDocument {
-            accession: "0000070858-26-000249",
-            doc_type: "EX-101.CAL",
-        },
-    },
-    Fixture {
-        output: "BAC_10q_20260331_lab.xml",
-        ticker: "BAC",
-        kind: FixtureKind::FilingDocument {
-            accession: "0000070858-26-000249",
-            doc_type: "EX-101.LAB",
-        },
-    },
-    Fixture {
-        output: "BAC_10q_20260331_sch.xsd",
-        ticker: "BAC",
-        kind: FixtureKind::FilingDocument {
-            accession: "0000070858-26-000249",
-            doc_type: "EX-101.SCH",
-        },
-    },
-    // ── XBRL definition linkbase (for dimension-arc tests) ─────────────────
-    //
-    // JPM has a definition linkbase with ~469 dimensional arcs.
-    Fixture {
-        output: "JPM_10q_20260331_def.xml",
-        ticker: "JPM",
-        kind: FixtureKind::FilingDocument {
-            accession: "0001628280-26-029344",
-            doc_type: "EX-101.DEF",
-        },
     },
 ];
 
