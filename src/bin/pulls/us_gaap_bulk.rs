@@ -1,11 +1,21 @@
-//! Bulk-downloads US-GAAP XBRL fundamentals for every primary-listing ticker
-//! and saves each company's data as a CSV in the given output directory.
+//! Bulk-downloads US-GAAP XBRL fundamentals for every primary-listing ticker.
+//!
+//! Companyfacts-only scope: values come from `companyfacts.json`
+//! (`us-gaap:*` only), balances from the FASB taxonomy. Filer customs
+//! (`bac:*`) are out of scope — neither companyfacts nor FASB XSDs
+//! contain them.
+//!
+//! Writes per-ticker CSVs into `--output-dir`:
+//!
+//! ```text
+//! data/latest-us-gaap/
+//!   us-gaap-fundamentals/   ← AAPL.csv, BAC.csv, … (companyfacts financial data)
+//! ```
 //!
 //! # Usage
 //!
 //! ```sh
-//! # RUST_LOG=sec_fetcher=info,reqwest_drive=debug
-//! cargo run --bin pull-us-gaap-bulk --release -- --output-dir data/16-mar-2026-us-gaap
+//! cargo run --bin pull-us-gaap-bulk --release -- --output-dir data/12-jun-2026-us-gaap
 //! ```
 
 use clap::Parser;
@@ -14,22 +24,23 @@ use sec_fetcher::{
     config::ConfigManager,
     models::TickerSymbol,
     network::{SecClient, fetch_company_tickers, fetch_us_gaap_fundamentals},
-    utils::VecExtensions,
 };
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::PathBuf;
 
+const FUNDAMENTALS_DIR: &str = "us-gaap-fundamentals";
+
 #[derive(Parser)]
 #[command(
     name = "pull-us-gaap-bulk",
-    about = "Bulk-download US-GAAP fundamentals for all primary listings into CSV files"
+    about = "Bulk-download US-GAAP fundamentals (companyfacts-only)"
 )]
 struct Args {
-    /// Output directory (will be created if it does not exist).
-    /// Example: data/16-mar-2026-us-gaap
+    /// Output directory. Defaults to `$SEC_FETCHER_DATA_DIR` when set,
+    /// else `data/latest-us-gaap`. Pass explicitly for dated snapshots.
     #[arg(long, short = 'o')]
-    output_dir: PathBuf,
+    output_dir: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -43,19 +54,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     let args = Args::parse();
+    let output_dir = PathBuf::from(sec_fetcher_shared::resolve_data_dir(
+        args.output_dir.as_ref().and_then(|p| p.to_str()),
+    ));
 
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;
 
-    // include_derived_instruments=false: primary listings only. Derived
-    // instruments (warrants, units, prefs, delisted) share a CIK with their
-    // parent and have no independent XBRL data, so they'd produce duplicates
-    // or empty CSVs in this pipeline.
     let company_tickers = fetch_company_tickers(&client, false).await?;
     println!("Total primary listings: {}", company_tickers.len());
-    println!("{:?}", company_tickers.head(60));
 
-    tokio::fs::create_dir_all(&args.output_dir).await?;
+    let fundamentals_dir = output_dir.join(FUNDAMENTALS_DIR);
+    tokio::fs::create_dir_all(&fundamentals_dir).await?;
 
     let mut error_log: HashMap<String, String> = HashMap::new();
 
@@ -71,8 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         match fetch_us_gaap_fundamentals(&client, &company_tickers, ticker).await {
             Ok(mut fundamentals_df) => {
-                let mut file_path = args.output_dir.clone();
-                file_path.push(format!("{}.csv", ticker));
+                let file_path = fundamentals_dir.join(format!("{}.csv", ticker));
                 match File::create(&file_path) {
                     Ok(mut file) => {
                         if let Err(e) = CsvWriter::new(&mut file)
@@ -83,13 +92,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                     Err(e) => {
-                        eprintln!("File creation error: {}", e);
                         error_log.insert(ticker.to_string(), format!("File creation error: {}", e));
                     }
                 }
             }
             Err(e) => {
-                error_log.insert(ticker.to_string(), format!("Fetch error: {}", e));
+                error_log.insert(
+                    ticker.to_string(),
+                    format!("Fundamentals fetch error: {}", e),
+                );
             }
         }
     }

@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 /// Represents a single document entry within an SEC EDGAR filing index.
 ///
 /// Parsed from the EDGAR HTML filing index page (`{accession}-index.htm`).
@@ -19,7 +21,7 @@
 #[derive(Debug, Clone)]
 pub struct FilingDocument {
     /// File name within the filing archive (e.g. `"ex991.htm"`).
-    pub name: String,
+    pub name: PathBuf,
 
     /// SEC document type string (e.g. `"EX-99.1"`, `"8-K"`).
     pub document_type: String,
@@ -68,6 +70,44 @@ impl FilingDocument {
         self.document_type.to_uppercase().starts_with("EX-101")
     }
 
+    /// Returns `true` if this is the XBRL definition linkbase (`EX-101.DEF`).
+    ///
+    /// The definition linkbase contains `definitionArc` elements that establish
+    /// wider-narrower (general-special) relationships between concepts.  This is
+    /// the key document for anchoring custom extension tags to standard GAAP
+    /// concepts.
+    pub fn is_definition_linkbase(&self) -> bool {
+        self.document_type.to_uppercase() == "EX-101.DEF"
+    }
+
+    /// Returns `true` if this is the XBRL taxonomy extension schema (`EX-101.SCH`).
+    ///
+    /// The extension schema defines custom elements added by the filer, including
+    /// their names, types, balance attributes, and namespace.
+    pub fn is_extension_schema(&self) -> bool {
+        self.document_type.to_uppercase() == "EX-101.SCH"
+    }
+
+    /// Returns `true` if this is the XBRL instance document (`EX-101.INS`).
+    pub fn is_xbrl_instance(&self) -> bool {
+        self.document_type.to_uppercase() == "EX-101.INS"
+    }
+
+    /// Returns `true` if this is the XBRL calculation linkbase (`EX-101.CAL`).
+    pub fn is_calculation_linkbase(&self) -> bool {
+        self.document_type.to_uppercase() == "EX-101.CAL"
+    }
+
+    /// Returns `true` if this is the XBRL label linkbase (`EX-101.LAB`).
+    pub fn is_label_linkbase(&self) -> bool {
+        self.document_type.to_uppercase() == "EX-101.LAB"
+    }
+
+    /// Returns `true` if this is the XBRL presentation linkbase (`EX-101.PRE`).
+    pub fn is_presentation_linkbase(&self) -> bool {
+        self.document_type.to_uppercase() == "EX-101.PRE"
+    }
+
     /// Returns `true` if this exhibit contains substantive, human-readable content.
     ///
     /// An exhibit is substantive if it:
@@ -98,13 +138,13 @@ impl FilingDocument {
 
     /// Returns `true` if the file is an HTML document.
     pub fn is_html(&self) -> bool {
-        let n = self.name.to_lowercase();
+        let n = self.name.to_string_lossy().to_lowercase();
         n.ends_with(".htm") || n.ends_with(".html")
     }
 
     /// Returns `true` if the file is a plain-text document.
     pub fn is_text(&self) -> bool {
-        self.name.to_lowercase().ends_with(".txt")
+        self.name.to_string_lossy().to_lowercase().ends_with(".txt")
     }
 }
 
@@ -143,6 +183,43 @@ impl FilingIndex {
             .iter()
             .filter(|doc| doc.is_substantive_exhibit())
             .collect()
+    }
+
+    /// Returns all XBRL data documents (`EX-101.*`).
+    pub fn xbrl_documents(&self) -> Vec<&FilingDocument> {
+        self.documents
+            .iter()
+            .filter(|doc| doc.is_xbrl_data())
+            .collect()
+    }
+
+    /// Returns the definition linkbase document (`EX-101.DEF`), if present.
+    pub fn definition_linkbase(&self) -> Option<&FilingDocument> {
+        self.documents
+            .iter()
+            .find(|doc| doc.is_definition_linkbase())
+    }
+
+    /// Returns the extension schema document (`EX-101.SCH`), if present.
+    pub fn extension_schema(&self) -> Option<&FilingDocument> {
+        self.documents.iter().find(|doc| doc.is_extension_schema())
+    }
+
+    /// Returns the XBRL instance document (`EX-101.INS`), if present.
+    pub fn xbrl_instance(&self) -> Option<&FilingDocument> {
+        self.documents.iter().find(|doc| doc.is_xbrl_instance())
+    }
+
+    /// Returns the label linkbase document (`EX-101.LAB`), if present.
+    pub fn label_linkbase(&self) -> Option<&FilingDocument> {
+        self.documents.iter().find(|doc| doc.is_label_linkbase())
+    }
+
+    /// Returns the calculation linkbase document (`EX-101.CAL`), if present.
+    pub fn calculation_linkbase(&self) -> Option<&FilingDocument> {
+        self.documents
+            .iter()
+            .find(|doc| doc.is_calculation_linkbase())
     }
 
     /// Returns only press release exhibits (`EX-99.x`).

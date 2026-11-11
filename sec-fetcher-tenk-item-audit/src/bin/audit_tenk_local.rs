@@ -64,7 +64,9 @@ struct Args {
     output: PathBuf,
 
     /// Optional extension filter (e.g., "*.htm", "*.html").
-    /// Default: process all files (skipping hidden files).
+    /// Default: process all files (skipping hidden files). Binary exhibits
+    /// (PDFs, images, zips) are skipped by extension + size guard below, so a
+    /// broad default won't load them into memory as strings.
     #[arg(long, short = 'p', default_value = "*")]
     pattern: String,
 }
@@ -127,6 +129,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let ticker = guess_ticker(file_path, &args.dir);
         let accession = guess_accession(file_path);
+
+        // Skip known-binary exhibits without reading them into memory, plus a
+        // size guard against accidentally matched large binaries.
+        let skip_reason = binary_skip_reason(file_path, 20 * 1024 * 1024);
+        if let Some(reason) = skip_reason {
+            let row = build_row(
+                &ticker, "", &accession, "", "", &item_keys, "", None, false, &reason,
+            );
+            writer.write_record(&row)?;
+            errors += 1;
+            continue;
+        }
 
         let raw = match std::fs::read_to_string(file_path) {
             Ok(text) => text,
@@ -221,4 +235,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
+}
+
+/// Returns a skip reason when `path` is a known-binary exhibit or exceeds
+/// `max_bytes`; `None` means it is safe to `read_to_string`.
+fn binary_skip_reason(path: &std::path::Path, max_bytes: u64) -> Option<String> {
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase())
+        .unwrap_or_default();
+    const BINARY_EXTS: &[&str] = &[
+        "pdf", "png", "jpg", "jpeg", "gif", "xlsx", "zip", "js", "css",
+    ];
+    if BINARY_EXTS.contains(&ext.as_str()) {
+        return Some(format!("skip: binary .{} exhibit", ext));
+    }
+    if let Ok(meta) = std::fs::metadata(path)
+        && meta.len() > max_bytes
+    {
+        return Some(format!("skip: file too large ({} bytes)", meta.len()));
+    }
+    None
 }

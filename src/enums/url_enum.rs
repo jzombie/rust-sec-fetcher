@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::models::{AccessionNumber, Cik};
 pub type Year = usize;
 
@@ -11,7 +13,7 @@ pub enum Url {
     CikSubmission(Cik),
 
     /// Points to a paginated submissions file (e.g. CIK0000320193-submissions-001.json).
-    CikSubmissionPage(String),
+    CikSubmissionPage(PathBuf),
 
     CikAccession(Cik, AccessionNumber),
 
@@ -19,13 +21,23 @@ pub enum Url {
     /// Format: <https://www.sec.gov/Archives/edgar/data/>{CIK}/{accn_unformatted}/{accn_formatted}-index.htm
     CikAccessionIndex(Cik, AccessionNumber),
 
+    /// Points to the JSON EDGAR filing index for a specific filing.
+    /// Format: <https://www.sec.gov/Archives/edgar/data/>{CIK}/{accn_unformatted}/index.json
+    ///
+    /// The JSON index contains a `directory` object with an `item` array, each
+    /// entry having `name`, `type` (MIME type like `"text.gif"`), `description`,
+    /// and `size`.  Note: the `type` field is a MIME type, not the SEC document
+    /// type — use the HTML `-index.htm` page to discover document types like
+    /// `"EX-101.DEF"`.
+    CikAccessionIndexJson(Cik, AccessionNumber),
+
     /// Points to the `primary_doc.xml` of a specific filing, using
     /// CIK and Accession Number.
     CikAccessionPrimaryDocument(Cik, AccessionNumber),
 
     /// Points to a named document within a specific filing archive.
     /// Format: <https://www.sec.gov/Archives/edgar/data/>{CIK}/{accn_unformatted}/{filename}
-    CikAccessionDocument(Cik, AccessionNumber, String),
+    CikAccessionDocument(Cik, AccessionNumber, PathBuf),
 
     /// Primary-document URL for a pre-2000 SGML filing bundle.
     ///
@@ -115,7 +127,7 @@ pub enum Url {
     /// e.g. `edgar/data/320193/0000320193-94-000002.txt`.
     ///
     /// See [`crate::models::MasterIndexEntry::as_url`].
-    EdgarArchive(String),
+    EdgarArchive(PathBuf),
 
     /// The SEC EDGAR Standard Industrial Classification (SIC) code list.
     ///
@@ -149,7 +161,10 @@ impl Url {
             ),
             Url::CikSubmission(cik) => format!("https://data.sec.gov/submissions/CIK{}.json", cik),
             Url::CikSubmissionPage(filename) => {
-                format!("https://data.sec.gov/submissions/{}", filename)
+                format!(
+                    "https://data.sec.gov/submissions/{}",
+                    url_path_segment(filename)
+                )
             }
             Url::CikAccession(cik, accession_number) => format!(
                 "https://www.sec.gov/Archives/edgar/data/{}/{}",
@@ -162,6 +177,11 @@ impl Url {
                 accession_number.to_unformatted_string(),
                 accession_number,
             ),
+            Url::CikAccessionIndexJson(cik, accession_number) => format!(
+                "https://www.sec.gov/Archives/edgar/data/{}/{}/index.json",
+                cik,
+                accession_number.to_unformatted_string(),
+            ),
             Url::CikAccessionPrimaryDocument(cik, accession_number) => format!(
                 "{}/primary_doc.xml",
                 Url::CikAccession(cik.clone(), accession_number.clone()).value(),
@@ -169,7 +189,7 @@ impl Url {
             Url::CikAccessionDocument(cik, accession_number, filename) => format!(
                 "{}/{}",
                 Url::CikAccession(cik.clone(), accession_number.clone()).value(),
-                filename,
+                url_path_segment(filename),
             ),
             Url::SgmlSubmissionTxt(cik, accession_number) => format!(
                 "https://www.sec.gov/Archives/edgar/data/{}/{}.txt",
@@ -201,7 +221,9 @@ impl Url {
                 "https://www.sec.gov/Archives/edgar/full-index/{}/QTR{}/master.idx",
                 year, quarter
             ),
-            Url::EdgarArchive(path) => format!("https://www.sec.gov/Archives/{}", path),
+            Url::EdgarArchive(path) => {
+                format!("https://www.sec.gov/Archives/{}", url_path_segment(path))
+            }
             Url::SicCodes => "https://www.sec.gov/info/edgar/siccodes.htm".to_string(),
             Url::EftsCoRegistrantsByName { entity_name } => {
                 // Percent-encode the name as a quoted phrase for the q= parameter.
@@ -215,4 +237,14 @@ impl Url {
             }
         }
     }
+}
+
+/// Converts a local `Path` to a URL path segment with forward slashes.
+///
+/// `PathBuf::display()` emits `\` on Windows, which corrupts SEC URLs. SEC
+/// exhibit names come from parsed `-index.htm` pages (always `/`), but the
+/// value may round-trip through a `PathBuf` on any host OS — normalize here
+/// so URL construction is OS-independent.
+fn url_path_segment(path: &std::path::Path) -> String {
+    path.to_string_lossy().replace('\\', "/")
 }
