@@ -235,18 +235,18 @@ pub async fn fetch_10k_sections_for_filing(
     //   Tier 0 — explicitly typed "10-K" / "10-K405" / "10-K/A"
     //   Tier 1 — any .htm / .html
     //   Tier 2 — any .txt
-    let mut candidates: Vec<String> = Vec::new();
+    let mut candidates: Vec<PathBuf> = Vec::new();
 
     for tier in 0..3u8 {
         for doc in &index.documents {
-            let name = doc.name.to_string_lossy().into_owned();
-            if name == filing.primary_document.to_string_lossy().as_ref() {
+            if doc.name == filing.primary_document {
                 continue;
             }
-            if BINARY_EXT_RE.is_match(&name) {
+            let name_str = doc.name.to_string_lossy();
+            if BINARY_EXT_RE.is_match(&name_str) {
                 continue;
             }
-            let lower = name.to_ascii_lowercase();
+            let lower = name_str.to_ascii_lowercase();
             let doc_type = doc.document_type.to_ascii_uppercase();
             let matches_tier = match tier {
                 0 => doc_type == "10-K" || doc_type == "10-K405" || doc_type == "10-K/A",
@@ -254,20 +254,25 @@ pub async fn fetch_10k_sections_for_filing(
                 2 => lower.ends_with(".txt"),
                 _ => false,
             };
-            if matches_tier && !candidates.contains(&name) {
-                candidates.push(name);
+            if matches_tier && !candidates.contains(&doc.name) {
+                candidates.push(doc.name.clone());
             }
         }
     }
 
     for name in candidates {
         let url = if old_format {
-            Url::EdgarArchive(PathBuf::from(format!("edgar/data/{}/{}", filing.cik, name))).value()
+            Url::EdgarArchive(PathBuf::from(format!(
+                "edgar/data/{}/{}",
+                filing.cik,
+                name.to_string_lossy().replace('\\', "/")
+            )))
+            .value()
         } else {
             Url::CikAccessionDocument(
                 filing.cik.clone(),
                 filing.accession_number.clone(),
-                PathBuf::from(&name),
+                name,
             )
             .value()
         };

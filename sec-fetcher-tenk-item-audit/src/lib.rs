@@ -164,15 +164,21 @@ fn collect_files_recursive(
 /// Try to extract the ticker symbol from a file path that follows the
 /// `pull-tenk-items` layout: `<root>/<TICKER>/<ACCESSION>.<ext>`.
 ///
-/// Returns the ticker directory name when the file is exactly two levels deep
-/// beneath `root`; returns an empty string otherwise.
+/// Walks up from the file's parent until `root` is reached and returns the
+/// immediate child of `root` (so deeper layouts like
+/// `<root>/<SECTOR>/<TICKER>/<FILE>` still resolve). Returns an empty string
+/// when the file is not beneath `root`.
 pub fn guess_ticker(file_path: &Path, root: &Path) -> String {
-    if let Some(parent) = file_path.parent()
-        && let Some(ticker_dir) = parent.file_name().and_then(|n| n.to_str())
-        && let Some(grandparent) = parent.parent()
-        && grandparent == root
-    {
-        return ticker_dir.to_string();
+    let mut current = file_path.parent();
+    let mut candidate: Option<&str> = None;
+    while let Some(dir) = current {
+        if dir == root {
+            return candidate.unwrap_or_default().to_string();
+        }
+        if let Some(name) = dir.file_name().and_then(|n| n.to_str()) {
+            candidate = Some(name);
+        }
+        current = dir.parent();
     }
     String::new()
 }

@@ -161,7 +161,10 @@ impl Url {
             ),
             Url::CikSubmission(cik) => format!("https://data.sec.gov/submissions/CIK{}.json", cik),
             Url::CikSubmissionPage(filename) => {
-                format!("https://data.sec.gov/submissions/{}", filename.display())
+                format!(
+                    "https://data.sec.gov/submissions/{}",
+                    url_path_segment(filename)
+                )
             }
             Url::CikAccession(cik, accession_number) => format!(
                 "https://www.sec.gov/Archives/edgar/data/{}/{}",
@@ -186,7 +189,7 @@ impl Url {
             Url::CikAccessionDocument(cik, accession_number, filename) => format!(
                 "{}/{}",
                 Url::CikAccession(cik.clone(), accession_number.clone()).value(),
-                filename.display(),
+                url_path_segment(filename),
             ),
             Url::SgmlSubmissionTxt(cik, accession_number) => format!(
                 "https://www.sec.gov/Archives/edgar/data/{}/{}.txt",
@@ -219,7 +222,7 @@ impl Url {
                 year, quarter
             ),
             Url::EdgarArchive(path) => {
-                format!("https://www.sec.gov/Archives/{}", path.display())
+                format!("https://www.sec.gov/Archives/{}", url_path_segment(path))
             }
             Url::SicCodes => "https://www.sec.gov/info/edgar/siccodes.htm".to_string(),
             Url::EftsCoRegistrantsByName { entity_name } => {
@@ -234,4 +237,14 @@ impl Url {
             }
         }
     }
+}
+
+/// Converts a local `Path` to a URL path segment with forward slashes.
+///
+/// `PathBuf::display()` emits `\` on Windows, which corrupts SEC URLs. SEC
+/// exhibit names come from parsed `-index.htm` pages (always `/`), but the
+/// value may round-trip through a `PathBuf` on any host OS — normalize here
+/// so URL construction is OS-independent.
+fn url_path_segment(path: &std::path::Path) -> String {
+    path.to_string_lossy().replace('\\', "/")
 }
