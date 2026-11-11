@@ -39,3 +39,6 @@ pub use parse_xbrl_label_linkbase::parse_label_linkbase;
 
 mod parse_xbrl_calculation_linkbase;
 pub use parse_xbrl_calculation_linkbase::{SummationItemArc, parse_calculation_linkbase};
+
+mod parse_taxonomy_balances;
+pub use parse_taxonomy_balances::parse_all_taxonomy_balances;

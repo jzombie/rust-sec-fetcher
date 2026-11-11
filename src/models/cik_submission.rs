@@ -17,8 +17,6 @@ pub struct CikSubmission {
     // insiderTransactionForIssuerExists
     pub accession_number: AccessionNumber,
     // TODO: Use FormType instead of String for stronger typing.
-    //       CikSubmission.form and CustomTagAnchoring.form both
-    //       need to be updated together.
     pub form: String,
     pub primary_document: PathBuf,
     pub filing_date: Option<NaiveDate>,
