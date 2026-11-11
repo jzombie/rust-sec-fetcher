@@ -269,12 +269,8 @@ pub async fn fetch_10k_sections_for_filing(
             )))
             .value()
         } else {
-            Url::CikAccessionDocument(
-                filing.cik.clone(),
-                filing.accession_number.clone(),
-                name,
-            )
-            .value()
+            Url::CikAccessionDocument(filing.cik.clone(), filing.accession_number.clone(), name)
+                .value()
         };
 
         if let Ok(sections) = fetch_sections_from_url(sec_client, &url).await {

@@ -29,7 +29,6 @@ use sec_fetcher::{
     network::{
         SecClient, fetch_company_tickers, fetch_custom_tag_anchoring, fetch_us_gaap_fundamentals,
     },
-    parsers::CURRENT_US_GAAP_DATA_DIR,
 };
 use std::collections::HashMap;
 use std::fs::File;
@@ -44,9 +43,10 @@ const ANCHORING_DIR: &str = "custom-tag-anchoring";
     about = "Bulk-download US-GAAP fundamentals + custom-tag anchoring"
 )]
 struct Args {
-    /// Output directory (will be created if it does not exist).
-    #[arg(long, short = 'o', default_value = CURRENT_US_GAAP_DATA_DIR)]
-    output_dir: PathBuf,
+    /// Output directory. Defaults to `$SEC_FETCHER_DATA_DIR` when set,
+    /// else `data/latest-us-gaap`. Pass explicitly for dated snapshots.
+    #[arg(long, short = 'o')]
+    output_dir: Option<PathBuf>,
 
     /// Skip fetching custom→standard tag anchoring.  Only writes the
     /// fundamentals (companyfacts) CSVs.
@@ -70,6 +70,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     let args = Args::parse();
+    let output_dir = PathBuf::from(sec_fetcher_shared::resolve_data_dir(
+        args.output_dir.as_ref().and_then(|p| p.to_str()),
+    ));
 
     let config_manager = ConfigManager::load()?;
     let client = SecClient::from_config_manager(&config_manager)?;
@@ -78,8 +81,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Total primary listings: {}", company_tickers.len());
 
     // Create subdirectories.
-    let fundamentals_dir = args.output_dir.join(FUNDAMENTALS_DIR);
-    let anchoring_dir = args.output_dir.join(ANCHORING_DIR);
+    let fundamentals_dir = output_dir.join(FUNDAMENTALS_DIR);
+    let anchoring_dir = output_dir.join(ANCHORING_DIR);
     tokio::fs::create_dir_all(&fundamentals_dir).await?;
     if !args.skip_anchoring {
         tokio::fs::create_dir_all(&anchoring_dir).await?;

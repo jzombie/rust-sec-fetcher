@@ -545,10 +545,37 @@ pub const US_GAAP_CSV_META_COLUMNS: &[&str] = &[
     CSV_FILING_URL,
 ];
 
-/// Canonical output-directory name for US-GAAP fundamentals datasets.
-///
-/// All binaries and examples that read or write the bulk CSV output should
-/// use this constant so consumers stay in sync. This is a generic,
-/// non-date-specific default (`data/latest-us-gaap`); pass an explicit
-/// `--output-dir` for dated snapshots rather than recompiling with a new date.
-pub const CURRENT_US_GAAP_DATA_DIR: &str = "data/latest-us-gaap";
+/// Single unified root for everything this workspace writes: repo-relative
+/// `./data`. Bulk outputs, taxonomy XSDs all live under it:
+/// `data/latest-us-gaap/`, `data/taxonomies/`.
+/// Override per-run with explicit CLI args (`--output-dir`); no env keys.
+pub const DEFAULT_DATA_DIR: &str = "data";
+/// Bulk output leaf under the home.
+pub const BULK_OUTPUT_LEAF: &str = "latest-us-gaap";
+/// Taxonomy leaf under the home.
+pub const TAXONOMY_LEAF: &str = "taxonomies";
+/// HTTP/file cache leaf under the home.
+pub const CACHE_LEAF: &str = "cache";
+
+/// File prefix for vendored FASB taxonomy XSDs (`us-gaap-{year}.xsd`).
+pub const TAXONOMY_FILE_PREFIX: &str = "us-gaap-";
+/// File extension for vendored FASB taxonomy XSDs.
+pub const TAXONOMY_FILE_EXT: &str = ".xsd";
+
+/// Resolves the single project data directory: always repo-relative `./data`.
+/// Use an explicit `--output-dir` arg for any other location.
+pub fn resolve_data_root() -> std::path::PathBuf {
+    std::path::PathBuf::from(DEFAULT_DATA_DIR)
+}
+
+/// Resolves the bulk output directory: explicit `--output-dir` wins, else
+/// `data/latest-us-gaap`.
+pub fn resolve_data_dir(explicit: Option<&str>) -> String {
+    if let Some(e) = explicit {
+        return e.to_string();
+    }
+    resolve_data_root()
+        .join(BULK_OUTPUT_LEAF)
+        .to_string_lossy()
+        .into_owned()
+}

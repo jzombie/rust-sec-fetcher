@@ -135,16 +135,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let skip_reason = binary_skip_reason(file_path, 20 * 1024 * 1024);
         if let Some(reason) = skip_reason {
             let row = build_row(
-                &ticker,
-                "",
-                &accession,
-                "",
-                "",
-                &item_keys,
-                "",
-                None,
-                false,
-                &reason,
+                &ticker, "", &accession, "", "", &item_keys, "", None, false, &reason,
             );
             writer.write_record(&row)?;
             errors += 1;

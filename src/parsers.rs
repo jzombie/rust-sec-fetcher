@@ -15,7 +15,9 @@ pub use parse_investment_companies_csv::parse_investment_companies_csv;
 
 mod parse_us_gaap_fundamentals;
 pub use parse_us_gaap_fundamentals::parse_us_gaap_fundamentals;
-pub use sec_fetcher_shared::{CURRENT_US_GAAP_DATA_DIR, US_GAAP_CSV_META_COLUMNS};
+pub use sec_fetcher_shared::{
+    BULK_OUTPUT_LEAF, US_GAAP_CSV_META_COLUMNS, resolve_data_dir, resolve_data_root,
+};
 
 mod parse_company_tickers;
 pub use parse_company_tickers::{parse_company_tickers_json, parse_ticker_txt};
