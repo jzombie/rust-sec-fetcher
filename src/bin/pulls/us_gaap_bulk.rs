@@ -8,6 +8,11 @@
 //!   us-gaap-fundamentals/   ← AAPL.csv, BAC.csv, … (companyfacts financial data)
 //!   custom-tag-anchoring/   ← BAC.csv, … (extension-tag → GAAP-parent mappings)
 //! ```
+//! Anchoring is factual XBRL evidence only (`parent, weight, balances,
+//! conflict`). `ValuePolarity` (`Higher/LowerIsBetter`) is NOT decided here —
+//! single owner is textualizer (currently closed-source) `sec-xbrl-semantics-rules/src/heuristics.rs`,
+//! which maps parent polarity + weight → custom polarity for the store that
+//! hands trend-describer its per-field polarity.
 //!
 //! # Usage
 //!
@@ -47,6 +52,11 @@ struct Args {
     /// fundamentals (companyfacts) CSVs.
     #[arg(long, default_value_t = false)]
     skip_anchoring: bool,
+
+    /// Only scan the N most-recent periodic filings per ticker for anchoring.
+    /// Omit for full history (guarantees conflict detection back to inception).
+    #[arg(long)]
+    max_anchoring_filings: Option<usize>,
 }
 
 #[tokio::main]
@@ -120,7 +130,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         print!("  Anchoring... ");
-        match fetch_custom_tag_anchoring(&client, &company_tickers, ticker).await {
+        match fetch_custom_tag_anchoring(
+            &client,
+            &company_tickers,
+            ticker,
+            args.max_anchoring_filings,
+        )
+        .await
+        {
             Ok(mut anchoring_df) => {
                 let count = anchoring_df.height();
                 if count == 0 {
