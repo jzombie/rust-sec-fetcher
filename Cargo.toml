@@ -11,7 +11,7 @@ keywords.workspace = true
 categories.workspace = true
 autobins = false
 [workspace]
-members = ["sec-fetcher-shared", "sec-fetcher-test-fixtures", "sec-fetcher-tenk-item-audit"]
+members = ["sec-fetcher-shared", "sec-fetcher-test-fixtures", "sec-fetcher-tenk-parser-audit"]
 
 [workspace.package]
 version = "0.5.0-alpha"

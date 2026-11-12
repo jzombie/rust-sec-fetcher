@@ -14,7 +14,7 @@
 //! # Usage
 //!
 //! ```sh
-//! cargo run -p sec-fetcher-tenk-item-audit --bin audit-tenk-local --release -- \
+//! cargo run -p sec-fetcher-tenk-parser-audit --bin tenk-parser-audit --release -- \
 //!     --dir tenk_audit_raw \        # directory of filing documents
 //!     --output audit_tenk.csv       # output CSV
 //! ```
@@ -39,7 +39,7 @@
 use clap::Parser;
 use csv::WriterBuilder;
 use sec_fetcher::{enums::TenKItem, parsers::extract_sections_from_document};
-use sec_fetcher_tenk_item_audit::{
+use sec_fetcher_tenk_parser_audit::{
     build_row, collect_files, guess_accession, guess_ticker, header_columns,
 };
 use std::collections::HashMap;
@@ -51,7 +51,7 @@ use tracing::{error, info, warn};
 
 #[derive(Parser)]
 #[command(
-    name = "audit-tenk-local",
+    name = "tenk-parser-audit",
     about = "Audit the 10-K section parser on a local directory of filing documents"
 )]
 struct Args {

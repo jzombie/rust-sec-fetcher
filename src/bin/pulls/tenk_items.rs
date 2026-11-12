@@ -5,7 +5,7 @@
 //! Documents are saved to `<output_dir>/<TICKER>/<ACCESSION>.<ext>`.
 //!
 //! This binary does **no parsing or audit-CSV generation** — it only pulls
-//! raw documents.  Run `audit-tenk-local` afterwards to evaluate the parser
+//! raw documents.  Run `tenk-parser-audit` afterwards to evaluate the parser
 //! against the downloaded corpus.
 //!
 //! # Usage

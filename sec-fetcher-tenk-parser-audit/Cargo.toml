@@ -1,5 +1,5 @@
 [package]
-name = "sec-fetcher-tenk-item-audit"
+name = "sec-fetcher-tenk-parser-audit"
 description = "Shared utilities for auditing the 10-K section parser."
 version.workspace = true
 edition.workspace = true
@@ -23,5 +23,5 @@ tracing.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 [[bin]]
-name = "audit-tenk-local"
-path = "src/bin/audit_tenk_local.rs"
+name = "tenk-parser-audit"
+path = "src/bin/tenk_parser_audit.rs"

@@ -1,7 +1,7 @@
 //! Shared utilities for auditing the 10-K section parser.
 //!
 //! Provides CSV row construction, file discovery, path heuristics, and text
-//! helpers used by `audit-tenk-local` (which runs the parser on local files).
+//! helpers used by `tenk-parser-audit` (which runs the parser on local files).
 //!
 //! This library intentionally has **zero** external dependencies — it works
 //! with plain [`HashMap`]s and [`String`]s so that any crate (including
