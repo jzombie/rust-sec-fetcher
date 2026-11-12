@@ -239,6 +239,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// TODO: Move into a shared utility?
 /// Replace characters unsafe for filesystem paths with `_`.
 fn sanitize_dir_name(name: &str) -> String {
     name.chars()
