@@ -7,8 +7,8 @@
 //!
 //! This is useful for:
 //! - Testing parser changes against a known corpus without hitting EDGAR.
-//! - Re-running the parser on filings previously saved by `pull-tenk-items` (which
-//!   stores raw documents under `data/tenk_items/<TICKER>/`).
+//! - Re-running the parser on filings previously saved by `pull-tenk-items`
+//!   (one `<TICKER>/` subdir per ticker under the corpus directory).
 //! - Bulk-evaluating parser quality or performance.
 //!
 //! # Usage
@@ -17,8 +17,7 @@
 //! cargo run -p sec-fetcher-tenk-parser-audit --bin tenk-parser-audit --release
 //! ```
 //!
-//! Defaults: `--dir data/tenk_items`, `--output data/tenk_audit.csv`.
-//! Pass explicitly for alternate locations.
+//! Defaults resolve from the shared data root; run with `--help` for paths.
 //!
 //! # Output columns
 //!
@@ -37,13 +36,11 @@
 //! | `item_1_chars` ... `item_16_chars` | Character count for every `TenKItem` |
 //! | `error` | Non-empty when the parse step failed |
 
-use clap::Parser;
+use clap::{CommandFactory, FromArgMatches, Parser};
 use csv::WriterBuilder;
 use sec_fetcher::{
     enums::TenKItem,
-    parsers::{
-        extract_sections_from_document, resolve_tenk_audit_csv, resolve_tenk_items_dir,
-    },
+    parsers::{extract_sections_from_document, resolve_tenk_audit_csv, resolve_tenk_items_dir},
 };
 use sec_fetcher_tenk_parser_audit::{
     build_row, collect_files, guess_accession, guess_ticker, header_columns,
@@ -62,11 +59,10 @@ use tracing::{error, info, warn};
 )]
 struct Args {
     /// Directory containing filing documents to parse (searched recursively).
-    /// Defaults to `data/tenk_items`.
     #[arg(long, short = 'd')]
     dir: Option<PathBuf>,
 
-    /// Path to the output CSV. Defaults to `data/tenk_audit.csv`.
+    /// Path to the output CSV.
     #[arg(long, short = 'o')]
     output: Option<PathBuf>,
 
@@ -91,7 +87,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .init();
 
-    let args = Args::parse();
+    let args = Args::from_arg_matches(
+        &Args::command()
+            .mut_arg("dir", |a| {
+                a.help(format!(
+                    "Directory containing filing documents to parse (searched recursively). Defaults to `{}`.",
+                    resolve_tenk_items_dir(None)
+                ))
+            })
+            .mut_arg("output", |a| {
+                a.help(format!(
+                    "Path to the output CSV. Defaults to `{}`.",
+                    resolve_tenk_audit_csv(None)
+                ))
+            })
+            .get_matches(),
+    )?;
     let dir = PathBuf::from(resolve_tenk_items_dir(
         args.dir.as_ref().and_then(|p| p.to_str()),
     ));
@@ -122,9 +133,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // ── Open output CSV ───────────────────────────────────────────────────────
 
-    let mut writer = WriterBuilder::new()
-        .has_headers(true)
-        .from_path(&output)?;
+    let mut writer = WriterBuilder::new().has_headers(true).from_path(&output)?;
     writer.write_record(&header)?;
 
     // ── Process each file ─────────────────────────────────────────────────────

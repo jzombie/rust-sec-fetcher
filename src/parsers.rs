@@ -16,8 +16,8 @@ pub use parse_investment_companies_csv::parse_investment_companies_csv;
 mod parse_us_gaap_fundamentals;
 pub use parse_us_gaap_fundamentals::parse_us_gaap_fundamentals;
 pub use sec_fetcher_shared::{
-    BULK_OUTPUT_LEAF, TENK_AUDIT_FILE, TENK_ITEMS_LEAF, US_GAAP_CSV_META_COLUMNS,
-    resolve_data_dir, resolve_tenk_audit_csv, resolve_tenk_items_dir,
+    BULK_OUTPUT_LEAF, TENK_AUDIT_FILE, TENK_ITEMS_LEAF, US_GAAP_CSV_META_COLUMNS, resolve_data_dir,
+    resolve_tenk_audit_csv, resolve_tenk_items_dir,
 };
 
 mod parse_company_tickers;

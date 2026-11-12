@@ -22,7 +22,7 @@
 //! To re-fetch all documents from scratch, delete the output directory or
 //! use a fresh `--output-dir`.
 
-use clap::Parser;
+use clap::{CommandFactory, FromArgMatches, Parser};
 use futures::StreamExt;
 use sec_fetcher::{
     config::ConfigManager,
@@ -49,8 +49,7 @@ static GLOBAL_FAILED: AtomicUsize = AtomicUsize::new(0);
     about = "Download 10-K filings from EDGAR to a local directory"
 )]
 struct Args {
-    /// Output directory. Defaults to `data/tenk_items`. Pass explicitly
-    /// for an alternate location.
+    /// Output directory (default resolved from the shared data root).
     #[arg(long, short = 'o')]
     output_dir: Option<PathBuf>,
 }
@@ -69,7 +68,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .init();
 
-    let args = Args::parse();
+    let args = Args::from_arg_matches(
+        &Args::command()
+            .mut_arg("output_dir", |a| {
+                a.help(format!(
+                    "Output directory. Defaults to `{}`. Pass explicitly for an alternate location.",
+                    sec_fetcher_shared::resolve_tenk_items_dir(None)
+                ))
+            })
+            .get_matches(),
+    )?;
     let output_dir = PathBuf::from(sec_fetcher_shared::resolve_tenk_items_dir(
         args.output_dir.as_ref().and_then(|p| p.to_str()),
     ));
