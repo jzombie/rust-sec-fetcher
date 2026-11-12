@@ -11,7 +11,7 @@
 //! # Usage
 //!
 //! ```sh
-//! cargo run --bin tenk-items --release -- --output-dir tenk_audit_raw
+//! cargo run --bin pull-tenk-items --release
 //! ```
 //!
 //! # Resuming
@@ -49,9 +49,10 @@ static GLOBAL_FAILED: AtomicUsize = AtomicUsize::new(0);
     about = "Download 10-K filings from EDGAR to a local directory"
 )]
 struct Args {
-    /// Directory to save raw documents into.
-    #[arg(long, short = 'o', default_value = "data/tenk_items")]
-    output_dir: PathBuf,
+    /// Output directory. Defaults to `data/tenk_items`. Pass explicitly
+    /// for an alternate location.
+    #[arg(long, short = 'o')]
+    output_dir: Option<PathBuf>,
 }
 
 // ── Entry point ───────────────────────────────────────────────────────────────
@@ -69,6 +70,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     let args = Args::parse();
+    let output_dir = PathBuf::from(sec_fetcher_shared::resolve_tenk_items_dir(
+        args.output_dir.as_ref().and_then(|p| p.to_str()),
+    ));
 
     let config_manager = ConfigManager::load()?;
     let max_concurrent = config_manager
@@ -79,12 +83,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Arc::new(SecClient::from_config_manager(&config_manager)?);
     info!(
         "Pulling 10-K documents into {:?} (max_concurrent={})",
-        args.output_dir, max_concurrent,
+        output_dir, max_concurrent,
     );
 
     // ── Ensure output directory exists ────────────────────────────────────────
 
-    std::fs::create_dir_all(&args.output_dir)?;
+    std::fs::create_dir_all(&output_dir)?;
 
     // ── Fetch full ticker list (deduplicated by CIK) ──────────────────────────
 
@@ -108,7 +112,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //   2. For each filing not yet on disk, downloads and saves the document.
     //   3. Logs a summary line with per-ticker status.
 
-    let output_dir = args.output_dir.clone();
     let log_dir = output_dir.clone();
 
     let producer = async move {

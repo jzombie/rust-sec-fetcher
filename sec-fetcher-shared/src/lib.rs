@@ -546,11 +546,14 @@ pub const US_GAAP_CSV_META_COLUMNS: &[&str] = &[
 ];
 
 /// Single unified root for everything this workspace writes: repo-relative
-/// `./data`. Bulk outputs live under it: `data/latest-us-gaap/`.
+/// `./data`. Bulk outputs live under it: `data/latest-us-gaap/`,
+/// `data/tenk_items/`.
 /// Override per-run with explicit CLI args (`--output-dir`); no env keys.
 pub const DEFAULT_DATA_DIR: &str = "data";
 /// Bulk output leaf under the home.
 pub const BULK_OUTPUT_LEAF: &str = "latest-us-gaap";
+/// 10-K raw document corpus leaf under the home.
+pub const TENK_ITEMS_LEAF: &str = "tenk_items";
 /// HTTP/file cache leaf under the home.
 pub const CACHE_LEAF: &str = "cache";
 
@@ -568,6 +571,18 @@ pub fn resolve_data_dir(explicit: Option<&str>) -> String {
     }
     resolve_data_root()
         .join(BULK_OUTPUT_LEAF)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the 10-K raw corpus directory: explicit `--output-dir` wins,
+/// else `data/tenk_items`.
+pub fn resolve_tenk_items_dir(explicit: Option<&str>) -> String {
+    if let Some(e) = explicit {
+        return e.to_string();
+    }
+    resolve_data_root()
+        .join(TENK_ITEMS_LEAF)
         .to_string_lossy()
         .into_owned()
 }
