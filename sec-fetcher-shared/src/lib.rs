@@ -554,6 +554,8 @@ pub const DEFAULT_DATA_DIR: &str = "data";
 pub const BULK_OUTPUT_LEAF: &str = "latest-us-gaap";
 /// 10-K raw document corpus leaf under the home.
 pub const TENK_ITEMS_LEAF: &str = "tenk_items";
+/// 10-K parser audit CSV filename under the home.
+pub const TENK_AUDIT_FILE: &str = "tenk_audit.csv";
 /// HTTP/file cache leaf under the home.
 pub const CACHE_LEAF: &str = "cache";
 
@@ -583,6 +585,18 @@ pub fn resolve_tenk_items_dir(explicit: Option<&str>) -> String {
     }
     resolve_data_root()
         .join(TENK_ITEMS_LEAF)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the 10-K parser audit CSV path: explicit `--output` wins,
+/// else `data/tenk_audit.csv`.
+pub fn resolve_tenk_audit_csv(explicit: Option<&str>) -> String {
+    if let Some(e) = explicit {
+        return e.to_string();
+    }
+    resolve_data_root()
+        .join(TENK_AUDIT_FILE)
         .to_string_lossy()
         .into_owned()
 }

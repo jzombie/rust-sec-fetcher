@@ -8,16 +8,17 @@
 //! This is useful for:
 //! - Testing parser changes against a known corpus without hitting EDGAR.
 //! - Re-running the parser on filings previously saved by `pull-tenk-items` (which
-//!   stores raw documents under `<output>/tenk_audit_raw/<TICKER>/`).
+//!   stores raw documents under `data/tenk_items/<TICKER>/`).
 //! - Bulk-evaluating parser quality or performance.
 //!
 //! # Usage
 //!
 //! ```sh
-//! cargo run -p sec-fetcher-tenk-parser-audit --bin tenk-parser-audit --release -- \
-//!     --dir tenk_audit_raw \        # directory of filing documents
-//!     --output audit_tenk.csv       # output CSV
+//! cargo run -p sec-fetcher-tenk-parser-audit --bin tenk-parser-audit --release
 //! ```
+//!
+//! Defaults: `--dir data/tenk_items`, `--output data/tenk_audit.csv`.
+//! Pass explicitly for alternate locations.
 //!
 //! # Output columns
 //!
@@ -38,7 +39,12 @@
 
 use clap::Parser;
 use csv::WriterBuilder;
-use sec_fetcher::{enums::TenKItem, parsers::extract_sections_from_document};
+use sec_fetcher::{
+    enums::TenKItem,
+    parsers::{
+        extract_sections_from_document, resolve_tenk_audit_csv, resolve_tenk_items_dir,
+    },
+};
 use sec_fetcher_tenk_parser_audit::{
     build_row, collect_files, guess_accession, guess_ticker, header_columns,
 };
@@ -56,12 +62,13 @@ use tracing::{error, info, warn};
 )]
 struct Args {
     /// Directory containing filing documents to parse (searched recursively).
+    /// Defaults to `data/tenk_items`.
     #[arg(long, short = 'd')]
-    dir: PathBuf,
+    dir: Option<PathBuf>,
 
-    /// Path to the output CSV.
-    #[arg(long, short = 'o', default_value = "audit_tenk.csv")]
-    output: PathBuf,
+    /// Path to the output CSV. Defaults to `data/tenk_audit.csv`.
+    #[arg(long, short = 'o')]
+    output: Option<PathBuf>,
 
     /// Optional extension filter (e.g., "*.htm", "*.html").
     /// Default: process all files (skipping hidden files). Binary exhibits
@@ -85,6 +92,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     let args = Args::parse();
+    let dir = PathBuf::from(resolve_tenk_items_dir(
+        args.dir.as_ref().and_then(|p| p.to_str()),
+    ));
+    let output = PathBuf::from(resolve_tenk_audit_csv(
+        args.output.as_ref().and_then(|p| p.to_str()),
+    ));
 
     // Build the ordered item-key list once (used by both header and rows).
     let item_keys: Vec<String> = TenKItem::iter().map(|i| i.map_key()).collect();
@@ -95,11 +108,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // ── Collect files ─────────────────────────────────────────────────────────
 
-    let all_files = collect_files(&args.dir, &args.pattern)?;
+    let all_files = collect_files(&dir, &args.pattern)?;
     let total = all_files.len();
     info!(
         "Found {} files under {:?} (pattern: {})",
-        total, args.dir, args.pattern
+        total, dir, args.pattern
     );
 
     if total == 0 {
@@ -111,7 +124,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut writer = WriterBuilder::new()
         .has_headers(true)
-        .from_path(&args.output)?;
+        .from_path(&output)?;
     writer.write_record(&header)?;
 
     // ── Process each file ─────────────────────────────────────────────────────
@@ -120,14 +133,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for (i, file_path) in all_files.iter().enumerate() {
         let relative = file_path
-            .strip_prefix(&args.dir)
+            .strip_prefix(&dir)
             .unwrap_or(file_path)
             .display()
             .to_string();
 
         info!("[{}/{}] {}", i + 1, total, relative);
 
-        let ticker = guess_ticker(file_path, &args.dir);
+        let ticker = guess_ticker(file_path, &dir);
         let accession = guess_accession(file_path);
 
         // Skip known-binary exhibits without reading them into memory, plus a
