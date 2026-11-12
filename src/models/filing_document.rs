@@ -73,9 +73,9 @@ impl FilingDocument {
     /// Returns `true` if this is the XBRL definition linkbase (`EX-101.DEF`).
     ///
     /// The definition linkbase contains `definitionArc` elements that establish
-    /// wider-narrower (general-special) relationships between concepts.  This is
-    /// the key document for anchoring custom extension tags to standard GAAP
-    /// concepts.
+    /// wider-narrower (general-special) relationships between concepts.
+    /// Companyfacts-only scope: listed here only so `EX-101.*` can be
+    /// excluded from substantive exhibits; not fetched or parsed.
     pub fn is_definition_linkbase(&self) -> bool {
         self.document_type.to_uppercase() == "EX-101.DEF"
     }
