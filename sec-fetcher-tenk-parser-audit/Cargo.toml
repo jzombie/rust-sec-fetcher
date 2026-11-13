@@ -10,6 +10,9 @@ keywords.workspace = true
 categories.workspace = true
 autobins = false
 
+# No need to publish at the moment
+publish = false
+
 [[bin]]
 name = "tenk-parser-audit"
 path = "src/bin/tenk_parser_audit.rs"
