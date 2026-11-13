@@ -47,7 +47,7 @@ pub fn header_columns(item_keys: &[String]) -> Vec<String> {
 ///
 /// * `item_keys` — the ordered list of item keys (e.g. `"item_1"`, `"item_7"`).
 /// * `sections` — an optional map from item key to section text
-///   (typically the result of [`extract_sections_from_document`]).
+///   (typically the output of the 10-K section parser).
 /// * `is_adequate` — whether the filing is considered adequate.
 ///   When `sections` is `Some`, this is typically computed from it.
 #[allow(clippy::too_many_arguments)]
