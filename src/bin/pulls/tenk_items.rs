@@ -2,6 +2,10 @@
 //!
 //! For every ticker in the full company-tickers dataset, fetches all 10-K and
 //! 10-K405 filings and downloads the best available document for each one.
+//! Amendment filings (`10-K/A`, `10-K405/A`) are included by default because
+//! they carry corrections and restatements. Pass `--skip-amendments` to leave
+//! them out, and add `--prune-amendments` to also delete previously-downloaded
+//! amendment files. A plain pull never deletes anything on disk.
 //! Documents are saved to `<output_dir>/<TICKER>/<ACCESSION>.<ext>`.
 //!
 //! This binary does **no parsing or audit-CSV generation** — it only pulls
@@ -52,6 +56,20 @@ struct Args {
     /// Output directory (default resolved from the shared data root).
     #[arg(long, short = 'o')]
     output_dir: Option<PathBuf>,
+
+    /// Skip 10-K/A and 10-K405/A amendment filings (never download them).
+    /// Amendments are included by default because they carry corrections and
+    /// restatements — the unamended original alone can be stale. They often
+    /// contain only the amended excerpt, so expect them to score inadequate
+    /// as standalone audit rows.
+    #[arg(long, default_value_t = false)]
+    skip_amendments: bool,
+
+    /// Delete previously-downloaded amendment files (`10-K/A`, `10-K405/A`)
+    /// from the output directory. Requires `--skip-amendments`. Off by
+    /// default — a plain pull never deletes anything.
+    #[arg(long, default_value_t = false, requires = "skip_amendments")]
+    prune_amendments: bool,
 }
 
 // ── Entry point ───────────────────────────────────────────────────────────────
@@ -81,6 +99,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let output_dir = PathBuf::from(sec_fetcher_shared::resolve_tenk_items_dir(
         args.output_dir.as_ref().and_then(|p| p.to_str()),
     ));
+    let include_amendments = !args.skip_amendments;
+    // `requires = "skip_amendments"` on the flag guarantees prune implies
+    // skip, so no runtime combination check is needed.
+    let prune_amendments = args.prune_amendments;
 
     let config_manager = ConfigManager::load()?;
     let max_concurrent = config_manager
@@ -90,8 +112,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .max(1);
     let client = Arc::new(SecClient::from_config_manager(&config_manager)?);
     info!(
-        "Pulling 10-K documents into {:?} (max_concurrent={})",
-        output_dir, max_concurrent,
+        "Pulling 10-K documents into {:?} (max_concurrent={}, include_amendments={}, prune_amendments={})",
+        output_dir, max_concurrent, include_amendments, prune_amendments,
     );
 
     // ── Ensure output directory exists ────────────────────────────────────────
@@ -136,6 +158,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let mut downloaded: usize = 0;
                     let mut skipped: usize = 0;
                     let mut failed: usize = 0;
+                    // Amendment accession stems seen this run — pruned in one
+                    // pass after the loop instead of scanning the directory
+                    // per filing.
+                    let mut prune_stems: std::collections::HashSet<String> =
+                        std::collections::HashSet::new();
 
                     let filings = match fetch_10k_filings(&client, entry.cik).await {
                         Ok(f) => f,
@@ -159,6 +186,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             .filing_date
                             .map(|d| d.to_string())
                             .unwrap_or_else(|| "unknown-date".to_string());
+
+                        // Amendments are included by default (corrections and
+                        // restatements); with `--skip-amendments` they are
+                        // skipped here and, with `--prune-amendments`,
+                        // previously-downloaded copies are removed in one
+                        // pass after the loop. A plain pull never deletes.
+                        if !include_amendments
+                            && filing.form.trim().to_ascii_uppercase().ends_with("/A")
+                        {
+                            if prune_amendments {
+                                prune_stems.insert(sanitize_dir_name(&acc));
+                            }
+                            skipped += 1;
+                            info!(
+                                "[{ticker}]   {date_str}  {acc}  ({}) — SKIP (amendment)",
+                                filing.form,
+                            );
+                            continue;
+                        }
 
                         // Determine filename on disk.
                         let ticker_dir = output_dir.join(sanitize_dir_name(&ticker));
@@ -209,6 +255,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             "[{ticker}]   {date_str}  {acc}  — saved ({size}B)",
                             size = bytes.len()
                         );
+                    }
+
+                    // ── Prune skipped amendments in one pass ────────────────────
+                    //
+                    // Single `read_dir` scan per ticker (not per filing), run
+                    // after all downloads so a mid-loop `remove_dir` can never
+                    // force later filings to recreate the directory.
+                    if !prune_stems.is_empty() {
+                        let ticker_dir = output_dir.join(sanitize_dir_name(&ticker));
+                        if ticker_dir.is_dir()
+                            && let Ok(entries) = std::fs::read_dir(&ticker_dir)
+                        {
+                            for e in entries.flatten() {
+                                let p = e.path();
+                                if p.is_file()
+                                    && let Some(stem) = p.file_stem().and_then(|s| s.to_str())
+                                    && prune_stems.contains(stem)
+                                {
+                                    let _ = std::fs::remove_file(&p);
+                                }
+                            }
+                            let _ = std::fs::remove_dir(&ticker_dir);
+                        }
                     }
 
                     // ── Per-ticker summary ────────────────────────────────────

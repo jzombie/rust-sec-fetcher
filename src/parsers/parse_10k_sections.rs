@@ -22,6 +22,77 @@ static IX_HEADER_RE: Lazy<Regex> =
 /// Strip remaining HTML / SGML tags (used only on the SGML plain-text path).
 static TAG_STRIP_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"<[^>]*>").unwrap());
 
+/// Block-level tags that should force a line break before stripping.
+///
+/// html2text emits block-level newlines for these, which is what the `^`
+/// line-anchored item regex depends on. Naive tag-stripping glues table cells
+/// together (`PART I POPULAR, INC.        ITEM 1. BUSINESS`), burying headings
+/// mid-line where `^[ \t]*ITEM` never matches. Replacing block tags with
+/// `\n` first recovers the headings (seen on the 89MB BPOP 2013 10-K).
+/// Only row-level containers force breaks — cells (`td`, `th`) collapse to
+/// spaces so `<td>Item 7.</td><td>Title</td>` stays on one line for the
+/// single-line heading regex. The trailing `(?:\s[^>]*)?/?>` consumes the
+/// whole tag while keeping `<tr` from matching `<track>` and `<li` from
+/// matching `<link>`.
+static BLOCK_TAG_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?i)</?(?:p|div|tr|table|br|li|ul|ol|h[1-6]|hr|section|article|header|footer|pre|blockquote)(?:\s[^>]*)?/?>",
+    )
+    .unwrap()
+});
+
+/// HTML comments and `<style>`/`<script>` blocks carry no prose but can
+/// contain inner `<...>` markup (commented-out TOC or draft `ITEM` headers).
+/// `TAG_STRIP_RE` alone terminates at the first inner `>` and leaks that
+/// commented-out text into the stream, so remove these blocks before any
+/// tag handling. `html2text` already excludes them, which is why this only
+/// matters on the tag-strip path.
+static NON_PROSE_HTML_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?is)<!--[\s\S]*?-->|<(?:style|script)\b[^>]*>[\s\S]*?</(?:style|script)\s*>")
+        .unwrap()
+});
+
+/// Strip tags block-aware: comments/style/script removed first, block tags
+/// become newlines, the rest become spaces.
+fn tag_strip_block_aware(text: &str) -> String {
+    let clean = NON_PROSE_HTML_RE.replace_all(text, " ");
+    let with_breaks = BLOCK_TAG_RE.replace_all(&clean, "\n");
+    TAG_STRIP_RE.replace_all(&with_breaks, " ").into_owned()
+}
+
+/// Entities that affect item-heading detection, matched case-insensitively in
+/// a single pass.
+///
+/// The tag-strip path (SGML era + large-file fallback) never runs html2text,
+/// so entities stay literal: `ITEM&nbsp;1.` won't match `ITEM\s*1`, and
+/// `MANAGEMENT&#146;S` won't match the MD&A fallback. Decoding just these
+/// (nbsp → space, quote-ish → `'`) is enough for headings without pulling in
+/// a full entity-decoder.
+static HEADING_ENTITY_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?i)&(?:nbsp|#160|#xa0|#146|#8216|#8217|#x91|#x92|#x2018|#x2019|#x27|#39|lsquo|rsquo|apos|amp|quot);",
+    )
+    .unwrap()
+});
+
+fn decode_heading_entities(text: &str) -> std::borrow::Cow<'_, str> {
+    HEADING_ENTITY_RE.replace_all(text, |caps: &regex::Captures| {
+        let ent = &caps[0];
+        if ent.eq_ignore_ascii_case("&nbsp;")
+            || ent.eq_ignore_ascii_case("&#160;")
+            || ent.eq_ignore_ascii_case("&#xa0;")
+        {
+            " "
+        } else if ent.eq_ignore_ascii_case("&amp;") {
+            "&"
+        } else if ent.eq_ignore_ascii_case("&quot;") {
+            "\""
+        } else {
+            "'"
+        }
+    })
+}
+
 /// Fix spaced-out ITEM headers produced when span-per-character markup is
 /// stripped: `"I T E M   7  A"` → `"ITEM 7A"`.
 static SPACED_ITEM_RE: Lazy<Regex> = Lazy::new(|| {
@@ -43,9 +114,11 @@ static MULTI_NL_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\n{3,}").unwrap());
 /// (U+2019) that html2text emits when it decodes `&#146;`, `&#8217;`, or the
 /// raw U+2019 character in iXBRL/HTML source.  The apostrophe and trailing `S`
 /// are each independently optional to handle `MANAGEMENT DISCUSSION` variants.
+/// Internal gaps use `\s+` (not `[ \t]+`) so titles split across table-cell
+/// line breaks — e.g. `Analysis of \n Financial Condition` in the 89MB BPOP
+/// 2013 10-K tag-strip path — still match.
 static MDA_TITLE_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(?im)^[ \t]*MANAGEMENT['\u{2019}]?S?[ \t]+DISCUSSION[ \t]+AND[ \t]+ANALYSIS")
-        .unwrap()
+    Regex::new(r"(?im)^[ \t]*MANAGEMENT['\u{2019}]?S?\s+DISCUSSION\s+AND\s+ANALYSIS").unwrap()
 });
 
 /// End-of-MD&A markers for the Item-7 title-based fallback.
@@ -203,11 +276,18 @@ pub fn extract_sections_from_document(raw: &str) -> Result<TenKSections, Html2Te
 ///   XBRL manifests that appear as dense character noise in plain text.
 /// - **SGML / plain-text bundles** — simple tag-strip regex (html2text would
 ///   mis-parse the SGML meta-tags as HTML content).
-///   Calls `html2text` and returns `Err(Html2TextPanic)` if it panics on a
-///   malformed document.
+///   Calls `html2text` and falls back to the tag-strip path when it panics on
+///   a malformed document (only surfaces `Err(Html2TextPanic)` if the
+///   fallback itself fails, which it cannot via regex replace).
 ///
 /// html2text has a known panic bug (byte-index out of bounds in
-/// text_renderer.rs) on certain EDGAR documents.
+/// text_renderer.rs) on certain EDGAR documents, and recurses deeply enough
+/// to overflow the main-thread stack on very large filings (e.g. the 89MB
+/// BPOP 2013 10-K). Files over `LARGE_FILE_BYTES` bypass html2text entirely
+/// and use the O(n) tag-strip path instead — slightly lossy on tables, but
+/// no crash and still fine for `^ITEM` heading detection.
+const LARGE_FILE_BYTES: usize = 20 * 1024 * 1024;
+
 fn html2text_to_plain(html: &str) -> Result<String, Html2TextPanic> {
     std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         html2text::config::plain_no_decorate()
@@ -227,14 +307,31 @@ fn html_to_plain(raw: &str) -> Result<String, Html2TextPanic> {
     if is_html {
         // Remove iXBRL header blocks before handing off to html2text; they
         // contain dense machine-readable metadata with no prose value.
-        let no_xbrl = IX_HEADER_RE.replace_all(raw, "").into_owned();
-        // Width 1_000_000 prevents html2text from wrapping long lines, which
-        // would break the `^` anchors used by the item-heading regex.
-        html2text_to_plain(&no_xbrl)
+        // Kept as `Cow` — pre-iXBRL filings have no header, so borrowing
+        // avoids an 89MB-class heap copy before we even start.
+        let no_xbrl = IX_HEADER_RE.replace_all(raw, "");
+        // Very large filings overflow html2text's recursion — tag-strip them
+        // instead. Width 1_000_000 below prevents html2text from wrapping
+        // long lines, which would break the `^` anchors used by the
+        // item-heading regex.
+        if no_xbrl.len() > LARGE_FILE_BYTES {
+            let stripped = tag_strip_block_aware(&no_xbrl);
+            return Ok(decode_heading_entities(&stripped).into_owned());
+        }
+        // Fall back to tag-stripping when html2text panics on malformed
+        // markup (e.g. ADMT/0001188112-10-001713) instead of erroring out.
+        match html2text_to_plain(&no_xbrl) {
+            Ok(plain) => Ok(plain),
+            Err(_) => {
+                let stripped = tag_strip_block_aware(&no_xbrl);
+                Ok(decode_heading_entities(&stripped).into_owned())
+            }
+        }
     } else {
-        // SGML era: strip every tag with a single O(n) regex; entities are
-        // left as-is (they don't affect item-heading detection).
-        Ok(TAG_STRIP_RE.replace_all(raw, " ").into_owned())
+        // SGML era: strip every tag with a single O(n) regex, then decode the
+        // entities that matter for heading detection (`&nbsp;`, `&#146;`).
+        let stripped = tag_strip_block_aware(raw);
+        Ok(decode_heading_entities(&stripped).into_owned())
     }
 }
 
@@ -634,6 +731,36 @@ mod tests {
             "Fallback should find MDA heading"
         );
         assert!(item7.len() >= 2000);
+    }
+
+    #[test]
+    fn tag_strip_removes_comments_style_and_script() {
+        // Commented-out draft headings and style/script bodies must not leak
+        // into the text stream: without stripping, `<!-- <p>ITEM 7...` ends
+        // at the first inner `>` and exposes a phantom heading.
+        let raw = format!(
+            "<!-- <p>ITEM 7. DRAFT MD&A</p> -->\n<style>.x {{ color: red; }}</style>\n<script>var x = 1;</script>\n<p>ITEM 1. BUSINESS</p>\n<p>{}</p>\n<p>ITEM 7. MANAGEMENT'S DISCUSSION</p>\n<p>{}</p>\n<p>ITEM 8. FINANCIAL STATEMENTS</p>\n<p>{}</p>\n",
+            "Business. ".repeat(50),
+            "MD&A. ".repeat(300),
+            "Financials. ".repeat(50),
+        );
+        let plain = html_to_plain(&raw).unwrap();
+        assert!(
+            !plain.contains("DRAFT"),
+            "commented-out heading leaked into plain text"
+        );
+        assert!(
+            !plain.contains("color"),
+            "style body leaked into plain text"
+        );
+        assert!(
+            !plain.contains("var x"),
+            "script body leaked into plain text"
+        );
+        let s = extract_sections_from_document(&raw).unwrap();
+        assert!(s.item1().is_some());
+        assert!(s.item7().is_some());
+        assert!(!s.item7().unwrap().contains("DRAFT"));
     }
 
     #[test]

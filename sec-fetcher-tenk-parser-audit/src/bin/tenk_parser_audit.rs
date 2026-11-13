@@ -153,8 +153,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let accession = guess_accession(file_path);
 
         // Skip known-binary exhibits without reading them into memory, plus a
-        // size guard against accidentally matched large binaries.
-        let skip_reason = binary_skip_reason(file_path, 20 * 1024 * 1024);
+        // size guard against accidentally matched large binaries (max observed
+        // 10-K is ~89MB, so 100MB covers the full corpus).
+        let skip_reason = binary_skip_reason(file_path, 100 * 1024 * 1024);
         if let Some(reason) = skip_reason {
             let row = build_row(
                 &ticker, "", &accession, "", "", &item_keys, "", None, false, &reason,
