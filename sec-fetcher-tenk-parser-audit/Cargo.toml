@@ -10,18 +10,18 @@ keywords.workspace = true
 categories.workspace = true
 autobins = false
 
+[[bin]]
+name = "tenk-parser-audit"
+path = "src/bin/tenk_parser_audit.rs"
+
 # The library has zero external dependencies so that sec-fetcher (or any
 # other crate) can depend on it without circular-dependency issues.
 # The binary below additionally needs sec-fetcher at link time.
 
 [dependencies]
-sec-fetcher = { path = ".." }
 clap = { workspace = true, features = ["derive"] }
 csv.workspace = true
+sec-fetcher = { path = ".." }
 strum.workspace = true
 tracing.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
-
-[[bin]]
-name = "tenk-parser-audit"
-path = "src/bin/tenk_parser_audit.rs"
