@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::enums::{FormType, Url};
 use chrono::NaiveDate;
 
@@ -20,7 +22,7 @@ pub struct MasterIndexEntry {
     /// `edgar/data/1000032/0001000032-24-000006-index.htm`.
     ///
     /// Use [`MasterIndexEntry::as_url`] to obtain the fully qualified URL.
-    pub filename: String,
+    pub filename: PathBuf,
 }
 
 impl MasterIndexEntry {
@@ -48,7 +50,7 @@ mod tests {
             company_name: "APPLE INC".to_string(),
             form_type: "10-K".to_string(),
             date_filed: NaiveDate::from_ymd_opt(2024, 11, 1).unwrap(),
-            filename: "edgar/data/320193/0000320193-24-000123-index.htm".to_string(),
+            filename: PathBuf::from("edgar/data/320193/0000320193-24-000123-index.htm"),
         }
     }
 

@@ -1,0 +1,283 @@
+//! Audit the 10-K section parser against a local directory of filing documents.
+//!
+//! Reads every file (or every `.htm`/`.html`/`.txt` file) under a given input
+//! directory, runs [`extract_sections_from_document`] on each one, and writes
+//! the results to a CSV.  There are **no network calls** — all documents are
+//! assumed to already exist on disk.
+//!
+//! This is useful for:
+//! - Testing parser changes against a known corpus without hitting EDGAR.
+//! - Re-running the parser on filings previously saved by `pull-tenk-items`
+//!   (one `<TICKER>/` subdir per ticker under the corpus directory).
+//! - Bulk-evaluating parser quality or performance.
+//!
+//! # Usage
+//!
+//! ```sh
+//! cargo run -p sec-fetcher-tenk-parser-audit --bin tenk-parser-audit --release
+//! ```
+//!
+//! Defaults resolve from the shared data root; run with `--help` for paths.
+//!
+//! # Output columns
+//!
+//! Same columns originally produced by the old combined `pull-tenk-audit`
+//! binary, except that `cik`, `filed_date`, and `form_type` are always empty
+//! (that information is not embedded in the raw file on disk).
+//!
+//! | Column | Description |
+//! |--------|-------------|
+//! | `ticker` | Ticker symbol (from path when available) |
+//! | `cik` | Always empty |
+//! | `accession_number` | Accession number (from filename when available) |
+//! | `filed_date` | Always empty |
+//! | `form_type` | Always empty |
+//! | `items_found` | Semicolon-separated list of item keys extracted |
+//! | `item_1_chars` ... `item_16_chars` | Character count for every `TenKItem` |
+//! | `error` | Non-empty when the parse step failed |
+
+use clap::{CommandFactory, FromArgMatches, Parser};
+use csv::WriterBuilder;
+use sec_fetcher::{
+    enums::TenKItem,
+    parsers::{extract_sections_from_document, resolve_tenk_audit_csv, resolve_tenk_items_dir},
+};
+use sec_fetcher_tenk_parser_audit::{
+    build_row, collect_files, guess_accession, guess_ticker, header_columns,
+};
+use std::collections::HashMap;
+use std::path::PathBuf;
+use strum::IntoEnumIterator;
+use tracing::{error, info, warn};
+
+// ── CLI ───────────────────────────────────────────────────────────────────────
+
+#[derive(Parser)]
+#[command(
+    name = "tenk-parser-audit",
+    about = "Audit the 10-K section parser on a local directory of filing documents"
+)]
+struct Args {
+    /// Directory containing filing documents to parse (searched recursively).
+    #[arg(long, short = 'd')]
+    dir: Option<PathBuf>,
+
+    /// Path to the output CSV.
+    #[arg(long, short = 'o')]
+    output: Option<PathBuf>,
+
+    /// Optional extension filter (e.g., "*.htm", "*.html").
+    /// Default: process all files (skipping hidden files). Binary exhibits
+    /// (PDFs, images, zips) are skipped by extension + size guard below, so a
+    /// broad default won't load them into memory as strings.
+    #[arg(long, short = 'p', default_value = "*")]
+    pattern: String,
+}
+
+// ── Entry point ───────────────────────────────────────────────────────────────
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::builder()
+                .with_default_directive(tracing::Level::INFO.into())
+                .from_env_lossy()
+                .add_directive("html5ever=off".parse().unwrap())
+                .add_directive("selectors=off".parse().unwrap()),
+        )
+        .init();
+
+    let args = Args::from_arg_matches(
+        &Args::command()
+            .mut_arg("dir", |a| {
+                a.help(format!(
+                    "Directory containing filing documents to parse (searched recursively). Defaults to `{}`.",
+                    resolve_tenk_items_dir(None)
+                ))
+            })
+            .mut_arg("output", |a| {
+                a.help(format!(
+                    "Path to the output CSV. Defaults to `{}`.",
+                    resolve_tenk_audit_csv(None)
+                ))
+            })
+            .get_matches(),
+    )?;
+    let dir = PathBuf::from(resolve_tenk_items_dir(
+        args.dir.as_ref().and_then(|p| p.to_str()),
+    ));
+    let output = PathBuf::from(resolve_tenk_audit_csv(
+        args.output.as_ref().and_then(|p| p.to_str()),
+    ));
+
+    // Build the ordered item-key list once (used by both header and rows).
+    let item_keys: Vec<String> = TenKItem::iter().map(|i| i.map_key()).collect();
+
+    // ── Build header ──────────────────────────────────────────────────────────
+
+    let header = header_columns(&item_keys);
+
+    // ── Collect files ─────────────────────────────────────────────────────────
+
+    let all_files = collect_files(&dir, &args.pattern)?;
+    let total = all_files.len();
+    info!(
+        "Found {} files under {:?} (pattern: {})",
+        total, dir, args.pattern
+    );
+
+    if total == 0 {
+        warn!("No files matched — nothing to do.");
+        return Ok(());
+    }
+
+    // ── Open output CSV ───────────────────────────────────────────────────────
+
+    let mut writer = WriterBuilder::new().has_headers(true).from_path(&output)?;
+    writer.write_record(&header)?;
+
+    // ── Process each file ─────────────────────────────────────────────────────
+
+    let mut errors = 0usize;
+
+    for (i, file_path) in all_files.iter().enumerate() {
+        let relative = file_path
+            .strip_prefix(&dir)
+            .unwrap_or(file_path)
+            .display()
+            .to_string();
+
+        info!("[{}/{}] {}", i + 1, total, relative);
+
+        let ticker = guess_ticker(file_path, &dir);
+        let accession = guess_accession(file_path);
+
+        // Skip known-binary exhibits without reading them into memory, plus a
+        // size guard against accidentally matched large binaries (max observed
+        // 10-K is ~89MB, so 100MB covers the full corpus).
+        let skip_reason = binary_skip_reason(file_path, 100 * 1024 * 1024);
+        if let Some(reason) = skip_reason {
+            let row = build_row(
+                &ticker, "", &accession, "", "", &item_keys, "", None, false, &reason,
+            );
+            writer.write_record(&row)?;
+            errors += 1;
+            continue;
+        }
+
+        let raw = match std::fs::read_to_string(file_path) {
+            Ok(text) => text,
+            Err(e) => {
+                let row = build_row(
+                    &ticker,
+                    "",
+                    &accession,
+                    "",
+                    "",
+                    &item_keys,
+                    "",
+                    None,
+                    false,
+                    &format!("read: {}", e),
+                );
+                writer.write_record(&row)?;
+                errors += 1;
+                continue;
+            }
+        };
+
+        let (sections_map, err_msg) = match extract_sections_from_document(&raw) {
+            Ok(sections) => {
+                let n = sections.keys().count();
+                info!("  {} — {} items", relative, n);
+
+                // Convert TenKSections → HashMap<String, String> for the
+                // generic audit library.
+                let map: HashMap<String, String> = sections
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), v.to_string()))
+                    .collect();
+                (Some(map), String::new())
+            }
+            Err(e) => {
+                let msg = format!("parse: {}", e);
+                error!("  {}: {}", relative, msg);
+                (None, msg)
+            }
+        };
+
+        let is_adequate = sections_map
+            .as_ref()
+            .map(|m| {
+                let item1_len = m.get("item_1").map(|s| s.len()).unwrap_or(0);
+                let item7_len = m.get("item_7").map(|s| s.len()).unwrap_or(0);
+                item1_len >= 400 && item7_len >= 2000
+            })
+            .unwrap_or(false);
+
+        let items_found = sections_map
+            .as_ref()
+            .map(|m| {
+                item_keys
+                    .iter()
+                    .filter(|key| m.contains_key(key.as_str()))
+                    .cloned()
+                    .collect::<Vec<_>>()
+                    .join(";")
+            })
+            .unwrap_or_default();
+
+        let row = build_row(
+            &ticker,
+            "",
+            &accession,
+            "",
+            "",
+            &item_keys,
+            &items_found,
+            sections_map.as_ref(),
+            is_adequate,
+            &err_msg,
+        );
+        writer.write_record(&row)?;
+
+        if sections_map.is_none() {
+            errors += 1;
+        }
+    }
+
+    writer.flush()?;
+
+    if errors > 0 {
+        warn!(
+            "Completed with {} error(s) — see 'error' column in output.",
+            errors
+        );
+    } else {
+        info!("Completed successfully — {} files parsed.", total);
+    }
+
+    Ok(())
+}
+
+/// Returns a skip reason when `path` is a known-binary exhibit or exceeds
+/// `max_bytes`; `None` means it is safe to `read_to_string`.
+fn binary_skip_reason(path: &std::path::Path, max_bytes: u64) -> Option<String> {
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase())
+        .unwrap_or_default();
+    const BINARY_EXTS: &[&str] = &[
+        "pdf", "png", "jpg", "jpeg", "gif", "xlsx", "zip", "js", "css",
+    ];
+    if BINARY_EXTS.contains(&ext.as_str()) {
+        return Some(format!("skip: binary .{} exhibit", ext));
+    }
+    if let Ok(meta) = std::fs::metadata(path)
+        && meta.len() > max_bytes
+    {
+        return Some(format!("skip: file too large ({} bytes)", meta.len()));
+    }
+    None
+}

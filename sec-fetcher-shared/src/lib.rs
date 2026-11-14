@@ -518,14 +518,85 @@ pub fn parse_period(period: &str) -> Result<Period, String> {
 /// `is_amendment` (index 6): `true` when the winning row for this period came from an
 /// amendment filing (i.e. the original `form` value ended with `/A`, e.g. `"10-Q/A"`).
 /// The `form` column itself is normalised to the base type (`"10-Q"`).
+// ── Individual metadata column name constants ───────────────────────────
+// Each constant names one of the metadata columns present in every per-symbol
+// US-GAAP CSV file.  The canonical array below is built from these so that
+// consumers can reference a specific column by its constant instead of by
+// hardcoding a string literal or relying on array position.
+pub const CSV_CANONICAL_ORDER: &str = "canonical_order";
+pub const CSV_FY: &str = "fy";
+pub const CSV_FP: &str = "fp";
+pub const CSV_PERIOD_END: &str = "period_end";
+pub const CSV_FILED: &str = "filed";
+pub const CSV_FORM: &str = "form";
+pub const CSV_IS_AMENDMENT: &str = "is_amendment";
+pub const CSV_ACCN: &str = "accn";
+pub const CSV_FILING_URL: &str = "filing_url";
+
 pub const US_GAAP_CSV_META_COLUMNS: &[&str] = &[
-    "canonical_order",
-    "fy",
-    "fp",
-    "period_end",
-    "filed",
-    "form",
-    "is_amendment",
-    "accn",
-    "filing_url",
+    CSV_CANONICAL_ORDER,
+    CSV_FY,
+    CSV_FP,
+    CSV_PERIOD_END,
+    CSV_FILED,
+    CSV_FORM,
+    CSV_IS_AMENDMENT,
+    CSV_ACCN,
+    CSV_FILING_URL,
 ];
+
+/// Single unified root for everything this workspace writes: repo-relative
+/// `./data`. Bulk outputs live under it: `data/latest-us-gaap/`,
+/// `data/tenk_items/`.
+/// Override per-run with explicit CLI args (`--output-dir`); no env keys.
+pub const DEFAULT_DATA_DIR: &str = "data";
+/// Bulk output leaf under the home.
+pub const BULK_OUTPUT_LEAF: &str = "latest-us-gaap";
+/// 10-K raw document corpus leaf under the home.
+pub const TENK_ITEMS_LEAF: &str = "tenk_items";
+/// 10-K parser audit CSV filename under the home.
+pub const TENK_AUDIT_FILE: &str = "tenk_audit.csv";
+/// HTTP/file cache leaf under the home.
+pub const CACHE_LEAF: &str = "cache";
+
+/// Resolves the single project data directory: always repo-relative `./data`.
+/// Use an explicit `--output-dir` arg for any other location.
+pub fn resolve_data_root() -> std::path::PathBuf {
+    std::path::PathBuf::from(DEFAULT_DATA_DIR)
+}
+
+/// Resolves the bulk output directory: explicit `--output-dir` wins, else
+/// `data/latest-us-gaap`.
+pub fn resolve_data_dir(explicit: Option<&str>) -> String {
+    if let Some(e) = explicit {
+        return e.to_string();
+    }
+    resolve_data_root()
+        .join(BULK_OUTPUT_LEAF)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the 10-K raw corpus directory: explicit `--output-dir` wins,
+/// else `data/tenk_items`.
+pub fn resolve_tenk_items_dir(explicit: Option<&str>) -> String {
+    if let Some(e) = explicit {
+        return e.to_string();
+    }
+    resolve_data_root()
+        .join(TENK_ITEMS_LEAF)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the 10-K parser audit CSV path: explicit `--output` wins,
+/// else `data/tenk_audit.csv`.
+pub fn resolve_tenk_audit_csv(explicit: Option<&str>) -> String {
+    if let Some(e) = explicit {
+        return e.to_string();
+    }
+    resolve_data_root()
+        .join(TENK_AUDIT_FILE)
+        .to_string_lossy()
+        .into_owned()
+}

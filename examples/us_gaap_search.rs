@@ -7,15 +7,15 @@
 //! This is useful for quickly surveying what values a particular GAAP concept
 //! takes across different SEC filers (e.g. `Assets`, `Revenues`, `NetIncomeLoss`).
 //!
-//! The default input directory is `data/14-mar-2026-us-gaap`, which is the
-//! bulk GAAP dataset produced by `pull-us-gaap-bulk`.
+//! The default input directory is `data/EXAMPLE-us-gaap`.  Replace this with
+//! the output directory from a `pull-us-gaap-bulk` run.
 //!
 //! # Usage
 //!
 //! ```text
 //! cargo run --example us_gaap_search -- Assets
 //! cargo run --example us_gaap_search -- Revenues --max-values 5
-//! cargo run --example us_gaap_search -- NetIncomeLoss --dir data/14-mar-2026-us-gaap
+//! cargo run --example us_gaap_search -- NetIncomeLoss --dir data/EXAMPLE-us-gaap
 //! ```
 
 use clap::Parser;
@@ -25,8 +25,6 @@ use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const DEFAULT_DATA_DIR: &str = "data/14-mar-2026-us-gaap";
-
 #[derive(Parser)]
 #[command(about = "Search US GAAP CSV files for rows containing a given XBRL tag")]
 struct Args {
@@ -34,8 +32,8 @@ struct Args {
     tag: String,
 
     /// Directory of US GAAP CSV files
-    #[arg(long, default_value = DEFAULT_DATA_DIR)]
-    dir: String,
+    #[arg(long, short = 'd')]
+    dir: PathBuf,
 
     /// Maximum values to display per file (0 = no limit)
     #[arg(long, default_value_t = 20)]
@@ -71,11 +69,10 @@ impl fmt::Display for TagMatch {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    let data_dir = Path::new(&args.dir);
 
     let mut matches: Vec<TagMatch> = Vec::new();
 
-    for entry in fs::read_dir(data_dir)? {
+    for entry in fs::read_dir(&args.dir)? {
         let entry = entry?;
         let path = entry.path();
 

@@ -86,12 +86,11 @@ fn test_write_to_csv_creates_file() {
 
     let temp_dir = std::env::temp_dir();
     let file_path = temp_dir.join("test_vec_ext_output.csv");
-    let path_str = file_path.to_str().unwrap();
 
     // Remove if left over from a previous failed run
     let _ = fs::remove_file(&file_path);
 
-    records.write_to_csv(path_str).unwrap();
+    records.write_to_csv(&file_path).unwrap();
 
     let contents = fs::read_to_string(&file_path).unwrap();
     assert!(contents.contains("name,value"));
@@ -106,12 +105,11 @@ fn test_write_to_csv_empty_vector() {
     let v: Vec<Record> = vec![];
     let temp_dir = std::env::temp_dir();
     let file_path = temp_dir.join("test_vec_ext_empty.csv");
-    let path_str = file_path.to_str().unwrap();
 
     let _ = fs::remove_file(&file_path);
 
     // Should succeed without writing anything
-    v.write_to_csv(path_str).unwrap();
+    v.write_to_csv(&file_path).unwrap();
 
     // File won't exist since nothing was written
     assert!(!file_path.exists());

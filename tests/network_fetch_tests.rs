@@ -250,7 +250,7 @@ fn test_parse_master_idx_basic() {
     assert_eq!(entries[0].form_type, "10-K");
     assert_eq!(entries[0].date_filed.to_string(), "2024-11-01");
     assert_eq!(
-        entries[0].filename,
+        entries[0].filename.as_os_str(),
         "edgar/data/320193/1234/primary-document.htm"
     );
 

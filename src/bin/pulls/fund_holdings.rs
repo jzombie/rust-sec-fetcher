@@ -148,7 +148,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             info!("Writing CSV...");
             let file_path = dir_path.join(format!("{}.csv", ticker));
-            if let Err(e) = investments.write_to_csv(file_path.to_str().unwrap()) {
+            if let Err(e) = investments.write_to_csv(&file_path) {
                 let msg = format!("Failed to write CSV for {}: {}", ticker, e);
                 error!("{}", msg);
                 error_log.push(msg);

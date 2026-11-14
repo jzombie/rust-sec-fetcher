@@ -349,7 +349,7 @@ fn test_app_version_from_env_var() {
     let client = SecClient::from_config_manager(&config_manager).unwrap();
     assert_eq!(
         client.get_user_agent(),
-        format!("sec-fetcher/9.9.9 (+test@example.com)")
+        "sec-fetcher/9.9.9 (+test@example.com)".to_string()
     );
 
     unsafe {
