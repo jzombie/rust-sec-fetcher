@@ -19,6 +19,20 @@ const MIN_ITEM7_CHARS: usize = 2_000;
 static IX_HEADER_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?is)<ix:header\b[^>]*>.*?</ix:header>").unwrap());
 
+/// Unwrap purely-presentational inline tags before html2text.
+///
+/// html2text's table layout wraps at inline-tag boundaries: a heading number
+/// split across tags (`<font>Item </font>1.` inside a `<td>`, as emitted by
+/// several EDGAR agents) renders as two table rows — `Item  │Business` /
+/// `1.    │` — so the `^ITEM` heading regex never matches and the whole
+/// section is lost (e.g. ABUS 2014 10-K misses Item 1 entirely while Item 1A
+/// onward parses fine). Merging the fragments into one text run renders the
+/// heading on a single line. Only tags with no structural or link semantics
+/// are unwrapped; `<a>` is kept so TOC links retain their `[...]` brackets
+/// and stay ignored by the heading regex.
+static INLINE_PRESENTATIONAL_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)</?(?:font|b|strong|i|em|u|span|small)\b[^>]*>").unwrap());
+
 /// Strip remaining HTML / SGML tags (used only on the SGML plain-text path).
 static TAG_STRIP_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"<[^>]*>").unwrap());
 
@@ -310,20 +324,24 @@ fn html_to_plain(raw: &str) -> Result<String, Html2TextPanic> {
         // Kept as `Cow` — pre-iXBRL filings have no header, so borrowing
         // avoids an 89MB-class heap copy before we even start.
         let no_xbrl = IX_HEADER_RE.replace_all(raw, "");
-        // Very large filings overflow html2text's recursion — tag-strip them
-        // instead. Width 1_000_000 below prevents html2text from wrapping
-        // long lines, which would break the `^` anchors used by the
-        // item-heading regex.
+        // Size-gate on the pre-unwrap length: unwrapping first would both
+        // allocate a multi-megabyte copy and shrink tag-dense filings below
+        // the threshold, routing them back into html2text's recursion. The
+        // tag-strip path removes all tags anyway, so it needs no unwrap.
         if no_xbrl.len() > LARGE_FILE_BYTES {
             let stripped = tag_strip_block_aware(&no_xbrl);
             return Ok(decode_heading_entities(&stripped).into_owned());
         }
+        // Unwrap presentational inline tags so headings split across them
+        // (`<font>Item </font>1.`) render on one table line. Applied on the
+        // `Cow` to avoid copying when no such tags exist.
+        let merged = INLINE_PRESENTATIONAL_RE.replace_all(&no_xbrl, "");
         // Fall back to tag-stripping when html2text panics on malformed
         // markup (e.g. ADMT/0001188112-10-001713) instead of erroring out.
-        match html2text_to_plain(&no_xbrl) {
+        match html2text_to_plain(&merged) {
             Ok(plain) => Ok(plain),
             Err(_) => {
-                let stripped = tag_strip_block_aware(&no_xbrl);
+                let stripped = tag_strip_block_aware(&merged);
                 Ok(decode_heading_entities(&stripped).into_owned())
             }
         }
@@ -761,6 +779,32 @@ mod tests {
         assert!(s.item1().is_some());
         assert!(s.item7().is_some());
         assert!(!s.item7().unwrap().contains("DRAFT"));
+    }
+
+    #[test]
+    fn inline_tag_split_heading_recovered() {
+        // Several EDGAR agents split the heading number across inline tags
+        // (`<font>Item </font>1.`). Inside a table cell html2text wraps at
+        // the tag boundary, rendering `Item  │Business` / `1.    │` on two
+        // rows so the `^ITEM` regex misses the section entirely (ABUS 2014
+        // 10-K lost Item 1 while Item 1A onward parsed). Unwrapping
+        // presentational tags pre-html2text keeps the heading on one line.
+        let raw = format!(
+            "<html><body><table><tr><td><div><font size=\"2\"><font><font>Item </font>1.</font></font></div></td><td><div>Business</div></td></tr></table><p>{}</p><table><tr><td><div><strong>Item 1A.</strong></div></td><td><div>Risk Factors</div></td></tr></table><p>{}</p><p>ITEM 2. PROPERTIES</p><p>{}</p></body></html>",
+            "Business. ".repeat(50),
+            "Risk. ".repeat(70),
+            "Properties. ".repeat(50),
+        );
+        let plain = html_to_plain(&raw).unwrap();
+        assert!(
+            plain
+                .lines()
+                .any(|l| l.contains("Item 1.") && l.contains("Business")),
+            "split heading not on one line: {plain:?}"
+        );
+        let s = extract_sections_from_document(&raw).unwrap();
+        assert!(s.item1().is_some(), "item_1 lost to inline-tag split");
+        assert!(s.item1a().is_some());
     }
 
     #[test]

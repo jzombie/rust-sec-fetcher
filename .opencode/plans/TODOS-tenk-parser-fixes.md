@@ -63,3 +63,21 @@ corpus `data/tenk_items` 223G / 97,504 files / 5,653 tickers):
 - Next parser work: slice the 558 near-full threshold failures first
   (headings found, body short), then `item_7`-only with huge `i7`
   (missing `item_1`, e.g. ABCB/ACFN/ACI), then empties.
+
+5. Inline-tag split headings — html2text wraps table cells at inline-tag
+   boundaries, so `<font>Item </font>1.` (several EDGAR agents) rendered as
+   `Item  │Business` / `1.    │` on two rows and the section was lost: ABUS
+   2014 10-K had Item 1A–14 but no Item 1 (inadequate). Fix: unwrap purely
+   presentational inline tags (`font/b/strong/i/em/u/span/small`, never `a`
+   so TOC links keep `[...]` brackets) pre-html2text; new regression test
+   `inline_tag_split_heading_recovered`. Verified: ABUS flipped to adequate
+   (item_1 114k chars, 17 items); ABCB still inadequate (genuine 10-K/A,
+   Item 7 only — correct); ADM still inadequate (incorporate-by-reference
+   stub, `i7=798`, no standalone MD&A heading — correct). BPOP stable
+   (9 items adequate; char counts drift slightly from re-wrapped table
+   borders). Corpus-wide opportunity: 576 rows have `item_1a` but no
+   `item_1` (all inadequate) — re-audit to measure recovery. Full workspace
+   suite green (158 lib). (Review: size-gate runs on the pre-unwrap length —
+   unwrapping first allocated a full copy and could shrink tag-dense filings
+   below the 20MB guard back into html2text; tag-strip needs no unwrap.
+   Verified BPOP byte-identical after reorder: i1 117841, i7 362482.)
