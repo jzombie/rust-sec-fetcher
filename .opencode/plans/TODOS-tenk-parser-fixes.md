@@ -41,3 +41,25 @@ Review round 2 (all applied + verified, full workspace suite green):
   the filing loop (was O(K·N) scans with mid-loop rmdir/mkdir churn).
 - Review's block-tag rewrite had a real application bug (prefix-only match
   left attribute junk, BPOP → 0 items); fixed to consume whole tags.
+
+Baseline scores — 2026-11-14 audit run (`data/tenk_audit.csv`, 48M, Nov 14 03:13;
+corpus `data/tenk_items` 223G / 97,504 files / 5,653 tickers):
+- Rows: 97,503 (prior 09:57 run: 97,496; +7). `cik`/`filed_date`/`form_type`
+  all blank (offline audit limitation — back up CSV before re-audit).
+- Adequate: 83,328 (85.5%). Prior: 82,826. Inadequate: 14,175.
+- Errors: 3 total, all `skip: binary` (prior: 464 = 451 `too_large` + 10
+  `parse` + 3 `binary`). Zero `read:` errors — no truncation signal.
+  Large-file guard (100MB) + tag-strip bypass + panic fallback cleared the
+  backlog.
+- Inadequate-no-error (`is_adequate=false AND error=''`): 14,172. Empty
+  `items_found`: 4,660 total (4,657 inadequate-no-error + 3 binary).
+- Top inadequate-no-error `items_found` patterns: `(empty)` 4,657;
+  `item_10;item_11;item_12;item_13;item_14` 1,973 (Part-III-only, amendment
+  excerpts); `item_8` 371; `item_7` 367; `item_9a` 345;
+  `item_10..item_16` 258; `item_10;item_11;item_12` 231;
+  near-full (≥16 items, e.g. `item_1..item_14`) 558 — mostly threshold
+  failures (`i7` ~500-800 chars, e.g. ADM 05/06; or missing `item_1`,
+  e.g. ABUS 15-001398).
+- Next parser work: slice the 558 near-full threshold failures first
+  (headings found, body short), then `item_7`-only with huge `i7`
+  (missing `item_1`, e.g. ABCB/ACFN/ACI), then empties.
