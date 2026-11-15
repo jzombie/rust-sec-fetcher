@@ -42,17 +42,23 @@ Review round 2 (all applied + verified, full workspace suite green):
 - Review's block-tag rewrite had a real application bug (prefix-only match
   left attribute junk, BPOP → 0 items); fixed to consume whole tags.
 
-Baseline scores — 2026-11-14 audit run (`data/tenk_audit.csv`, 48M, Nov 14 03:13;
-corpus `data/tenk_items` 223G / 97,504 files / 5,653 tickers):
-- Rows: 97,503 (prior 09:57 run: 97,496; +7). `cik`/`filed_date`/`form_type`
-  all blank (offline audit limitation — back up CSV before re-audit).
-- Adequate: 83,328 (85.5%). Prior: 82,826. Inadequate: 14,175.
-- Errors: 3 total, all `skip: binary` (prior: 464 = 451 `too_large` + 10
-  `parse` + 3 `binary`). Zero `read:` errors — no truncation signal.
-  Large-file guard (100MB) + tag-strip bypass + panic fallback cleared the
-  backlog.
-- Inadequate-no-error (`is_adequate=false AND error=''`): 14,172. Empty
-  `items_found`: 4,660 total (4,657 inadequate-no-error + 3 binary).
+Baseline scores — 2026-11-14 audit run (`data/tenk_audit.csv`, 48M, Nov 14 15:36;
+corpus `data/tenk_items` 223G / 97,504 files / 5,653 tickers; parser includes
+inline-tag unwrap fix, ABUS-class recovery confirmed in-run):
+- Rows: 97,503 (unchanged corpus — pure parser-effect read). `cik`/`filed_date`/
+  `form_type` all blank (offline audit limitation — back up CSV before re-audit).
+- Adequate: 83,381 (85.5%; +53 vs pre-fix 83,328). Inadequate: 14,122.
+- Errors: 3 total, all `skip: binary` (zero `read:` errors — no truncation signal).
+- Inadequate-no-error (`is_adequate=false AND error=''`): 14,119 (−53).
+  Empty `items_found`: 4,652 (−5).
+- `item_1a`-without-`item_1` signature: 569 (−7 recovered, all still inadequate).
+  Near-full (≥16 items) inadequate-no-error: 538 (−20).
+- Slice detail (15:36 run): of 538 near-full, 452 have 0<`i7`<2000 (short-Item-7
+  threshold failures — stub vs truncation TBD), 54 missing `item_1`, 42 missing
+  `item_7`; most-missed keys are `item_15`/`item_16` (adequacy-irrelevant).
+  `item_7`-only singletons (367): 361 have adequate-sized `i7` — prime suspect
+  for missed-Item-1 recovery. `item_8`-only (371) / `item_9a`-only (345) have no
+  adequate body — likely genuine stubs/amendments.
 - Top inadequate-no-error `items_found` patterns: `(empty)` 4,657;
   `item_10;item_11;item_12;item_13;item_14` 1,973 (Part-III-only, amendment
   excerpts); `item_8` 371; `item_7` 367; `item_9a` 345;
