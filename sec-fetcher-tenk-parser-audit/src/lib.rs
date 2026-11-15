@@ -1,12 +1,13 @@
 //! Shared utilities for auditing the 10-K section parser.
 //!
-//! Provides CSV row construction, file discovery, path heuristics, and text
-//! helpers used by `tenk-parser-audit` (which runs the parser on local files).
+//! Provides CSV row construction, file discovery, path heuristics, manifest
+//! loading, and text helpers used by `tenk-parser-audit` (which runs the
+//! parser on local files).
 //!
-//! This library intentionally has **zero** external dependencies — it works
-//! with plain [`HashMap`]s and [`String`]s so that any crate (including
-//! `sec-fetcher`) can depend on it without creating circular dependency
-//! issues.
+//! This library keeps external dependencies to a minimum — plain
+//! [`HashMap`]s and [`String`]s throughout, plus the `csv` crate for
+//! manifest parsing — so that any crate (including `sec-fetcher`) can depend
+//! on it without creating circular dependency issues.
 
 use std::collections::HashMap;
 use std::io;
@@ -193,4 +194,109 @@ pub fn guess_accession(file_path: &Path) -> String {
         .and_then(|s| s.to_str())
         .map(|s| s.to_string())
         .unwrap_or_default()
+}
+
+// ── Accession→form manifest ───────────────────────────────────────────────────
+
+/// One manifest record: `(cik, filed_date, form_type)`.
+pub type ManifestEntry = (String, String, String);
+
+/// Load the accession→form manifest written by `pull-tenk-items`
+/// (`.tenk_manifest.csv`), keyed by `(ticker, accession_number)`.
+///
+/// Parsed with the `csv` crate (not line-splitting): fields may contain
+/// quoted commas, quotes, or embedded newlines. Returns an empty map when
+/// the file is missing or unreadable — callers fall back to blank `cik` /
+/// `filed_date` / `form_type` columns, preserving the old offline behavior.
+/// Malformed lines are skipped. Only the first five columns are read; extra
+/// columns are ignored.
+pub fn load_manifest(path: &Path) -> HashMap<(String, String), ManifestEntry> {
+    let mut map = HashMap::new();
+    let Ok(mut rdr) = csv::ReaderBuilder::new()
+        .has_headers(true)
+        .flexible(true)
+        .from_path(path)
+    else {
+        return map;
+    };
+    for record in rdr.records().flatten() {
+        if record.len() < 5 {
+            continue;
+        }
+        map.insert(
+            (record[0].to_string(), record[2].to_string()),
+            (
+                record[1].to_string(),
+                record[3].to_string(),
+                record[4].to_string(),
+            ),
+        );
+    }
+    map
+}
+
+#[cfg(test)]
+mod manifest_tests {
+    use super::*;
+
+    #[test]
+    fn missing_manifest_loads_empty() {
+        let map = load_manifest(Path::new("/nonexistent-xyz/.tenk_manifest.csv"));
+        assert!(map.is_empty());
+    }
+
+    #[test]
+    fn manifest_lookup_by_ticker_and_accession() {
+        let dir = std::env::temp_dir().join("tenk_audit_manifest_test");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join(".tenk_manifest.csv");
+        std::fs::write(
+            &path,
+            "ticker,cik,accession,filed_date,form,primary_document\n\
+             ADM,7084,0000007084-05-000350,2005-08-12,10-K,adm10kfy05.htm\n\
+             ABCB,70732,0001193125-07-251748,2007-11-29,10-K/A,d10ka.htm\n",
+        )
+        .unwrap();
+        let map = load_manifest(&path);
+        assert_eq!(map.len(), 2);
+        assert_eq!(
+            map[&("ADM".to_string(), "0000007084-05-000350".to_string())],
+            (
+                "7084".to_string(),
+                "2005-08-12".to_string(),
+                "10-K".to_string()
+            )
+        );
+        assert!(
+            map[&("ABCB".to_string(), "0001193125-07-251748".to_string())]
+                .2
+                .ends_with("/A"),
+            "amendment form must be visible for scoring-time filtering"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn manifest_survives_quoted_multiline_field() {
+        // A line-splitting parser fractures this record and drops it; the
+        // `csv` reader must decode the embedded newline inside quotes.
+        let dir = std::env::temp_dir().join("tenk_audit_manifest_multiline");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join(".tenk_manifest.csv");
+        std::fs::write(
+            &path,
+            "ticker,cik,accession,filed_date,form,primary_document\n\
+             ADM,7084,0000007084-05-000350,2005-08-12,10-K,\"doc\nname.htm\"\n",
+        )
+        .unwrap();
+        let map = load_manifest(&path);
+        assert_eq!(map.len(), 1);
+        assert_eq!(
+            map[&("ADM".to_string(), "0000007084-05-000350".to_string())].2,
+            "10-K"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

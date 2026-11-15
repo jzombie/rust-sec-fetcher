@@ -87,3 +87,20 @@ inline-tag unwrap fix, ABUS-class recovery confirmed in-run):
    unwrapping first allocated a full copy and could shrink tag-dense filings
    below the 20MB guard back into html2text; tag-strip needs no unwrap.
    Verified BPOP byte-identical after reorder: i1 117841, i7 362482.)
+
+6. Accession→form manifest — `pull-tenk-items` now maintains
+   `data/tenk_items/.tenk_manifest.csv`
+   (`ticker,cik,accession,filed_date,form,primary_document`), one row per
+   filing in every fetched filing list including skipped/existing files.
+   Keyed merge (no dupes on rerun; partial runs keep old rows); hidden
+   dotfile so the audit walk never parses it as a filing. `tenk-parser-audit`
+   loads it and fills the previously-blank `cik`/`filed_date`/`form_type`
+   columns (blanks preserved when no manifest). Full suite green; smoke test
+   on 1 real file tags correctly and skips the manifest. NOT YET DEPLOYED TO
+   CORPUS: run `pull-tenk-items --release` once (all SKIP, no re-download) to
+   write the manifest, then `tenk-parser-audit --release` to tag all 97,503
+   rows. Back up `data/tenk_audit.csv` first. (Review: CSV via `csv` crate both
+   sides — no hand-rolled parsers, multiline fields safe; atomic tmp+rename
+   writes; 250-ticker checkpoints so interrupts keep progress; manifest keys
+   sanitized exactly like disk paths so slash-tickers e.g. BF/A match.
+   Verified BF_A end-to-end.)

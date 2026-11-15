@@ -17,7 +17,7 @@ publish = false
 name = "tenk-parser-audit"
 path = "src/bin/tenk_parser_audit.rs"
 
-# The library has zero external dependencies so that sec-fetcher (or any
+# The library depends only on `csv` so that sec-fetcher (or any
 # other crate) can depend on it without circular-dependency issues.
 # The binary below additionally needs sec-fetcher at link time.
 

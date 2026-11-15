@@ -556,6 +556,12 @@ pub const BULK_OUTPUT_LEAF: &str = "latest-us-gaap";
 pub const TENK_ITEMS_LEAF: &str = "tenk_items";
 /// 10-K parser audit CSV filename under the home.
 pub const TENK_AUDIT_FILE: &str = "tenk_audit.csv";
+/// 10-K accession→form manifest filename inside the corpus dir.
+///
+/// Hidden (dotfile) on purpose: `tenk-parser-audit` walks the corpus
+/// recursively and would otherwise parse the manifest itself as a filing.
+/// Its collector already skips dotfiles.
+pub const TENK_MANIFEST_FILE: &str = ".tenk_manifest.csv";
 /// HTTP/file cache leaf under the home.
 pub const CACHE_LEAF: &str = "cache";
 
@@ -597,6 +603,15 @@ pub fn resolve_tenk_audit_csv(explicit: Option<&str>) -> String {
     }
     resolve_data_root()
         .join(TENK_AUDIT_FILE)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the 10-K accession→form manifest CSV path: explicit items-dir
+/// wins, else `data/tenk_items/.tenk_manifest.csv`.
+pub fn resolve_tenk_manifest_csv(explicit_items_dir: Option<&str>) -> String {
+    std::path::PathBuf::from(resolve_tenk_items_dir(explicit_items_dir))
+        .join(TENK_MANIFEST_FILE)
         .to_string_lossy()
         .into_owned()
 }

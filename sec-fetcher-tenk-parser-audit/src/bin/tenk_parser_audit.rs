@@ -22,16 +22,17 @@
 //! # Output columns
 //!
 //! Same columns originally produced by the old combined `pull-tenk-audit`
-//! binary, except that `cik`, `filed_date`, and `form_type` are always empty
-//! (that information is not embedded in the raw file on disk).
+//! binary, except that `cik`, `filed_date`, and `form_type` come from the
+//! `.tenk_manifest.csv` written by `pull-tenk-items` (blank when the audit
+//! runs against a directory with no manifest).
 //!
 //! | Column | Description |
 //! |--------|-------------|
 //! | `ticker` | Ticker symbol (from path when available) |
-//! | `cik` | Always empty |
+//! | `cik` | CIK from the pull manifest (blank when no manifest) |
 //! | `accession_number` | Accession number (from filename when available) |
-//! | `filed_date` | Always empty |
-//! | `form_type` | Always empty |
+//! | `filed_date` | Filing date from the pull manifest (blank when no manifest) |
+//! | `form_type` | Form from the pull manifest, e.g. `10-K` or `10-K/A` (blank when no manifest) |
 //! | `items_found` | Semicolon-separated list of item keys extracted |
 //! | `item_1_chars` ... `item_16_chars` | Character count for every `TenKItem` |
 //! | `error` | Non-empty when the parse step failed |
@@ -40,10 +41,13 @@ use clap::{CommandFactory, FromArgMatches, Parser};
 use csv::WriterBuilder;
 use sec_fetcher::{
     enums::TenKItem,
-    parsers::{extract_sections_from_document, resolve_tenk_audit_csv, resolve_tenk_items_dir},
+    parsers::{
+        extract_sections_from_document, resolve_tenk_audit_csv, resolve_tenk_items_dir,
+        resolve_tenk_manifest_csv,
+    },
 };
 use sec_fetcher_tenk_parser_audit::{
-    build_row, collect_files, guess_accession, guess_ticker, header_columns,
+    build_row, collect_files, guess_accession, guess_ticker, header_columns, load_manifest,
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -113,6 +117,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Build the ordered item-key list once (used by both header and rows).
     let item_keys: Vec<String> = TenKItem::iter().map(|i| i.map_key()).collect();
 
+    // ── Load the accession→form manifest (when present) ─────────────────────
+    //
+    // Written by `pull-tenk-items` into the corpus root. Absent for
+    // hand-assembled directories — rows then keep blank cik/filed_date/
+    // form_type, the old offline behavior.
+    let dir_str = dir.to_string_lossy().into_owned();
+    let manifest_path = resolve_tenk_manifest_csv(Some(&dir_str));
+    let manifest = load_manifest(std::path::Path::new(&manifest_path));
+    info!(
+        "Manifest: {} tagged filing(s) loaded from {:?}",
+        manifest.len(),
+        manifest_path
+    );
+
     // ── Build header ──────────────────────────────────────────────────────────
 
     let header = header_columns(&item_keys);
@@ -152,13 +170,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let ticker = guess_ticker(file_path, &dir);
         let accession = guess_accession(file_path);
 
+        // Tag from the pull manifest when available; blanks otherwise.
+        let (cik, filed_date, form_type) = manifest
+            .get(&(ticker.clone(), accession.clone()))
+            .cloned()
+            .unwrap_or_default();
+
         // Skip known-binary exhibits without reading them into memory, plus a
         // size guard against accidentally matched large binaries (max observed
         // 10-K is ~89MB, so 100MB covers the full corpus).
         let skip_reason = binary_skip_reason(file_path, 100 * 1024 * 1024);
         if let Some(reason) = skip_reason {
             let row = build_row(
-                &ticker, "", &accession, "", "", &item_keys, "", None, false, &reason,
+                &ticker,
+                &cik,
+                &accession,
+                &filed_date,
+                &form_type,
+                &item_keys,
+                "",
+                None,
+                false,
+                &reason,
             );
             writer.write_record(&row)?;
             errors += 1;
@@ -170,10 +203,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Err(e) => {
                 let row = build_row(
                     &ticker,
-                    "",
+                    &cik,
                     &accession,
-                    "",
-                    "",
+                    &filed_date,
+                    &form_type,
                     &item_keys,
                     "",
                     None,
@@ -229,10 +262,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let row = build_row(
             &ticker,
-            "",
+            &cik,
             &accession,
-            "",
-            "",
+            &filed_date,
+            &form_type,
             &item_keys,
             &items_found,
             sections_map.as_ref(),

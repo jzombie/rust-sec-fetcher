@@ -8,6 +8,14 @@
 //! amendment files. A plain pull never deletes anything on disk.
 //! Documents are saved to `<output_dir>/<TICKER>/<ACCESSION>.<ext>`.
 //!
+//! A filing manifest (`.tenk_manifest.csv`) is maintained inside the output
+//! directory: one `ticker,cik,accession,filed_date,form,primary_document` row
+//! per filing in every fetched filing list — including skipped and
+//! already-on-disk files. Reruns merge into it without duplicating, so a
+//! resume pass over an existing corpus backfills the manifest with no
+//! re-downloads. `tenk-parser-audit` reads it to tag `cik`, `filed_date`,
+//! and `form_type` on each audit row.
+//!
 //! This binary does **no parsing or audit-CSV generation** — it only pulls
 //! raw documents.  Run `tenk-parser-audit` afterwards to evaluate the parser
 //! against the downloaded corpus.
@@ -44,6 +52,24 @@ static GLOBAL_TICKERS_ERR: AtomicUsize = AtomicUsize::new(0);
 static GLOBAL_DOWNLOADED: AtomicUsize = AtomicUsize::new(0);
 static GLOBAL_SKIPPED: AtomicUsize = AtomicUsize::new(0);
 static GLOBAL_FAILED: AtomicUsize = AtomicUsize::new(0);
+
+// ── Accession→form manifest ───────────────────────────────────────────────────
+//
+// One row per filing in every fetched filing list — including skipped and
+// already-on-disk files, since the rows come from the filing-list metadata,
+// not from downloads. Merged key-first into the existing manifest (when
+// present) so reruns and partial runs never duplicate or lose rows.
+
+/// A single accession→form manifest record.
+#[derive(Clone, Debug)]
+struct ManifestRow {
+    ticker: String,
+    cik: String,
+    accession: String,
+    filed_date: String,
+    form: String,
+    primary_document: String,
+}
 
 // ── CLI ───────────────────────────────────────────────────────────────────────
 
@@ -152,6 +178,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let idx = ticker_index.fetch_add(1, Ordering::Relaxed);
                 async move {
                     let ticker = entry.symbol.to_string();
+                    let cik_str = entry.cik.to_string();
                     let ticker_idx = idx + 1; // 1-based for display
 
                     // ── Per-ticker counters ───────────────────────────────────
@@ -171,9 +198,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 "[{ticker}] [{ticker_idx}/{total_tickers}] filing list failed: {e}"
                             );
                             GLOBAL_TICKERS_ERR.fetch_add(1, Ordering::Relaxed);
-                            return;
+                            return Vec::new();
                         }
                     };
+
+                    // Manifest rows come from the filing-list metadata, so
+                    // skipped and already-on-disk filings are recorded too —
+                    // that is what lets the offline audit tag amendments.
+                    // Keys are sanitized exactly like the on-disk paths so
+                    // the auditor's path-derived lookups match.
+                    let manifest_rows: Vec<ManifestRow> = filings
+                        .iter()
+                        .map(|filing| ManifestRow {
+                            ticker: sanitize_dir_name(&ticker),
+                            cik: cik_str.clone(),
+                            accession: sanitize_dir_name(
+                                &filing.accession_number.to_string(),
+                            ),
+                            filed_date: filing
+                                .filing_date
+                                .map(|d| d.to_string())
+                                .unwrap_or_default(),
+                            form: filing.form.clone(),
+                            primary_document: filing.primary_document.display().to_string(),
+                        })
+                        .collect();
 
                     let total_filings = filings.len();
                     info!(
@@ -293,11 +342,47 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                          {skipped} skipped, \
                          {failed} failed"
                     );
+
+                    manifest_rows
                 }
             })
             .buffer_unordered(max_concurrent);
 
-        while stream.next().await.is_some() {}
+        let mut fresh_rows: Vec<ManifestRow> = Vec::new();
+        let mut tickers_since_flush = 0usize;
+        let dir_str = output_dir.to_string_lossy().into_owned();
+        let manifest_path = std::path::PathBuf::from(
+            sec_fetcher_shared::resolve_tenk_manifest_csv(Some(&dir_str)),
+        );
+        while let Some(rows) = stream.next().await {
+            fresh_rows.extend(rows);
+            tickers_since_flush += 1;
+            // Checkpoint so an interrupted run keeps rows for all completed
+            // tickers instead of losing the whole run's manifest progress.
+            if tickers_since_flush >= 250 && !fresh_rows.is_empty() {
+                let batch = std::mem::take(&mut fresh_rows);
+                if let Err(e) = merge_manifest_rows(&manifest_path, batch) {
+                    error!("Manifest {:?} checkpoint write failed: {e}", manifest_path);
+                }
+                tickers_since_flush = 0;
+            }
+        }
+
+        // ── Merge + write the accession→form manifest ───────────────────────
+        //
+        // Keyed merge into any existing manifest: reruns overwrite identical
+        // rows, partial runs keep rows for tickers that failed this time.
+        // The final merge also persists whatever the checkpoints left behind.
+        match merge_manifest_rows(&manifest_path, std::mem::take(&mut fresh_rows)) {
+            Ok((total, fresh)) => info!(
+                "Manifest {:?}: {} filing(s) recorded ({} fresh this run)",
+                manifest_path, total, fresh
+            ),
+            Err(e) => error!(
+                "Manifest {:?} could not be written: {e} (corpus is unaffected)",
+                manifest_path
+            ),
+        }
     };
 
     producer.await;
@@ -329,4 +414,220 @@ fn sanitize_dir_name(name: &str) -> String {
             c => c,
         })
         .collect()
+}
+
+// ── Manifest read / merge / write ─────────────────────────────────────────────
+//
+// CSV is handled with the `csv` crate, not hand-rolled parsing: fields are
+// quoted on write when they contain commas, quotes, or newlines, and the
+// reader decodes them back. A line-splitting parser would corrupt records
+// with embedded newlines.
+
+const MANIFEST_HEADER: [&str; 6] = [
+    "ticker",
+    "cik",
+    "accession",
+    "filed_date",
+    "form",
+    "primary_document",
+];
+
+/// Load an existing manifest into a map keyed by `(ticker, accession)`.
+/// Missing file → empty map. Malformed lines are skipped.
+fn load_manifest_map(
+    path: &std::path::Path,
+) -> std::collections::HashMap<(String, String), ManifestRow> {
+    let mut map = std::collections::HashMap::new();
+    let Ok(mut rdr) = csv::ReaderBuilder::new()
+        .has_headers(true)
+        .flexible(true)
+        .from_path(path)
+    else {
+        return map;
+    };
+    for record in rdr.records().flatten() {
+        if record.len() < 6 {
+            continue;
+        }
+        let key = (record[0].to_string(), record[2].to_string());
+        map.insert(
+            key,
+            ManifestRow {
+                ticker: record[0].to_string(),
+                cik: record[1].to_string(),
+                accession: record[2].to_string(),
+                filed_date: record[3].to_string(),
+                form: record[4].to_string(),
+                primary_document: record[5].to_string(),
+            },
+        );
+    }
+    map
+}
+
+/// Merge `fresh` rows into the manifest at `path` (keyed by
+/// `(ticker, accession)`, so reruns never duplicate) and write it back
+/// sorted for determinism. The write goes to a sibling temp file followed
+/// by an atomic rename, so a crash mid-write never truncates the existing
+/// manifest. Returns `(total_rows, fresh_rows)`.
+fn merge_manifest_rows(
+    path: &std::path::Path,
+    fresh: Vec<ManifestRow>,
+) -> std::io::Result<(usize, usize)> {
+    let mut map = load_manifest_map(path);
+    let fresh_count = fresh.len();
+    for row in fresh {
+        map.insert((row.ticker.clone(), row.accession.clone()), row);
+    }
+    let mut rows: Vec<&ManifestRow> = map.values().collect();
+    rows.sort_by(|a, b| (&a.ticker, &a.accession).cmp(&(&b.ticker, &b.accession)));
+    if let Some(parent) = path.parent()
+        && !parent.as_os_str().is_empty()
+    {
+        std::fs::create_dir_all(parent)?;
+    }
+    let tmp_path = path.with_extension("csv.tmp");
+    {
+        let mut wtr = csv::WriterBuilder::new()
+            .has_headers(true)
+            .from_path(&tmp_path)?;
+        wtr.write_record(MANIFEST_HEADER)?;
+        for r in &rows {
+            wtr.write_record([
+                &r.ticker,
+                &r.cik,
+                &r.accession,
+                &r.filed_date,
+                &r.form,
+                &r.primary_document,
+            ])?;
+        }
+        wtr.flush()?;
+    }
+    std::fs::rename(&tmp_path, path)?;
+    Ok((rows.len(), fresh_count))
+}
+
+#[cfg(test)]
+mod manifest_tests {
+    use super::*;
+
+    fn row(ticker: &str, acc: &str, form: &str) -> ManifestRow {
+        ManifestRow {
+            ticker: ticker.into(),
+            cik: "1".into(),
+            accession: acc.into(),
+            filed_date: "2024-01-01".into(),
+            form: form.into(),
+            primary_document: "doc.htm".into(),
+        }
+    }
+
+    #[test]
+    fn rerun_does_not_duplicate() {
+        let dir = std::env::temp_dir().join("tenk_manifest_test_dedupe");
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("manifest.csv");
+        let rows = vec![row("ADM", "0000007084-05-000350", "10-K")];
+        let (total, _) = merge_manifest_rows(&path, rows.clone()).unwrap();
+        assert_eq!(total, 1);
+        let (total2, _) = merge_manifest_rows(&path, rows).unwrap();
+        assert_eq!(total2, 1, "rerun must overwrite, not append");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn partial_run_keeps_old_rows() {
+        let dir = std::env::temp_dir().join("tenk_manifest_test_partial");
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("manifest.csv");
+        merge_manifest_rows(&path, vec![row("A", "acc-1", "10-K")]).unwrap();
+        let (total, _) = merge_manifest_rows(&path, vec![row("B", "acc-2", "10-K/A")]).unwrap();
+        assert_eq!(
+            total, 2,
+            "rows for tickers that failed this run must survive"
+        );
+        let map = load_manifest_map(&path);
+        assert_eq!(map[&("B".to_string(), "acc-2".to_string())].form, "10-K/A");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn missing_file_loads_empty() {
+        let map = load_manifest_map(std::path::Path::new("/nonexistent-xyz/manifest.csv"));
+        assert!(map.is_empty());
+    }
+
+    #[test]
+    fn csv_round_trip_with_comma_field() {
+        let dir = std::env::temp_dir().join("tenk_manifest_test_quote");
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("manifest.csv");
+        let mut r = row("A,B", "acc-1", "10-K");
+        r.primary_document = "doc,name.htm".into();
+        merge_manifest_rows(&path, vec![r]).unwrap();
+        let map = load_manifest_map(&path);
+        assert_eq!(map.len(), 1);
+        assert_eq!(
+            map[&("A,B".to_string(), "acc-1".to_string())].primary_document,
+            "doc,name.htm"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn csv_round_trip_with_multiline_field() {
+        // A line-splitting parser would fracture this record across two
+        // iterations and drop it; the `csv` reader must survive it.
+        let dir = std::env::temp_dir().join("tenk_manifest_test_multiline");
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("manifest.csv");
+        let mut r = row("A", "acc-1", "10-K");
+        r.primary_document = "line1\nline2".into();
+        merge_manifest_rows(&path, vec![r]).unwrap();
+        let map = load_manifest_map(&path);
+        assert_eq!(map.len(), 1);
+        assert_eq!(
+            map[&("A".to_string(), "acc-1".to_string())].primary_document,
+            "line1\nline2"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn keys_match_sanitized_disk_paths() {
+        // Tickers with path-unsafe chars (e.g. "BF/A") live on disk under
+        // sanitized names; manifest keys must use the same form or the
+        // auditor's path-derived lookup silently misses.
+        assert_eq!(sanitize_dir_name("BF/A"), "BF_A");
+        let dir = std::env::temp_dir().join("tenk_manifest_test_sanitize");
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("manifest.csv");
+        let r = ManifestRow {
+            ticker: sanitize_dir_name("BF/A"),
+            cik: "1".into(),
+            accession: sanitize_dir_name("0001-23-000001"),
+            filed_date: "2024-01-01".into(),
+            form: "10-K".into(),
+            primary_document: "doc.htm".into(),
+        };
+        merge_manifest_rows(&path, vec![r]).unwrap();
+        let map = load_manifest_map(&path);
+        assert!(map.contains_key(&("BF_A".to_string(), "0001-23-000001".to_string())));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn atomic_write_leaves_no_temp_file() {
+        let dir = std::env::temp_dir().join("tenk_manifest_test_atomic");
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("manifest.csv");
+        merge_manifest_rows(&path, vec![row("A", "acc-1", "10-K")]).unwrap();
+        assert!(path.is_file());
+        assert!(
+            !dir.join("manifest.csv.tmp").exists(),
+            "temp file must be renamed away"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }
