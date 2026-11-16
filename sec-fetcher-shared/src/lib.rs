@@ -562,6 +562,10 @@ pub const TENK_AUDIT_FILE: &str = "tenk_audit.csv";
 /// recursively and would otherwise parse the manifest itself as a filing.
 /// Its collector already skips dotfiles.
 pub const TENK_MANIFEST_FILE: &str = ".tenk_manifest.csv";
+/// 10-K accession→period join output filename under the home.
+pub const TENK_PERIODS_FILE: &str = "tenk_audit_periods.csv";
+/// Per-ticker fundamentals leaf under the bulk output dir.
+pub const FUNDAMENTALS_LEAF: &str = "us-gaap-fundamentals";
 /// HTTP/file cache leaf under the home.
 pub const CACHE_LEAF: &str = "cache";
 
@@ -612,6 +616,27 @@ pub fn resolve_tenk_audit_csv(explicit: Option<&str>) -> String {
 pub fn resolve_tenk_manifest_csv(explicit_items_dir: Option<&str>) -> String {
     std::path::PathBuf::from(resolve_tenk_items_dir(explicit_items_dir))
         .join(TENK_MANIFEST_FILE)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the per-ticker fundamentals directory: explicit bulk-dir wins,
+/// else `data/latest-us-gaap/us-gaap-fundamentals`.
+pub fn resolve_fundamentals_dir(explicit_bulk_dir: Option<&str>) -> String {
+    std::path::PathBuf::from(resolve_data_dir(explicit_bulk_dir))
+        .join(FUNDAMENTALS_LEAF)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the 10-K period-join output CSV path: explicit `--output` wins,
+/// else `data/tenk_audit_periods.csv`.
+pub fn resolve_tenk_periods_csv(explicit: Option<&str>) -> String {
+    if let Some(e) = explicit {
+        return e.to_string();
+    }
+    resolve_data_root()
+        .join(TENK_PERIODS_FILE)
         .to_string_lossy()
         .into_owned()
 }

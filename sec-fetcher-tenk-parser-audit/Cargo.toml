@@ -17,6 +17,10 @@ publish = false
 name = "tenk-parser-audit"
 path = "src/bin/tenk_parser_audit.rs"
 
+[[bin]]
+name = "tenk-period-join"
+path = "src/bin/tenk_period_join.rs"
+
 # The library depends only on `csv` so that sec-fetcher (or any
 # other crate) can depend on it without circular-dependency issues.
 # The binary below additionally needs sec-fetcher at link time.

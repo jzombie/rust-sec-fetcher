@@ -16,9 +16,10 @@ pub use parse_investment_companies_csv::parse_investment_companies_csv;
 mod parse_us_gaap_fundamentals;
 pub use parse_us_gaap_fundamentals::parse_us_gaap_fundamentals;
 pub use sec_fetcher_shared::{
-    BULK_OUTPUT_LEAF, TENK_AUDIT_FILE, TENK_ITEMS_LEAF, TENK_MANIFEST_FILE,
-    US_GAAP_CSV_META_COLUMNS, resolve_data_dir, resolve_tenk_audit_csv, resolve_tenk_items_dir,
-    resolve_tenk_manifest_csv,
+    BULK_OUTPUT_LEAF, FUNDAMENTALS_LEAF, TENK_AUDIT_FILE, TENK_ITEMS_LEAF, TENK_MANIFEST_FILE,
+    TENK_PERIODS_FILE, US_GAAP_CSV_META_COLUMNS, resolve_data_dir, resolve_fundamentals_dir,
+    resolve_tenk_audit_csv, resolve_tenk_items_dir, resolve_tenk_manifest_csv,
+    resolve_tenk_periods_csv,
 };
 
 mod parse_company_tickers;

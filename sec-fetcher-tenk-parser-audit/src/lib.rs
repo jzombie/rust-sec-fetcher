@@ -235,6 +235,345 @@ pub fn load_manifest(path: &Path) -> HashMap<(String, String), ManifestEntry> {
     map
 }
 
+// ── Accession→period join (amendment grouping) ───────────────────────────────
+//
+// The fundamentals CSVs (`data/latest-us-gaap/us-gaap-fundamentals/<T>.csv`)
+// carry canonical `(fy, fp)` per accession (`accn`). Joining audit rows on
+// accession gives the period key that groups an original 10-K with its `/A`
+// amendments. Read-only: nothing in fundamentals is modified.
+
+/// One period record: `(fy, fp)`.
+pub type PeriodEntry = (String, String);
+
+/// Normalize an accession for join purposes: strip dashes, uppercase.
+/// Both the audit (`accession_number`) and fundamentals (`accn`) sides use
+/// dashed form, but normalization guards against undashed variants.
+pub fn normalize_accession(acc: &str) -> String {
+    acc.chars()
+        .filter(|c| *c != '-')
+        .flat_map(|c| c.to_uppercase())
+        .collect()
+}
+
+/// Load an `accession → (fy, fp)` map from every `*.csv` under `dir`.
+///
+/// Only the `accn`, `fy`, and `fp` columns are read (by header name, so
+/// column order doesn't matter). Rows are streamed as byte records so the
+/// ~2,000 wide concept columns are never allocated as owned strings.
+/// Missing dir, unreadable files, and rows with empty `accn`/`fy`/`fp` are
+/// skipped. When one accession covers several rows (e.g. comparative
+/// figures for an earlier year alongside the primary year), the `FY` row
+/// wins over quarterly rows and the latest fiscal year wins ties —
+/// accessions are globally unique so this only triggers on comparatives.
+pub fn load_period_map(dir: &Path) -> HashMap<String, PeriodEntry> {
+    let mut map = HashMap::new();
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return map;
+    };
+    let mut files: Vec<PathBuf> = entries
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .filter(|p| {
+            p.is_file()
+                && p.extension()
+                    .and_then(|e| e.to_str())
+                    .map(|e| e.eq_ignore_ascii_case("csv"))
+                    .unwrap_or(false)
+        })
+        .collect();
+    files.sort();
+    let mut record = csv::ByteRecord::new();
+    for path in files {
+        let Ok(mut rdr) = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .flexible(true)
+            .from_path(&path)
+        else {
+            continue;
+        };
+        let Ok(headers) = rdr.byte_headers().cloned() else {
+            continue;
+        };
+        let find = |name: &[u8]| headers.iter().position(|h| h == name);
+        let (Some(accn_idx), Some(fy_idx), Some(fp_idx)) =
+            (find(b"accn"), find(b"fy"), find(b"fp"))
+        else {
+            continue;
+        };
+        while rdr.read_byte_record(&mut record).unwrap_or(false) {
+            let (Some(accn_b), Some(fy_b), Some(fp_b)) =
+                (record.get(accn_idx), record.get(fy_idx), record.get(fp_idx))
+            else {
+                continue;
+            };
+            let accn = std::str::from_utf8(accn_b).unwrap_or_default().trim();
+            let fy = std::str::from_utf8(fy_b).unwrap_or_default().trim();
+            let fp = std::str::from_utf8(fp_b).unwrap_or_default().trim();
+            if accn.is_empty() || fy.is_empty() || fp.is_empty() {
+                continue;
+            }
+            let key = normalize_accession(accn);
+            let candidate = (fy.to_string(), fp.to_string());
+            match map.get_mut(&key) {
+                None => {
+                    map.insert(key, candidate);
+                }
+                Some(existing) => {
+                    let new_is_fy = candidate.1.eq_ignore_ascii_case("FY");
+                    let old_is_fy = existing.1.eq_ignore_ascii_case("FY");
+                    let fy_cmp = candidate
+                        .0
+                        .parse::<i32>()
+                        .unwrap_or(0)
+                        .cmp(&existing.0.parse::<i32>().unwrap_or(0));
+                    if (new_is_fy && !old_is_fy) || (new_is_fy == old_is_fy && fy_cmp.is_gt()) {
+                        *existing = candidate;
+                    }
+                }
+            }
+        }
+    }
+    map
+}
+
+/// Group key for one fiscal period of one company: `(cik_or_ticker, fy)`.
+///
+/// `cik` is preferred (stable across ticker renames); `ticker` is the
+/// fallback when `cik` is blank (pre-manifest rows). Returns an empty
+/// string when both are blank so ownerless rows never collapse into a
+/// shared `"|fy"` group — callers treat empty keys as ungrouped.
+pub fn period_group_key(cik: &str, ticker: &str, fy: &str) -> String {
+    let cik = cik.trim();
+    let ticker = ticker.trim();
+    let owner = if !cik.is_empty() {
+        cik
+    } else if !ticker.is_empty() {
+        ticker
+    } else {
+        return String::new();
+    };
+    format!("{owner}|{fy}")
+}
+
+/// Pick the canonical row index within one period group.
+///
+/// Latest `filed_date` among adequate rows wins (restated figures supersede
+/// the original). When no row is adequate, the latest row overall wins so
+/// every group still has a canonical representative. Dates compare
+/// lexicographically (`YYYY-MM-DD`); blanks sort before any real date.
+/// Returns `None` for an empty group.
+pub fn pick_canonical(filed_dates: &[&str], adequate: &[bool]) -> Option<usize> {
+    if filed_dates.is_empty() {
+        return None;
+    }
+    let latest = |idxs: &mut dyn Iterator<Item = usize>| {
+        idxs.max_by(|&a, &b| filed_dates[a].cmp(filed_dates[b]).then_with(|| a.cmp(&b)))
+    };
+    let mut adequate_idxs = (0..filed_dates.len()).filter(|&i| adequate[i]);
+    if let Some(i) = latest(&mut adequate_idxs) {
+        return Some(i);
+    }
+    let mut all_idxs = 0..filed_dates.len();
+    latest(&mut all_idxs)
+}
+
+/// Find the original filing a joined amendment supersedes.
+///
+/// Candidates are same-`cik` rows with a base form (`10-K`/`10-K405`,
+/// case-insensitive, trimmed), a real `filed_date` earlier than the
+/// amendment's, no fundamentals match (a mapped base filing already has its
+/// own period and is never a stranded original), and not already claimed by
+/// an earlier-processed amendment (`claimed`). Returns the index of the
+/// latest such candidate.
+///
+/// This is a heuristic (`nearest-earlier-unmapped-base`): annual 10-K
+/// cadence makes the nearest earlier base filing the amended original in
+/// the common case, but year-end changes or out-of-order filings can break
+/// it. Callers must record the rule alongside the pairing so it stays
+/// auditable, and validation should surface gap outliers.
+pub fn find_superseded_original(
+    cik: &str,
+    amendment_filed: &str,
+    ciks: &[&str],
+    forms: &[&str],
+    filed_dates: &[&str],
+    joined: &[bool],
+    claimed: &[bool],
+) -> Option<usize> {
+    if cik.is_empty() || amendment_filed.is_empty() {
+        return None;
+    }
+    (0..ciks.len())
+        .filter(|&i| {
+            let form = forms[i].trim();
+            ciks[i] == cik
+                && (form.eq_ignore_ascii_case("10-K") || form.eq_ignore_ascii_case("10-K405"))
+                && !joined[i]
+                && !claimed[i]
+                && !filed_dates[i].is_empty()
+                && filed_dates[i] < amendment_filed
+        })
+        .max_by(|&a, &b| filed_dates[a].cmp(filed_dates[b]).then_with(|| a.cmp(&b)))
+}
+
+#[cfg(test)]
+mod period_tests {
+    use super::*;
+
+    #[test]
+    fn normalization_ignores_dashes_and_case() {
+        assert_eq!(
+            normalize_accession("0001090872-26-000064"),
+            normalize_accession("000109087226000064")
+        );
+    }
+
+    #[test]
+    fn period_map_loads_by_header_name() {
+        let dir = std::env::temp_dir().join("tenk_period_map_test");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        // Columns deliberately out of order; extra tag columns present.
+        std::fs::write(
+            dir.join("A.csv"),
+            "fy,accn,form,fp,filed\n2024,0001-01-000001,10-K,FY,2024-02-01\n2024,0001-01-000002,10-K/A,FY,2024-05-01\n",
+        )
+        .unwrap();
+        let map = load_period_map(&dir);
+        assert_eq!(map.len(), 2);
+        assert_eq!(
+            map[&normalize_accession("0001-01-000001")],
+            ("2024".to_string(), "FY".to_string())
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn missing_dir_loads_empty() {
+        assert!(load_period_map(Path::new("/nonexistent-xyz/fundamentals")).is_empty());
+    }
+
+    #[test]
+    fn latest_adequate_wins_over_later_or_earlier() {
+        // Original adequate (Feb), excerpt /A inadequate (May), full
+        // restatement /A adequate (Aug) → restatement is canonical.
+        let dates = vec!["2024-02-01", "2024-05-01", "2024-08-01"];
+        let adequate = vec![true, false, true];
+        assert_eq!(pick_canonical(&dates, &adequate), Some(2));
+    }
+
+    #[test]
+    fn excerpt_only_groups_fall_back_to_latest() {
+        let dates = vec!["2024-02-01", "2024-05-01"];
+        let adequate = vec![false, false];
+        assert_eq!(pick_canonical(&dates, &adequate), Some(1));
+    }
+
+    #[test]
+    fn group_key_prefers_cik() {
+        assert_eq!(period_group_key("1090872", "A", "2024"), "1090872|2024");
+        assert_eq!(period_group_key("", "A", "2024"), "A|2024");
+    }
+
+    #[test]
+    fn group_key_empty_without_owner() {
+        assert_eq!(period_group_key("", "", "2024"), "");
+        assert_eq!(period_group_key("  ", "  ", "2024"), "");
+    }
+
+    #[test]
+    fn superseded_original_is_nearest_earlier_unmapped_base() {
+        let ciks = vec!["1", "1", "1", "2"];
+        let forms = vec!["10-K", "10-K/A", "10-K", "10-K"];
+        let dates = vec!["2024-02-01", "2024-08-01", "2023-02-01", "2024-02-01"];
+        let joined = vec![false, true, false, false];
+        let claimed = vec![false; 4];
+        // Amendment (idx 1) pairs to the 2024 original (idx 0), not 2023.
+        assert_eq!(
+            find_superseded_original("1", "2024-08-01", &ciks, &forms, &dates, &joined, &claimed),
+            Some(0)
+        );
+    }
+
+    #[test]
+    fn superseded_original_ignores_mapped_and_other_cik() {
+        let ciks = vec!["1", "9"];
+        let forms = vec!["10-K", "10-K"];
+        let dates = vec!["2024-02-01", "2024-03-01"];
+        // idx 0 is mapped (has its own period) → not a stranded original.
+        assert_eq!(
+            find_superseded_original(
+                "1",
+                "2024-08-01",
+                &ciks,
+                &forms,
+                &dates,
+                &[true, false],
+                &[false, false]
+            ),
+            None
+        );
+        // Blank cik or date → no pairing.
+        assert_eq!(
+            find_superseded_original(
+                "",
+                "2024-08-01",
+                &ciks,
+                &forms,
+                &dates,
+                &[false, false],
+                &[false, false]
+            ),
+            None
+        );
+        assert_eq!(
+            find_superseded_original(
+                "1",
+                "",
+                &ciks,
+                &forms,
+                &dates,
+                &[false, false],
+                &[false, false]
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn superseded_original_skips_claimed_and_normalizes_form() {
+        let ciks = vec!["1", "1", "1"];
+        let forms = vec![" 10-k ", "10-K", "10-K/A"];
+        let dates = vec!["2024-02-01", "2023-02-01", "2024-08-01"];
+        let joined = vec![false, false, true];
+        // idx 0 already claimed by an earlier amendment → falls back to idx 1.
+        assert_eq!(
+            find_superseded_original(
+                "1",
+                "2024-08-01",
+                &ciks,
+                &forms,
+                &dates,
+                &joined,
+                &[true, false, false]
+            ),
+            Some(1)
+        );
+        // Lowercase/padded base form still matches when unclaimed.
+        assert_eq!(
+            find_superseded_original(
+                "1",
+                "2024-08-01",
+                &ciks,
+                &forms,
+                &dates,
+                &joined,
+                &[false, false, false]
+            ),
+            Some(0)
+        );
+    }
+}
+
 #[cfg(test)]
 mod manifest_tests {
     use super::*;

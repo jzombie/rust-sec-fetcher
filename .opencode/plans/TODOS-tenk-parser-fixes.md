@@ -104,3 +104,21 @@ inline-tag unwrap fix, ABUS-class recovery confirmed in-run):
    writes; 250-ticker checkpoints so interrupts keep progress; manifest keys
    sanitized exactly like disk paths so slash-tickers e.g. BF/A match.
    Verified BF_A end-to-end.)
+
+7. Accession→period join — `tenk-period-join` reads `data/tenk_audit.csv` +
+   `data/latest-us-gaap/us-gaap-fundamentals/` and writes
+   `data/tenk_audit_periods.csv` (+`fy`,`fp`,`period_key`,`is_canonical`,
+   `canonical_accession`,`join_status`,`superseded_by`,`pairing_rule`).
+   Read-only over fundamentals; per-ticker CSVs scanned once (~280k rows,
+   224,776 unique accn; accn→(fy,fp) is 1:1, first-wins safe). Measured:
+   53,359/97,523 joined (misses are era: 100% pre-2010, 27% 2010s, 13%
+   2020s); 3,462 stranded originals paired to joined `/A` via
+   nearest-earlier-unmapped-base (median gap 46d, p90 253d, 26 >730d to
+   review, 0 negative); 3,407 mixed-form groups; grouped canonical adequacy
+   96.8% (51,326/53,015). Canonical double-count eliminated: 93,772
+   canonical rows, one per period + one per ungrouped filing. (Review:
+   claimed-set blocks double-claims and cross-period stealing; form checks
+   case-insensitive/trimmed; FY+latest-fy preference on accession
+   collisions; byte-record streaming skips ~2,000 wide columns; blank-owner
+   rows stay ungrouped. Re-ran: 3,461 paired, 3,460 mixed groups, canonical
+   adequacy 96.9% (51,350/53,015), zero ownerless groups.)
