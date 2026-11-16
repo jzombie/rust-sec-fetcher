@@ -132,7 +132,7 @@ pub enum Url {
     /// The SEC EDGAR Standard Industrial Classification (SIC) code list.
     ///
     /// Returns an HTML page (`siccodes.htm`) with every SIC code that EDGAR
-    /// recognises, the reviewing office it is assigned to, and its industry
+    /// recognizes, the reviewing office it is assigned to, and its industry
     /// title. Parse with [`crate::network::fetch_sic_codes`].
     SicCodes,
 

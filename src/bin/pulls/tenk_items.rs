@@ -433,7 +433,11 @@ const MANIFEST_HEADER: [&str; 6] = [
 ];
 
 /// Load an existing manifest into a map keyed by `(ticker, accession)`.
-/// Missing file → empty map. Malformed lines are skipped.
+/// Keys are normalized at the boundary (trimmed ticker, normalized
+/// accession via `sec_fetcher_shared::normalize_accession`) so reruns and
+/// partial runs dedup correctly regardless of dash/padding/case variants.
+/// Stored row values (and the CSV format) are untouched. Missing file →
+/// empty map. Malformed lines are skipped.
 fn load_manifest_map(
     path: &std::path::Path,
 ) -> std::collections::HashMap<(String, String), ManifestRow> {
@@ -449,7 +453,10 @@ fn load_manifest_map(
         if record.len() < 6 {
             continue;
         }
-        let key = (record[0].to_string(), record[2].to_string());
+        let key = (
+            record[0].trim().to_string(),
+            sec_fetcher_shared::normalize_accession(&record[2]),
+        );
         map.insert(
             key,
             ManifestRow {
@@ -477,7 +484,13 @@ fn merge_manifest_rows(
     let mut map = load_manifest_map(path);
     let fresh_count = fresh.len();
     for row in fresh {
-        map.insert((row.ticker.clone(), row.accession.clone()), row);
+        map.insert(
+            (
+                row.ticker.trim().to_string(),
+                sec_fetcher_shared::normalize_accession(&row.accession),
+            ),
+            row,
+        );
     }
     let mut rows: Vec<&ManifestRow> = map.values().collect();
     rows.sort_by(|a, b| (&a.ticker, &a.accession).cmp(&(&b.ticker, &b.accession)));
@@ -548,7 +561,7 @@ mod manifest_tests {
             "rows for tickers that failed this run must survive"
         );
         let map = load_manifest_map(&path);
-        assert_eq!(map[&("B".to_string(), "acc-2".to_string())].form, "10-K/A");
+        assert_eq!(map[&("B".to_string(), "ACC2".to_string())].form, "10-K/A");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -569,7 +582,7 @@ mod manifest_tests {
         let map = load_manifest_map(&path);
         assert_eq!(map.len(), 1);
         assert_eq!(
-            map[&("A,B".to_string(), "acc-1".to_string())].primary_document,
+            map[&("A,B".to_string(), "ACC1".to_string())].primary_document,
             "doc,name.htm"
         );
         let _ = std::fs::remove_dir_all(&dir);
@@ -588,7 +601,7 @@ mod manifest_tests {
         let map = load_manifest_map(&path);
         assert_eq!(map.len(), 1);
         assert_eq!(
-            map[&("A".to_string(), "acc-1".to_string())].primary_document,
+            map[&("A".to_string(), "ACC1".to_string())].primary_document,
             "line1\nline2"
         );
         let _ = std::fs::remove_dir_all(&dir);
@@ -613,7 +626,13 @@ mod manifest_tests {
         };
         merge_manifest_rows(&path, vec![r]).unwrap();
         let map = load_manifest_map(&path);
-        assert!(map.contains_key(&("BF_A".to_string(), "0001-23-000001".to_string())));
+        // Keys are normalized (dash-insensitive, uppercased) while stored
+        // values keep canonical dashed form, so the CSV format is stable.
+        assert!(map.contains_key(&("BF_A".to_string(), "000123000001".to_string())));
+        assert_eq!(
+            map[&("BF_A".to_string(), "000123000001".to_string())].accession,
+            "0001-23-000001"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 

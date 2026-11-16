@@ -261,7 +261,7 @@ impl TenKSections {
 ///    decoding, block-level newlines, no brittle regexes).
 /// 2. **SGML / plain text** — strip tags with a lightweight regex then feed
 ///    straight into step 3.
-/// 3. Normalise the plain text (fix span-shattered "I T E M" headers, remove
+/// 3. Normalize the plain text (fix span-shattered "I T E M" headers, remove
 ///    page-number lines, collapse whitespace).
 /// 4. Find all `^ITEM N[.*: ]` anchors in the clean text.
 /// 5. For each item, collect every `(start, end)` pair using the ordered item
@@ -353,9 +353,9 @@ fn html_to_plain(raw: &str) -> Result<String, Html2TextPanic> {
     }
 }
 
-// ── Plain-text normalisation ──────────────────────────────────────────────────
+// ── Plain-text normalization ──────────────────────────────────────────────────
 
-/// Normalise a plain-text document before item extraction.
+/// Normalize a plain-text document before item extraction.
 ///
 /// Mirrors the pre-processing steps from edgar-crawler's `clean_text`:
 /// - Fix spaced-out `I T E M   7  A` headers (span-per-character markup).
@@ -454,7 +454,7 @@ fn extract_items(text: &str) -> TenKSections {
                 }
             }
             // Once this next-item type produced at least one candidate, stop
-            // trying further next-item types (edgar-crawler behaviour).
+            // trying further next-item types (edgar-crawler behavior).
             if best_len > 0 {
                 break 'next_item;
             }

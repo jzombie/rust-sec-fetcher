@@ -29,6 +29,7 @@ path = "src/bin/tenk_period_join.rs"
 clap = { workspace = true, features = ["derive"] }
 csv.workspace = true
 sec-fetcher = { path = ".." }
+sec-fetcher-shared.workspace = true
 strum.workspace = true
 tracing.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }

@@ -8,7 +8,7 @@ use std::collections::HashMap;
 /// in the [`Diff::changed`] list.
 pub const WEIGHT_CHANGE_THRESHOLD: Decimal = dec!(0.10);
 
-/// A normalised single-position snapshot.
+/// A normalized single-position snapshot.
 ///
 /// Produced from both [`NportInvestment`] (N-PORT filings) and
 /// [`ThirteenfHolding`] (13F filings) via [`positions_from_nport`] and
@@ -41,7 +41,7 @@ pub struct Diff {
     pub changed: Vec<(Position, Position)>,
 }
 
-/// Converts N-PORT investments into normalised [`Position`] snapshots.
+/// Converts N-PORT investments into normalized [`Position`] snapshots.
 pub fn positions_from_nport(investments: &[NportInvestment]) -> Vec<Position> {
     investments
         .iter()
@@ -54,7 +54,7 @@ pub fn positions_from_nport(investments: &[NportInvestment]) -> Vec<Position> {
         .collect()
 }
 
-/// Converts 13F holdings into normalised [`Position`] snapshots.
+/// Converts 13F holdings into normalized [`Position`] snapshots.
 ///
 /// Portfolio weight is read directly from [`ThirteenfHolding::weight_pct`],
 /// which is computed at parse time by [`crate::parsers::parse_13f_xml`].

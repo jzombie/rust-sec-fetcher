@@ -3,7 +3,7 @@
 //! This module provides composed, orchestrated operations built on top of the
 //! lower-level [`crate::network`] fetch functions.  Each operation encapsulates
 //! a multi-step workflow — deduplication, multi-form-type retrieval, rendering
-//! pipelines, portfolio position normalisation — so that callers (examples,
+//! pipelines, portfolio position normalization — so that callers (examples,
 //! CLIs, applications) can work at a higher level of abstraction.
 //!
 //! # Module layout
@@ -11,7 +11,7 @@
 //! | Sub-module | Purpose |
 //! |---|---|
 //! | [`filing`] | Filing body + exhibit rendering pipeline |
-//! | [`holdings`] | Portfolio position normalisation and diff (N-PORT / 13F) |
+//! | [`holdings`] | Portfolio position normalization and diff (N-PORT / 13F) |
 //! | [`ipo`] | IPO registration filing timeline and feed polling (S-1 / F-1 family) |
 //!
 //! # Naming conventions

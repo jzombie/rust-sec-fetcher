@@ -4,6 +4,12 @@
 //! loading, and text helpers used by `tenk-parser-audit` (which runs the
 //! parser on local files).
 //!
+//! Accession keys are normalized through
+//! [`sec_fetcher_shared::normalize_accession`] (re-exported here) at every
+//! comparison boundary — manifest load and lookup, period-map build and
+//! lookup — so dashed, undashed, padded, or mixed-case inputs always match.
+//! Canonical dashed form is kept at rest (CSVs, filenames).
+//!
 //! This library keeps external dependencies to a minimum — plain
 //! [`HashMap`]s and [`String`]s throughout, plus the `csv` crate for
 //! manifest parsing — so that any crate (including `sec-fetcher`) can depend
@@ -12,6 +18,8 @@
 use std::collections::HashMap;
 use std::io;
 use std::path::{Path, PathBuf};
+
+pub use sec_fetcher_shared::normalize_accession;
 
 // ── CSV header construction ───────────────────────────────────────────────────
 
@@ -205,11 +213,13 @@ pub type ManifestEntry = (String, String, String);
 /// (`.tenk_manifest.csv`), keyed by `(ticker, accession_number)`.
 ///
 /// Parsed with the `csv` crate (not line-splitting): fields may contain
-/// quoted commas, quotes, or embedded newlines. Returns an empty map when
-/// the file is missing or unreadable — callers fall back to blank `cik` /
-/// `filed_date` / `form_type` columns, preserving the old offline behavior.
-/// Malformed lines are skipped. Only the first five columns are read; extra
-/// columns are ignored.
+/// quoted commas, quotes, or embedded newlines. Keys are normalized at the
+/// boundary — ticker trimmed, accession via [`normalize_accession`] — so
+/// they match path-derived lookups regardless of dash/padding/case form.
+/// Returns an empty map when the file is missing or unreadable — callers
+/// fall back to blank `cik` / `filed_date` / `form_type` columns, preserving
+/// the old offline behavior. Malformed lines are skipped. Only the first
+/// five columns are read; extra columns are ignored.
 pub fn load_manifest(path: &Path) -> HashMap<(String, String), ManifestEntry> {
     let mut map = HashMap::new();
     let Ok(mut rdr) = csv::ReaderBuilder::new()
@@ -224,7 +234,10 @@ pub fn load_manifest(path: &Path) -> HashMap<(String, String), ManifestEntry> {
             continue;
         }
         map.insert(
-            (record[0].to_string(), record[2].to_string()),
+            (
+                record[0].trim().to_string(),
+                normalize_accession(&record[2]),
+            ),
             (
                 record[1].to_string(),
                 record[3].to_string(),
@@ -244,16 +257,6 @@ pub fn load_manifest(path: &Path) -> HashMap<(String, String), ManifestEntry> {
 
 /// One period record: `(fy, fp)`.
 pub type PeriodEntry = (String, String);
-
-/// Normalize an accession for join purposes: strip dashes, uppercase.
-/// Both the audit (`accession_number`) and fundamentals (`accn`) sides use
-/// dashed form, but normalization guards against undashed variants.
-pub fn normalize_accession(acc: &str) -> String {
-    acc.chars()
-        .filter(|c| *c != '-')
-        .flat_map(|c| c.to_uppercase())
-        .collect()
-}
 
 /// Load an `accession → (fy, fp)` map from every `*.csv` under `dir`.
 ///
@@ -600,7 +603,10 @@ mod manifest_tests {
         let map = load_manifest(&path);
         assert_eq!(map.len(), 2);
         assert_eq!(
-            map[&("ADM".to_string(), "0000007084-05-000350".to_string())],
+            map[&(
+                "ADM".to_string(),
+                normalize_accession("0000007084-05-000350")
+            )],
             (
                 "7084".to_string(),
                 "2005-08-12".to_string(),
@@ -608,10 +614,43 @@ mod manifest_tests {
             )
         );
         assert!(
-            map[&("ABCB".to_string(), "0001193125-07-251748".to_string())]
+            map[&(
+                "ABCB".to_string(),
+                normalize_accession("0001193125-07-251748")
+            )]
                 .2
                 .ends_with("/A"),
             "amendment form must be visible for scoring-time filtering"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn manifest_keys_converge_across_formats() {
+        // Undashed, padded, and dashed inputs must all land on one key —
+        // this is the production-grade guarantee: no silent misses from
+        // format variants on either side of the join.
+        let dir = std::env::temp_dir().join("tenk_audit_manifest_formats");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join(".tenk_manifest.csv");
+        std::fs::write(
+            &path,
+            "ticker,cik,accession,filed_date,form,primary_document\n\
+             \"  ADM \",7084,000000708405000350,2005-08-12,10-K,adm10kfy05.htm\n",
+        )
+        .unwrap();
+        let map = load_manifest(&path);
+        assert_eq!(map.len(), 1);
+        // Dashed lookup (what `guess_accession` yields from filenames).
+        assert!(map.contains_key(&(
+            "ADM".to_string(),
+            normalize_accession("0000007084-05-000350")
+        )));
+        // Undashed lookup resolves identically.
+        assert_eq!(
+            normalize_accession("000000708405000350"),
+            normalize_accession("0000007084-05-000350")
         );
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -633,7 +672,11 @@ mod manifest_tests {
         let map = load_manifest(&path);
         assert_eq!(map.len(), 1);
         assert_eq!(
-            map[&("ADM".to_string(), "0000007084-05-000350".to_string())].2,
+            map[&(
+                "ADM".to_string(),
+                normalize_accession("0000007084-05-000350")
+            )]
+                .2,
             "10-K"
         );
         let _ = std::fs::remove_dir_all(&dir);

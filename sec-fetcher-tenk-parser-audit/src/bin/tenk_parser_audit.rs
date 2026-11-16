@@ -48,6 +48,7 @@ use sec_fetcher::{
 };
 use sec_fetcher_tenk_parser_audit::{
     build_row, collect_files, guess_accession, guess_ticker, header_columns, load_manifest,
+    normalize_accession,
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -171,8 +172,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let accession = guess_accession(file_path);
 
         // Tag from the pull manifest when available; blanks otherwise.
+        // Keys are normalized at the boundary (trimmed ticker, normalized
+        // accession) to match `load_manifest`, so dash/padding/case variants
+        // on either side still join.
         let (cik, filed_date, form_type) = manifest
-            .get(&(ticker.clone(), accession.clone()))
+            .get(&(ticker.trim().to_string(), normalize_accession(&accession)))
             .cloned()
             .unwrap_or_default();
 

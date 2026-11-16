@@ -122,3 +122,19 @@ inline-tag unwrap fix, ABUS-class recovery confirmed in-run):
    collisions; byte-record streaming skips ~2,000 wide columns; blank-owner
    rows stay ungrouped. Re-ran: 3,461 paired, 3,460 mixed groups, canonical
    adequacy 96.9% (51,350/53,015), zero ownerless groups.)
+
+8. Unified accession keys — `sec_fetcher_shared::normalize_accession` (trim,
+   strip dashes, uppercase) is the single owner; the audit lib re-exports it
+   instead of carrying its own copy. Design rule: canonical dashed form at
+   rest (CSVs, filenames), normalized form at every comparison boundary
+   (manifest load + lookup, period-map build + lookup, merge dedup keys).
+   Tests: shared convergence test + doctest, manifest cross-format test
+   (undashed/padded CSV row matches dashed filename lookup), puller merge
+   keys normalized with stored values keeping canonical form. Re-ran join on
+   real data: byte-identical numbers (53,015 groups, 3,461 paired, 96.9%),
+   proving the corpus was already canonical and the enforcement is forward
+   cover against silent misses. All-American spelling swept across `*.rs`.
+   (Model wired in: `AccessionNumber::from_str` now strips dashes through
+   `sec_fetcher_shared::normalize_accession` — one implementation, with the
+   strict 18-digit validation kept; padded-input test added. Strict parser vs
+   lenient key is a documented division, not a duplication.)

@@ -92,9 +92,12 @@ impl AccessionNumber {
     /// - Returns `AccessionNumberError::ParseError` if parsing fails.
     #[allow(clippy::should_implement_trait)]
     pub fn from_str(accession_str: &str) -> Result<Self, AccessionNumberError> {
-        // Remove dashes so we can handle both formatted and unformatted cases
-        // let clean_str: String = accession_str.chars().filter(|c| c.is_ascii_digit()).collect();
-        let clean_str: String = accession_str.chars().filter(|&c| c != '-').collect();
+        // Single dash-stripping implementation, shared with join-key
+        // normalization (`sec_fetcher_shared::normalize_accession`):
+        // trim, strip dashes, uppercase. Digit/length checks below keep
+        // this a strict validating parser — whitespace-tolerant, but
+        // anything that is not exactly 18 digits still errors.
+        let clean_str: String = sec_fetcher_shared::normalize_accession(accession_str);
 
         // Ensure the total length is exactly 18 digits
         if clean_str.len() != 18 {

@@ -111,11 +111,11 @@ pub async fn fetch_related_ciks(
 /// Fetches the complete, merged filing history for an entity across all
 /// CIKs it has ever been registered under.
 ///
-/// For the vast majority of entities (those that have never reorganised as a
+/// For the vast majority of entities (those that have never reorganized as a
 /// holding company) the result is identical to calling [`fetch_cik_submissions()`]
 /// directly — one extra cached EFTS lookup is the only overhead.
 ///
-/// For entities that *have* reorganised (e.g. `GOOG` → Alphabet Inc.), the
+/// For entities that *have* reorganized (e.g. `GOOG` → Alphabet Inc.), the
 /// returned list merges filings from both the current CIK and every predecessor
 /// CIK discovered via [`fetch_related_ciks`], sorted newest-first.
 pub async fn fetch_all_entity_submissions(
