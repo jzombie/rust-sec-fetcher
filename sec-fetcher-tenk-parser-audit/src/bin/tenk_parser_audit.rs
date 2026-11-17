@@ -243,26 +243,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         };
 
-        let is_adequate = sections_map
-            .as_ref()
-            .map(|m| {
-                let item1_len = m.get("item_1").map(|s| s.len()).unwrap_or(0);
-                let item7_len = m.get("item_7").map(|s| s.len()).unwrap_or(0);
-                item1_len >= 400 && item7_len >= 2000
-            })
-            .unwrap_or(false);
+        let is_adequate = is_adequate_for(sections_map.as_ref());
 
-        let items_found = sections_map
-            .as_ref()
-            .map(|m| {
-                item_keys
-                    .iter()
-                    .filter(|key| m.contains_key(key.as_str()))
-                    .cloned()
-                    .collect::<Vec<_>>()
-                    .join(";")
-            })
-            .unwrap_or_default();
+        let items_found = items_found_str(sections_map.as_ref(), &item_keys);
 
         let row = build_row(
             &ticker,
@@ -319,6 +302,34 @@ fn binary_skip_reason(path: &std::path::Path, max_bytes: u64) -> Option<String> 
     None
 }
 
+/// Filing is adequate when Item 1 has at least 400 chars and Item 7 has at
+/// least 2000 chars. Missing sections count as zero length, so `None`
+/// (unparsed document) is never adequate.
+fn is_adequate_for(sections_map: Option<&HashMap<String, String>>) -> bool {
+    sections_map
+        .map(|m| {
+            let item1_len = m.get("item_1").map(|s| s.len()).unwrap_or(0);
+            let item7_len = m.get("item_7").map(|s| s.len()).unwrap_or(0);
+            item1_len >= 400 && item7_len >= 2000
+        })
+        .unwrap_or(false)
+}
+
+/// Semicolon-joined list of `item_keys` present in `sections_map`, in key
+/// order. Empty when the document failed to parse.
+fn items_found_str(sections_map: Option<&HashMap<String, String>>, item_keys: &[String]) -> String {
+    sections_map
+        .map(|m| {
+            item_keys
+                .iter()
+                .filter(|key| m.contains_key(key.as_str()))
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(";")
+        })
+        .unwrap_or_default()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -362,5 +373,40 @@ mod tests {
             binary_skip_reason(std::path::Path::new("/nonexistent-xyz/f.htm"), 10),
             None
         );
+    }
+
+    #[test]
+    fn adequacy_requires_both_item_thresholds() {
+        let mut full = HashMap::new();
+        full.insert("item_1".to_string(), "x".repeat(400));
+        full.insert("item_7".to_string(), "y".repeat(2000));
+        assert!(is_adequate_for(Some(&full)));
+
+        let mut short_item7 = HashMap::new();
+        short_item7.insert("item_1".to_string(), "x".repeat(400));
+        short_item7.insert("item_7".to_string(), "y".repeat(1999));
+        assert!(!is_adequate_for(Some(&short_item7)));
+
+        let mut short_item1 = HashMap::new();
+        short_item1.insert("item_1".to_string(), "x".repeat(399));
+        short_item1.insert("item_7".to_string(), "y".repeat(2000));
+        assert!(!is_adequate_for(Some(&short_item1)));
+
+        assert!(!is_adequate_for(None));
+        assert!(!is_adequate_for(Some(&HashMap::new())));
+    }
+
+    #[test]
+    fn items_found_lists_present_keys_in_order() {
+        let keys = vec![
+            "item_1".to_string(),
+            "item_7".to_string(),
+            "item_8".to_string(),
+        ];
+        let mut sections = HashMap::new();
+        sections.insert("item_7".to_string(), "a".to_string());
+        sections.insert("item_1".to_string(), "b".to_string());
+        assert_eq!(items_found_str(Some(&sections), &keys), "item_1;item_7");
+        assert_eq!(items_found_str(None, &keys), "");
     }
 }

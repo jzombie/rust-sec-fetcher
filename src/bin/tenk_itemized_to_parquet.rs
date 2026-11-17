@@ -92,6 +92,15 @@ fn extract_item_texts(raw: &str) -> (Option<String>, Option<String>, bool) {
     }
 }
 
+/// `errors="replace"` equivalent: lossy UTF-8 decode, reusing the read
+/// buffer when the file is already valid UTF-8.
+fn decode_lossy(bytes: Vec<u8>) -> String {
+    match String::from_utf8(bytes) {
+        Ok(s) => s,
+        Err(e) => String::from_utf8_lossy(e.as_bytes()).into_owned(),
+    }
+}
+
 fn schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("ticker_symbol", DataType::Utf8, false),
@@ -160,10 +169,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .par_iter()
                 .map(|(ticker, accession, path)| -> Result<_, std::io::Error> {
                     let bytes = fs::read(path)?;
-                    let text = match String::from_utf8(bytes) {
-                        Ok(s) => s,
-                        Err(e) => String::from_utf8_lossy(e.as_bytes()).into_owned(),
-                    };
+                    let text = decode_lossy(bytes);
                     let (item_1, item_7, failed) = extract_item_texts(&text);
                     Ok((ticker.clone(), accession.clone(), item_1, item_7, failed))
                 })
@@ -282,5 +288,13 @@ mod tests {
         assert!(item_1.is_some());
         assert!(item_7.is_some());
         assert!(item_7.unwrap().len() >= item_1.unwrap().len());
+    }
+
+    #[test]
+    fn decode_lossy_replaces_invalid_bytes() {
+        assert_eq!(decode_lossy(b"plain".to_vec()), "plain");
+        let text = decode_lossy(vec![0x68, 0x69, 0xff, 0x21]);
+        assert!(text.starts_with("hi"));
+        assert!(text.contains('�'));
     }
 }

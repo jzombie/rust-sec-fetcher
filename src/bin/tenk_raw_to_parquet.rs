@@ -55,6 +55,15 @@ fn schema() -> Arc<Schema> {
     ]))
 }
 
+/// `errors="replace"` equivalent: lossy UTF-8 decode, reusing the read
+/// buffer when the file is already valid UTF-8.
+fn decode_lossy(bytes: Vec<u8>) -> String {
+    match String::from_utf8(bytes) {
+        Ok(s) => s,
+        Err(e) => String::from_utf8_lossy(e.as_bytes()).into_owned(),
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::from_arg_matches(
         &Args::command()
@@ -104,13 +113,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut done = 0usize;
 
     for (ticker, accession, path) in &files {
-        // `errors="replace"` equivalent: lossy UTF-8 decode, reusing the
-        // read buffer when the file is already valid UTF-8.
         let bytes = fs::read(path)?;
-        let text = match String::from_utf8(bytes) {
-            Ok(s) => s,
-            Err(e) => String::from_utf8_lossy(e.as_bytes()).into_owned(),
-        };
+        let text = decode_lossy(bytes);
 
         let batch = RecordBatch::try_new(
             Arc::clone(&schema),
@@ -187,5 +191,13 @@ mod tests {
         .unwrap();
         assert_eq!(batch.num_rows(), 1);
         assert_eq!(batch.column(2).null_count(), 0);
+    }
+
+    #[test]
+    fn decode_lossy_replaces_invalid_bytes() {
+        assert_eq!(decode_lossy(b"plain".to_vec()), "plain");
+        let text = decode_lossy(vec![0x68, 0x69, 0xff, 0x21]);
+        assert!(text.starts_with("hi"));
+        assert!(text.contains('�'));
     }
 }
