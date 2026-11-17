@@ -608,6 +608,9 @@ pub const HF_UPLOAD_LEAF: &str = "hf_upload_folder";
 /// Dataset leaf for raw 10-K shards inside the upload staging dir, so
 /// other datasets can stage alongside it (e.g. `hf_upload_folder/<other>`).
 pub const TENK_RAW_PARQUET_LEAF: &str = "tenk_raw";
+/// Dataset leaf for itemized 10-K shards (accession plus Item 1 and Item 7
+/// text) inside the upload staging dir.
+pub const TENK_ITEMIZED_PARQUET_LEAF: &str = "tenk_itemized";
 
 /// Resolves the single project data directory: always repo-relative `./data`.
 /// Use an explicit `--output-dir` arg for any other location.
@@ -701,6 +704,19 @@ pub fn resolve_tenk_raw_parquet_dir(explicit: Option<&str>) -> String {
     }
     std::path::PathBuf::from(resolve_hf_upload_dir(None))
         .join(TENK_RAW_PARQUET_LEAF)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the itemized 10-K Parquet dataset directory: explicit `--dest`
+/// wins, else `hf_upload_folder/tenk_itemized`, leaving the staging root
+/// free for other datasets.
+pub fn resolve_tenk_itemized_parquet_dir(explicit: Option<&str>) -> String {
+    if let Some(e) = explicit {
+        return e.to_string();
+    }
+    std::path::PathBuf::from(resolve_hf_upload_dir(None))
+        .join(TENK_ITEMIZED_PARQUET_LEAF)
         .to_string_lossy()
         .into_owned()
 }

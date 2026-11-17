@@ -100,6 +100,10 @@ path = "src/bin/pulls/tenk_items.rs"
 name = "tenk-raw-to-parquet"
 path = "src/bin/tenk_raw_to_parquet.rs"
 
+[[bin]]
+name = "tenk-itemized-to-parquet"
+path = "src/bin/tenk_itemized_to_parquet.rs"
+
 [features]
 # Enables OS keychain integration for persisting the SEC contact email across
 # sessions.  Requires libdbus-1-dev / pkg-config on Linux (provided
