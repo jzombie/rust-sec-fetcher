@@ -468,6 +468,136 @@ mod period_tests {
 }
 
 #[cfg(test)]
+mod coverage_tests {
+    use super::*;
+
+    #[test]
+    fn snippet_collapses_whitespace_and_truncates() {
+        assert_eq!(snippet(None), "");
+        assert_eq!(snippet(Some("  a   b\n c  ")), "a b c");
+        let long = "word ".repeat(100);
+        let out = snippet(Some(&long));
+        assert_eq!(out.chars().count(), 150);
+        assert!(!out.contains("  "));
+        assert!(!out.contains('\n'));
+    }
+
+    #[test]
+    fn header_columns_layout() {
+        let keys = vec!["item_1".to_string(), "item_7".to_string()];
+        let header = header_columns(&keys);
+        assert_eq!(
+            &header[..9],
+            [
+                "ticker",
+                "cik",
+                "accession_number",
+                "filed_date",
+                "form_type",
+                "is_adequate",
+                "item_1_snippet",
+                "item_7_snippet",
+                "items_found",
+            ]
+        );
+        assert_eq!(&header[9..], ["item_1_chars", "item_7_chars", "error"]);
+    }
+
+    #[test]
+    fn build_row_counts_chars_and_flags_adequacy() {
+        let keys = vec!["item_1".to_string(), "item_7".to_string()];
+        let mut sections = HashMap::new();
+        sections.insert("item_1".to_string(), "Business here".to_string());
+        sections.insert("item_7".to_string(), "Discussion here".to_string());
+        let row = build_row(
+            "AAPL",
+            "320193",
+            "0001-01-000001",
+            "2024-02-02",
+            "10-K",
+            &keys,
+            "item_1;item_7",
+            Some(&sections),
+            true,
+            "",
+        );
+        assert_eq!(row[0], "AAPL");
+        assert_eq!(row[5], "true");
+        assert!(row[6].contains("Business"));
+        assert!(row[7].contains("Discussion"));
+        assert_eq!(row[9], "13");
+        assert_eq!(row[10], "15");
+
+        let empty = build_row(
+            "A",
+            "",
+            "acc",
+            "",
+            "",
+            &keys,
+            "",
+            None,
+            false,
+            "parse: boom",
+        );
+        assert_eq!(empty[5], "false");
+        assert_eq!(empty[6], "");
+        assert_eq!(empty[9], "0");
+        assert_eq!(empty[empty.len() - 1], "parse: boom");
+    }
+
+    #[test]
+    fn guess_ticker_and_accession_from_layout() {
+        let root = Path::new("/corpus");
+        assert_eq!(
+            guess_ticker(Path::new("/corpus/AAPL/0001-01-000001.htm"), root),
+            "AAPL"
+        );
+        // The implementation returns the immediate child of `root`, so a
+        // deeper layout resolves to the top-level directory.
+        assert_eq!(
+            guess_ticker(Path::new("/corpus/sector/AAPL/0001-01-000001.htm"), root),
+            "sector"
+        );
+        assert_eq!(guess_ticker(Path::new("/other/AAPL/f.htm"), root), "");
+        assert_eq!(
+            guess_accession(Path::new("/corpus/AAPL/0001-01-000001.HTM")),
+            "0001-01-000001"
+        );
+        assert_eq!(guess_accession(Path::new("/corpus/AAPL/noext")), "noext");
+    }
+
+    #[test]
+    fn collect_files_filters_hidden_and_pattern_case_insensitively() {
+        let dir = std::env::temp_dir().join("tenk_audit_collect_files_test");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("AAPL")).unwrap();
+        std::fs::write(dir.join("AAPL").join("a.HTM"), "a").unwrap();
+        std::fs::write(dir.join("AAPL").join("b.html"), "b").unwrap();
+        std::fs::write(dir.join("AAPL").join("c.txt"), "c").unwrap();
+        std::fs::write(dir.join(".hidden"), "h").unwrap();
+        std::fs::write(dir.join("AAPL").join(".dot.htm"), "h").unwrap();
+
+        let all = collect_files(&dir, "*").unwrap();
+        assert_eq!(all.len(), 3);
+        let mut names: Vec<String> = all
+            .iter()
+            .map(|p| p.file_name().unwrap().to_string_lossy().to_lowercase())
+            .collect();
+        names.sort();
+        assert_eq!(names, vec!["a.htm", "b.html", "c.txt"]);
+
+        let htm = collect_files(&dir, "*.htm").unwrap();
+        assert_eq!(htm.len(), 1);
+
+        let missing = collect_files(Path::new("/nonexistent-xyz/collect"), "*");
+        assert!(missing.is_err());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}
+
+#[cfg(test)]
 mod manifest_tests {
     use super::*;
 

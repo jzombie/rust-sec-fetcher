@@ -157,3 +157,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("         total: {}", human(total_bytes));
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn schema_has_accession_and_non_null_text() {
+        let schema = schema();
+        assert_eq!(
+            schema
+                .fields()
+                .iter()
+                .map(|f| f.name().as_str())
+                .collect::<Vec<_>>(),
+            vec!["ticker_symbol", "accession_number", "raw_text"]
+        );
+        assert!(!schema.field(0).is_nullable());
+        assert!(!schema.field(1).is_nullable());
+        assert!(!schema.field(2).is_nullable());
+        let batch = RecordBatch::try_new(
+            schema,
+            vec![
+                Arc::new(StringArray::from(vec!["TICK"])),
+                Arc::new(StringArray::from(vec!["0001-01-000001"])),
+                Arc::new(StringArray::from(vec!["filing text"])),
+            ],
+        )
+        .unwrap();
+        assert_eq!(batch.num_rows(), 1);
+        assert_eq!(batch.column(2).null_count(), 0);
+    }
+}

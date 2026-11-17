@@ -268,4 +268,19 @@ mod tests {
         assert_eq!(batch.column(2).null_count(), 1);
         assert_eq!(batch.column(3).null_count(), 1);
     }
+
+    #[test]
+    fn present_sections_return_text_without_failure_flag() {
+        let raw = format!(
+            "<p>ITEM 1. BUSINESS</p><p>{}</p><p>ITEM 7. MANAGEMENT'S DISCUSSION</p><p>{}</p><p>ITEM 8. FINANCIAL STATEMENTS</p><p>{}</p>",
+            "Business. ".repeat(50),
+            "MD&A. ".repeat(300),
+            "Financials. ".repeat(50),
+        );
+        let (item_1, item_7, failed) = extract_item_texts(&raw);
+        assert!(!failed);
+        assert!(item_1.is_some());
+        assert!(item_7.is_some());
+        assert!(item_7.unwrap().len() >= item_1.unwrap().len());
+    }
 }

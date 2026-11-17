@@ -318,3 +318,49 @@ fn binary_skip_reason(path: &std::path::Path, max_bytes: u64) -> Option<String> 
     }
     None
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn binary_extensions_are_skipped_case_insensitively() {
+        assert_eq!(
+            binary_skip_reason(std::path::Path::new("exhibit.PDF"), u64::MAX),
+            Some("skip: binary .pdf exhibit".to_string())
+        );
+        assert_eq!(
+            binary_skip_reason(std::path::Path::new("image.GIF"), u64::MAX),
+            Some("skip: binary .gif exhibit".to_string())
+        );
+        assert_eq!(
+            binary_skip_reason(std::path::Path::new("doc.htm"), u64::MAX),
+            None
+        );
+        assert_eq!(
+            binary_skip_reason(std::path::Path::new("noext"), u64::MAX),
+            None
+        );
+    }
+
+    #[test]
+    fn oversized_files_are_skipped() {
+        let dir = std::env::temp_dir().join("tenk_audit_skip_test");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("filing.htm");
+        std::fs::write(&path, "0123456789").unwrap();
+        assert_eq!(binary_skip_reason(&path, 100), None);
+        let reason = binary_skip_reason(&path, 5).unwrap();
+        assert!(reason.starts_with("skip: file too large (10 bytes)"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn missing_file_is_not_skipped() {
+        assert_eq!(
+            binary_skip_reason(std::path::Path::new("/nonexistent-xyz/f.htm"), 10),
+            None
+        );
+    }
+}

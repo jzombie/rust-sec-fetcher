@@ -649,4 +649,13 @@ mod manifest_tests {
         );
         let _ = std::fs::remove_dir_all(&dir);
     }
+
+    #[test]
+    fn sanitize_replaces_unsafe_and_control_chars() {
+        assert_eq!(sanitize_dir_name("BF/A"), "BF_A");
+        assert_eq!(sanitize_dir_name("a:b*c?d\"e<f>g|h"), "a_b_c_d_e_f_g_h");
+        assert_eq!(sanitize_dir_name("a\\b"), "a_b");
+        assert_eq!(sanitize_dir_name("a\x01b"), "a_b");
+        assert_eq!(sanitize_dir_name("AAPL"), "AAPL");
+    }
 }
