@@ -601,6 +601,10 @@ pub const TENK_PERIODS_FILE: &str = "tenk_audit_periods.csv";
 pub const FUNDAMENTALS_LEAF: &str = "us-gaap-fundamentals";
 /// HTTP/file cache leaf under the home.
 pub const CACHE_LEAF: &str = "cache";
+/// Parquet upload staging dir (repo-relative, outside `data/` on purpose:
+/// these shards are built for Hugging Face upload, not consumed by the
+/// audit pipeline, so they stay out of the `./data` tree).
+pub const HF_UPLOAD_LEAF: &str = "hf_upload_folder";
 
 /// Resolves the single project data directory: always repo-relative `./data`.
 /// Use an explicit `--output-dir` arg for any other location.
@@ -670,6 +674,17 @@ pub fn resolve_tenk_periods_csv(explicit: Option<&str>) -> String {
     }
     resolve_data_root()
         .join(TENK_PERIODS_FILE)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the Parquet upload staging directory: explicit `--dest` wins,
+/// else repo-relative `hf_upload_folder`.
+pub fn resolve_hf_upload_dir(explicit: Option<&str>) -> String {
+    if let Some(e) = explicit {
+        return e.to_string();
+    }
+    std::path::PathBuf::from(HF_UPLOAD_LEAF)
         .to_string_lossy()
         .into_owned()
 }
