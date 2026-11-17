@@ -379,45 +379,6 @@ pub fn pick_canonical(filed_dates: &[&str], adequate: &[bool]) -> Option<usize> 
     latest(&mut all_idxs)
 }
 
-/// Find the original filing a joined amendment supersedes.
-///
-/// Candidates are same-`cik` rows with a base form (`10-K`/`10-K405`,
-/// case-insensitive, trimmed), a real `filed_date` earlier than the
-/// amendment's, no fundamentals match (a mapped base filing already has its
-/// own period and is never a stranded original), and not already claimed by
-/// an earlier-processed amendment (`claimed`). Returns the index of the
-/// latest such candidate.
-///
-/// This is a heuristic (`nearest-earlier-unmapped-base`): annual 10-K
-/// cadence makes the nearest earlier base filing the amended original in
-/// the common case, but year-end changes or out-of-order filings can break
-/// it. Callers must record the rule alongside the pairing so it stays
-/// auditable, and validation should surface gap outliers.
-pub fn find_superseded_original(
-    cik: &str,
-    amendment_filed: &str,
-    ciks: &[&str],
-    forms: &[&str],
-    filed_dates: &[&str],
-    joined: &[bool],
-    claimed: &[bool],
-) -> Option<usize> {
-    if cik.is_empty() || amendment_filed.is_empty() {
-        return None;
-    }
-    (0..ciks.len())
-        .filter(|&i| {
-            let form = forms[i].trim();
-            ciks[i] == cik
-                && (form.eq_ignore_ascii_case("10-K") || form.eq_ignore_ascii_case("10-K405"))
-                && !joined[i]
-                && !claimed[i]
-                && !filed_dates[i].is_empty()
-                && filed_dates[i] < amendment_filed
-        })
-        .max_by(|&a, &b| filed_dates[a].cmp(filed_dates[b]).then_with(|| a.cmp(&b)))
-}
-
 #[cfg(test)]
 mod period_tests {
     use super::*;
@@ -484,96 +445,12 @@ mod period_tests {
     }
 
     #[test]
-    fn superseded_original_is_nearest_earlier_unmapped_base() {
-        let ciks = vec!["1", "1", "1", "2"];
-        let forms = vec!["10-K", "10-K/A", "10-K", "10-K"];
-        let dates = vec!["2024-02-01", "2024-08-01", "2023-02-01", "2024-02-01"];
-        let joined = vec![false, true, false, false];
-        let claimed = vec![false; 4];
-        // Amendment (idx 1) pairs to the 2024 original (idx 0), not 2023.
-        assert_eq!(
-            find_superseded_original("1", "2024-08-01", &ciks, &forms, &dates, &joined, &claimed),
-            Some(0)
-        );
-    }
-
-    #[test]
-    fn superseded_original_ignores_mapped_and_other_cik() {
-        let ciks = vec!["1", "9"];
-        let forms = vec!["10-K", "10-K"];
-        let dates = vec!["2024-02-01", "2024-03-01"];
-        // idx 0 is mapped (has its own period) → not a stranded original.
-        assert_eq!(
-            find_superseded_original(
-                "1",
-                "2024-08-01",
-                &ciks,
-                &forms,
-                &dates,
-                &[true, false],
-                &[false, false]
-            ),
-            None
-        );
-        // Blank cik or date → no pairing.
-        assert_eq!(
-            find_superseded_original(
-                "",
-                "2024-08-01",
-                &ciks,
-                &forms,
-                &dates,
-                &[false, false],
-                &[false, false]
-            ),
-            None
-        );
-        assert_eq!(
-            find_superseded_original(
-                "1",
-                "",
-                &ciks,
-                &forms,
-                &dates,
-                &[false, false],
-                &[false, false]
-            ),
-            None
-        );
-    }
-
-    #[test]
-    fn superseded_original_skips_claimed_and_normalizes_form() {
-        let ciks = vec!["1", "1", "1"];
-        let forms = vec![" 10-k ", "10-K", "10-K/A"];
-        let dates = vec!["2024-02-01", "2023-02-01", "2024-08-01"];
-        let joined = vec![false, false, true];
-        // idx 0 already claimed by an earlier amendment → falls back to idx 1.
-        assert_eq!(
-            find_superseded_original(
-                "1",
-                "2024-08-01",
-                &ciks,
-                &forms,
-                &dates,
-                &joined,
-                &[true, false, false]
-            ),
-            Some(1)
-        );
-        // Lowercase/padded base form still matches when unclaimed.
-        assert_eq!(
-            find_superseded_original(
-                "1",
-                "2024-08-01",
-                &ciks,
-                &forms,
-                &dates,
-                &joined,
-                &[false, false, false]
-            ),
-            Some(0)
-        );
+    fn grouping_comes_from_fundamentals_only() {
+        // Zero tolerance for wrong-period association: no heuristic may
+        // assign one filing's period to another. Group keys derive solely
+        // from the fundamentals map via `period_group_key`.
+        assert_eq!(period_group_key("1090872", "A", "2024"), "1090872|2024");
+        assert_eq!(period_group_key("", "", "2024"), "");
     }
 }
 

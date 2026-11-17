@@ -11,17 +11,13 @@
 //! adequate rows is canonical (restated figures supersede the original);
 //! when no row is adequate, the latest row overall is canonical so every
 //! group still has a representative. Rows with no fundamentals match
-//! (pre-XBRL era) keep blank `fy`/`fp`/`period_key` and stand as their own
-//! canonical row — except stranded originals paired to a joined amendment
-//! (see below).
-//!
-//! Amendment pairing: fundamentals metadata keeps only the latest filing
-//! per period, so a superseded original never joins on its own. Each joined
-//! `/A` therefore claims its nearest earlier unmapped base filing
-//! (`10-K`/`10-K405`, same CIK) as its original, marked
-//! `pairing_rule=heuristic-nearest-earlier` and `is_canonical=false`.
-//! The rule is recorded per row so it stays auditable; gap outliers should
-//! be validated before use in scoring.
+//! (pre-XBRL era, legacy tickers) keep blank `fy`/`fp`/`period_key` and
+//! stand as their own canonical row. No heuristic pairing is performed:
+//! a superseded original without its own fundamentals match is never
+//! assigned to another filing's period, so wrong-period association is
+//! impossible by construction. `pairing_rule` is `fundamentals-join` for
+//! joined rows and `none` otherwise; `superseded_by` is always empty
+//! (columns kept for schema stability).
 //!
 //! Read-only over fundamentals — nothing outside the output CSV is written.
 //! There are **no network calls**.
@@ -37,8 +33,7 @@ use sec_fetcher::parsers::{
     resolve_fundamentals_dir, resolve_tenk_audit_csv, resolve_tenk_periods_csv,
 };
 use sec_fetcher_tenk_parser_audit::{
-    find_superseded_original, load_period_map, normalize_accession, period_group_key,
-    pick_canonical,
+    load_period_map, normalize_accession, period_group_key, pick_canonical,
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -146,7 +141,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut period_keys: Vec<String> = Vec::with_capacity(total);
     let mut join_status: Vec<&str> = Vec::with_capacity(total);
     let mut pairing_rule: Vec<&str> = Vec::with_capacity(total);
-    let mut superseded_by: Vec<&str> = vec![""; total];
+    let superseded_by: Vec<&str> = vec![""; total];
     for rec in records.iter() {
         let get = |idx: usize| rec.get(idx).unwrap_or_default();
         let (fy, fp) = period_map
@@ -169,60 +164,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // ── Amendment pairing ───────────────────────────────────────────────────
+    // ── No heuristic pairing ──────────────────────────────────────────────
     //
-    // Fundamentals metadata keeps only the latest filing per period, so a
-    // superseded original never joins on its own. Each joined `/A` claims
-    // its nearest earlier unmapped base filing as its original. Claimants
-    // are processed oldest-first so the latest amendment wins ties.
-    let get_col = |idx: usize| -> Vec<&str> {
-        records
-            .iter()
-            .map(|rec| rec.get(idx).unwrap_or_default())
-            .collect()
-    };
-    let ciks = get_col(cik_idx);
-    let form_idx = find("form_type")?;
-    let forms = get_col(form_idx);
-    let filed_dates = get_col(filed_idx);
-    let joined_flags: Vec<bool> = join_status.iter().map(|&s| s == "joined").collect();
-    let mut claimed_flags = vec![false; total];
-    let mut claimants: Vec<usize> = (0..total)
-        .filter(|&i| {
-            joined_flags[i]
-                && !fys[i].is_empty()
-                && forms[i].trim().to_ascii_uppercase().ends_with("/A")
-                && !filed_dates[i].is_empty()
-        })
-        .collect();
-    claimants.sort_by(|&a, &b| filed_dates[a].cmp(filed_dates[b]).then_with(|| a.cmp(&b)));
-    let mut paired = 0usize;
-    for &a in &claimants {
-        if let Some(o) = find_superseded_original(
-            ciks[a],
-            filed_dates[a],
-            &ciks,
-            &forms,
-            &filed_dates,
-            &joined_flags,
-            &claimed_flags,
-        ) {
-            // Clone out first: `o` and `a` index the same vecs, so the
-            // source must be materialized before the mutable assignment.
-            let key = period_keys[a].clone();
-            let fy = fys[a].clone();
-            let fp = fps[a].clone();
-            let acc = records[a].get(acc_idx).unwrap_or_default();
-            period_keys[o] = key;
-            fys[o] = fy;
-            fps[o] = fp;
-            superseded_by[o] = acc;
-            pairing_rule[o] = "heuristic-nearest-earlier";
-            claimed_flags[o] = true;
-            paired += 1;
-        }
-    }
-    info!("Pairing: {paired} stranded original(s) claimed by joined amendments");
+    // A superseded original without its own fundamentals match keeps blank
+    // `fy`/`fp`/`period_key` and stands alone. Assigning it to a joined
+    // amendment's period by date proximity risks wrong-period association,
+    // which is not tolerated: grouping must come from fundamentals only.
 
     // ── Group + pick canonical row per group ────────────────────────────────
     let mut groups: HashMap<String, Vec<usize>> = HashMap::new();
@@ -270,7 +217,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let joined = join_status.iter().filter(|&&s| s == "joined").count();
     let canonical_count = is_canonical.iter().filter(|&&b| b).count();
     info!(
-        "Groups: {} period(s); joined {joined}/{total}; paired {paired}; canonical rows: {canonical_count}",
+        "Groups: {} period(s); joined {joined}/{total}; paired 0 (disabled); canonical rows: {canonical_count}",
         groups.len()
     );
 
