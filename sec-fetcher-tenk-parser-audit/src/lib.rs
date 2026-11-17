@@ -1,8 +1,21 @@
 //! Shared utilities for auditing the 10-K section parser.
 //!
-//! Provides CSV row construction, file discovery, path heuristics, manifest
-//! loading, and text helpers used by `tenk-parser-audit` (which runs the
-//! parser on local files).
+//! Two-stage pipeline, one-way data flow:
+//!
+//! 1. `tenk-parser-audit` measures the parser. It reads filings under
+//!    `data/tenk_items/`, counts Item chars, sets `is_adequate`, tags
+//!    `cik`/`filed_date`/`form_type` from `.tenk_manifest.csv`, and writes
+//!    `data/tenk_audit.csv`. It never reads the periods file.
+//! 2. `tenk-period-join` adds fiscal identity. It reads
+//!    `data/tenk_audit.csv` plus per-ticker fundamentals under
+//!    `data/latest-us-gaap/us-gaap-fundamentals/`, groups rows by
+//!    `(cik_or_ticker, fy)`, picks one canonical row per group, and writes
+//!    `data/tenk_audit_periods.csv`. It never modifies the audit file.
+//!
+//! Grouping comes from fundamentals accessions only. There is no heuristic
+//! pairing: unmatched rows keep blank `fy`/`fp`/`period_key` and stand
+//! alone as their own canonical row, so wrong-period association is
+//! impossible by construction.
 //!
 //! Accession keys are normalized through
 //! [`sec_fetcher_shared::normalize_accession`] (re-exported here) at every
