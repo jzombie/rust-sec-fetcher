@@ -5,8 +5,10 @@
 //! `(ticker_symbol, accession_number, raw_text)`. Rows accumulate into
 //! 64 MiB row groups before flushing; when the current output exceeds
 //! `--target-bytes`, the writer is closed and a new `batch_NNNN.parquet`
-//! is started. Shards are staged as `.tmp` files and atomically renamed on
-//! close, and stale `batch_*.parquet` shards are purged before writing.
+//! is started under `hf_upload_folder/tenk_raw/`, leaving the staging root
+//! free for other datasets. Shards are staged as `.tmp` files and
+//! atomically renamed on close, and stale `batch_*.parquet` shards are
+//! purged before writing.
 //!
 //! Peak RAM: row-group buffer (64 MiB of text) plus the largest single file.
 //!
@@ -40,7 +42,7 @@ struct Args {
     #[arg(long, short = 's')]
     source: Option<PathBuf>,
 
-    /// Destination directory for `batch_NNNN.parquet`. Defaults to `hf_upload_folder`.
+    /// Destination directory for `batch_NNNN.parquet`. Defaults to `hf_upload_folder/tenk_raw`.
     #[arg(long, short = 'd')]
     dest: Option<PathBuf>,
 
@@ -166,7 +168,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .mut_arg("dest", |a| {
                 a.help(format!(
                     "Destination directory for `batch_NNNN.parquet`. Defaults to `{}`.",
-                    sec_fetcher_shared::resolve_hf_upload_dir(None)
+                    sec_fetcher_shared::resolve_tenk_raw_parquet_dir(None)
                 ))
             })
             .get_matches(),
@@ -176,7 +178,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or_else(|| PathBuf::from(sec_fetcher_shared::resolve_tenk_items_dir(None)));
     let dest = args
         .dest
-        .unwrap_or_else(|| PathBuf::from(sec_fetcher_shared::resolve_hf_upload_dir(None)));
+        .unwrap_or_else(|| PathBuf::from(sec_fetcher_shared::resolve_tenk_raw_parquet_dir(None)));
     fs::create_dir_all(&dest)?;
 
     if !source.is_dir() {
