@@ -36,7 +36,10 @@ const TARGET_BYTES: u64 = 10 * 1024 * 1024 * 1024;
 const ROW_GROUP_TARGET_BYTES: usize = 64 * 1024 * 1024;
 
 #[derive(Parser)]
-#[command(name = "tenk-raw-to-parquet", about = "Convert raw 10-K files to ZSTD Parquet")]
+#[command(
+    name = "tenk-raw-to-parquet",
+    about = "Convert raw 10-K files to ZSTD Parquet"
+)]
 struct Args {
     /// Source tree. Defaults to `data/tenk_items`.
     #[arg(long, short = 's')]
@@ -62,11 +65,13 @@ fn is_supported_filing_file(path: &Path) -> bool {
     {
         return false;
     }
-    path.extension().and_then(|e| e.to_str()).is_some_and(|ext| {
-        ext.eq_ignore_ascii_case("htm")
-            || ext.eq_ignore_ascii_case("html")
-            || ext.eq_ignore_ascii_case("txt")
-    })
+    path.extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|ext| {
+            ext.eq_ignore_ascii_case("htm")
+                || ext.eq_ignore_ascii_case("html")
+                || ext.eq_ignore_ascii_case("txt")
+        })
 }
 
 /// Accession number from a filing path: the file stem, so `.htm`,
@@ -148,7 +153,10 @@ fn schema() -> Arc<Schema> {
     ]))
 }
 
-fn writer_for(path: &Path, schema: Arc<Schema>) -> Result<ArrowWriter<fs::File>, parquet::errors::ParquetError> {
+fn writer_for(
+    path: &Path,
+    schema: Arc<Schema>,
+) -> Result<ArrowWriter<fs::File>, parquet::errors::ParquetError> {
     let props = WriterProperties::builder()
         .set_compression(Compression::ZSTD(Default::default()))
         .build();
@@ -249,7 +257,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         let pct = done as f64 / total as f64 * 100.0;
-        print!("\r  [{done:>6}/{total}]  output {output_idx:>4}  ({pct:>5.1} %){}", " ".repeat(20));
+        print!(
+            "\r  [{done:>6}/{total}]  output {output_idx:>4}  ({pct:>5.1} %){}",
+            " ".repeat(20)
+        );
         std::io::stdout().flush()?;
     }
     if let Some(w) = writer.take() {
@@ -258,7 +269,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         fs::rename(&tmp_path, &final_path)?;
     }
 
-    println!("\n\nDone — {done} file(s) → {}  in {:.1} s", dest.display(), start.elapsed().as_secs_f64());
+    println!(
+        "\n\nDone — {done} file(s) → {}  in {:.1} s",
+        dest.display(),
+        start.elapsed().as_secs_f64()
+    );
     println!("       {output_idx} Parquet file(s) created");
     let mut total_bytes = 0u64;
     let mut names: Vec<String> = Vec::new();
@@ -323,8 +338,10 @@ mod tests {
         fs::write(dir.join("AAA").join("skip.csv"), "x").unwrap();
         fs::write(dir.join(".hidden_dir").join("h.htm"), "h").unwrap();
         let files = collect_files(&dir).unwrap();
-        let keys: Vec<(&str, &str)> =
-            files.iter().map(|(t, a, _)| (t.as_str(), a.as_str())).collect();
+        let keys: Vec<(&str, &str)> = files
+            .iter()
+            .map(|(t, a, _)| (t.as_str(), a.as_str()))
+            .collect();
         assert_eq!(
             keys,
             vec![("AAA", "c"), ("ZZZ", "a"), ("ZZZ", "b"), ("ZZZ", "u")]

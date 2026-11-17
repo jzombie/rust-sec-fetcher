@@ -87,7 +87,7 @@ pub async fn fetch_us_gaap_fundamentals(
             let updated_urls: Vec<Option<String>> = fundamentals_df
                 .column("accn")?
                 .str()?
-                .into_iter()
+                .iter()
                 .map(|opt| {
                     opt.map(|accn| {
                         primary_doc_map.get(accn).cloned().unwrap_or_else(|| {
@@ -100,7 +100,7 @@ pub async fn fetch_us_gaap_fundamentals(
                 })
                 .collect();
 
-            fundamentals_df.with_column(Series::new("filing_url".into(), updated_urls))?;
+            fundamentals_df.with_column(Series::new("filing_url".into(), updated_urls).into())?;
         }
         Err(e) => {
             // Non-fatal: keep the index-page URLs already set by the parser

@@ -1,10 +1,19 @@
 use crate::enums::Url;
 use crate::models::{AccessionNumber, Cik};
-use polars::prelude::pivot::pivot;
+use polars::frame::PivotColumnNaming;
 use polars::prelude::*;
 use sec_fetcher_shared::{US_GAAP_CSV_META_COLUMNS, normalize_fp_label, parse_period_slot_token};
 use serde_json::Value;
 use std::error::Error;
+use std::sync::Arc;
+
+/// Builds a column-name [`Selector`] matching exactly the given columns.
+fn by_name_columns(cols: &[&str]) -> Selector {
+    Selector::ByName {
+        names: cols.iter().map(|s| PlSmallStr::from(*s)).collect(),
+        strict: true,
+    }
+}
 
 pub type TickerFundamentalsDataFrame = DataFrame;
 
@@ -231,7 +240,7 @@ pub fn parse_us_gaap_fundamentals(
             col("end").alias("period_end"),
         ])
         .unique(
-            Some(vec!["fy".to_string(), "fp".to_string()]),
+            Some(by_name_columns(&["fy", "fp"])),
             UniqueKeepStrategy::First,
         )
         .collect()?;
@@ -253,28 +262,26 @@ pub fn parse_us_gaap_fundamentals(
     // A late-filed amendment is confined to its own `(fy, fp)` bucket by the
     // pivot key; other periods are unaffected.  The logic is entirely
     // form-agnostic: any filing with a later `filed` date wins.
-    let mut pivot_df = pivot(
-        &df,
-        ["fact_name"]
-            .iter()
-            .map(|&s| s.to_string())
-            .collect::<Vec<String>>(),
-        Some(
-            ["fy", "fp"]
-                .iter()
-                .map(|&s| s.to_string())
-                .collect::<Vec<String>>(),
-        ),
-        Some(
-            ["value"]
-                .iter()
-                .map(|&s| s.to_string())
-                .collect::<Vec<String>>(),
-        ),
-        false,
-        Some(col("value").first()),
-        None,
-    )?;
+    // Distinct `fact_name` values in order of appearance: these become the
+    // output tag columns. `df` is sorted `filed DESC`, so column order
+    // matches the old eager `pivot(..., sort_columns = false)` behavior.
+    let on_values = Arc::new(DataFrame::new_infer_height(vec![
+        df.column("fact_name")?.unique_stable()?,
+    ])?);
+    let mut pivot_df = df
+        .clone()
+        .lazy()
+        .pivot(
+            by_name_columns(&["fact_name"]),
+            on_values,
+            by_name_columns(&["fy", "fp"]),
+            by_name_columns(&["value"]),
+            element().first(),
+            true,
+            "".into(),
+            PivotColumnNaming::Auto,
+        )
+        .collect()?;
 
     // Join metadata back to the pivoted dataframe
     pivot_df = pivot_df
@@ -294,7 +301,7 @@ pub fn parse_us_gaap_fundamentals(
     let (is_amendment_values, normalized_form_values): (Vec<bool>, Vec<Option<String>>) = {
         let form_col = pivot_df.column("form")?.str()?;
         form_col
-            .into_iter()
+            .iter()
             .map(|opt| match opt {
                 Some(s) if s.ends_with("/A") => (true, Some(s[..s.len() - 2].to_string())),
                 Some(s) => (false, Some(s.to_string())),
@@ -302,8 +309,8 @@ pub fn parse_us_gaap_fundamentals(
             })
             .unzip()
     };
-    pivot_df.with_column(Series::new("is_amendment".into(), is_amendment_values))?;
-    pivot_df.with_column(Series::new("form".into(), normalized_form_values))?;
+    pivot_df.with_column(Series::new("is_amendment".into(), is_amendment_values).into())?;
+    pivot_df.with_column(Series::new("form".into(), normalized_form_values).into())?;
 
     // Output ordering: sort by `fy DESC` then canonical `fp` rank, and attach
     // a `canonical_order` index (0 = most recent period).  The rank is computed
@@ -313,14 +320,14 @@ pub fn parse_us_gaap_fundamentals(
     let fp_ranks: Vec<i32> = pivot_df
         .column("fp")?
         .str()?
-        .into_iter()
+        .iter()
         .map(|opt| {
             opt.and_then(parse_period_slot_token)
                 .map(|r| r as i32)
                 .unwrap_or(0)
         })
         .collect();
-    pivot_df.with_column(Series::new("fp_rank".into(), fp_ranks))?;
+    pivot_df.with_column(Series::new("fp_rank".into(), fp_ranks).into())?;
 
     // Sort by FY descending, then by our custom fp rank descending
     pivot_df = pivot_df.sort(
@@ -346,7 +353,7 @@ pub fn parse_us_gaap_fundamentals(
     let filing_urls: Vec<Option<String>> = pivot_df
         .column("accn")?
         .str()?
-        .into_iter()
+        .iter()
         .map(|opt| {
             opt.map(|accn| {
                 let cik_struct = cik_value.and_then(|v| Cik::from_u64(v).ok());
@@ -358,7 +365,7 @@ pub fn parse_us_gaap_fundamentals(
             })
         })
         .collect();
-    pivot_df.with_column(Series::new("filing_url".into(), filing_urls))?;
+    pivot_df.with_column(Series::new("filing_url".into(), filing_urls).into())?;
 
     // Reorder columns to place metadata (canonical_order, fy, fp, period_end, filed, form, accn, filing_url) at the start
     let mut desired_cols: Vec<String> = US_GAAP_CSV_META_COLUMNS
@@ -613,7 +620,7 @@ mod tests {
         );
 
         let accn_col = df.column("accn").unwrap().str().unwrap();
-        let accn_values: Vec<&str> = accn_col.into_iter().flatten().collect();
+        let accn_values: Vec<&str> = accn_col.iter().flatten().collect();
 
         assert!(accn_values.contains(&"standard-2023"));
         assert!(accn_values.contains(&"off-calendar-2024-q1"));
@@ -674,7 +681,7 @@ mod tests {
         );
 
         let fp_col = df.column("fp").unwrap().str().unwrap();
-        let fp_values: Vec<&str> = fp_col.into_iter().flatten().collect();
+        let fp_values: Vec<&str> = fp_col.iter().flatten().collect();
 
         // Q4 must have been renamed to FY.
         assert!(

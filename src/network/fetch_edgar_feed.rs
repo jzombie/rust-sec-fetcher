@@ -3,8 +3,8 @@ use crate::models::{Cik, FeedEntry};
 use crate::network::SecClient;
 use chrono::{DateTime, FixedOffset, NaiveDate};
 use futures::future::join_all;
-use quick_xml::Reader;
 use quick_xml::events::Event;
+use quick_xml::{Reader, XmlVersion};
 use regex::Regex;
 use std::error::Error;
 use std::sync::LazyLock as Lazy;
@@ -124,31 +124,31 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
     while let Ok(event) = reader.read_event() {
         match event {
             Event::Start(ref e) => match e.name().as_ref() {
-                b"entry" => {
+                "entry" => {
                     current = Some(PartialEntry::default());
                     current_field = None;
                 }
-                b"title" if current.is_some() => current_field = Some("title"),
-                b"updated" if current.is_some() => current_field = Some("updated"),
-                b"id" if current.is_some() => current_field = Some("id"),
-                b"summary" if current.is_some() => current_field = Some("summary"),
-                b"link" if current.is_some() => {
+                "title" if current.is_some() => current_field = Some("title"),
+                "updated" if current.is_some() => current_field = Some("updated"),
+                "id" if current.is_some() => current_field = Some("id"),
+                "summary" if current.is_some() => current_field = Some("summary"),
+                "link" if current.is_some() => {
                     if let Some(attr) = e
                         .attributes()
-                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"href"))
+                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == "href"))
                         && let Some(ref mut p) = current
                     {
-                        p.link_href = attr?.unescape_value()?.to_string();
+                        p.link_href = attr?.normalized_value(XmlVersion::Explicit1_0)?.to_string();
                     }
                 }
-                b"category" if current.is_some() => {
+                "category" if current.is_some() => {
                     if let Some(attr) = e
                         .attributes()
-                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"term"))
+                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == "term"))
                         && let Some(ref mut p) = current
                         && p.form_type.is_empty()
                     {
-                        p.form_type = attr?.unescape_value()?.to_string();
+                        p.form_type = attr?.normalized_value(XmlVersion::Explicit1_0)?.to_string();
                     }
                 }
                 _ => {}
@@ -156,23 +156,23 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
 
             // Self-closing <link .../> and <category .../> come as Empty events.
             Event::Empty(ref e) => match e.name().as_ref() {
-                b"link" if current.is_some() => {
+                "link" if current.is_some() => {
                     if let Some(attr) = e
                         .attributes()
-                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"href"))
+                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == "href"))
                         && let Some(ref mut p) = current
                     {
-                        p.link_href = attr?.unescape_value()?.to_string();
+                        p.link_href = attr?.normalized_value(XmlVersion::Explicit1_0)?.to_string();
                     }
                 }
-                b"category" if current.is_some() => {
+                "category" if current.is_some() => {
                     if let Some(attr) = e
                         .attributes()
-                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"term"))
+                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == "term"))
                         && let Some(ref mut p) = current
                         && p.form_type.is_empty()
                     {
-                        p.form_type = attr?.unescape_value()?.to_string();
+                        p.form_type = attr?.normalized_value(XmlVersion::Explicit1_0)?.to_string();
                     }
                 }
                 _ => {}
@@ -180,7 +180,7 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
 
             Event::Text(e) => {
                 if let Some(p) = &mut current {
-                    let text = e.decode()?.to_string();
+                    let text = e.xml_content(XmlVersion::Explicit1_0).to_string();
                     match current_field {
                         Some("summary") => {
                             // Summary may span multiple text nodes if embedded HTML
@@ -205,7 +205,7 @@ pub fn parse_edgar_atom_feed(xml: &str) -> Result<Vec<FeedEntry>, Box<dyn Error>
             }
 
             Event::End(ref e) => {
-                if e.name().as_ref() == b"entry" {
+                if e.name().as_ref() == "entry" {
                     if let Some(p) = current.take()
                         && let Some(entry) = p.build()
                     {

@@ -2,6 +2,7 @@ use crate::models::ThirteenfHolding;
 use crate::normalize::{Pct, compute_13f_weight_pct, normalize_13f_value_usd};
 use chrono::NaiveDate;
 use quick_xml::Reader;
+use quick_xml::XmlVersion;
 use quick_xml::events::Event;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
@@ -60,7 +61,7 @@ pub fn parse_13f_xml(
                 }
             }
             Ok(Event::Text(e)) if in_info_table => {
-                let text = e.decode()?.trim().to_string();
+                let text = e.xml_content(XmlVersion::Explicit1_0).trim().to_string();
                 if text.is_empty() {
                     buf.clear();
                     continue;
@@ -126,7 +127,6 @@ pub fn parse_13f_xml(
 }
 
 /// Returns the local part of an XML tag name, stripping any namespace prefix.
-fn local_name(name: &[u8]) -> &str {
-    let s = std::str::from_utf8(name).unwrap_or("");
-    s.rfind(':').map(|i| &s[i + 1..]).unwrap_or(s)
+fn local_name(name: &str) -> &str {
+    name.rfind(':').map(|i| &name[i + 1..]).unwrap_or(name)
 }
