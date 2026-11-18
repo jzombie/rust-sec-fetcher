@@ -234,6 +234,44 @@ mod tests {
     use super::*;
 
     #[test]
+    fn period_columns_match_on_disk_header_order() {
+        // Guard against writer/reader drift: the appended columns must stay
+        // exactly the trailing header of `tenk_audit_periods.csv`.
+        assert_eq!(
+            TENK_PERIOD_APPENDED_COLUMNS,
+            &[
+                "fy",
+                "fp",
+                "period_key",
+                "is_canonical",
+                "canonical_accession",
+                "join_status",
+                "superseded_by",
+                "pairing_rule",
+            ]
+        );
+    }
+
+    #[test]
+    fn manifest_header_matches_on_disk_column_order() {
+        // Guard against writer/reader drift: the manifest header must stay
+        // exactly the `.tenk_manifest.csv` column order. Note `accession`
+        // (not `accession_number`) and `form` (not `form_type`) — the
+        // manifest schema is intentionally distinct from the audit schema.
+        assert_eq!(
+            TENK_MANIFEST_HEADER,
+            &[
+                "ticker",
+                "cik",
+                "accession",
+                "filed_date",
+                "form",
+                "primary_document",
+            ]
+        );
+    }
+
+    #[test]
     fn accession_keys_converge() {
         let dashed = normalize_accession("0001090872-26-000064");
         assert_eq!(dashed, normalize_accession("000109087226000064"));
@@ -595,8 +633,63 @@ pub const TENK_AUDIT_FILE: &str = "tenk_audit.csv";
 /// recursively and would otherwise parse the manifest itself as a filing.
 /// Its collector already skips dotfiles.
 pub const TENK_MANIFEST_FILE: &str = ".tenk_manifest.csv";
+// ── 10-K manifest column name constants ──────────────────────────────────
+// Single source of truth for the `.tenk_manifest.csv` header written by
+// `pull-tenk-items` and read by `tenk-parser-audit` (`load_manifest`) and
+// `pull-tenk-items` itself (`load_manifest_map`). Note the manifest schema
+// is intentionally distinct from the audit schema: `accession` (not
+// `accession_number`) and `form` (not `form_type`).
+pub const TENK_MANIFEST_COL_TICKER: &str = "ticker";
+pub const TENK_MANIFEST_COL_CIK: &str = "cik";
+pub const TENK_MANIFEST_COL_ACCESSION: &str = "accession";
+pub const TENK_MANIFEST_COL_FILED_DATE: &str = "filed_date";
+pub const TENK_MANIFEST_COL_FORM: &str = "form";
+pub const TENK_MANIFEST_COL_PRIMARY_DOCUMENT: &str = "primary_document";
+
+/// Manifest header, in write order.
+pub const TENK_MANIFEST_HEADER: &[&str] = &[
+    TENK_MANIFEST_COL_TICKER,
+    TENK_MANIFEST_COL_CIK,
+    TENK_MANIFEST_COL_ACCESSION,
+    TENK_MANIFEST_COL_FILED_DATE,
+    TENK_MANIFEST_COL_FORM,
+    TENK_MANIFEST_COL_PRIMARY_DOCUMENT,
+];
 /// 10-K accession→period join output filename under the home.
 pub const TENK_PERIODS_FILE: &str = "tenk_audit_periods.csv";
+// ── 10-K audit / periods column name constants ────────────────────────────
+// Single source of truth for the `tenk_audit.csv` columns read by the
+// period join and the `tenk_audit_periods.csv` columns the join appends
+// and `tenk-itemized-to-parquet` reads back. Reference these instead of
+// string literals so a rename breaks at compile time on both sides of the
+// join (the pattern follows `US_GAAP_CSV_META_COLUMNS` above).
+pub const TENK_AUDIT_COL_TICKER: &str = "ticker";
+pub const TENK_AUDIT_COL_CIK: &str = "cik";
+pub const TENK_AUDIT_COL_ACCESSION: &str = "accession_number";
+pub const TENK_AUDIT_COL_FILED_DATE: &str = "filed_date";
+pub const TENK_AUDIT_COL_FORM_TYPE: &str = "form_type";
+pub const TENK_AUDIT_COL_IS_ADEQUATE: &str = "is_adequate";
+
+pub const TENK_PERIOD_COL_FY: &str = "fy";
+pub const TENK_PERIOD_COL_FP: &str = "fp";
+pub const TENK_PERIOD_COL_PERIOD_KEY: &str = "period_key";
+pub const TENK_PERIOD_COL_IS_CANONICAL: &str = "is_canonical";
+pub const TENK_PERIOD_COL_CANONICAL_ACCESSION: &str = "canonical_accession";
+pub const TENK_PERIOD_COL_JOIN_STATUS: &str = "join_status";
+pub const TENK_PERIOD_COL_SUPERSEDED_BY: &str = "superseded_by";
+pub const TENK_PERIOD_COL_PAIRING_RULE: &str = "pairing_rule";
+
+/// Columns appended by `tenk-period-join`, in write order.
+pub const TENK_PERIOD_APPENDED_COLUMNS: &[&str] = &[
+    TENK_PERIOD_COL_FY,
+    TENK_PERIOD_COL_FP,
+    TENK_PERIOD_COL_PERIOD_KEY,
+    TENK_PERIOD_COL_IS_CANONICAL,
+    TENK_PERIOD_COL_CANONICAL_ACCESSION,
+    TENK_PERIOD_COL_JOIN_STATUS,
+    TENK_PERIOD_COL_SUPERSEDED_BY,
+    TENK_PERIOD_COL_PAIRING_RULE,
+];
 /// Per-ticker fundamentals leaf under the bulk output dir.
 pub const FUNDAMENTALS_LEAF: &str = "us-gaap-fundamentals";
 /// HTTP/file cache leaf under the home.

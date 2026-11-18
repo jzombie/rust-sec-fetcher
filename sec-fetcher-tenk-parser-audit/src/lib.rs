@@ -42,13 +42,17 @@ pub use sec_fetcher_shared::normalize_accession;
 /// `"item_1a"`, `"item_7"`, …) in display order.  One `*_chars` column is
 /// emitted per key.
 pub fn header_columns(item_keys: &[String]) -> Vec<String> {
+    use sec_fetcher_shared::{
+        TENK_AUDIT_COL_ACCESSION, TENK_AUDIT_COL_CIK, TENK_AUDIT_COL_FILED_DATE,
+        TENK_AUDIT_COL_FORM_TYPE, TENK_AUDIT_COL_IS_ADEQUATE, TENK_AUDIT_COL_TICKER,
+    };
     let mut header: Vec<String> = vec![
-        "ticker".into(),
-        "cik".into(),
-        "accession_number".into(),
-        "filed_date".into(),
-        "form_type".into(),
-        "is_adequate".into(),
+        TENK_AUDIT_COL_TICKER.into(),
+        TENK_AUDIT_COL_CIK.into(),
+        TENK_AUDIT_COL_ACCESSION.into(),
+        TENK_AUDIT_COL_FILED_DATE.into(),
+        TENK_AUDIT_COL_FORM_TYPE.into(),
+        TENK_AUDIT_COL_IS_ADEQUATE.into(),
         "item_1_snippet".into(),
         "item_7_snippet".into(),
         "items_found".into(),
@@ -229,11 +233,17 @@ pub type ManifestEntry = (String, String, String);
 /// quoted commas, quotes, or embedded newlines. Keys are normalized at the
 /// boundary — ticker trimmed, accession via [`normalize_accession`] — so
 /// they match path-derived lookups regardless of dash/padding/case form.
-/// Returns an empty map when the file is missing or unreadable — callers
-/// fall back to blank `cik` / `filed_date` / `form_type` columns, preserving
-/// the old offline behavior. Malformed lines are skipped. Only the first
-/// five columns are read; extra columns are ignored.
+/// Columns resolve by header name (shared `TENK_MANIFEST_COL_*`), so column
+/// order doesn't matter. Returns an empty map when the file is missing or
+/// unreadable — callers fall back to blank `cik` / `filed_date` /
+/// `form_type` columns, preserving the old offline behavior. Malformed
+/// lines are skipped. Only the six manifest columns are read; extra
+/// columns are ignored.
 pub fn load_manifest(path: &Path) -> HashMap<(String, String), ManifestEntry> {
+    use sec_fetcher_shared::{
+        TENK_MANIFEST_COL_ACCESSION, TENK_MANIFEST_COL_CIK, TENK_MANIFEST_COL_FILED_DATE,
+        TENK_MANIFEST_COL_FORM, TENK_MANIFEST_COL_TICKER,
+    };
     let mut map = HashMap::new();
     let Ok(mut rdr) = csv::ReaderBuilder::new()
         .has_headers(true)
@@ -242,19 +252,30 @@ pub fn load_manifest(path: &Path) -> HashMap<(String, String), ManifestEntry> {
     else {
         return map;
     };
+    let Ok(headers) = rdr.headers().cloned() else {
+        return map;
+    };
+    let find = |name: &str| headers.iter().position(|h| h == name);
+    let (Some(ticker_idx), Some(cik_idx), Some(acc_idx), Some(filed_idx), Some(form_idx)) = (
+        find(TENK_MANIFEST_COL_TICKER),
+        find(TENK_MANIFEST_COL_CIK),
+        find(TENK_MANIFEST_COL_ACCESSION),
+        find(TENK_MANIFEST_COL_FILED_DATE),
+        find(TENK_MANIFEST_COL_FORM),
+    ) else {
+        return map;
+    };
     for record in rdr.records().flatten() {
-        if record.len() < 5 {
-            continue;
-        }
+        let get = |idx: usize| record.get(idx).unwrap_or_default();
         map.insert(
             (
-                record[0].trim().to_string(),
-                normalize_accession(&record[2]),
+                get(ticker_idx).trim().to_string(),
+                normalize_accession(get(acc_idx)),
             ),
             (
-                record[1].to_string(),
-                record[3].to_string(),
-                record[4].to_string(),
+                get(cik_idx).to_string(),
+                get(filed_idx).to_string(),
+                get(form_idx).to_string(),
             ),
         );
     }

@@ -40,9 +40,35 @@ Run:
 cargo run -p sec-fetcher-tenk-parser-audit --bin tenk-period-join --release
 ```
 
+## Stage 3: `tenk-itemized-to-parquet`
+
+Exports full Item 1 / Item 7 text plus frozen audit annotations to Parquet for upload.
+
+- Inputs: filings under `data/tenk_items/` **and** `data/tenk_audit_periods.csv` from Stage 2 (join key: normalized accession)
+- Output: `batch_NNNN.parquet` shards under `hf_upload_folder/tenk_itemized/`
+- Columns: `ticker_symbol`, `accession_number`, `filed_date`, `form_type`, `fy`, `fp`, `is_adequate`, `is_canonical`, `canonical_accession`, `item_1`, `item_7`
+- Item columns are null when the section is absent or the document fails to parse (counted as parse errors, never fatal)
+- Filings missing from the periods CSV get blank annotations and `false` flags, counted as `unannotated` in the summary
+
+**Ordering: run Stage 2 before Stage 3.** The export embeds a frozen copy of the join; re-running the audit or join afterwards orphans the embedded flags. Full pipeline after any parser change:
+
+```sh
+cargo run -p sec-fetcher-tenk-parser-audit --bin tenk-parser-audit --release
+cargo run -p sec-fetcher-tenk-parser-audit --bin tenk-period-join --release
+cargo run --release --bin tenk-itemized-to-parquet
+```
+
+The exporter enforces this: it refuses to run when `data/tenk_audit_periods.csv` is missing or older than `data/tenk_audit.csv`, naming the join command to re-run. Column names on both sides of the join are shared constants in `sec-fetcher-shared` (`TENK_AUDIT_COL_*`, `TENK_PERIOD_COL_*`, `TENK_PERIOD_APPENDED_COLUMNS`), so a rename breaks at compile time instead of silently misjoining.
+
+Run:
+
+```sh
+cargo run --release --bin tenk-itemized-to-parquet
+```
+
 ## Scoring guidance
 
-- Score canonical rows only (`is_canonical=true`).
+- Score canonical rows only (`is_canonical=true AND is_adequate=true`). The flags are embedded per row, so this is a plain `WHERE` clause — no sidecar CSV needed.
 - Filter amendments at scoring time via `form_type`, not at collection.
 - Pre-2010 and legacy rows are ungrouped by design (no fundamentals) and score standalone or out of scope.
 - Current corpus: 97,526 audit rows, 53,359 joined, 53,015 groups, 92.6% grouped canonical adequacy.

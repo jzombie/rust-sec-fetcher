@@ -423,24 +423,23 @@ fn sanitize_dir_name(name: &str) -> String {
 // reader decodes them back. A line-splitting parser would corrupt records
 // with embedded newlines.
 
-const MANIFEST_HEADER: [&str; 6] = [
-    "ticker",
-    "cik",
-    "accession",
-    "filed_date",
-    "form",
-    "primary_document",
-];
+// Manifest header lives in `sec-fetcher-shared` (`TENK_MANIFEST_HEADER`)
+// so the pull-side writer and all readers resolve the same names.
 
 /// Load an existing manifest into a map keyed by `(ticker, accession)`.
 /// Keys are normalized at the boundary (trimmed ticker, normalized
 /// accession via `sec_fetcher_shared::normalize_accession`) so reruns and
 /// partial runs dedup correctly regardless of dash/padding/case variants.
 /// Stored row values (and the CSV format) are untouched. Missing file →
-/// empty map. Malformed lines are skipped.
+/// empty map. Malformed lines are skipped. Columns resolve by header name
+/// (via shared `TENK_MANIFEST_COL_*`), so column order doesn't matter.
 fn load_manifest_map(
     path: &std::path::Path,
 ) -> std::collections::HashMap<(String, String), ManifestRow> {
+    use sec_fetcher_shared::{
+        TENK_MANIFEST_COL_ACCESSION, TENK_MANIFEST_COL_CIK, TENK_MANIFEST_COL_FILED_DATE,
+        TENK_MANIFEST_COL_FORM, TENK_MANIFEST_COL_PRIMARY_DOCUMENT, TENK_MANIFEST_COL_TICKER,
+    };
     let mut map = std::collections::HashMap::new();
     let Ok(mut rdr) = csv::ReaderBuilder::new()
         .has_headers(true)
@@ -449,23 +448,43 @@ fn load_manifest_map(
     else {
         return map;
     };
+    let Ok(headers) = rdr.headers().cloned() else {
+        return map;
+    };
+    let find = |name: &str| headers.iter().position(|h| h == name);
+    let (
+        Some(ticker_idx),
+        Some(cik_idx),
+        Some(acc_idx),
+        Some(filed_idx),
+        Some(form_idx),
+        Some(doc_idx),
+    ) = (
+        find(TENK_MANIFEST_COL_TICKER),
+        find(TENK_MANIFEST_COL_CIK),
+        find(TENK_MANIFEST_COL_ACCESSION),
+        find(TENK_MANIFEST_COL_FILED_DATE),
+        find(TENK_MANIFEST_COL_FORM),
+        find(TENK_MANIFEST_COL_PRIMARY_DOCUMENT),
+    )
+    else {
+        return map;
+    };
     for record in rdr.records().flatten() {
-        if record.len() < 6 {
-            continue;
-        }
+        let get = |idx: usize| record.get(idx).unwrap_or_default();
         let key = (
-            record[0].trim().to_string(),
-            sec_fetcher_shared::normalize_accession(&record[2]),
+            get(ticker_idx).trim().to_string(),
+            sec_fetcher_shared::normalize_accession(get(acc_idx)),
         );
         map.insert(
             key,
             ManifestRow {
-                ticker: record[0].to_string(),
-                cik: record[1].to_string(),
-                accession: record[2].to_string(),
-                filed_date: record[3].to_string(),
-                form: record[4].to_string(),
-                primary_document: record[5].to_string(),
+                ticker: get(ticker_idx).to_string(),
+                cik: get(cik_idx).to_string(),
+                accession: get(acc_idx).to_string(),
+                filed_date: get(filed_idx).to_string(),
+                form: get(form_idx).to_string(),
+                primary_document: get(doc_idx).to_string(),
             },
         );
     }
@@ -504,7 +523,7 @@ fn merge_manifest_rows(
         let mut wtr = csv::WriterBuilder::new()
             .has_headers(true)
             .from_path(&tmp_path)?;
-        wtr.write_record(MANIFEST_HEADER)?;
+        wtr.write_record(sec_fetcher_shared::TENK_MANIFEST_HEADER)?;
         for r in &rows {
             wtr.write_record([
                 &r.ticker,

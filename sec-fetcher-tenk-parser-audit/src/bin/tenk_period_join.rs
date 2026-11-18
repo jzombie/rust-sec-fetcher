@@ -195,11 +195,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .ok_or_else(|| format!("audit CSV is missing column `{name}`"))
     };
     let (ticker_idx, cik_idx, acc_idx, filed_idx, adequate_idx) = (
-        find("ticker")?,
-        find("cik")?,
-        find("accession_number")?,
-        find("filed_date")?,
-        find("is_adequate")?,
+        find(sec_fetcher_shared::TENK_AUDIT_COL_TICKER)?,
+        find(sec_fetcher_shared::TENK_AUDIT_COL_CIK)?,
+        find(sec_fetcher_shared::TENK_AUDIT_COL_ACCESSION)?,
+        find(sec_fetcher_shared::TENK_AUDIT_COL_FILED_DATE)?,
+        find(sec_fetcher_shared::TENK_AUDIT_COL_IS_ADEQUATE)?,
     );
     let records: Vec<csv::StringRecord> = rdr.records().collect::<Result<_, _>>()?;
     let total = records.len();
@@ -265,18 +265,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ── Write enriched CSV atomically ───────────────────────────────────────
     let mut header: Vec<String> = headers.iter().map(|h| h.to_string()).collect();
     header.extend(
-        [
-            "fy",
-            "fp",
-            "period_key",
-            "is_canonical",
-            "canonical_accession",
-            "join_status",
-            "superseded_by",
-            "pairing_rule",
-        ]
-        .iter()
-        .map(|h| h.to_string()),
+        sec_fetcher_shared::TENK_PERIOD_APPENDED_COLUMNS
+            .iter()
+            .map(|h| h.to_string()),
     );
     if let Some(parent) = output.parent()
         && !parent.as_os_str().is_empty()
