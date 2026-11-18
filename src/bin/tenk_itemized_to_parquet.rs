@@ -290,7 +290,7 @@ fn schema() -> Arc<Schema> {
             TENK_AUDIT_COL_IS_ADEQUATE,
             DataType::Boolean,
             false,
-            "True when item_1_chars >= 400 and item_7_chars >= 2000 on the true 10-K text.",
+            "True when item_1_chars >= 400 and item_7_chars >= 2000 on the extracted plain text.",
         ),
         doc_field(
             TENK_PERIOD_COL_IS_CANONICAL,
