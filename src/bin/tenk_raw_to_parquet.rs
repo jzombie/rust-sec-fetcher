@@ -16,6 +16,7 @@
 //! cargo run --release --bin tenk-raw-to-parquet
 //! ```
 
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -47,11 +48,46 @@ struct Args {
     target_bytes: u64,
 }
 
+/// Build a field carrying a `description` entry in its Arrow metadata.
+/// The `parquet` crate's `ArrowWriter` persists the Arrow schema (metadata
+/// included) in the file footer, so `pyarrow` / HF `datasets` surface these
+/// as `field.metadata["description"]` (see
+/// [`sec_fetcher_shared::PARQUET_FIELD_METADATA_DESCRIPTION`]).
+fn doc_field(
+    name: impl Into<String>,
+    data_type: DataType,
+    nullable: bool,
+    description: &str,
+) -> Field {
+    Field::new(name.into(), data_type, nullable).with_metadata(HashMap::from([(
+        sec_fetcher_shared::PARQUET_FIELD_METADATA_DESCRIPTION.to_string(),
+        description.to_string(),
+    )]))
+}
+
 fn schema() -> Arc<Schema> {
+    use sec_fetcher_shared::{
+        TENK_AUDIT_COL_ACCESSION, TENK_PARQUET_COL_RAW_TEXT, TENK_PARQUET_COL_TICKER_SYMBOL,
+    };
     Arc::new(Schema::new(vec![
-        Field::new("ticker_symbol", DataType::Utf8, false),
-        Field::new("accession_number", DataType::Utf8, false),
-        Field::new("raw_text", DataType::Utf8, false),
+        doc_field(
+            TENK_PARQUET_COL_TICKER_SYMBOL,
+            DataType::Utf8,
+            false,
+            "Directory ticker the filing was pulled under (sanitized on disk, e.g. BF_A for BF/A).",
+        ),
+        doc_field(
+            TENK_AUDIT_COL_ACCESSION,
+            DataType::Utf8,
+            false,
+            "EDGAR accession of the filing, canonical dashed form.",
+        ),
+        doc_field(
+            TENK_PARQUET_COL_RAW_TEXT,
+            DataType::Utf8,
+            false,
+            "Full filing document text, lossy UTF-8 decoded.",
+        ),
     ]))
 }
 
@@ -175,7 +211,7 @@ mod tests {
                 .iter()
                 .map(|f| f.name().as_str())
                 .collect::<Vec<_>>(),
-            vec!["ticker_symbol", "accession_number", "raw_text"]
+            sec_fetcher_shared::TENK_RAW_PARQUET_COLUMNS
         );
         assert!(!schema.field(0).is_nullable());
         assert!(!schema.field(1).is_nullable());
@@ -191,6 +227,20 @@ mod tests {
         .unwrap();
         assert_eq!(batch.num_rows(), 1);
         assert_eq!(batch.column(2).null_count(), 0);
+    }
+
+    #[test]
+    fn every_field_carries_a_description() {
+        for f in schema().fields() {
+            let desc = f
+                .metadata()
+                .get(sec_fetcher_shared::PARQUET_FIELD_METADATA_DESCRIPTION);
+            assert!(
+                desc.is_some_and(|d| !d.trim().is_empty()),
+                "field `{}` is missing description metadata",
+                f.name()
+            );
+        }
     }
 
     #[test]

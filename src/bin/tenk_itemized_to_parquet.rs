@@ -106,10 +106,11 @@ struct Args {
 /// callers can count and report parser failures separately from genuinely
 /// missing sections.
 fn extract_item_texts(raw: &str) -> (Option<String>, Option<String>, bool) {
+    use sec_fetcher_shared::{TENK_PARQUET_COL_ITEM_1, TENK_PARQUET_COL_ITEM_7};
     match extract_sections_from_document(raw) {
         Ok(sections) => (
-            sections.get("item_1").map(str::to_string),
-            sections.get("item_7").map(str::to_string),
+            sections.get(TENK_PARQUET_COL_ITEM_1).map(str::to_string),
+            sections.get(TENK_PARQUET_COL_ITEM_7).map(str::to_string),
             false,
         ),
         Err(_) => (None, None, true),
@@ -244,22 +245,95 @@ fn check_periods_freshness(periods: &Path, audit: &Path) -> Result<(), String> {
 fn schema() -> Arc<Schema> {
     use sec_fetcher_shared::{
         TENK_AUDIT_COL_ACCESSION, TENK_AUDIT_COL_FILED_DATE, TENK_AUDIT_COL_FORM_TYPE,
-        TENK_AUDIT_COL_IS_ADEQUATE, TENK_PERIOD_COL_CANONICAL_ACCESSION, TENK_PERIOD_COL_FP,
+        TENK_AUDIT_COL_IS_ADEQUATE, TENK_PARQUET_COL_ITEM_1, TENK_PARQUET_COL_ITEM_7,
+        TENK_PARQUET_COL_TICKER_SYMBOL, TENK_PERIOD_COL_CANONICAL_ACCESSION, TENK_PERIOD_COL_FP,
         TENK_PERIOD_COL_FY, TENK_PERIOD_COL_IS_CANONICAL,
     };
     Arc::new(Schema::new(vec![
-        Field::new("ticker_symbol", DataType::Utf8, false),
-        Field::new(TENK_AUDIT_COL_ACCESSION, DataType::Utf8, false),
-        Field::new(TENK_AUDIT_COL_FILED_DATE, DataType::Utf8, true),
-        Field::new(TENK_AUDIT_COL_FORM_TYPE, DataType::Utf8, true),
-        Field::new(TENK_PERIOD_COL_FY, DataType::Utf8, true),
-        Field::new(TENK_PERIOD_COL_FP, DataType::Utf8, true),
-        Field::new(TENK_AUDIT_COL_IS_ADEQUATE, DataType::Boolean, false),
-        Field::new(TENK_PERIOD_COL_IS_CANONICAL, DataType::Boolean, false),
-        Field::new(TENK_PERIOD_COL_CANONICAL_ACCESSION, DataType::Utf8, true),
-        Field::new("item_1", DataType::Utf8, true),
-        Field::new("item_7", DataType::Utf8, true),
+        doc_field(
+            TENK_PARQUET_COL_TICKER_SYMBOL,
+            DataType::Utf8,
+            false,
+            "Directory ticker the filing was pulled under (sanitized on disk, e.g. BF_A for BF/A).",
+        ),
+        doc_field(
+            TENK_AUDIT_COL_ACCESSION,
+            DataType::Utf8,
+            false,
+            "EDGAR accession of the filing, canonical dashed form.",
+        ),
+        doc_field(
+            TENK_AUDIT_COL_FILED_DATE,
+            DataType::Utf8,
+            true,
+            "Filing date from the audit manifest (YYYY-MM-DD); null when the periods CSV has no row.",
+        ),
+        doc_field(
+            TENK_AUDIT_COL_FORM_TYPE,
+            DataType::Utf8,
+            true,
+            "SEC form of the filing (10-K, 10-K/A, ...); null when unannotated.",
+        ),
+        doc_field(
+            TENK_PERIOD_COL_FY,
+            DataType::Utf8,
+            true,
+            "Fiscal year from the fundamentals join; null when unmatched (e.g. pre-XBRL).",
+        ),
+        doc_field(
+            TENK_PERIOD_COL_FP,
+            DataType::Utf8,
+            true,
+            "Fiscal period slot (FY, Q1-Q3); year-end Q4 normalized to FY; null when unmatched.",
+        ),
+        doc_field(
+            TENK_AUDIT_COL_IS_ADEQUATE,
+            DataType::Boolean,
+            false,
+            "True when item_1_chars >= 400 and item_7_chars >= 2000 on the true 10-K text.",
+        ),
+        doc_field(
+            TENK_PERIOD_COL_IS_CANONICAL,
+            DataType::Boolean,
+            false,
+            "True for the latest adequate row per (company, fy) group; the scored representative.",
+        ),
+        doc_field(
+            TENK_PERIOD_COL_CANONICAL_ACCESSION,
+            DataType::Utf8,
+            true,
+            "Accession of the canonical row for the period; equals own accession when canonical.",
+        ),
+        doc_field(
+            TENK_PARQUET_COL_ITEM_1,
+            DataType::Utf8,
+            true,
+            "Full Item 1 (Business) extracted text; null when absent or unparsable.",
+        ),
+        doc_field(
+            TENK_PARQUET_COL_ITEM_7,
+            DataType::Utf8,
+            true,
+            "Full Item 7 (MD&A) extracted text; null when absent or unparsable.",
+        ),
     ]))
+}
+
+/// Build a field carrying a `description` entry in its Arrow metadata.
+/// The `parquet` crate's `ArrowWriter` persists the Arrow schema (metadata
+/// included) in the file footer, so `pyarrow` / HF `datasets` surface these
+/// as `field.metadata["description"]` (see
+/// [`sec_fetcher_shared::PARQUET_FIELD_METADATA_DESCRIPTION`]).
+fn doc_field(
+    name: impl Into<String>,
+    data_type: DataType,
+    nullable: bool,
+    description: &str,
+) -> Field {
+    Field::new(name.into(), data_type, nullable).with_metadata(HashMap::from([(
+        sec_fetcher_shared::PARQUET_FIELD_METADATA_DESCRIPTION.to_string(),
+        description.to_string(),
+    )]))
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -436,9 +510,8 @@ mod tests {
 
     #[test]
     fn schema_has_annotations_and_nullable_items() {
-        // Wire-format pin: literals here prove the shared constants resolve
-        // to the documented Hugging Face schema. If this fails, the schema
-        // changed — update the dataset docs, don't just "fix" the test.
+        // Order is pinned once in shared (`parquet_column_orders_match_wire_format`);
+        // here we prove the built schema follows the shared arrays.
         let schema = schema();
         assert_eq!(
             schema
@@ -446,19 +519,7 @@ mod tests {
                 .iter()
                 .map(|f| f.name().as_str())
                 .collect::<Vec<_>>(),
-            vec![
-                "ticker_symbol",
-                "accession_number",
-                "filed_date",
-                "form_type",
-                "fy",
-                "fp",
-                "is_adequate",
-                "is_canonical",
-                "canonical_accession",
-                "item_1",
-                "item_7",
-            ]
+            sec_fetcher_shared::TENK_ITEMIZED_PARQUET_COLUMNS
         );
         assert!(!schema.field(0).is_nullable());
         assert!(!schema.field(1).is_nullable());
@@ -471,6 +532,20 @@ mod tests {
         assert!(schema.field(8).is_nullable());
         assert!(schema.field(9).is_nullable());
         assert!(schema.field(10).is_nullable());
+    }
+
+    #[test]
+    fn every_field_carries_a_description() {
+        for f in schema().fields() {
+            let desc = f
+                .metadata()
+                .get(sec_fetcher_shared::PARQUET_FIELD_METADATA_DESCRIPTION);
+            assert!(
+                desc.is_some_and(|d| !d.trim().is_empty()),
+                "field `{}` is missing description metadata",
+                f.name()
+            );
+        }
     }
 
     #[test]

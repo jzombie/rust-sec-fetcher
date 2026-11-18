@@ -272,6 +272,33 @@ mod tests {
     }
 
     #[test]
+    fn parquet_column_orders_match_wire_format() {
+        // Single wire-format pin: the bins build from these arrays, so this
+        // is the one place literals appear. If this fails, the Hugging Face
+        // schema changed — update the dataset docs, don't just "fix" it.
+        assert_eq!(
+            TENK_RAW_PARQUET_COLUMNS,
+            &["ticker_symbol", "accession_number", "raw_text"]
+        );
+        assert_eq!(
+            TENK_ITEMIZED_PARQUET_COLUMNS,
+            &[
+                "ticker_symbol",
+                "accession_number",
+                "filed_date",
+                "form_type",
+                "fy",
+                "fp",
+                "is_adequate",
+                "is_canonical",
+                "canonical_accession",
+                "item_1",
+                "item_7",
+            ]
+        );
+    }
+
+    #[test]
     fn accession_keys_converge() {
         let dashed = normalize_accession("0001090872-26-000064");
         assert_eq!(dashed, normalize_accession("000109087226000064"));
@@ -689,6 +716,45 @@ pub const TENK_PERIOD_APPENDED_COLUMNS: &[&str] = &[
     TENK_PERIOD_COL_JOIN_STATUS,
     TENK_PERIOD_COL_SUPERSEDED_BY,
     TENK_PERIOD_COL_PAIRING_RULE,
+];
+// ── 10-K Parquet column name constants ───────────────────────────────────
+// Single source of truth for the `tenk_raw` and `tenk_itemized` Parquet
+// schemas. Both exporters build their Arrow schemas from these — no string
+// literals in the bins — so a rename breaks at compile time instead of
+// silently shipping a renamed Hugging Face column. Note `ticker_symbol`
+// (not `ticker`): the Parquet datasets use the directory ticker, which is
+// sanitized on disk (e.g. `BF_A` for `BF/A`).
+pub const TENK_PARQUET_COL_TICKER_SYMBOL: &str = "ticker_symbol";
+pub const TENK_PARQUET_COL_RAW_TEXT: &str = "raw_text";
+pub const TENK_PARQUET_COL_ITEM_1: &str = "item_1";
+pub const TENK_PARQUET_COL_ITEM_7: &str = "item_7";
+
+/// Arrow field metadata key carrying the per-column documentation.
+/// The `parquet` crate persists the Arrow schema (metadata included) in
+/// the file footer, so `pyarrow` / HF `datasets` surface these as
+/// `field.metadata["description"]`.
+pub const PARQUET_FIELD_METADATA_DESCRIPTION: &str = "description";
+
+/// `tenk_raw` Parquet schema, in column order.
+pub const TENK_RAW_PARQUET_COLUMNS: &[&str] = &[
+    TENK_PARQUET_COL_TICKER_SYMBOL,
+    TENK_AUDIT_COL_ACCESSION,
+    TENK_PARQUET_COL_RAW_TEXT,
+];
+
+/// `tenk_itemized` Parquet schema, in column order.
+pub const TENK_ITEMIZED_PARQUET_COLUMNS: &[&str] = &[
+    TENK_PARQUET_COL_TICKER_SYMBOL,
+    TENK_AUDIT_COL_ACCESSION,
+    TENK_AUDIT_COL_FILED_DATE,
+    TENK_AUDIT_COL_FORM_TYPE,
+    TENK_PERIOD_COL_FY,
+    TENK_PERIOD_COL_FP,
+    TENK_AUDIT_COL_IS_ADEQUATE,
+    TENK_PERIOD_COL_IS_CANONICAL,
+    TENK_PERIOD_COL_CANONICAL_ACCESSION,
+    TENK_PARQUET_COL_ITEM_1,
+    TENK_PARQUET_COL_ITEM_7,
 ];
 /// Per-ticker fundamentals leaf under the bulk output dir.
 pub const FUNDAMENTALS_LEAF: &str = "us-gaap-fundamentals";
