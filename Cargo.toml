@@ -39,7 +39,7 @@ html-to-markdown-rs = "3.1.0"
 html2text = "0.17.1"
 indexmap = "2.13.0"
 indoc = "2.0.7"
-itertools = "0.14.0"
+itertools = "0.15.0"
 keyring = { version = "3.6.3", features = ["apple-native", "windows-native", "sync-secret-service"] }
 merge = "0.2.0"
 mockito = "1.7.2"
