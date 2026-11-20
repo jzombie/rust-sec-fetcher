@@ -4641,7 +4641,7 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "sec-fetcher"
-version = "0.5.0-alpha"
+version = "0.6.0-alpha"
 dependencies = [
  "arrow-array",
  "arrow-schema",
@@ -4691,11 +4691,11 @@ dependencies = [
 
 [[package]]
 name = "sec-fetcher-shared"
-version = "0.5.0-alpha"
+version = "0.6.0-alpha"
 
 [[package]]
 name = "sec-fetcher-tenk-parser-audit"
-version = "0.5.0-alpha"
+version = "0.6.0-alpha"
 dependencies = [
  "clap",
  "csv",
@@ -4708,7 +4708,7 @@ dependencies = [
 
 [[package]]
 name = "sec-fetcher-test-fixtures"
-version = "0.5.0-alpha"
+version = "0.6.0-alpha"
 dependencies = [
  "chrono",
  "flate2",
