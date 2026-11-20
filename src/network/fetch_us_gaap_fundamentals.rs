@@ -80,14 +80,14 @@ pub async fn fetch_us_gaap_fundamentals(
             // Build map: accn (dashed, e.g. "0000320193-25-000008") -> primary document URL
             let primary_doc_map: HashMap<String, String> = submissions
                 .iter()
-                .filter(|s| !s.primary_document.is_empty())
+                .filter(|s| !s.primary_document.as_os_str().is_empty())
                 .map(|s| (s.accession_number.to_string(), s.as_primary_document_url()))
                 .collect();
 
             let updated_urls: Vec<Option<String>> = fundamentals_df
                 .column("accn")?
                 .str()?
-                .into_iter()
+                .iter()
                 .map(|opt| {
                     opt.map(|accn| {
                         primary_doc_map.get(accn).cloned().unwrap_or_else(|| {
@@ -100,7 +100,7 @@ pub async fn fetch_us_gaap_fundamentals(
                 })
                 .collect();
 
-            fundamentals_df.with_column(Series::new("filing_url".into(), updated_urls))?;
+            fundamentals_df.with_column(Series::new("filing_url".into(), updated_urls).into())?;
         }
         Err(e) => {
             // Non-fatal: keep the index-page URLs already set by the parser

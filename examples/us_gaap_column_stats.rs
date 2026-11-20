@@ -5,14 +5,14 @@
 //! is a ranked list showing which GAAP concepts are most commonly reported by
 //! SEC filers in the dataset.
 //!
-//! The default input directory is `data/14-mar-2026-us-gaap`, which is the
-//! bulk GAAP dataset produced by `pull-us-gaap-bulk`.
+//! The default input directory is `data/EXAMPLE-us-gaap`.  Replace this with
+//! the output directory from a `pull-us-gaap-bulk` run.
 //!
 //! # Usage
 //!
 //! ```text
 //! cargo run --example us_gaap_column_stats
-//! cargo run --example us_gaap_column_stats -- --dir data/14-mar-2026-us-gaap
+//! cargo run --example us_gaap_column_stats -- --dir data/EXAMPLE-us-gaap
 //! ```
 
 use clap::Parser;
@@ -21,14 +21,14 @@ use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fmt;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 #[command(about = "Count column-header frequencies across all CSV files in a directory")]
 struct Args {
     /// Directory containing the CSV files to analyze
-    #[arg(default_value = "data/14-mar-2026-us-gaap")]
-    dir: String,
+    #[arg(long, short = 'd')]
+    dir: PathBuf,
 }
 
 /// A column name together with the number of CSV files it appears in.
@@ -44,7 +44,7 @@ impl fmt::Display for ColumnCount {
 }
 
 /// Reads all CSV files in the given directory and counts occurrences of column headers.
-fn count_column_occurrences(dir: &str) -> HashMap<String, usize> {
+fn count_column_occurrences(dir: &Path) -> HashMap<String, usize> {
     let mut column_counts = HashMap::new();
 
     let files: Vec<_> = fs::read_dir(dir)

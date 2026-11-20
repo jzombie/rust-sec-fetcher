@@ -1,7 +1,7 @@
 //! Iterates every investment company fund, fetches its latest NPORT-P holdings,
 //! and saves each fund's positions as a CSV under `data/fund-holdings/<letter>/`.
 //!
-//! Output is organised by first letter of the ticker so the directory stays
+//! Output is organized by first letter of the ticker so the directory stays
 //! manageable: `data/fund-holdings/S/SPY.csv`, `data/fund-holdings/Q/QQQ.csv`, …
 //!
 //! # Usage
@@ -31,7 +31,7 @@ use tracing::{error, info};
 )]
 struct Args {
     /// Output directory (will be created if it does not exist).
-    /// Files are organised as `<output-dir>/<letter>/<TICKER>.csv`.
+    /// Files are organized as `<output-dir>/<letter>/<TICKER>.csv`.
     /// Example: data/fund-holdings
     #[arg(long, short = 'o')]
     output_dir: std::path::PathBuf,
@@ -148,7 +148,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             info!("Writing CSV...");
             let file_path = dir_path.join(format!("{}.csv", ticker));
-            if let Err(e) = investments.write_to_csv(file_path.to_str().unwrap()) {
+            if let Err(e) = investments.write_to_csv(&file_path) {
                 let msg = format!("Failed to write CSV for {}: {}", ticker, e);
                 error!("{}", msg);
                 error_log.push(msg);

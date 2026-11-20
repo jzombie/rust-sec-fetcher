@@ -79,14 +79,14 @@ async fn run<V: FilingView>(
 
     eprintln!("Found {} exhibit(s):", exhibits.len());
     for ex in &exhibits {
-        eprintln!("  {} — {}", ex.document_type, ex.name);
+        eprintln!("  {} — {}", ex.document_type, ex.name.display());
     }
     eprintln!();
 
     for ex in exhibits {
         eprintln!("Rendering: {}", ex.url);
         println!("---");
-        println!("## {} ({})", ex.document_type, ex.name);
+        println!("## {} ({})", ex.document_type, ex.name.display());
         println!();
         println!("{}", ex.content);
         println!();

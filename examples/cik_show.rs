@@ -63,7 +63,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         {
             println!(
                 "Most recent NPORT-P submission: {:?}",
-                &most_recent_nport_p_submission
+                most_recent_nport_p_submission
             );
             println!(
                 "EDGAR archive URL: {}",

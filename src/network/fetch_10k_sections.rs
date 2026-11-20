@@ -5,6 +5,7 @@ use crate::parsers::{TenKSections, extract_sections_from_document};
 use bytes::Bytes;
 use regex::Regex;
 use std::error::Error;
+use std::path::PathBuf;
 use std::sync::LazyLock as Lazy;
 
 // Non-prose file extensions — skip in the filing index fallback.
@@ -37,7 +38,7 @@ pub async fn fetch_best_10k_document(
     sec_client: &SecClient,
     filing: &CikSubmission,
 ) -> Result<Bytes, Box<dyn Error>> {
-    let primary_url = if filing.primary_document.is_empty() {
+    let primary_url = if filing.primary_document.as_os_str().is_empty() {
         Url::SgmlSubmissionTxt(filing.cik.clone(), filing.accession_number.clone()).value()
     } else {
         Url::CikAccessionDocument(
@@ -78,10 +79,10 @@ pub async fn fetch_best_10k_document(
             if doc.name == filing.primary_document {
                 continue;
             }
-            if BINARY_EXT_RE.is_match(&doc.name) {
+            if BINARY_EXT_RE.is_match(&doc.name.to_string_lossy()) {
                 continue;
             }
-            let lower = doc.name.to_ascii_lowercase();
+            let lower = doc.name.to_string_lossy().to_ascii_lowercase();
             let type_upper = doc.document_type.to_ascii_uppercase();
             let matches_tier = match tier {
                 0 => {
@@ -202,7 +203,7 @@ pub async fn fetch_10k_sections_for_filing(
     sec_client: &SecClient,
     filing: &CikSubmission,
 ) -> Result<TenKSections, Box<dyn Error>> {
-    let old_format = filing.primary_document.is_empty();
+    let old_format = filing.primary_document.as_os_str().is_empty();
 
     // ── Pass 1: primary document ──────────────────────────────────────────────
     let primary_url = if old_format {
@@ -234,18 +235,18 @@ pub async fn fetch_10k_sections_for_filing(
     //   Tier 0 — explicitly typed "10-K" / "10-K405" / "10-K/A"
     //   Tier 1 — any .htm / .html
     //   Tier 2 — any .txt
-    let mut candidates: Vec<&str> = Vec::new();
+    let mut candidates: Vec<PathBuf> = Vec::new();
 
     for tier in 0..3u8 {
         for doc in &index.documents {
-            let name = doc.name.as_str();
-            if name == filing.primary_document.as_str() {
+            if doc.name == filing.primary_document {
                 continue;
             }
-            if BINARY_EXT_RE.is_match(name) {
+            let name_str = doc.name.to_string_lossy();
+            if BINARY_EXT_RE.is_match(&name_str) {
                 continue;
             }
-            let lower = name.to_ascii_lowercase();
+            let lower = name_str.to_ascii_lowercase();
             let doc_type = doc.document_type.to_ascii_uppercase();
             let matches_tier = match tier {
                 0 => doc_type == "10-K" || doc_type == "10-K405" || doc_type == "10-K/A",
@@ -253,22 +254,23 @@ pub async fn fetch_10k_sections_for_filing(
                 2 => lower.ends_with(".txt"),
                 _ => false,
             };
-            if matches_tier && !candidates.contains(&name) {
-                candidates.push(name);
+            if matches_tier && !candidates.contains(&doc.name) {
+                candidates.push(doc.name.clone());
             }
         }
     }
 
     for name in candidates {
         let url = if old_format {
-            Url::EdgarArchive(format!("edgar/data/{}/{}", filing.cik, name)).value()
-        } else {
-            Url::CikAccessionDocument(
-                filing.cik.clone(),
-                filing.accession_number.clone(),
-                name.to_string(),
-            )
+            Url::EdgarArchive(PathBuf::from(format!(
+                "edgar/data/{}/{}",
+                filing.cik,
+                name.to_string_lossy().replace('\\', "/")
+            )))
             .value()
+        } else {
+            Url::CikAccessionDocument(filing.cik.clone(), filing.accession_number.clone(), name)
+                .value()
         };
 
         if let Ok(sections) = fetch_sections_from_url(sec_client, &url).await {

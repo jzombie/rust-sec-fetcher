@@ -541,7 +541,7 @@ fn test_event_driven_filings_excluded_from_time_series() {
     }
 
     // Sanity: periodic filings must still be present (the filter is not too aggressive).
-    let form_values: Vec<&str> = form_col.into_iter().flatten().collect();
+    let form_values: Vec<&str> = form_col.iter().flatten().collect();
     assert!(
         form_values.iter().any(|&f| f.eq_ignore_ascii_case("10-K")),
         "10-K rows must be present in the output"

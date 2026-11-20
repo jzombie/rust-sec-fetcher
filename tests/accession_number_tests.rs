@@ -71,6 +71,18 @@ fn test_accession_number_from_str_without_dashes() {
 }
 
 #[test]
+fn test_accession_number_from_str_tolerates_padding() {
+    // Same single dash-stripping implementation as the join-key normalizer:
+    // surrounding whitespace is tolerated, strictness on content is kept.
+    let accession = AccessionNumber::from_str("  0001234567-23-000045  ").unwrap();
+    assert_eq!(accession.to_string(), "0001234567-23-000045");
+    assert_eq!(
+        accession.to_unformatted_string(),
+        sec_fetcher_shared::normalize_accession("0001234567-23-000045")
+    );
+}
+
+#[test]
 fn test_accession_number_to_string() {
     let accession = AccessionNumber::from_parts(1234567, 23, 45).unwrap();
     assert_eq!(accession.to_string(), "0001234567-23-000045");

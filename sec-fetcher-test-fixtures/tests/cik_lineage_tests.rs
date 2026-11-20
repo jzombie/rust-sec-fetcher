@@ -22,7 +22,7 @@
 //! |--------|----------------------|--------|
 //! | GOOG   | `["0001288776"]`     | Google Inc. → Alphabet Inc. reorganisation (Dec 2015) |
 //! | GOOGL  | `["0001288776"]`     | Same Alphabet CIK; confirms ticker-independence |
-//! | AAPL   | `[]`                 | Apple has never reorganised as a holding company |
+//! | AAPL   | `[]`                 | Apple has never reorganized as a holding company |
 //! | META   | `[]`                 | Facebook → Meta Platforms was a simple name change (same CIK) |
 //! | MSFT   | `[]`                 | Microsoft, stable CIK since 1975 |
 //! | NVDA   | `[]`                 | NVIDIA, stable CIK |
@@ -77,7 +77,7 @@ fn googl_has_same_predecessor_as_goog() {
 
 // ── Negative cases (no predecessor expected) ──────────────────────────────────
 
-/// Apple has never reorganised as a holding company.  The CIK that appears in
+/// Apple has never reorganized as a holding company.  The CIK that appears in
 /// today's `company_tickers.json` for AAPL (CIK 320193) has been the single
 /// registrant since Apple Computer Inc. first appeared in EDGAR in 1993.
 #[test]

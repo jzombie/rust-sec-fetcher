@@ -30,7 +30,7 @@ use std::error::Error;
 /// then draw down ("take off the shelf") specific tranches at any time within
 /// the next three years, without filing a new full registration statement for
 /// each offering.  Companies use this to raise capital quickly when market
-/// conditions are favourable, issuing a short prospectus supplement (`424B`)
+/// conditions are favorable, issuing a short prospectus supplement (`424B`)
 /// that references the underlying S-3.
 ///
 /// # Amendments (S-3/A)

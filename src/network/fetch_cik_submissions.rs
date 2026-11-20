@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::enums::Url;
 use crate::models::{Cik, CikSubmission};
 use crate::network::SecClient;
@@ -68,7 +70,7 @@ pub async fn fetch_cik_submissions(
     if let Some(files) = data["filings"]["files"].as_array() {
         for file_entry in files {
             if let Some(filename) = file_entry["name"].as_str() {
-                let page_url = Url::CikSubmissionPage(filename.to_string()).value();
+                let page_url = Url::CikSubmissionPage(PathBuf::from(filename)).value();
                 match sec_client.fetch_json(&page_url, None).await {
                     Ok(page_data) => {
                         let page_subs = crate::parsers::parse_cik_submissions_block(

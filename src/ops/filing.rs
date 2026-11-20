@@ -1,15 +1,17 @@
+use std::error::Error;
+use std::path::PathBuf;
+
 use crate::enums::Url;
 use crate::models::{CikSubmission, FilingDocument};
 use crate::network::{SecClient, fetch_and_render, fetch_filing_index};
 use crate::views::FilingView;
-use std::error::Error;
 
 /// A single rendered exhibit from a filing.
 pub struct RenderedExhibit {
     /// SEC document type (e.g. `"EX-99.1"`, `"EX-10.1"`).
     pub document_type: String,
     /// Filename within the filing archive (e.g. `"ex991.htm"`).
-    pub name: String,
+    pub name: PathBuf,
     /// Full EDGAR URL to the exhibit document.
     pub url: String,
     /// Rendered text content (Markdown or embedding prose).

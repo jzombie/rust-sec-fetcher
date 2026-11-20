@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::enums::{FormType, Url};
 use crate::models::{AccessionNumber, Cik};
 use chrono::NaiveDate;
@@ -14,8 +16,9 @@ pub struct CikSubmission {
     // insiderTransactionForOwnerExists
     // insiderTransactionForIssuerExists
     pub accession_number: AccessionNumber,
+    // TODO: Use FormType instead of String for stronger typing.
     pub form: String,
-    pub primary_document: String,
+    pub primary_document: PathBuf,
     pub filing_date: Option<NaiveDate>,
     /// SEC 8-K item tags reported with this filing, e.g. `["2.02", "9.01"]`.
     /// Empty for non-8-K forms. Item 9.01 ("Financial Statements and Exhibits")
@@ -205,7 +208,11 @@ impl CikSubmission {
     /// This points directly to the main document (e.g., the HTML 8-K or 10-K body),
     /// rather than the filing index directory.
     pub fn as_primary_document_url(&self) -> String {
-        format!("{}/{}", self.as_edgar_archive_url(), self.primary_document)
+        format!(
+            "{}/{}",
+            self.as_edgar_archive_url(),
+            self.primary_document.display()
+        )
     }
 }
 
@@ -221,7 +228,7 @@ mod tests {
             entity_type: None,
             accession_number: AccessionNumber::from_str("0001234567-23-000001").unwrap(),
             form: form.to_string(),
-            primary_document: String::new(),
+            primary_document: PathBuf::new(),
             filing_date: chrono::NaiveDate::from_ymd_opt(year, 1, 1),
             items: vec![],
         }
@@ -300,7 +307,7 @@ mod tests {
             entity_type: Some("operating".to_string()),
             accession_number: AccessionNumber::from_str("0000320193-24-000001").unwrap(),
             form: form.to_string(),
-            primary_document: primary_doc.to_string(),
+            primary_document: PathBuf::from(primary_doc),
             filing_date: chrono::NaiveDate::from_ymd_opt(2024, 6, 15),
             items: items.into_iter().map(|s| s.to_string()).collect(),
         }

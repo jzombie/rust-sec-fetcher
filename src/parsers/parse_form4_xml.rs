@@ -1,6 +1,7 @@
 use crate::models::Form4Transaction;
 use chrono::NaiveDate;
 use quick_xml::Reader;
+use quick_xml::XmlVersion;
 use quick_xml::events::Event;
 use rust_decimal::Decimal;
 use std::error::Error;
@@ -61,7 +62,7 @@ pub fn parse_form4_xml(
             }
 
             Ok(Event::Text(e)) => {
-                let text = e.decode().unwrap_or_default().trim().to_string();
+                let text = e.xml_content(XmlVersion::Explicit1_0).trim().to_string();
                 if text.is_empty() {
                     buf.clear();
                     continue;
@@ -175,9 +176,8 @@ fn reset_txn(
     shares_after_str.clear();
 }
 
-fn local_name_str(name: &[u8]) -> String {
-    let s = std::str::from_utf8(name).unwrap_or("");
-    s.rfind(':')
-        .map(|i| s[i + 1..].to_string())
-        .unwrap_or_else(|| s.to_string())
+fn local_name_str(name: &str) -> String {
+    name.rfind(':')
+        .map(|i| name[i + 1..].to_string())
+        .unwrap_or_else(|| name.to_string())
 }

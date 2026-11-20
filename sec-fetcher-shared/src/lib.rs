@@ -8,7 +8,7 @@
 //!
 //! The SEC's `fp` field on EDGAR observations uses a variety of tokens to
 //! label fiscal periods: `"Q1"`, `"FY"`, `"H1"`, `"SA2"`, `"6M"`, etc.
-//! [`parse_period_slot_token`] normalises all of them into a comparable
+//! [`parse_period_slot_token`] normalizes all of them into a comparable
 //! integer rank so that rows can be sorted newest-first without a
 //! hardcoded lookup table.
 
@@ -17,7 +17,7 @@
 /// This enum is intentionally source-format agnostic: multiple token styles
 /// map into the small stable set used by filtering and trend ranking.
 ///
-/// Recognised aliases:
+/// Recognized aliases:
 /// - Quarters:     `Q1`..`Q4`
 /// - Annual:       `FY`, `ANNUAL`
 /// - Semi-annual:  `H1`/`H2`, `HY1`/`HY2`, `SA1`/`SA2`, `S1`/`S2`
@@ -38,7 +38,7 @@ pub enum PeriodSlot {
 }
 
 impl PeriodSlot {
-    /// Maps the slot to a normalised quarter-space rank (`1..=4`).
+    /// Maps the slot to a normalized quarter-space rank (`1..=4`).
     ///
     /// Higher rank = later in the fiscal year.  Sort descending on this
     /// value to get newest-first row ordering.
@@ -130,8 +130,8 @@ pub fn parse_period_slot(s: &str) -> Option<PeriodSlot> {
     None
 }
 
-/// Returns the normalised quarter rank (1–4) for a raw fiscal-period token,
-/// or `None` if the token is not recognised.
+/// Returns the normalized quarter rank (1–4) for a raw fiscal-period token,
+/// or `None` if the token is not recognized.
 ///
 /// Equivalent to `parse_period_slot(s).map(PeriodSlot::normalized_quarter)`.
 ///
@@ -149,7 +149,7 @@ pub fn parse_period_slot_token(s: &str) -> Option<i64> {
     parse_period_slot(s).map(PeriodSlot::normalized_quarter)
 }
 
-/// Normalises a raw SEC `fp` token to its canonical CSV label.
+/// Normalizes a raw SEC `fp` token to its canonical CSV label.
 ///
 /// The only transformation currently applied is **`Q4` → `FY`**: the SEC tags
 /// some year-end filings as `"Q4"` (typically via a 10-Q/A) rather than the
@@ -177,7 +177,7 @@ pub fn normalize_fp_label(fp: &str) -> String {
 }
 
 /// Returns the set of candidate ticker symbols that a raw input string might
-/// resolve to, normalised to uppercase and with `.`/`-` variants generated.
+/// resolve to, normalized to uppercase and with `.`/`-` variants generated.
 ///
 /// EDGAR and data providers use both `.` and `-` as separators in class-share
 /// tickers (e.g. `BRK.B` vs `BRK-B`).  This function always returns both
@@ -204,9 +204,107 @@ pub fn normalize_symbol(symbol: &str) -> Vec<String> {
     out
 }
 
+/// Normalize an EDGAR accession number for use as a join key: trim
+/// surrounding whitespace, strip dashes, uppercase.
+///
+/// All three key paths (manifest write→load→lookup, fundamentals map
+/// build→lookup, `AccessionNumber` display) converge through this function
+/// at every comparison boundary, so dashed (`0001090872-26-000064`),
+/// undashed (`000109087226000064`), padded, or mixed-case inputs all match.
+/// Canonical dashed form is kept at rest (CSV files, filenames); this
+/// function is for comparison only.
+///
+/// ```
+/// use sec_fetcher_shared::normalize_accession;
+/// assert_eq!(
+///     normalize_accession("0001090872-26-000064"),
+///     normalize_accession("  000109087226000064  ")
+/// );
+/// ```
+pub fn normalize_accession(acc: &str) -> String {
+    acc.trim()
+        .chars()
+        .filter(|c| *c != '-')
+        .flat_map(|c| c.to_uppercase())
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn period_columns_match_on_disk_header_order() {
+        // Guard against writer/reader drift: the appended columns must stay
+        // exactly the trailing header of `tenk_audit_periods.csv`.
+        assert_eq!(
+            TENK_PERIOD_APPENDED_COLUMNS,
+            &[
+                "fy",
+                "fp",
+                "period_key",
+                "is_canonical",
+                "canonical_accession",
+                "join_status",
+                "superseded_by",
+                "pairing_rule",
+            ]
+        );
+    }
+
+    #[test]
+    fn manifest_header_matches_on_disk_column_order() {
+        // Guard against writer/reader drift: the manifest header must stay
+        // exactly the `.tenk_manifest.csv` column order. Note `accession`
+        // (not `accession_number`) and `form` (not `form_type`) — the
+        // manifest schema is intentionally distinct from the audit schema.
+        assert_eq!(
+            TENK_MANIFEST_HEADER,
+            &[
+                "ticker",
+                "cik",
+                "accession",
+                "filed_date",
+                "form",
+                "primary_document",
+            ]
+        );
+    }
+
+    #[test]
+    fn parquet_column_orders_match_wire_format() {
+        // Single wire-format pin: the bins build from these arrays, so this
+        // is the one place literals appear. If this fails, the Hugging Face
+        // schema changed — update the dataset docs, don't just "fix" it.
+        assert_eq!(
+            TENK_RAW_PARQUET_COLUMNS,
+            &["ticker_symbol", "accession_number", "raw_text"]
+        );
+        assert_eq!(
+            TENK_ITEMIZED_PARQUET_COLUMNS,
+            &[
+                "ticker_symbol",
+                "accession_number",
+                "filed_date",
+                "form_type",
+                "fy",
+                "fp",
+                "is_adequate",
+                "is_canonical",
+                "canonical_accession",
+                "item_1",
+                "item_7",
+            ]
+        );
+    }
+
+    #[test]
+    fn accession_keys_converge() {
+        let dashed = normalize_accession("0001090872-26-000064");
+        assert_eq!(dashed, normalize_accession("000109087226000064"));
+        assert_eq!(dashed, normalize_accession("  0001090872-26-000064  "));
+        assert_eq!(dashed, "000109087226000064");
+    }
 
     #[test]
     fn quarters_rank_correctly() {
@@ -242,7 +340,7 @@ mod tests {
     }
 
     #[test]
-    fn unrecognised_returns_none() {
+    fn unrecognized_returns_none() {
         assert_eq!(parse_period_slot_token(""), None);
         assert_eq!(parse_period_slot_token("SA"), None);
         assert_eq!(parse_period_slot_token("Q5"), None);
@@ -468,7 +566,7 @@ pub fn extract_first_year(s: &str) -> Option<i64> {
 
 /// Parses a raw period string into a [`Period`].
 ///
-/// Recognises year-only strings (`"2024"`) and combined year+period tokens
+/// Recognizes year-only strings (`"2024"`) and combined year+period tokens
 /// (`"2024Q3"`, `"2024FY"`, `"2024H1"`, `"2024 9M"`, etc.).
 ///
 /// Returns `Err` if no 4-digit year can be found.
@@ -497,7 +595,7 @@ pub fn parse_period(period: &str) -> Result<Period, String> {
 
 /// Ordered metadata columns present in every per-symbol US-GAAP CSV file.
 ///
-/// These columns are written by the data pipeline and read by the normaliser
+/// These columns are written by the data pipeline and read by the normalizer
 /// and trend analysis layers.  They always appear before the XBRL fact columns
 /// (which vary per company) and must be treated as non-fact bookkeeping data.
 ///
@@ -517,15 +615,267 @@ pub fn parse_period(period: &str) -> Result<Period, String> {
 /// that the file has been rewritten or reordered without updating this column.
 /// `is_amendment` (index 6): `true` when the winning row for this period came from an
 /// amendment filing (i.e. the original `form` value ended with `/A`, e.g. `"10-Q/A"`).
-/// The `form` column itself is normalised to the base type (`"10-Q"`).
+/// The `form` column itself is normalized to the base type (`"10-Q"`).
+// ── Individual metadata column name constants ───────────────────────────
+// Each constant names one of the metadata columns present in every per-symbol
+// US-GAAP CSV file.  The canonical array below is built from these so that
+// consumers can reference a specific column by its constant instead of by
+// hardcoding a string literal or relying on array position.
+pub const CSV_CANONICAL_ORDER: &str = "canonical_order";
+pub const CSV_FY: &str = "fy";
+pub const CSV_FP: &str = "fp";
+pub const CSV_PERIOD_END: &str = "period_end";
+pub const CSV_FILED: &str = "filed";
+pub const CSV_FORM: &str = "form";
+pub const CSV_IS_AMENDMENT: &str = "is_amendment";
+pub const CSV_ACCN: &str = "accn";
+pub const CSV_FILING_URL: &str = "filing_url";
+
 pub const US_GAAP_CSV_META_COLUMNS: &[&str] = &[
-    "canonical_order",
-    "fy",
-    "fp",
-    "period_end",
-    "filed",
-    "form",
-    "is_amendment",
-    "accn",
-    "filing_url",
+    CSV_CANONICAL_ORDER,
+    CSV_FY,
+    CSV_FP,
+    CSV_PERIOD_END,
+    CSV_FILED,
+    CSV_FORM,
+    CSV_IS_AMENDMENT,
+    CSV_ACCN,
+    CSV_FILING_URL,
 ];
+
+/// Single unified root for everything this workspace writes: repo-relative
+/// `./data`. Bulk outputs live under it: `data/latest-us-gaap/`,
+/// `data/tenk_items/`.
+/// Override per-run with explicit CLI args (`--output-dir`); no env keys.
+pub const DEFAULT_DATA_DIR: &str = "data";
+/// Bulk output leaf under the home.
+pub const BULK_OUTPUT_LEAF: &str = "latest-us-gaap";
+/// 10-K raw document corpus leaf under the home.
+pub const TENK_ITEMS_LEAF: &str = "tenk_items";
+/// 10-K parser audit CSV filename under the home.
+pub const TENK_AUDIT_FILE: &str = "tenk_audit.csv";
+/// 10-K accession→form manifest filename inside the corpus dir.
+///
+/// Hidden (dotfile) on purpose: `tenk-parser-audit` walks the corpus
+/// recursively and would otherwise parse the manifest itself as a filing.
+/// Its collector already skips dotfiles.
+pub const TENK_MANIFEST_FILE: &str = ".tenk_manifest.csv";
+// ── 10-K manifest column name constants ──────────────────────────────────
+// Single source of truth for the `.tenk_manifest.csv` header written by
+// `pull-tenk-items` and read by `tenk-parser-audit` (`load_manifest`) and
+// `pull-tenk-items` itself (`load_manifest_map`). Note the manifest schema
+// is intentionally distinct from the audit schema: `accession` (not
+// `accession_number`) and `form` (not `form_type`).
+pub const TENK_MANIFEST_COL_TICKER: &str = "ticker";
+pub const TENK_MANIFEST_COL_CIK: &str = "cik";
+pub const TENK_MANIFEST_COL_ACCESSION: &str = "accession";
+pub const TENK_MANIFEST_COL_FILED_DATE: &str = "filed_date";
+pub const TENK_MANIFEST_COL_FORM: &str = "form";
+pub const TENK_MANIFEST_COL_PRIMARY_DOCUMENT: &str = "primary_document";
+
+/// Manifest header, in write order.
+pub const TENK_MANIFEST_HEADER: &[&str] = &[
+    TENK_MANIFEST_COL_TICKER,
+    TENK_MANIFEST_COL_CIK,
+    TENK_MANIFEST_COL_ACCESSION,
+    TENK_MANIFEST_COL_FILED_DATE,
+    TENK_MANIFEST_COL_FORM,
+    TENK_MANIFEST_COL_PRIMARY_DOCUMENT,
+];
+/// 10-K accession→period join output filename under the home.
+pub const TENK_PERIODS_FILE: &str = "tenk_audit_periods.csv";
+// ── 10-K audit / periods column name constants ────────────────────────────
+// Single source of truth for the `tenk_audit.csv` columns read by the
+// period join and the `tenk_audit_periods.csv` columns the join appends
+// and `tenk-itemized-to-parquet` reads back. Reference these instead of
+// string literals so a rename breaks at compile time on both sides of the
+// join (the pattern follows `US_GAAP_CSV_META_COLUMNS` above).
+pub const TENK_AUDIT_COL_TICKER: &str = "ticker";
+pub const TENK_AUDIT_COL_CIK: &str = "cik";
+pub const TENK_AUDIT_COL_ACCESSION: &str = "accession_number";
+pub const TENK_AUDIT_COL_FILED_DATE: &str = "filed_date";
+pub const TENK_AUDIT_COL_FORM_TYPE: &str = "form_type";
+pub const TENK_AUDIT_COL_IS_ADEQUATE: &str = "is_adequate";
+
+pub const TENK_PERIOD_COL_FY: &str = "fy";
+pub const TENK_PERIOD_COL_FP: &str = "fp";
+pub const TENK_PERIOD_COL_PERIOD_KEY: &str = "period_key";
+pub const TENK_PERIOD_COL_IS_CANONICAL: &str = "is_canonical";
+pub const TENK_PERIOD_COL_CANONICAL_ACCESSION: &str = "canonical_accession";
+pub const TENK_PERIOD_COL_JOIN_STATUS: &str = "join_status";
+pub const TENK_PERIOD_COL_SUPERSEDED_BY: &str = "superseded_by";
+pub const TENK_PERIOD_COL_PAIRING_RULE: &str = "pairing_rule";
+
+/// Columns appended by `tenk-period-join`, in write order.
+pub const TENK_PERIOD_APPENDED_COLUMNS: &[&str] = &[
+    TENK_PERIOD_COL_FY,
+    TENK_PERIOD_COL_FP,
+    TENK_PERIOD_COL_PERIOD_KEY,
+    TENK_PERIOD_COL_IS_CANONICAL,
+    TENK_PERIOD_COL_CANONICAL_ACCESSION,
+    TENK_PERIOD_COL_JOIN_STATUS,
+    TENK_PERIOD_COL_SUPERSEDED_BY,
+    TENK_PERIOD_COL_PAIRING_RULE,
+];
+// ── 10-K Parquet column name constants ───────────────────────────────────
+// Single source of truth for the `tenk_raw` and `tenk_itemized` Parquet
+// schemas. Both exporters build their Arrow schemas from these — no string
+// literals in the bins — so a rename breaks at compile time instead of
+// silently shipping a renamed Hugging Face column. Note `ticker_symbol`
+// (not `ticker`): the Parquet datasets use the directory ticker, which is
+// sanitized on disk (e.g. `BF_A` for `BF/A`).
+pub const TENK_PARQUET_COL_TICKER_SYMBOL: &str = "ticker_symbol";
+pub const TENK_PARQUET_COL_RAW_TEXT: &str = "raw_text";
+pub const TENK_PARQUET_COL_ITEM_1: &str = "item_1";
+pub const TENK_PARQUET_COL_ITEM_7: &str = "item_7";
+
+/// Arrow field metadata key carrying the per-column documentation.
+/// The `parquet` crate persists the Arrow schema (metadata included) in
+/// the file footer, so `pyarrow` / HF `datasets` surface these as
+/// `field.metadata["description"]`.
+pub const PARQUET_FIELD_METADATA_DESCRIPTION: &str = "description";
+
+/// `tenk_raw` Parquet schema, in column order.
+pub const TENK_RAW_PARQUET_COLUMNS: &[&str] = &[
+    TENK_PARQUET_COL_TICKER_SYMBOL,
+    TENK_AUDIT_COL_ACCESSION,
+    TENK_PARQUET_COL_RAW_TEXT,
+];
+
+/// `tenk_itemized` Parquet schema, in column order.
+pub const TENK_ITEMIZED_PARQUET_COLUMNS: &[&str] = &[
+    TENK_PARQUET_COL_TICKER_SYMBOL,
+    TENK_AUDIT_COL_ACCESSION,
+    TENK_AUDIT_COL_FILED_DATE,
+    TENK_AUDIT_COL_FORM_TYPE,
+    TENK_PERIOD_COL_FY,
+    TENK_PERIOD_COL_FP,
+    TENK_AUDIT_COL_IS_ADEQUATE,
+    TENK_PERIOD_COL_IS_CANONICAL,
+    TENK_PERIOD_COL_CANONICAL_ACCESSION,
+    TENK_PARQUET_COL_ITEM_1,
+    TENK_PARQUET_COL_ITEM_7,
+];
+/// Per-ticker fundamentals leaf under the bulk output dir.
+pub const FUNDAMENTALS_LEAF: &str = "us-gaap-fundamentals";
+/// HTTP/file cache leaf under the home.
+pub const CACHE_LEAF: &str = "cache";
+/// Parquet upload staging dir (repo-relative, outside `data/` on purpose:
+/// these shards are built for Hugging Face upload, not consumed by the
+/// audit pipeline, so they stay out of the `./data` tree).
+pub const HF_UPLOAD_LEAF: &str = "hf_upload_folder";
+/// Dataset leaf for raw 10-K shards inside the upload staging dir, so
+/// other datasets can stage alongside it (e.g. `hf_upload_folder/<other>`).
+pub const TENK_RAW_PARQUET_LEAF: &str = "tenk_raw";
+/// Dataset leaf for itemized 10-K shards (accession plus Item 1 and Item 7
+/// text) inside the upload staging dir.
+pub const TENK_ITEMIZED_PARQUET_LEAF: &str = "tenk_itemized";
+
+/// Resolves the single project data directory: always repo-relative `./data`.
+/// Use an explicit `--output-dir` arg for any other location.
+pub fn resolve_data_root() -> std::path::PathBuf {
+    std::path::PathBuf::from(DEFAULT_DATA_DIR)
+}
+
+/// Resolves the bulk output directory: explicit `--output-dir` wins, else
+/// `data/latest-us-gaap`.
+pub fn resolve_data_dir(explicit: Option<&str>) -> String {
+    if let Some(e) = explicit {
+        return e.to_string();
+    }
+    resolve_data_root()
+        .join(BULK_OUTPUT_LEAF)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the 10-K raw corpus directory: explicit `--output-dir` wins,
+/// else `data/tenk_items`.
+pub fn resolve_tenk_items_dir(explicit: Option<&str>) -> String {
+    if let Some(e) = explicit {
+        return e.to_string();
+    }
+    resolve_data_root()
+        .join(TENK_ITEMS_LEAF)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the 10-K parser audit CSV path: explicit `--output` wins,
+/// else `data/tenk_audit.csv`.
+pub fn resolve_tenk_audit_csv(explicit: Option<&str>) -> String {
+    if let Some(e) = explicit {
+        return e.to_string();
+    }
+    resolve_data_root()
+        .join(TENK_AUDIT_FILE)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the 10-K accession→form manifest CSV path: explicit items-dir
+/// wins, else `data/tenk_items/.tenk_manifest.csv`.
+pub fn resolve_tenk_manifest_csv(explicit_items_dir: Option<&str>) -> String {
+    std::path::PathBuf::from(resolve_tenk_items_dir(explicit_items_dir))
+        .join(TENK_MANIFEST_FILE)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the per-ticker fundamentals directory: explicit bulk-dir wins,
+/// else `data/latest-us-gaap/us-gaap-fundamentals`.
+pub fn resolve_fundamentals_dir(explicit_bulk_dir: Option<&str>) -> String {
+    std::path::PathBuf::from(resolve_data_dir(explicit_bulk_dir))
+        .join(FUNDAMENTALS_LEAF)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the 10-K period-join output CSV path: explicit `--output` wins,
+/// else `data/tenk_audit_periods.csv`.
+pub fn resolve_tenk_periods_csv(explicit: Option<&str>) -> String {
+    if let Some(e) = explicit {
+        return e.to_string();
+    }
+    resolve_data_root()
+        .join(TENK_PERIODS_FILE)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the Parquet upload staging directory: explicit `--dest` wins,
+/// else repo-relative `hf_upload_folder`.
+pub fn resolve_hf_upload_dir(explicit: Option<&str>) -> String {
+    if let Some(e) = explicit {
+        return e.to_string();
+    }
+    std::path::PathBuf::from(HF_UPLOAD_LEAF)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the raw 10-K Parquet dataset directory: explicit `--dest`
+/// wins, else `hf_upload_folder/tenk_raw`, leaving the staging root free
+/// for other datasets.
+pub fn resolve_tenk_raw_parquet_dir(explicit: Option<&str>) -> String {
+    if let Some(e) = explicit {
+        return e.to_string();
+    }
+    std::path::PathBuf::from(resolve_hf_upload_dir(None))
+        .join(TENK_RAW_PARQUET_LEAF)
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Resolves the itemized 10-K Parquet dataset directory: explicit `--dest`
+/// wins, else `hf_upload_folder/tenk_itemized`, leaving the staging root
+/// free for other datasets.
+pub fn resolve_tenk_itemized_parquet_dir(explicit: Option<&str>) -> String {
+    if let Some(e) = explicit {
+        return e.to_string();
+    }
+    std::path::PathBuf::from(resolve_hf_upload_dir(None))
+        .join(TENK_ITEMIZED_PARQUET_LEAF)
+        .to_string_lossy()
+        .into_owned()
+}

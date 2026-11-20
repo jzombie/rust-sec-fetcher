@@ -1,0 +1,13 @@
+# cargo-audit configuration. Mirrors the `[advisories] ignore` list in
+# `deny.toml` (same findings, same justification).
+#
+# RUSTSEC-2026-0194 / RUSTSEC-2026-0195 (quick-xml 0.39.4, high):
+# transitive only via polars-error 0.55.2 -> object_store 0.13.2, which
+# parses cloud-storage protocol XML. This pipeline never touches cloud
+# object stores; all XML parsing in `src/` uses direct quick-xml 0.42.
+# Unfixable from our side until polars moves to object_store 0.14+.
+# (Unmaintained-crate warnings are left visible intentionally; they do
+# not fail the audit.)
+
+[advisories]
+ignore = ["RUSTSEC-2026-0194", "RUSTSEC-2026-0195"]

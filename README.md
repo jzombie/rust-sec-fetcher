@@ -1,6 +1,6 @@
 # sec-fetcher
 
-[![made-with-rust][rust-logo]][rust-src-page] [![crates.io][crates-badge]][crates-page] [![PolyForm NC 1.0.0 licensed][polyform-license-badge]][polyform-license-page] [![DeepWiki][deepwiki-badge]][deepwiki-page] [![Coverage][coveralls-badge]][coveralls-page]
+[![made-with-rust][rust-logo]][rust-src-page] [![crates.io][crates-badge]][crates-page] [![PolyForm NC 1.0.0 licensed][polyform-license-badge]][polyform-license-page] [![Coverage][coveralls-badge]][coveralls-page]
 
 **Work in progress.**
 
@@ -469,6 +469,3 @@ Licensed under the [PolyForm Noncommercial License 1.0.0][polyform-license-page]
 
 [coveralls-page]: https://coveralls.io/github/jzombie/rust-sec-fetcher?branch=main
 [coveralls-badge]: https://img.shields.io/coveralls/github/jzombie/rust-sec-fetcher
-
-[deepwiki-page]: https://deepwiki.com/jzombie/rust-sec-fetcher
-[deepwiki-badge]: https://deepwiki.com/badge.svg

@@ -1,6 +1,7 @@
 use crate::models::{NportInvestment, Ticker};
 use crate::normalize::Pct;
 use quick_xml::Reader;
+use quick_xml::XmlVersion;
 use quick_xml::events::Event;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
@@ -26,7 +27,7 @@ pub fn parse_nport_xml(
     while let Ok(event) = reader.read_event() {
         match event {
             Event::Start(ref e) => {
-                let tag = std::str::from_utf8(e.name().as_ref())?.to_string();
+                let tag = e.name().as_ref().to_string();
                 if tag == "invstOrSec" {
                     current_investment = Some(NportInvestment {
                         // company_ticker: None,
@@ -56,14 +57,14 @@ pub fn parse_nport_xml(
                     && let Some(investment) = &mut current_investment
                     && let Some(attr) = e
                         .attributes()
-                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == b"value"))
+                        .find(|a| a.as_ref().is_ok_and(|a| a.key.as_ref() == "value"))
                 {
-                    investment.isin = attr?.unescape_value()?.to_string();
+                    investment.isin = attr?.normalized_value(XmlVersion::Explicit1_0)?.to_string();
                 }
             }
             Event::Text(e) => {
                 if let Some(investment) = &mut current_investment {
-                    let value = e.decode()?.trim().to_string(); // Trim whitespace
+                    let value = e.xml_content(XmlVersion::Explicit1_0).trim().to_string(); // Trim whitespace
 
                     // Only update if value is not empty (ignores whitespace-only nodes)
                     if !value.is_empty() {
@@ -114,7 +115,7 @@ pub fn parse_nport_xml(
                 }
             }
             Event::End(ref e) => {
-                if std::str::from_utf8(e.name().as_ref())? == "invstOrSec"
+                if e.name().as_ref() == "invstOrSec"
                     && let Some(investment) = current_investment.take()
                 {
                     investments.push(investment);
