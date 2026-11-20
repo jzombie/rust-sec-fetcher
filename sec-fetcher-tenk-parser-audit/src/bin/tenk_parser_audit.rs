@@ -33,6 +33,9 @@
 //! | `accession_number` | Accession number (from filename when available) |
 //! | `filed_date` | Filing date from the pull manifest (blank when no manifest) |
 //! | `form_type` | Form from the pull manifest, e.g. `10-K` or `10-K/A` (blank when no manifest) |
+//! | `is_adequate` | `true` when `item_1_chars >= 400 AND item_7_chars >= 2000` |
+//! | `item_1_snippet` | First 150 chars of Item 1, whitespace-collapsed |
+//! | `item_7_snippet` | First 150 chars of Item 7, whitespace-collapsed |
 //! | `items_found` | Semicolon-separated list of item keys extracted |
 //! | `item_1_chars` ... `item_16_chars` | Character count for every `TenKItem` |
 //! | `error` | Non-empty when the parse step failed |
